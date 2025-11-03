@@ -71,7 +71,7 @@ export default async function Image() {
             marginBottom: '50px',
           }}
         >
-          Professional flight planning tools
+          Experimental flight planning tools
         </div>
 
         {/* Features */}

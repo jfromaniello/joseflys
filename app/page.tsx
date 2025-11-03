@@ -31,7 +31,7 @@ export default function Home() {
           className="text-lg sm:text-xl"
           style={{ color: "oklch(0.58 0.02 240)" }}
         >
-          Professional flight planning tools
+          Experimental flight planning tools
         </p>
       </div>
 
@@ -149,7 +149,7 @@ export default function Home() {
             className="text-sm text-center leading-relaxed mb-4"
             style={{ color: "oklch(0.6 0.02 240)" }}
           >
-            Professional aviation calculators based on ISA standard atmosphere and
+            Experimental aviation calculators based on ISA standard atmosphere and
             wind triangle principles. All calculations are performed client-side
             for instant results.
           </p>
