@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TAS Calculator - True Airspeed Calculator",
+  title: "José's TAS Calculator - True Airspeed Calculator",
   description: "Calculate True Airspeed (TAS) from Calibrated Airspeed (CAS), Outside Air Temperature, and Pressure Altitude using the ISA model",
 };
 

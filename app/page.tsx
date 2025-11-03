@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
 function calculateTAS(casKt: number, oatC: number, hFt: number): number {
@@ -28,7 +28,7 @@ function calculateTAS(casKt: number, oatC: number, hFt: number): number {
   return tasKt;
 }
 
-export default function Home() {
+function Calculator() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -66,7 +66,7 @@ export default function Home() {
   const handleShare = async () => {
     const url = window.location.href;
     const shareData = {
-      title: "TAS Calculator",
+      title: "José's TAS Calculator",
       text: `CAS: ${cas} kt, OAT: ${oat}°C, Alt: ${altitude} ft → TAS: ${tas?.toFixed(2)} kt`,
       url: url,
     };
@@ -113,7 +113,7 @@ export default function Home() {
             className="text-4xl sm:text-5xl font-bold"
             style={{ color: "white" }}
           >
-            TAS Calculator
+            José's TAS Calculator
           </h1>
         </div>
         <p
@@ -313,5 +313,17 @@ export default function Home() {
         </p>
       </main>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900">
+        <div className="text-white">Loading...</div>
+      </div>
+    }>
+      <Calculator />
+    </Suspense>
   );
 }
