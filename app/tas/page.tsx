@@ -271,12 +271,15 @@ function Calculator() {
           {/* Result */}
           {tas !== null && (
             <div className="p-8 sm:p-10 rounded-xl text-center mb-6 bg-gradient-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30">
-              <p
-                className="text-sm sm:text-base font-semibold mb-3 uppercase tracking-wider"
-                style={{ color: "oklch(0.65 0.15 230)" }}
-              >
-                True Airspeed
-              </p>
+              <div className="flex items-center justify-center mb-3">
+                <p
+                  className="text-sm sm:text-base font-semibold uppercase tracking-wider"
+                  style={{ color: "oklch(0.65 0.15 230)" }}
+                >
+                  True Airspeed
+                </p>
+                <Tooltip content="True Airspeed (TAS) is your actual speed through the air mass, corrected for altitude and temperature. This is faster than your indicated airspeed due to lower air density at altitude. Use TAS for flight planning, fuel calculations, and navigation." />
+              </div>
               <p
                 className="text-5xl sm:text-6xl md:text-7xl font-bold mb-2"
                 style={{ color: "white" }}

@@ -406,12 +406,15 @@ function WindCalculator() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Ground Speed */}
                 <div className="p-6 rounded-xl text-center bg-gradient-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30">
-                  <p
-                    className="text-xs sm:text-sm font-semibold mb-2 uppercase tracking-wider"
-                    style={{ color: "oklch(0.65 0.15 230)" }}
-                  >
-                    Ground Speed
-                  </p>
+                  <div className="flex items-center justify-center mb-2">
+                    <p
+                      className="text-xs sm:text-sm font-semibold uppercase tracking-wider"
+                      style={{ color: "oklch(0.65 0.15 230)" }}
+                    >
+                      Ground Speed
+                    </p>
+                    <Tooltip content="Ground Speed (GS) is your actual speed over the ground, accounting for wind. This is what determines your actual time en route. When WCA > 10°, GS is calculated using ETAS for improved accuracy." />
+                  </div>
                   <p
                     className="text-3xl sm:text-4xl font-bold"
                     style={{ color: "white" }}
@@ -428,12 +431,15 @@ function WindCalculator() {
 
                 {/* Compass Heading */}
                 <div className="p-6 rounded-xl text-center bg-gradient-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30">
-                  <p
-                    className="text-xs sm:text-sm font-semibold mb-2 uppercase tracking-wider"
-                    style={{ color: "oklch(0.65 0.15 230)" }}
-                  >
-                    Compass Heading
-                  </p>
+                  <div className="flex items-center justify-center mb-2">
+                    <p
+                      className="text-xs sm:text-sm font-semibold uppercase tracking-wider"
+                      style={{ color: "oklch(0.65 0.15 230)" }}
+                    >
+                      Compass Heading
+                    </p>
+                    <Tooltip content="The magnetic heading you should fly on your compass to maintain your desired track. This includes wind correction angle and magnetic variation. This is the heading to set in your cockpit." />
+                  </div>
                   <p
                     className="text-3xl sm:text-4xl font-bold"
                     style={{ color: "white" }}
@@ -453,12 +459,15 @@ function WindCalculator() {
               <div className={`grid grid-cols-1 gap-4 ${results.etas ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-3'}`}>
                 {/* Wind Correction Angle */}
                 <div className="p-4 rounded-xl bg-slate-900/50 border border-gray-600">
-                  <p
-                    className="text-xs font-medium mb-1"
-                    style={{ color: "oklch(0.65 0.15 230)" }}
-                  >
-                    Wind Correction Angle
-                  </p>
+                  <div className="flex items-center justify-center mb-1">
+                    <p
+                      className="text-xs font-medium"
+                      style={{ color: "oklch(0.65 0.15 230)" }}
+                    >
+                      Wind Correction Angle
+                    </p>
+                    <Tooltip content="The angle you need to adjust your heading to compensate for wind drift. Positive (+) means turn right, negative (-) means turn left from your true heading. When WCA exceeds 10°, ETAS is used for more accurate calculations." />
+                  </div>
                   <p className="text-2xl font-bold" style={{ color: "white" }}>
                     {results.windCorrectionAngle >= 0 ? "+" : ""}
                     {results.windCorrectionAngle.toFixed(1)}°
@@ -468,12 +477,15 @@ function WindCalculator() {
                 {/* ETAS - only shown when WCA > 10° */}
                 {results.etas && (
                   <div className="p-4 rounded-xl bg-slate-900/50 border border-amber-500/50">
-                    <p
-                      className="text-xs font-medium mb-1"
-                      style={{ color: "oklch(0.75 0.15 60)" }}
-                    >
-                      ETAS
-                    </p>
+                    <div className="flex items-center justify-center mb-1">
+                      <p
+                        className="text-xs font-medium"
+                        style={{ color: "oklch(0.75 0.15 60)" }}
+                      >
+                        ETAS
+                      </p>
+                      <Tooltip content="Effective True Air Speed - Your actual effective forward speed when flying at a large crab angle. ETAS = TAS × cos(WCA). Only shown when wind correction angle exceeds 10° for more accurate ground speed calculations." />
+                    </div>
                     <p className="text-2xl font-bold" style={{ color: "white" }}>
                       {results.etas.toFixed(1)} kt
                     </p>
@@ -488,12 +500,15 @@ function WindCalculator() {
 
                 {/* Crosswind */}
                 <div className="p-4 rounded-xl bg-slate-900/50 border border-gray-600">
-                  <p
-                    className="text-xs font-medium mb-1"
-                    style={{ color: "oklch(0.65 0.15 230)" }}
-                  >
-                    Crosswind
-                  </p>
+                  <div className="flex items-center justify-center mb-1">
+                    <p
+                      className="text-xs font-medium"
+                      style={{ color: "oklch(0.65 0.15 230)" }}
+                    >
+                      Crosswind
+                    </p>
+                    <Tooltip content="The component of wind blowing perpendicular to your flight path. Important for runway selection and landing planning. 'From right' means wind from your right, 'from left' means wind from your left." />
+                  </div>
                   <p className="text-2xl font-bold" style={{ color: "white" }}>
                     {Math.abs(results.crosswind).toFixed(1)} kt
                   </p>
@@ -507,12 +522,15 @@ function WindCalculator() {
 
                 {/* Headwind/Tailwind */}
                 <div className="p-4 rounded-xl bg-slate-900/50 border border-gray-600">
-                  <p
-                    className="text-xs font-medium mb-1"
-                    style={{ color: "oklch(0.65 0.15 230)" }}
-                  >
-                    {results.headwind >= 0 ? "Headwind" : "Tailwind"}
-                  </p>
+                  <div className="flex items-center justify-center mb-1">
+                    <p
+                      className="text-xs font-medium"
+                      style={{ color: "oklch(0.65 0.15 230)" }}
+                    >
+                      {results.headwind >= 0 ? "Headwind" : "Tailwind"}
+                    </p>
+                    <Tooltip content="The component of wind blowing along your flight path. Headwind slows you down (increases flight time), tailwind speeds you up (decreases flight time). This directly affects your ground speed." />
+                  </div>
                   <p className="text-2xl font-bold" style={{ color: "white" }}>
                     {Math.abs(results.headwind).toFixed(1)} kt
                   </p>
