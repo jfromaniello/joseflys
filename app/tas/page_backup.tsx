@@ -146,34 +146,13 @@ export default function Home() {
         {/* Footer */}
         <div className="mt-12 p-6 rounded-xl bg-slate-900/30 border border-gray-700">
           <p
-            className="text-sm text-center leading-relaxed mb-4"
+            className="text-sm text-center leading-relaxed"
             style={{ color: "oklch(0.6 0.02 240)" }}
           >
             Professional aviation calculators based on ISA standard atmosphere and
             wind triangle principles. All calculations are performed client-side
             for instant results.
           </p>
-          <div className="flex items-center justify-center gap-2 text-sm">
-            <span style={{ color: "oklch(0.6 0.02 240)" }}>
-              Feedback or kudos?
-            </span>
-            <a
-              href="https://twitter.com/jfroma"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 transition-colors hover:brightness-125"
-              style={{ color: "oklch(0.65 0.15 230)" }}
-            >
-              <svg
-                className="w-4 h-4"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-              </svg>
-              @jfroma
-            </a>
-          </div>
         </div>
       </main>
     </div>
