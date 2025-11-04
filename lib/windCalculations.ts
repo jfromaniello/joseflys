@@ -57,8 +57,9 @@ export function calculateWinds(
     2 * effectiveSpeed * windSpeed * Math.cos(relativeWind);
   const groundSpeed = Math.sqrt(Math.max(0, gsSquared));
 
-  // Compass heading = True heading + WCA - Magnetic deviation
-  const compassHeading = normalize(trueHeading + windCorrectionAngle - magDev);
+  // Compass heading = True heading + WCA + Magnetic deviation
+  // (East variation is negative, west is positive)
+  const compassHeading = normalize(trueHeading + windCorrectionAngle + magDev);
 
   // Calculate ETA if distance is provided
   let eta: number | undefined;
