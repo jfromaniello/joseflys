@@ -97,7 +97,7 @@ export function TASCalculatorClient({
         <Navigation currentPage="tas" />
       </div>
 
-      <main className="w-full max-w-3xl">
+      <main className="w-full max-w-4xl">
         <div className="rounded-2xl p-6 sm:p-8 shadow-2xl bg-slate-800/50 backdrop-blur-sm border border-gray-700">
           {/* Section Header */}
           <div className="mb-6 pb-6 border-b border-gray-700">
@@ -199,7 +199,7 @@ export function TASCalculatorClient({
           {/* Result */}
           {tas !== null && (
             <>
-              <div className="p-8 sm:p-10 rounded-xl text-center mb-6 bg-linear-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30">
+              <div className="p-6 sm:p-8 rounded-xl text-center mb-6 bg-linear-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30">
                 <div className="flex items-center justify-center mb-3">
                   <p
                     className="text-sm sm:text-base font-semibold uppercase tracking-wider"
@@ -224,21 +224,19 @@ export function TASCalculatorClient({
               </div>
 
               {/* Share Button */}
-              <div className="mb-6">
-                <ShareButton
-                  shareData={{
-                    title: "José's TAS Calculator",
-                    text: `CAS: ${cas} kt, OAT: ${oat}°C, Alt: ${altitude} ft → TAS: ${tas?.toFixed(2)} kt`,
-                    url: shareUrl,
-                  }}
-                  ogImageUrl={ogImageUrl}
-                />
-              </div>
+              <ShareButton
+                shareData={{
+                  title: "José's TAS Calculator",
+                  text: `CAS: ${cas} kt, OAT: ${oat}°C, Alt: ${altitude} ft → TAS: ${tas?.toFixed(2)} kt`,
+                  url: shareUrl,
+                }}
+                ogImageUrl={ogImageUrl}
+              />
             </>
           )}
 
           {/* Note */}
-          <div className="p-4 rounded-xl bg-slate-900/30 border border-gray-700">
+          <div className="mt-6 p-4 rounded-xl bg-slate-900/30 border border-gray-700">
             <p
               className="text-xs sm:text-sm leading-relaxed"
               style={{ color: "oklch(0.6 0.02 240)" }}
