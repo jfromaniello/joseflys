@@ -457,7 +457,7 @@ export function WindCalculatorClient({
                       className="text-xs font-medium"
                       style={{ color: "oklch(0.65 0.15 230)" }}
                     >
-                      {results.headwind >= 0 ? "Headwind" : "Tailwind"}
+                      {results.headwind <= 0 ? "Headwind" : "Tailwind"}
                     </p>
                     <Tooltip content="The component of wind blowing along your flight path. Headwind slows you down (increases flight time), tailwind speeds you up (decreases flight time). This directly affects your ground speed." />
                   </div>
