@@ -134,7 +134,7 @@ export async function GET(request: NextRequest) {
                 <div style={{ display: 'flex', fontSize: '20px', color: 'rgb(56, 189, 248)', marginBottom: '15px', letterSpacing: '1px' }}>
                   GROUND SPEED
                 </div>
-                <div style={{ display: 'flex', fontSize: '64px', fontWeight: 'bold', color: 'white' }}>
+                <div style={{ display: 'flex', fontSize: '52px', fontWeight: 'bold', color: 'white' }}>
                   {results.groundSpeed.toFixed(1)} kt
                 </div>
               </div>
@@ -161,7 +161,7 @@ export async function GET(request: NextRequest) {
                 }}>
                   {compassCourse !== null ? 'COMPASS COURSE' : 'COMPASS HDG'}
                 </div>
-                <div style={{ display: 'flex', fontSize: '64px', fontWeight: 'bold', color: 'white' }}>
+                <div style={{ display: 'flex', fontSize: '52px', fontWeight: 'bold', color: 'white' }}>
                   {compassCourse !== null ? compassCourse.toFixed(1) : results.compassHeading.toFixed(1)}°
                 </div>
               </div>
@@ -211,7 +211,7 @@ export async function GET(request: NextRequest) {
                       FUEL USED
                     </div>
                     <div style={{ display: 'flex', fontSize: '42px', fontWeight: 'bold', color: 'white' }}>
-                      {results.fuelUsed.toFixed(1)} {results.fuelUnit || 'gal'}
+                      {results.fuelUsed.toFixed(1)} {'u'}
                     </div>
                   </div>
                 )}

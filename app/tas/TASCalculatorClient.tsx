@@ -45,11 +45,21 @@ export function TASCalculatorClient({
       ? calculateTAS(casVal, oatVal, altVal)
       : null;
 
-  // Build OG image URL for download
+  // Build OG image URL for download and share URL
   const hasParams = cas || oat || altitude;
   const ogImageUrl = hasParams
     ? `/api/og-tas?cas=${cas}&oat=${oat}&alt=${altitude}`
     : undefined;
+
+  // Build share URL with current parameters
+  const shareUrl = (() => {
+    if (typeof window === "undefined") return "";
+    const params = new URLSearchParams();
+    if (cas) params.set("cas", cas);
+    if (oat) params.set("oat", oat);
+    if (altitude) params.set("alt", altitude);
+    return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+  })();
 
   return (
     <PageLayout>
@@ -219,7 +229,7 @@ export function TASCalculatorClient({
                   shareData={{
                     title: "José's TAS Calculator",
                     text: `CAS: ${cas} kt, OAT: ${oat}°C, Alt: ${altitude} ft → TAS: ${tas?.toFixed(2)} kt`,
-                    url: typeof window !== "undefined" ? window.location.href : "",
+                    url: shareUrl,
                   }}
                   ogImageUrl={ogImageUrl}
                 />
