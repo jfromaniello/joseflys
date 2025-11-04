@@ -25,7 +25,7 @@ export function ShareButton({ shareData, ogImageUrl }: ShareButtonProps) {
         setTimeout(() => setShareSuccess(false), 2000);
       }
     } catch (err) {
-      console.log("Share cancelled or failed");
+      console.log("Share cancelled or failed", err);
     }
   };
 
@@ -52,10 +52,11 @@ export function ShareButton({ shareData, ogImageUrl }: ShareButtonProps) {
   };
 
   return (
-    <div className="flex gap-3 justify-center">
+    <div className="grid grid-cols-4 gap-3">
+      <div></div>
       <button
         onClick={handleShare}
-        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all hover:brightness-110 active:scale-95 cursor-pointer shadow-lg backdrop-blur-sm border-2"
+        className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all hover:brightness-110 active:scale-95 cursor-pointer shadow-lg backdrop-blur-sm border-2"
         style={{
           background:
             "linear-gradient(to bottom right, oklch(0.65 0.15 230), oklch(0.55 0.15 230))",
@@ -100,10 +101,10 @@ export function ShareButton({ shareData, ogImageUrl }: ShareButtonProps) {
         )}
       </button>
 
-      {ogImageUrl && (
+      {ogImageUrl ? (
         <button
           onClick={handleDownloadImage}
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all hover:brightness-110 active:scale-95 cursor-pointer shadow-lg backdrop-blur-sm border-2"
+          className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all hover:brightness-110 active:scale-95 cursor-pointer shadow-lg backdrop-blur-sm border-2"
           style={{
             background:
               "linear-gradient(to bottom right, oklch(0.65 0.15 230), oklch(0.55 0.15 230))",
@@ -147,7 +148,10 @@ export function ShareButton({ shareData, ogImageUrl }: ShareButtonProps) {
             </>
           )}
         </button>
+      ) : (
+        <div></div>
       )}
+      <div></div>
     </div>
   );
 }

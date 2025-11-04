@@ -94,7 +94,7 @@ export default function Home() {
 
           {/* Wind Calculator Card */}
           <Link
-            href="/winds"
+            href="/course"
             className="group block p-8 rounded-2xl bg-slate-800/50 backdrop-blur-sm border-2 border-gray-700 hover:border-sky-500/50 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             <div className="flex items-start gap-4 mb-4">

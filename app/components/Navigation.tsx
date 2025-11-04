@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-type Calculator = "home" | "tas" | "winds" | "conversions" | "planning";
+type Calculator = "home" | "tas" | "course" | "conversions" | "planning";
 
 interface NavigationProps {
   currentPage: Calculator;
@@ -50,9 +50,9 @@ const calculators = [
     ),
   },
   {
-    id: "winds" as const,
-    name: "Wind Calculator",
-    href: "/winds",
+    id: "course" as const,
+    name: "Course Calculator",
+    href: "/course",
     icon: (
       <svg
         className="w-4 h-4"

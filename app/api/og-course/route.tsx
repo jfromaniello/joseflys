@@ -1,6 +1,8 @@
 import { ImageResponse } from 'next/og';
 import { NextRequest } from 'next/server';
 import { calculateWinds } from '@/lib/windCalculations';
+import { calculateCompassCourse } from '@/lib/compassDeviation';
+import { decompressFromUrl } from '@/lib/urlCompression';
 
 export const runtime = 'edge';
 
@@ -16,6 +18,8 @@ export async function GET(request: NextRequest) {
     const md = searchParams.get('md') || '0';
     const dist = searchParams.get('dist');
     const ff = searchParams.get('ff');
+    const devTable = searchParams.get('devTable');
+    const description = searchParams.get('desc') || '';
 
     // Calculate wind corrections
     const windDir = parseFloat(wd);
@@ -27,6 +31,19 @@ export async function GET(request: NextRequest) {
     const fuelFlow = ff ? parseFloat(ff) : undefined;
 
     const results = calculateWinds(windDir, windSpeed, trueHeading, tasVal, magDev, distance, fuelFlow);
+
+    // Try to calculate Compass Course if deviation table is provided
+    let compassCourse: number | null = null;
+    if (devTable) {
+      try {
+        const deviationTable = decompressFromUrl(devTable);
+        if (Array.isArray(deviationTable) && deviationTable.length >= 2) {
+          compassCourse = calculateCompassCourse(results.compassHeading, deviationTable);
+        }
+      } catch {
+        // Invalid deviation table, ignore
+      }
+    }
 
     return new ImageResponse(
       (
@@ -82,23 +99,25 @@ export async function GET(request: NextRequest) {
                   color: 'white',
                 }}
               >
-                Wind Calculator
+                {description || 'Course Calculator'}
               </div>
-              <div
-                style={{
-                  fontSize: '28px',
-                  color: 'rgba(148, 163, 184, 1)',
-                }}
-              >
-                José's Aviation Tools
-              </div>
+              {description && (
+                <div
+                  style={{
+                    fontSize: '28px',
+                    color: 'rgba(148, 163, 184, 1)',
+                  }}
+                >
+                  José&apos;s Aviation Tools
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Results - Only show the calculated values */}
+          {/* Results - Only show final values */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* Primary Results Row */}
-            <div style={{ display: 'flex', gap: '30px' }}>
+            <div style={{ display: 'flex', gap: '40px' }}>
               {/* Ground Speed */}
               <div
                 style={{
@@ -108,54 +127,46 @@ export async function GET(request: NextRequest) {
                   background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%)',
                   border: '2px solid rgba(56, 189, 248, 0.3)',
                   borderRadius: '20px',
-                  padding: '30px 40px',
+                  padding: '40px 60px',
+                  minWidth: '320px',
                 }}
               >
-                <div style={{ display: 'flex', fontSize: '18px', color: 'rgb(56, 189, 248)', marginBottom: '10px', letterSpacing: '1px' }}>
+                <div style={{ display: 'flex', fontSize: '20px', color: 'rgb(56, 189, 248)', marginBottom: '15px', letterSpacing: '1px' }}>
                   GROUND SPEED
                 </div>
-                <div style={{ display: 'flex', fontSize: '56px', fontWeight: 'bold', color: 'white' }}>
+                <div style={{ display: 'flex', fontSize: '64px', fontWeight: 'bold', color: 'white' }}>
                   {results.groundSpeed.toFixed(1)} kt
                 </div>
               </div>
 
-              {/* Compass Heading */}
+              {/* Compass Heading or Compass Course */}
               <div
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%)',
-                  border: '2px solid rgba(56, 189, 248, 0.3)',
+                  background: compassCourse !== null
+                    ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%)'
+                    : 'linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%)',
+                  border: compassCourse !== null
+                    ? '2px solid rgba(16, 185, 129, 0.3)'
+                    : '2px solid rgba(56, 189, 248, 0.3)',
                   borderRadius: '20px',
-                  padding: '30px 40px',
+                  padding: '40px 60px',
+                  minWidth: '320px',
                 }}
               >
-                <div style={{ display: 'flex', fontSize: '18px', color: 'rgb(56, 189, 248)', marginBottom: '10px', letterSpacing: '1px' }}>
-                  COMPASS HDG
-                </div>
-                <div style={{ display: 'flex', fontSize: '56px', fontWeight: 'bold', color: 'white' }}>
-                  {results.compassHeading.toFixed(1)}°
-                </div>
-              </div>
-
-              {/* WCA */}
-              <div
-                style={{
+                <div style={{
                   display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  background: 'rgba(30, 41, 59, 0.5)',
-                  border: '2px solid rgba(71, 85, 105, 0.5)',
-                  borderRadius: '20px',
-                  padding: '30px 40px',
-                }}
-              >
-                <div style={{ display: 'flex', fontSize: '18px', color: 'rgba(148, 163, 184, 1)', marginBottom: '10px' }}>
-                  WCA
+                  fontSize: '20px',
+                  color: compassCourse !== null ? 'rgb(16, 185, 129)' : 'rgb(56, 189, 248)',
+                  marginBottom: '15px',
+                  letterSpacing: '1px'
+                }}>
+                  {compassCourse !== null ? 'COMPASS COURSE' : 'COMPASS HDG'}
                 </div>
-                <div style={{ display: 'flex', fontSize: '56px', fontWeight: 'bold', color: 'white' }}>
-                  {results.windCorrectionAngle >= 0 ? '+' : ''}{results.windCorrectionAngle.toFixed(1)}°
+                <div style={{ display: 'flex', fontSize: '64px', fontWeight: 'bold', color: 'white' }}>
+                  {compassCourse !== null ? compassCourse.toFixed(1) : results.compassHeading.toFixed(1)}°
                 </div>
               </div>
             </div>
