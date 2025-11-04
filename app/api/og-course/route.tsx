@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
           </div>
 
           {/* Results - Only show final values */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
             {/* Primary Results Row */}
             <div style={{ display: 'flex', gap: '40px' }}>
               {/* Ground Speed */}
@@ -127,8 +127,8 @@ export async function GET(request: NextRequest) {
                   background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%)',
                   border: '2px solid rgba(56, 189, 248, 0.3)',
                   borderRadius: '20px',
-                  padding: '40px 60px',
-                  minWidth: '320px',
+                  padding: '30px 60px',
+                  width: '360px',
                 }}
               >
                 <div style={{ display: 'flex', fontSize: '20px', color: 'rgb(56, 189, 248)', marginBottom: '15px', letterSpacing: '1px' }}>
@@ -145,21 +145,17 @@ export async function GET(request: NextRequest) {
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  background: compassCourse !== null
-                    ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%)'
-                    : 'linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%)',
-                  border: compassCourse !== null
-                    ? '2px solid rgba(16, 185, 129, 0.3)'
-                    : '2px solid rgba(56, 189, 248, 0.3)',
+                  background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%)',
+                  border: '2px solid rgba(56, 189, 248, 0.3)',
                   borderRadius: '20px',
-                  padding: '40px 60px',
-                  minWidth: '320px',
+                  padding: '30px 60px',
+                  width: '360px',
                 }}
               >
                 <div style={{
                   display: 'flex',
                   fontSize: '20px',
-                  color: compassCourse !== null ? 'rgb(16, 185, 129)' : 'rgb(56, 189, 248)',
+                  color: 'rgb(56, 189, 248)',
                   marginBottom: '15px',
                   letterSpacing: '1px'
                 }}>
@@ -173,7 +169,7 @@ export async function GET(request: NextRequest) {
 
             {/* ETA and Fuel Row - Only show if calculated */}
             {(results.eta !== undefined || results.fuelUsed !== undefined) && (
-              <div style={{ display: 'flex', gap: '30px', justifyContent: 'center' }}>
+              <div style={{ display: 'flex', gap: '40px' }}>
                 {/* ETA */}
                 {results.eta !== undefined && (
                   <div
@@ -181,13 +177,14 @@ export async function GET(request: NextRequest) {
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
-                      background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%)',
-                      border: '2px solid rgba(16, 185, 129, 0.3)',
+                      background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%)',
+                      border: '2px solid rgba(56, 189, 248, 0.3)',
                       borderRadius: '20px',
                       padding: '25px 50px',
+                      width: '360px',
                     }}
                   >
-                    <div style={{ display: 'flex', fontSize: '16px', color: 'rgb(16, 185, 129)', marginBottom: '8px', letterSpacing: '1px' }}>
+                    <div style={{ display: 'flex', fontSize: '16px', color: 'rgb(56, 189, 248)', marginBottom: '8px', letterSpacing: '1px' }}>
                       ETA
                     </div>
                     <div style={{ display: 'flex', fontSize: '42px', fontWeight: 'bold', color: 'white' }}>
@@ -203,17 +200,18 @@ export async function GET(request: NextRequest) {
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
-                      background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%)',
-                      border: '2px solid rgba(16, 185, 129, 0.3)',
+                      background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%)',
+                      border: '2px solid rgba(56, 189, 248, 0.3)',
                       borderRadius: '20px',
                       padding: '25px 50px',
+                      width: '360px',
                     }}
                   >
-                    <div style={{ display: 'flex', fontSize: '16px', color: 'rgb(16, 185, 129)', marginBottom: '8px', letterSpacing: '1px' }}>
+                    <div style={{ display: 'flex', fontSize: '16px', color: 'rgb(56, 189, 248)', marginBottom: '8px', letterSpacing: '1px' }}>
                       FUEL USED
                     </div>
                     <div style={{ display: 'flex', fontSize: '42px', fontWeight: 'bold', color: 'white' }}>
-                      {results.fuelUsed.toFixed(1)}
+                      {results.fuelUsed.toFixed(1)} {results.fuelUnit || 'gal'}
                     </div>
                   </div>
                 )}
