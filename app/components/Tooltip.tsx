@@ -13,6 +13,7 @@ export function Tooltip({ content }: TooltipProps) {
     <div className="relative inline-block">
       <button
         type="button"
+        tabIndex={-1}
         onClick={() => setIsOpen(!isOpen)}
         onBlur={() => setTimeout(() => setIsOpen(false), 200)}
         className="w-5 h-5 rounded-full border-2 flex items-center justify-center text-xs font-bold transition-colors hover:brightness-125 ml-1"

@@ -257,7 +257,7 @@ export function WindCalculatorClient({
                     style={{ color: "oklch(0.72 0.015 240)" }}
                   >
                     Magnetic Deviation
-                    <Tooltip content="Local magnetic variation (east or west) in degrees. Found on aviation charts. Positive for east, negative for west. Defaults to 0 if unknown." />
+                    <Tooltip content="Local magnetic variation (east or west) in degrees. Found on aviation charts. Negative for east, positive for west. Defaults to 0 if unknown." />
                   </label>
                   <div className="relative">
                     <input
