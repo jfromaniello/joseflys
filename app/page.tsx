@@ -115,14 +115,14 @@ export default function Home() {
               </div>
               <div className="flex-1">
                 <h2 className="text-2xl font-bold mb-2" style={{ color: "white" }}>
-                  Wind Calculator
+                  Course Calculator
                 </h2>
                 <p
                   className="text-sm leading-relaxed"
                   style={{ color: "oklch(0.65 0.02 240)" }}
                 >
-                  Calculate wind correction angle, ground speed, compass heading,
-                  and wind components for accurate flight planning
+                  Calculate true course, wind correction angle, ground speed,
+                  and compass heading for accurate navigation
                 </p>
               </div>
             </div>
