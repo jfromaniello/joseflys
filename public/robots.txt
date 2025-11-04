@@ -1,0 +1,18 @@
+# robots.txt for José's Aviation Calculators
+# https://joseflys.com
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://joseflys.com/sitemap.xml
+
+# Disallow API routes from indexing
+User-agent: *
+Disallow: /api/
+
+# Allow all pages
+Allow: /tas
+Allow: /winds
+Allow: /conversions
+Allow: /planning
