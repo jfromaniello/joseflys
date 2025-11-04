@@ -124,18 +124,8 @@ function ConversionCalculator() {
                 style={{ color: "oklch(0.7 0.15 230)" }}
               >
                 Category
+                <Tooltip content="Select the type of units you want to convert" />
               </label>
-              <Tooltip content="Select the type of units you want to convert">
-                <button
-                  className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold transition-colors"
-                  style={{
-                    backgroundColor: "oklch(0.35 0.05 240)",
-                    color: "oklch(0.7 0.15 230)",
-                  }}
-                >
-                  ?
-                </button>
-              </Tooltip>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {(Object.keys(categories) as Category[]).map((cat) => (
