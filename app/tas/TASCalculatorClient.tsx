@@ -45,6 +45,12 @@ export function TASCalculatorClient({
       ? calculateTAS(casVal, oatVal, altVal)
       : null;
 
+  // Build OG image URL for download
+  const hasParams = cas || oat || altitude;
+  const ogImageUrl = hasParams
+    ? `/api/og-tas?cas=${cas}&oat=${oat}&alt=${altitude}`
+    : undefined;
+
   return (
     <PageLayout>
       {/* Header */}
@@ -215,6 +221,7 @@ export function TASCalculatorClient({
                     text: `CAS: ${cas} kt, OAT: ${oat}°C, Alt: ${altitude} ft → TAS: ${tas?.toFixed(2)} kt`,
                     url: typeof window !== "undefined" ? window.location.href : "",
                   }}
+                  ogImageUrl={ogImageUrl}
                 />
               </div>
             </>

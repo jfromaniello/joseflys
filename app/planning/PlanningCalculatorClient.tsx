@@ -108,6 +108,17 @@ export function PlanningCalculatorClient({
     fuelAvailable ? parseFloat(fuelAvailable) : undefined
   );
 
+  // Build OG image URL for download
+  const hasParams = mode === "time-speed-distance"
+    ? (groundSpeed || distance || timeHours || timeMinutes)
+    : (fuelFlow || fuelUsed || fuelTimeHours || fuelTimeMinutes || fuelAvailable);
+
+  const ogImageUrl = hasParams
+    ? mode === "time-speed-distance"
+      ? `/api/og-planning?mode=${mode}&gs=${groundSpeed}&dist=${distance}&th=${timeHours}&tm=${timeMinutes}`
+      : `/api/og-planning?mode=${mode}&ff=${fuelFlow}&fu=${fuelUsed}&fth=${fuelTimeHours}&ftm=${fuelTimeMinutes}&fa=${fuelAvailable}`
+    : undefined;
+
   return (
     <PageLayout>
       {/* Header */}
@@ -686,6 +697,7 @@ export function PlanningCalculatorClient({
               text: "Flight Planning Calculator - Time, Speed, Distance & Fuel",
               url: typeof window !== "undefined" ? window.location.href : "",
             }}
+            ogImageUrl={ogImageUrl}
           />
         </div>
       </main>

@@ -70,6 +70,12 @@ export function WindCalculatorClient({
       ? calculateWinds(wd, ws, th, tasVal, md, dist, ff)
       : null;
 
+  // Build OG image URL for download
+  const hasParams = windDir || windSpeed || trueHeading || tas;
+  const ogImageUrl = hasParams
+    ? `/api/og-wind?wd=${windDir}&ws=${windSpeed}&th=${trueHeading}&tas=${tas}&md=${magDev}&dist=${distance}&ff=${fuelFlow}`
+    : undefined;
+
   return (
     <PageLayout>
       {/* Header */}
@@ -530,6 +536,7 @@ export function WindCalculatorClient({
                     text: `Wind: ${windDir}° at ${windSpeed} kt, Heading: ${trueHeading}° → GS: ${results?.groundSpeed.toFixed(1)} kt`,
                     url: typeof window !== "undefined" ? window.location.href : "",
                   }}
+                  ogImageUrl={ogImageUrl}
                 />
               </div>
             </div>
