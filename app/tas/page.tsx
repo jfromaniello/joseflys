@@ -6,31 +6,8 @@ import Link from "next/link";
 import { Tooltip } from "../components/Tooltip";
 import { PageLayout } from "../components/PageLayout";
 import { Footer } from "../components/Footer";
-
-function calculateTAS(casKt: number, oatC: number, hFt: number): number {
-  // ISA Constants
-  const T0 = 288.15; // K (15°C)
-  const P0 = 101325.0; // Pa
-  const g0 = 9.80665; // m/s²
-  const R = 287.05287; // J/(kg·K)
-  const L = 0.0065; // K/m (lapse rate troposphere)
-
-  // Unit conversions
-  const hM = hFt * 0.3048;
-  const tAct = oatC + 273.15; // K
-
-  // ISA pressure at altitude (troposphere)
-  const exp = g0 / (R * L);
-  const pIsa = P0 * Math.pow(1 - (L * hM) / T0, exp);
-
-  // Densities
-  const rho0 = P0 / (R * T0);
-  const rho = pIsa / (R * tAct);
-
-  // TAS
-  const tasKt = casKt * Math.sqrt(rho0 / rho);
-  return tasKt;
-}
+import { Navigation } from "../components/Navigation";
+import { calculateTAS } from "@/lib/tasCalculations";
 
 function Calculator() {
   const searchParams = useSearchParams();
@@ -119,49 +96,7 @@ function Calculator() {
         >
           Calculate True Airspeed from Calibrated Airspeed
         </p>
-        <div className="flex items-center justify-center gap-4">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-sm transition-colors hover:brightness-125"
-            style={{ color: "oklch(0.65 0.15 230)" }}
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-              />
-            </svg>
-            Home
-          </Link>
-          <span style={{ color: "oklch(0.4 0.02 240)" }}>•</span>
-          <Link
-            href="/winds"
-            className="inline-flex items-center gap-2 text-sm transition-colors hover:brightness-125"
-            style={{ color: "oklch(0.65 0.15 230)" }}
-          >
-            Wind Calculator
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M14 5l7 7m0 0l-7 7m7-7H3"
-              />
-            </svg>
-          </Link>
-        </div>
+        <Navigation currentPage="tas" />
       </div>
 
       <main className="w-full max-w-3xl">
@@ -265,75 +200,79 @@ function Calculator() {
 
           {/* Result */}
           {tas !== null && (
-            <div className="p-8 sm:p-10 rounded-xl text-center mb-6 bg-linear-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30">
-              <div className="flex items-center justify-center mb-3">
+            <>
+              <div className="p-8 sm:p-10 rounded-xl text-center mb-6 bg-linear-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30">
+                <div className="flex items-center justify-center mb-3">
+                  <p
+                    className="text-sm sm:text-base font-semibold uppercase tracking-wider"
+                    style={{ color: "oklch(0.65 0.15 230)" }}
+                  >
+                    True Airspeed
+                  </p>
+                  <Tooltip content="True Airspeed (TAS) is your actual speed through the air mass, corrected for altitude and temperature. This is faster than your indicated airspeed due to lower air density at altitude. Use TAS for flight planning, fuel calculations, and navigation." />
+                </div>
                 <p
-                  className="text-sm sm:text-base font-semibold uppercase tracking-wider"
-                  style={{ color: "oklch(0.65 0.15 230)" }}
+                  className="text-5xl sm:text-6xl md:text-7xl font-bold mb-2"
+                  style={{ color: "white" }}
                 >
-                  True Airspeed
+                  {tas.toFixed(2)}
                 </p>
-                <Tooltip content="True Airspeed (TAS) is your actual speed through the air mass, corrected for altitude and temperature. This is faster than your indicated airspeed due to lower air density at altitude. Use TAS for flight planning, fuel calculations, and navigation." />
+                <p
+                  className="text-lg sm:text-xl"
+                  style={{ color: "oklch(0.6 0.02 240)" }}
+                >
+                  knots
+                </p>
               </div>
-              <p
-                className="text-5xl sm:text-6xl md:text-7xl font-bold mb-2"
-                style={{ color: "white" }}
-              >
-                {tas.toFixed(2)}
-              </p>
-              <p
-                className="text-lg sm:text-xl mb-4"
-                style={{ color: "oklch(0.6 0.02 240)" }}
-              >
-                knots
-              </p>
 
               {/* Share Button */}
-              <button
-                onClick={handleShare}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:brightness-110 active:scale-95"
-                style={{
-                  backgroundColor: "oklch(0.65 0.15 230)",
-                  color: "oklch(0.145 0.02 240)",
-                }}
-              >
-                {shareSuccess ? (
-                  <>
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                    Copied!
-                  </>
-                ) : (
-                  <>
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-                      />
-                    </svg>
-                    Share Result
-                  </>
-                )}
-              </button>
-            </div>
+              <div className="text-center mb-6">
+                <button
+                  onClick={handleShare}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:brightness-110 active:scale-95 cursor-pointer"
+                  style={{
+                    backgroundColor: "oklch(0.65 0.15 230)",
+                    color: "oklch(0.145 0.02 240)",
+                  }}
+                >
+                  {shareSuccess ? (
+                    <>
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                        />
+                      </svg>
+                      Share Result
+                    </>
+                  )}
+                </button>
+              </div>
+            </>
           )}
 
           {/* Note */}

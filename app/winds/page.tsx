@@ -6,94 +6,14 @@ import Link from "next/link";
 import { Tooltip } from "../components/Tooltip";
 import { PageLayout } from "../components/PageLayout";
 import { Footer } from "../components/Footer";
+import { Navigation } from "../components/Navigation";
+import { calculateWinds } from "@/lib/windCalculations";
 
-interface WindCalculations {
-  crosswind: number;
-  headwind: number;
-  windCorrectionAngle: number;
-  compassHeading: number;
-  groundSpeed: number;
-  etas?: number;
-  eta?: number; // in hours
-  fuelUsed?: number; // in same units as fuel flow
-}
-
-function calculateWinds(
-  windDir: number,
-  windSpeed: number,
-  trueHeading: number,
-  tas: number,
-  magDev: number,
-  distance?: number,
-  fuelFlow?: number
-): WindCalculations {
-  // Convert to radians
-  const toRad = (deg: number) => (deg * Math.PI) / 180;
-  const toDeg = (rad: number) => (rad * 180) / Math.PI;
-
-  // Normalize angles to 0-360
-  const normalize = (angle: number) => ((angle % 360) + 360) % 360;
-
-  windDir = normalize(windDir);
-  trueHeading = normalize(trueHeading);
-
-  // Relative wind angle (angle between wind direction and heading)
-  const relativeWind = toRad(windDir - trueHeading);
-
-  // Crosswind component (positive = wind from right)
-  const crosswind = windSpeed * Math.sin(relativeWind);
-
-  // Headwind component (positive = headwind, negative = tailwind)
-  const headwind = -windSpeed * Math.cos(relativeWind);
-
-  // Wind correction angle using arcsin formula
-  const wcaRad = Math.asin((windSpeed * Math.sin(relativeWind)) / tas);
-  const windCorrectionAngle = toDeg(wcaRad);
-
-  // ETAS (Effective True Air Speed) - used when WCA > 10°
-  let etas: number | undefined;
-  let effectiveSpeed = tas;
-  if (Math.abs(windCorrectionAngle) > 10) {
-    etas = tas * Math.cos(wcaRad);
-    effectiveSpeed = etas; // Use ETAS for GS calculation when WCA > 10°
-  }
-
-  // Ground speed using law of cosines with effective speed
-  // GS² = EffectiveSpeed² + WS² - 2·EffectiveSpeed·WS·cos(relative wind angle)
-  const gsSquared =
-    effectiveSpeed * effectiveSpeed +
-    windSpeed * windSpeed -
-    2 * effectiveSpeed * windSpeed * Math.cos(relativeWind);
-  const groundSpeed = Math.sqrt(Math.max(0, gsSquared));
-
-  // Compass heading = True heading + WCA - Magnetic deviation
-  const compassHeading = normalize(trueHeading + windCorrectionAngle - magDev);
-
-  // Calculate ETA if distance is provided
-  let eta: number | undefined;
-  let fuelUsed: number | undefined;
-
-  if (distance !== undefined && distance > 0) {
-    // ETA = Distance / Ground Speed (in hours)
-    eta = distance / groundSpeed;
-
-    // Fuel Used = Fuel Flow × ETA (only if fuel flow is provided)
-    if (fuelFlow !== undefined && fuelFlow > 0) {
-      fuelUsed = fuelFlow * eta;
-    }
-  }
-
-  return {
-    crosswind,
-    headwind,
-    windCorrectionAngle,
-    compassHeading,
-    groundSpeed,
-    etas,
-    eta,
-    fuelUsed,
-  };
-}
+// Note: Dynamic OG images work via the /api/og-wind route
+// When you share a URL like /winds?wd=270&ws=20&th=360&tas=100
+// You can manually construct the OG image URL as:
+// /api/og-wind?wd=270&ws=20&th=360&tas=100
+// This will show the calculated results in the preview
 
 function WindCalculator() {
   const searchParams = useSearchParams();
@@ -199,49 +119,7 @@ function WindCalculator() {
         >
           Calculate wind correction and ground speed
         </p>
-        <div className="flex items-center justify-center gap-4">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-sm transition-colors hover:brightness-125"
-            style={{ color: "oklch(0.65 0.15 230)" }}
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-              />
-            </svg>
-            Home
-          </Link>
-          <span style={{ color: "oklch(0.4 0.02 240)" }}>•</span>
-          <Link
-            href="/tas"
-            className="inline-flex items-center gap-2 text-sm transition-colors hover:brightness-125"
-            style={{ color: "oklch(0.65 0.15 230)" }}
-          >
-            TAS Calculator
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-              />
-            </svg>
-          </Link>
-        </div>
+        <Navigation currentPage="winds" />
       </div>
 
       <main className="w-full max-w-4xl">
@@ -667,7 +545,7 @@ function WindCalculator() {
               <div className="text-center pt-2">
                 <button
                   onClick={handleShare}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:brightness-110 active:scale-95"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:brightness-110 active:scale-95 cursor-pointer"
                   style={{
                     backgroundColor: "oklch(0.65 0.15 230)",
                     color: "oklch(0.145 0.02 240)",
