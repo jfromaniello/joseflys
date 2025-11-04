@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-type Calculator = "home" | "tas" | "winds" | "conversions";
+type Calculator = "home" | "tas" | "winds" | "conversions" | "planning";
 
 interface NavigationProps {
   currentPage: Calculator;
@@ -89,24 +89,56 @@ const calculators = [
       </svg>
     ),
   },
+  {
+    id: "planning" as const,
+    name: "Flight Planning",
+    href: "/planning",
+    icon: (
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        strokeWidth={2}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+        />
+      </svg>
+    ),
+  },
 ];
 
 export function Navigation({ currentPage }: NavigationProps) {
-  const visibleCalculators = calculators.filter((calc) => calc.id !== currentPage);
-
   return (
     <div className="flex items-center justify-center gap-4 flex-wrap">
-      {visibleCalculators.map((calc, index) => (
+      {calculators.map((calc, index) => (
         <div key={calc.id} className="flex items-center gap-4">
           <Link
             href={calc.href}
-            className="inline-flex items-center gap-2 text-sm transition-colors hover:brightness-125"
-            style={{ color: "oklch(0.65 0.15 230)" }}
+            className={`inline-flex items-center gap-2 text-sm transition-colors ${
+              calc.id === currentPage
+                ? "font-semibold cursor-default"
+                : "hover:brightness-125"
+            }`}
+            style={{
+              color:
+                calc.id === currentPage
+                  ? "white"
+                  : "oklch(0.65 0.15 230)",
+            }}
+            onClick={(e) => {
+              if (calc.id === currentPage) {
+                e.preventDefault();
+              }
+            }}
           >
             {calc.icon}
             {calc.name}
           </Link>
-          {index < visibleCalculators.length - 1 && (
+          {index < calculators.length - 1 && (
             <span style={{ color: "oklch(0.4 0.02 240)" }}>•</span>
           )}
         </div>

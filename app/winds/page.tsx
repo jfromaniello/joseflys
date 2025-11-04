@@ -1,621 +1,103 @@
-"use client";
+import { Suspense } from "react";
+import type { Metadata } from "next";
+import { WindCalculatorClient } from "./WindCalculatorClient";
 
-import { useState, useEffect, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import Link from "next/link";
-import { Tooltip } from "../components/Tooltip";
-import { PageLayout } from "../components/PageLayout";
-import { Footer } from "../components/Footer";
-import { Navigation } from "../components/Navigation";
-import { calculateWinds } from "@/lib/windCalculations";
-
-// Note: Dynamic OG images work via the /api/og-wind route
-// When you share a URL like /winds?wd=270&ws=20&th=360&tas=100
-// You can manually construct the OG image URL as:
-// /api/og-wind?wd=270&ws=20&th=360&tas=100
-// This will show the calculated results in the preview
-
-function WindCalculator() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-
-  const [windDir, setWindDir] = useState<string>(
-    searchParams.get("wd") || "270"
-  );
-  const [windSpeed, setWindSpeed] = useState<string>(
-    searchParams.get("ws") || "20"
-  );
-  const [trueHeading, setTrueHeading] = useState<string>(
-    searchParams.get("th") || "360"
-  );
-  const [tas, setTas] = useState<string>(searchParams.get("tas") || "100");
-  const [magDev, setMagDev] = useState<string>(searchParams.get("md") || "0");
-  const [distance, setDistance] = useState<string>(searchParams.get("dist") || "");
-  const [fuelFlow, setFuelFlow] = useState<string>(searchParams.get("ff") || "");
-  const [shareSuccess, setShareSuccess] = useState(false);
-
-  // Update URL when parameters change
-  useEffect(() => {
-    const params = new URLSearchParams();
-    if (windDir) params.set("wd", windDir);
-    if (windSpeed) params.set("ws", windSpeed);
-    if (trueHeading) params.set("th", trueHeading);
-    if (tas) params.set("tas", tas);
-    if (magDev) params.set("md", magDev);
-    if (distance) params.set("dist", distance);
-    if (fuelFlow) params.set("ff", fuelFlow);
-
-    router.replace(`?${params.toString()}`, { scroll: false });
-  }, [windDir, windSpeed, trueHeading, tas, magDev, distance, fuelFlow, router]);
-
-  // Calculate results during render (not in useEffect to avoid cascading renders)
-  const wd = parseFloat(windDir);
-  const ws = parseFloat(windSpeed);
-  const th = parseFloat(trueHeading);
-  const tasVal = parseFloat(tas);
-  const md = parseFloat(magDev);
-  const dist = distance ? parseFloat(distance) : undefined;
-  const ff = fuelFlow ? parseFloat(fuelFlow) : undefined;
-
-  const results =
-    !isNaN(wd) &&
-    !isNaN(ws) &&
-    !isNaN(th) &&
-    !isNaN(tasVal) &&
-    !isNaN(md) &&
-    tasVal > 0
-      ? calculateWinds(wd, ws, th, tasVal, md, dist, ff)
-      : null;
-
-  // Share function
-  const handleShare = async () => {
-    const url = window.location.href;
-    const shareData = {
-      title: "José's Wind Calculator",
-      text: `Wind: ${windDir}° at ${windSpeed} kt, Heading: ${trueHeading}° → GS: ${results?.groundSpeed.toFixed(1)} kt`,
-      url: url,
-    };
-
-    try {
-      if (navigator.share) {
-        await navigator.share(shareData);
-      } else {
-        await navigator.clipboard.writeText(url);
-        setShareSuccess(true);
-        setTimeout(() => setShareSuccess(false), 2000);
-      }
-    } catch (err) {
-      console.log("Share cancelled or failed");
-    }
-  };
-
-  return (
-    <PageLayout>
-      {/* Header */}
-      <div className="text-center mb-8 sm:mb-12">
-        <div className="flex items-center justify-center gap-4 mb-3">
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-slate-800/50 backdrop-blur-sm border border-gray-700">
-            <svg
-              className="w-9 h-9"
-              fill="none"
-              stroke="oklch(0.65 0.15 230)"
-              viewBox="0 0 24 24"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M14 5l7 7m0 0l-7 7m7-7H3"
-              />
-            </svg>
-          </div>
-          <h1 className="text-4xl sm:text-5xl font-bold" style={{ color: "white" }}>
-            José&apos;s Wind Calculator
-          </h1>
-        </div>
-        <p
-          className="text-base sm:text-lg mb-4"
-          style={{ color: "oklch(0.58 0.02 240)" }}
-        >
-          Calculate wind correction and ground speed
-        </p>
-        <Navigation currentPage="winds" />
-      </div>
-
-      <main className="w-full max-w-4xl">
-        <div className="rounded-2xl p-6 sm:p-8 shadow-2xl bg-slate-800/50 backdrop-blur-sm border border-gray-700">
-          {/* Section Header */}
-          <div className="mb-6 pb-6 border-b border-gray-700">
-            <h2
-              className="text-xl sm:text-2xl font-bold mb-2"
-              style={{ color: "white" }}
-            >
-              Flight Parameters
-            </h2>
-            <p className="text-sm" style={{ color: "oklch(0.58 0.02 240)" }}>
-              Enter wind and heading data to calculate corrections
-            </p>
-          </div>
-
-          {/* Input Fields - Grouped */}
-          <div className="space-y-6 mb-8">
-            {/* Wind Parameters Group */}
-            <div>
-              <h3 className="text-sm font-semibold mb-3 uppercase tracking-wide" style={{ color: "oklch(0.65 0.15 230)" }}>
-                Wind Conditions
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Wind Direction */}
-                <div>
-                  <label
-                    className="flex items-center text-sm font-medium mb-2"
-                    style={{ color: "oklch(0.72 0.015 240)" }}
-                  >
-                    Wind Direction
-                    <Tooltip content="The direction the wind is coming FROM in degrees (0-360). For example, 270° means wind from the west. Use METAR or ATIS wind reports." />
-                  </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  value={windDir}
-                  onChange={(e) => setWindDir(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white"
-                  placeholder="270"
-                  min="0"
-                  max="360"
-                />
-                <span
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-                  style={{ color: "oklch(0.55 0.02 240)" }}
-                >
-                  °
-                </span>
-              </div>
-            </div>
-
-                {/* Wind Speed */}
-                <div>
-                  <label
-                    className="flex items-center text-sm font-medium mb-2"
-                    style={{ color: "oklch(0.72 0.015 240)" }}
-                  >
-                    Wind Speed
-                    <Tooltip content="The wind speed in knots. This is the second part of a wind report (e.g., '270/20' means 20 knots from 270°)." />
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      value={windSpeed}
-                      onChange={(e) => setWindSpeed(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white"
-                      placeholder="20"
-                    />
-                    <span
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-                      style={{ color: "oklch(0.55 0.02 240)" }}
-                    >
-                      kt
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Course Parameters Group */}
-            <div>
-              <h3 className="text-sm font-semibold mb-3 uppercase tracking-wide" style={{ color: "oklch(0.65 0.15 230)" }}>
-                Course Parameters
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* True Heading */}
-                <div>
-                  <label
-                    className="flex items-center text-sm font-medium mb-2"
-                    style={{ color: "oklch(0.72 0.015 240)" }}
-                  >
-                    True Heading
-                    <Tooltip content="Your desired track or course over the ground in true degrees (0-360). This is the direction you want to fly, not accounting for wind drift." />
-                  </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  value={trueHeading}
-                  onChange={(e) => setTrueHeading(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white"
-                  placeholder="360"
-                  min="0"
-                  max="360"
-                />
-                <span
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-                  style={{ color: "oklch(0.55 0.02 240)" }}
-                >
-                  °
-                </span>
-              </div>
-            </div>
-
-                {/* True Airspeed */}
-                <div>
-                  <label
-                    className="flex items-center text-sm font-medium mb-2"
-                    style={{ color: "oklch(0.72 0.015 240)" }}
-                  >
-                    True Airspeed
-                    <Tooltip content="Your aircraft's actual speed through the air mass in knots. Use the TAS Calculator if you only have CAS, OAT, and altitude." />
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      value={tas}
-                      onChange={(e) => setTas(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white"
-                      placeholder="100"
-                    />
-                    <span
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-                      style={{ color: "oklch(0.55 0.02 240)" }}
-                    >
-                      kt
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Optional Parameters Group */}
-            <div>
-              <h3 className="text-sm font-semibold mb-3 uppercase tracking-wide" style={{ color: "oklch(0.65 0.15 230)" }}>
-                Optional Parameters
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Magnetic Deviation */}
-                <div>
-                  <label
-                    className="flex items-center text-sm font-medium mb-2"
-                    style={{ color: "oklch(0.72 0.015 240)" }}
-                  >
-                    Magnetic Deviation
-                    <Tooltip content="Local magnetic variation (east or west) in degrees. Found on aviation charts. Positive for east, negative for west. Defaults to 0 if unknown." />
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      value={magDev}
-                      onChange={(e) => setMagDev(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white"
-                      placeholder="0"
-                    />
-                    <span
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-                      style={{ color: "oklch(0.55 0.02 240)" }}
-                    >
-                      °
-                    </span>
-                  </div>
-                </div>
-
-                {/* Distance */}
-                <div>
-                  <label
-                    className="flex items-center text-sm font-medium mb-2"
-                    style={{ color: "oklch(0.72 0.015 240)" }}
-                  >
-                    Distance
-                    <Tooltip content="Flight distance in nautical miles. When provided, this calculator will compute your Estimated Time of Arrival (ETA). Add Fuel Flow to also calculate total fuel consumption." />
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      value={distance}
-                      onChange={(e) => setDistance(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white"
-                      placeholder="Optional"
-                    />
-                    <span
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-                      style={{ color: "oklch(0.55 0.02 240)" }}
-                    >
-                      NM
-                    </span>
-                  </div>
-                </div>
-
-                {/* Fuel Flow */}
-                <div>
-                  <label
-                    className="flex items-center text-sm font-medium mb-2"
-                    style={{ color: "oklch(0.72 0.015 240)" }}
-                  >
-                    Fuel Flow
-                    <Tooltip content="Your aircraft's fuel consumption rate per hour (e.g., 8.5 gal/hr, 32 L/hr, or 24 kg/hr). The unit doesn't matter - fuel used will be in the same units. Find this in your POH or flight manual." />
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      value={fuelFlow}
-                      onChange={(e) => setFuelFlow(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white"
-                      placeholder="Optional"
-                    />
-                    <span
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-                      style={{ color: "oklch(0.55 0.02 240)" }}
-                    >
-                      units/hr
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Results */}
-          {results !== null && (
-            <div className="space-y-4">
-              {/* Primary Results */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Ground Speed */}
-                <div className="p-6 rounded-xl text-center bg-linear-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30">
-                  <div className="flex items-center justify-center mb-2">
-                    <p
-                      className="text-xs sm:text-sm font-semibold uppercase tracking-wider"
-                      style={{ color: "oklch(0.65 0.15 230)" }}
-                    >
-                      Ground Speed
-                    </p>
-                    <Tooltip content="Ground Speed (GS) is your actual speed over the ground, accounting for wind. This is what determines your actual time en route. When WCA > 10°, GS is calculated using ETAS for improved accuracy." />
-                  </div>
-                  <p
-                    className="text-3xl sm:text-4xl font-bold"
-                    style={{ color: "white" }}
-                  >
-                    {results.groundSpeed.toFixed(1)}
-                  </p>
-                  <p
-                    className="text-sm mt-1"
-                    style={{ color: "oklch(0.6 0.02 240)" }}
-                  >
-                    knots
-                  </p>
-                </div>
-
-                {/* Compass Heading */}
-                <div className="p-6 rounded-xl text-center bg-linear-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30">
-                  <div className="flex items-center justify-center mb-2">
-                    <p
-                      className="text-xs sm:text-sm font-semibold uppercase tracking-wider"
-                      style={{ color: "oklch(0.65 0.15 230)" }}
-                    >
-                      Compass Heading
-                    </p>
-                    <Tooltip content="The magnetic heading you should fly on your compass to maintain your desired track. This includes wind correction angle and magnetic variation. This is the heading to set in your cockpit." />
-                  </div>
-                  <p
-                    className="text-3xl sm:text-4xl font-bold"
-                    style={{ color: "white" }}
-                  >
-                    {results.compassHeading.toFixed(1)}°
-                  </p>
-                  <p
-                    className="text-sm mt-1"
-                    style={{ color: "oklch(0.6 0.02 240)" }}
-                  >
-                    magnetic
-                  </p>
-                </div>
-              </div>
-
-              {/* Secondary Results */}
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {/* Wind Correction Angle */}
-                <div className="p-4 rounded-xl bg-slate-900/50 border border-gray-600">
-                  <div className="flex items-center justify-center mb-1">
-                    <p
-                      className="text-xs font-medium"
-                      style={{ color: "oklch(0.65 0.15 230)" }}
-                    >
-                      Wind Correction Angle
-                    </p>
-                    <Tooltip content="The angle you need to adjust your heading to compensate for wind drift. Positive (+) means turn right, negative (-) means turn left from your true heading. When WCA exceeds 10°, ETAS is used for more accurate calculations." />
-                  </div>
-                  <p className="text-2xl font-bold" style={{ color: "white" }}>
-                    {results.windCorrectionAngle >= 0 ? "+" : ""}
-                    {results.windCorrectionAngle.toFixed(1)}°
-                  </p>
-                </div>
-
-                {/* ETAS - always shown, active when WCA > 10° */}
-                <div className={`p-4 rounded-xl ${results.etas ? 'bg-slate-900/50 border-amber-500/50' : 'bg-slate-900/30 border-gray-700'} border`}>
-                  <div className="flex items-center justify-center mb-1">
-                    <p
-                      className="text-xs font-medium"
-                      style={{ color: results.etas ? "oklch(0.75 0.15 60)" : "oklch(0.45 0.02 240)" }}
-                    >
-                      ETAS
-                    </p>
-                    <Tooltip content="Effective True Air Speed - Your actual effective forward speed when flying at a large crab angle. ETAS = TAS × cos(WCA). Only calculated when wind correction angle exceeds 10° for more accurate ground speed calculations." />
-                  </div>
-                  <p className="text-2xl font-bold" style={{ color: results.etas ? "white" : "oklch(0.35 0.02 240)" }}>
-                    {results.etas ? `${results.etas.toFixed(1)} kt` : '—'}
-                  </p>
-                  <p
-                    className="text-xs mt-1"
-                    style={{ color: "oklch(0.45 0.02 240)" }}
-                  >
-                    {results.etas ? 'effective TAS' : 'WCA ≤ 10°'}
-                  </p>
-                </div>
-
-                {/* Crosswind */}
-                <div className="p-4 rounded-xl bg-slate-900/50 border border-gray-600">
-                  <div className="flex items-center justify-center mb-1">
-                    <p
-                      className="text-xs font-medium"
-                      style={{ color: "oklch(0.65 0.15 230)" }}
-                    >
-                      Crosswind
-                    </p>
-                    <Tooltip content="The component of wind blowing perpendicular to your flight path. Important for runway selection and landing planning. 'From right' means wind from your right, 'from left' means wind from your left." />
-                  </div>
-                  <p className="text-2xl font-bold" style={{ color: "white" }}>
-                    {Math.abs(results.crosswind).toFixed(1)} kt
-                  </p>
-                  <p
-                    className="text-xs mt-1"
-                    style={{ color: "oklch(0.6 0.02 240)" }}
-                  >
-                    {results.crosswind > 0 ? "from right" : results.crosswind < 0 ? "from left" : "none"}
-                  </p>
-                </div>
-
-                {/* Headwind/Tailwind */}
-                <div className="p-4 rounded-xl bg-slate-900/50 border border-gray-600">
-                  <div className="flex items-center justify-center mb-1">
-                    <p
-                      className="text-xs font-medium"
-                      style={{ color: "oklch(0.65 0.15 230)" }}
-                    >
-                      {results.headwind >= 0 ? "Headwind" : "Tailwind"}
-                    </p>
-                    <Tooltip content="The component of wind blowing along your flight path. Headwind slows you down (increases flight time), tailwind speeds you up (decreases flight time). This directly affects your ground speed." />
-                  </div>
-                  <p className="text-2xl font-bold" style={{ color: "white" }}>
-                    {Math.abs(results.headwind).toFixed(1)} kt
-                  </p>
-                </div>
-              </div>
-
-              {/* ETA and Fuel Results - always shown, active when inputs provided */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                {/* ETA */}
-                <div className={`p-6 rounded-xl text-center ${results.eta !== undefined ? 'bg-linear-to-br from-emerald-500/10 to-green-500/10 border-emerald-500/30' : 'bg-slate-900/30 border-gray-700'} border`}>
-                  <div className="flex items-center justify-center mb-2">
-                    <p
-                      className="text-xs sm:text-sm font-semibold uppercase tracking-wider"
-                      style={{ color: results.eta !== undefined ? "oklch(0.7 0.15 150)" : "oklch(0.45 0.02 240)" }}
-                    >
-                      ETA
-                    </p>
-                    <Tooltip content="Estimated Time of Arrival based on your ground speed and distance. Displayed in hours and minutes format (e.g., 1:30 means 1 hour and 30 minutes). Accounts for wind effects on your ground speed. Requires Distance input." />
-                  </div>
-                  <p
-                    className="text-3xl sm:text-4xl font-bold"
-                    style={{ color: results.eta !== undefined ? "white" : "oklch(0.35 0.02 240)" }}
-                  >
-                    {results.eta !== undefined
-                      ? `${Math.floor(results.eta)}:${String(Math.round((results.eta % 1) * 60)).padStart(2, '0')}`
-                      : '—'}
-                  </p>
-                  <p
-                    className="text-sm mt-1"
-                    style={{ color: "oklch(0.45 0.02 240)" }}
-                  >
-                    {results.eta !== undefined ? 'hours' : 'enter distance'}
-                  </p>
-                </div>
-
-                {/* Fuel Used */}
-                <div className={`p-6 rounded-xl text-center ${results.fuelUsed !== undefined ? 'bg-linear-to-br from-emerald-500/10 to-green-500/10 border-emerald-500/30' : 'bg-slate-900/30 border-gray-700'} border`}>
-                  <div className="flex items-center justify-center mb-2">
-                    <p
-                      className="text-xs sm:text-sm font-semibold uppercase tracking-wider"
-                      style={{ color: results.fuelUsed !== undefined ? "oklch(0.7 0.15 150)" : "oklch(0.45 0.02 240)" }}
-                    >
-                      Fuel Used
-                    </p>
-                    <Tooltip content="Estimated fuel consumption for this leg based on your fuel flow rate and flight time. Units match your fuel flow input (gallons, liters, kg, etc.). Always add reserves as required by regulations! Requires Distance and Fuel Flow inputs." />
-                  </div>
-                  <p
-                    className="text-3xl sm:text-4xl font-bold"
-                    style={{ color: results.fuelUsed !== undefined ? "white" : "oklch(0.35 0.02 240)" }}
-                  >
-                    {results.fuelUsed !== undefined ? results.fuelUsed.toFixed(1) : '—'}
-                  </p>
-                  <p
-                    className="text-sm mt-1"
-                    style={{ color: "oklch(0.45 0.02 240)" }}
-                  >
-                    {results.fuelUsed !== undefined ? 'units' : 'enter dist & FF'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Share Button */}
-              <div className="text-center pt-2">
-                <button
-                  onClick={handleShare}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:brightness-110 active:scale-95 cursor-pointer"
-                  style={{
-                    backgroundColor: "oklch(0.65 0.15 230)",
-                    color: "oklch(0.145 0.02 240)",
-                  }}
-                >
-                  {shareSuccess ? (
-                    <>
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                      Copied!
-                    </>
-                  ) : (
-                    <>
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-                        />
-                      </svg>
-                      Share Result
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Note */}
-          <div className="mt-6 p-4 rounded-xl bg-slate-900/30 border border-gray-700">
-            <p
-              className="text-xs sm:text-sm leading-relaxed"
-              style={{ color: "oklch(0.6 0.02 240)" }}
-            >
-              <span className="font-semibold">Note:</span> This calculator uses
-              standard aviation wind triangle formulas. Wind direction is where
-              the wind is coming FROM. Positive WCA means turn right, negative
-              means turn left. {" "}
-              <span className="font-semibold">ETAS (Effective True Air Speed)</span> is
-              shown when WCA exceeds 10° to account for the reduced effective forward
-              speed when crabbing at large angles.
-            </p>
-          </div>
-        </div>
-
-      </main>
-
-      <Footer description="Aviation calculations based on wind triangle principles" />
-    </PageLayout>
-  );
+interface WindsPageProps {
+  searchParams: Promise<{
+    wd?: string;
+    ws?: string;
+    th?: string;
+    tas?: string;
+    md?: string;
+    dist?: string;
+    ff?: string;
+  }>;
 }
 
-export default function WindsPage() {
+export async function generateMetadata({ searchParams }: WindsPageProps): Promise<Metadata> {
+  const params = await searchParams;
+  const wd = params.wd || "";
+  const ws = params.ws || "";
+  const th = params.th || "";
+  const tas = params.tas || "";
+  const md = params.md || "";
+  const dist = params.dist || "";
+  const ff = params.ff || "";
+
+  // Build dynamic OG image URL with query params
+  const hasParams = wd || ws || th || tas;
+  const ogImageUrl = hasParams
+    ? `/api/og-wind?wd=${wd}&ws=${ws}&th=${th}&tas=${tas}&md=${md}&dist=${dist}&ff=${ff}`
+    : undefined;
+
+  return {
+    title: "Wind Calculator - Wind Correction Angle & Ground Speed | José's Aviation Calculators",
+    description: "Calculate wind correction angle (WCA), ground speed, compass heading, headwind, crosswind, and ETAS for accurate flight planning. Free online wind triangle calculator for pilots.",
+    keywords: [
+      "wind calculator",
+      "wind correction angle",
+      "WCA calculator",
+      "ground speed calculator",
+      "wind triangle",
+      "crosswind calculator",
+      "headwind calculator",
+      "compass heading calculator",
+      "flight planning calculator",
+      "aviation calculator",
+      "pilot calculator",
+      "magnetic deviation",
+      "ETAS calculator",
+      "effective true airspeed",
+      "wind component calculator",
+      "navigation calculator",
+      "aviation tools",
+      "pilot tools",
+    ],
+    authors: [{ name: "José", url: "https://twitter.com/jfroma" }],
+    creator: "José",
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
+    },
+    openGraph: {
+      title: "Wind Calculator - Wind Correction Angle & Ground Speed",
+      description: "Calculate wind correction angle, ground speed, compass heading, and wind components for flight planning",
+      type: "website",
+      siteName: "José's Aviation Calculators",
+      locale: "en_US",
+      images: ogImageUrl ? [{ url: ogImageUrl }] : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "Wind Calculator - Wind Correction Angle & Ground Speed",
+      description: "Calculate wind correction angle, ground speed, compass heading, and wind components for flight planning",
+      creator: "@jfroma",
+      images: ogImageUrl ? [{ url: ogImageUrl }] : undefined,
+    },
+    alternates: {
+      canonical: "/winds",
+    },
+    category: "Aviation",
+  };
+}
+
+export default async function WindsPage({ searchParams }: WindsPageProps) {
+  const params = await searchParams;
+  const wd = params.wd || "270";
+  const ws = params.ws || "20";
+  const th = params.th || "360";
+  const tas = params.tas || "100";
+  const md = params.md || "0";
+  const dist = params.dist || "";
+  const ff = params.ff || "";
+
   return (
     <Suspense
       fallback={
@@ -624,7 +106,15 @@ export default function WindsPage() {
         </div>
       }
     >
-      <WindCalculator />
+      <WindCalculatorClient
+        initialWd={wd}
+        initialWs={ws}
+        initialTh={th}
+        initialTas={tas}
+        initialMd={md}
+        initialDist={dist}
+        initialFf={ff}
+      />
     </Suspense>
   );
 }
