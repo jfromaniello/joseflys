@@ -4,6 +4,8 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Tooltip } from "../components/Tooltip";
+import { PageLayout } from "../components/PageLayout";
+import { Footer } from "../components/Footer";
 
 interface WindCalculations {
   crosswind: number;
@@ -168,7 +170,7 @@ function WindCalculator() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 bg-linear-to-br from-slate-900 via-blue-950 to-slate-900">
+    <PageLayout>
       {/* Header */}
       <div className="text-center mb-8 sm:mb-12">
         <div className="flex items-center justify-center gap-4 mb-3">
@@ -728,38 +730,10 @@ function WindCalculator() {
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="text-center mt-8">
-          <p
-            className="text-sm mb-3"
-            style={{ color: "oklch(0.52 0.015 240)" }}
-          >
-            Aviation calculations based on wind triangle principles
-          </p>
-          <div className="flex items-center justify-center gap-2 text-sm">
-            <span style={{ color: "oklch(0.52 0.015 240)" }}>
-              Feedback or kudos?
-            </span>
-            <a
-              href="https://twitter.com/jfroma"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 transition-colors hover:brightness-125"
-              style={{ color: "oklch(0.65 0.15 230)" }}
-            >
-              <svg
-                className="w-4 h-4"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-              </svg>
-              @jfroma
-            </a>
-          </div>
-        </div>
       </main>
-    </div>
+
+      <Footer description="Aviation calculations based on wind triangle principles" />
+    </PageLayout>
   );
 }
 
