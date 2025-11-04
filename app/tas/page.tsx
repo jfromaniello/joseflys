@@ -37,7 +37,6 @@ function Calculator() {
   const [cas, setCas] = useState<string>(searchParams.get("cas") || "90");
   const [oat, setOat] = useState<string>(searchParams.get("oat") || "8");
   const [altitude, setAltitude] = useState<string>(searchParams.get("alt") || "4000");
-  const [tas, setTas] = useState<number | null>(null);
   const [shareSuccess, setShareSuccess] = useState(false);
 
   // Update URL when parameters change
@@ -50,19 +49,15 @@ function Calculator() {
     router.replace(`?${params.toString()}`, { scroll: false });
   }, [cas, oat, altitude, router]);
 
-  // Calculate TAS
-  useEffect(() => {
-    const casVal = parseFloat(cas);
-    const oatVal = parseFloat(oat);
-    const altVal = parseFloat(altitude);
+  // Calculate TAS during render (not in useEffect to avoid cascading renders)
+  const casVal = parseFloat(cas);
+  const oatVal = parseFloat(oat);
+  const altVal = parseFloat(altitude);
 
-    if (!isNaN(casVal) && !isNaN(oatVal) && !isNaN(altVal)) {
-      const result = calculateTAS(casVal, oatVal, altVal);
-      setTas(result);
-    } else {
-      setTas(null);
-    }
-  }, [cas, oat, altitude]);
+  const tas =
+    !isNaN(casVal) && !isNaN(oatVal) && !isNaN(altVal)
+      ? calculateTAS(casVal, oatVal, altVal)
+      : null;
 
   // Share function
   const handleShare = async () => {
@@ -91,7 +86,7 @@ function Calculator() {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900"
+      className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 bg-linear-to-br from-slate-900 via-blue-950 to-slate-900"
     >
       {/* Header */}
       <div className="text-center mb-8 sm:mb-12">
@@ -270,7 +265,7 @@ function Calculator() {
 
           {/* Result */}
           {tas !== null && (
-            <div className="p-8 sm:p-10 rounded-xl text-center mb-6 bg-gradient-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30">
+            <div className="p-8 sm:p-10 rounded-xl text-center mb-6 bg-linear-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30">
               <div className="flex items-center justify-center mb-3">
                 <p
                   className="text-sm sm:text-base font-semibold uppercase tracking-wider"
@@ -393,7 +388,7 @@ function Calculator() {
 export default function Home() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900">
+      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-900 via-blue-950 to-slate-900">
         <div className="text-white">Loading...</div>
       </div>
     }>

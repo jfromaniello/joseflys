@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 bg-linear-to-br from-slate-900 via-blue-950 to-slate-900">
       {/* Header */}
       <div className="text-center mb-12 sm:mb-16">
         <div className="flex items-center justify-center gap-4 mb-4">
@@ -24,7 +24,7 @@ export default function Home() {
             </svg>
           </div>
           <h1 className="text-5xl sm:text-6xl font-bold" style={{ color: "white" }}>
-            José's Aviation Calculators
+            José&apos;s Aviation Calculators
           </h1>
         </div>
         <p
@@ -44,7 +44,7 @@ export default function Home() {
             className="group block p-8 rounded-2xl bg-slate-800/50 backdrop-blur-sm border-2 border-gray-700 hover:border-sky-500/50 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             <div className="flex items-start gap-4 mb-4">
-              <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-gradient-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30 group-hover:border-sky-500/50 transition-colors">
+              <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-linear-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30 group-hover:border-sky-500/50 transition-colors">
                 <svg
                   className="w-8 h-8"
                   fill="none"
@@ -96,7 +96,7 @@ export default function Home() {
             className="group block p-8 rounded-2xl bg-slate-800/50 backdrop-blur-sm border-2 border-gray-700 hover:border-sky-500/50 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             <div className="flex items-start gap-4 mb-4">
-              <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-gradient-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30 group-hover:border-sky-500/50 transition-colors">
+              <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-linear-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30 group-hover:border-sky-500/50 transition-colors">
                 <svg
                   className="w-8 h-8"
                   fill="none"

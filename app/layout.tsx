@@ -13,19 +13,56 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "José's Aviation Calculators",
+  title: "José's Aviation Calculators - TAS & Wind Calculator",
   description: "Experimental aviation calculators for TAS, wind correction, and flight planning. Calculate true airspeed, ground speed, and wind components.",
+  keywords: [
+    "aviation calculator",
+    "TAS calculator",
+    "true airspeed calculator",
+    "wind calculator",
+    "wind correction angle",
+    "ground speed calculator",
+    "flight planning",
+    "aviation tools",
+    "pilot calculator",
+    "airspeed calculator",
+    "headwind calculator",
+    "crosswind calculator",
+    "ISA calculator",
+    "compass heading calculator",
+    "WCA calculator",
+    "ETAS calculator",
+  ],
+  authors: [{ name: "José", url: "https://twitter.com/jfroma" }],
+  creator: "José",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
   openGraph: {
-    title: "José's Aviation Calculators",
+    title: "José's Aviation Calculators - TAS & Wind Calculator",
     description: "Experimental flight planning tools - TAS Calculator & Wind Calculator",
     type: "website",
     siteName: "José's Aviation Calculators",
+    locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "José's Aviation Calculators",
+    title: "José's Aviation Calculators - TAS & Wind Calculator",
     description: "Experimental flight planning tools - TAS Calculator & Wind Calculator",
+    creator: "@jfroma",
   },
+  alternates: {
+    canonical: "/",
+  },
+  category: "Aviation",
 };
 
 export default function RootLayout({

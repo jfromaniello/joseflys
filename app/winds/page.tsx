@@ -12,6 +12,8 @@ interface WindCalculations {
   compassHeading: number;
   groundSpeed: number;
   etas?: number;
+  eta?: number; // in hours
+  fuelUsed?: number; // in same units as fuel flow
 }
 
 function calculateWinds(
@@ -19,7 +21,9 @@ function calculateWinds(
   windSpeed: number,
   trueHeading: number,
   tas: number,
-  magDev: number
+  magDev: number,
+  distance?: number,
+  fuelFlow?: number
 ): WindCalculations {
   // Convert to radians
   const toRad = (deg: number) => (deg * Math.PI) / 180;
@@ -63,6 +67,20 @@ function calculateWinds(
   // Compass heading = True heading + WCA - Magnetic deviation
   const compassHeading = normalize(trueHeading + windCorrectionAngle - magDev);
 
+  // Calculate ETA if distance is provided
+  let eta: number | undefined;
+  let fuelUsed: number | undefined;
+
+  if (distance !== undefined && distance > 0) {
+    // ETA = Distance / Ground Speed (in hours)
+    eta = distance / groundSpeed;
+
+    // Fuel Used = Fuel Flow × ETA (only if fuel flow is provided)
+    if (fuelFlow !== undefined && fuelFlow > 0) {
+      fuelUsed = fuelFlow * eta;
+    }
+  }
+
   return {
     crosswind,
     headwind,
@@ -70,6 +88,8 @@ function calculateWinds(
     compassHeading,
     groundSpeed,
     etas,
+    eta,
+    fuelUsed,
   };
 }
 
@@ -88,7 +108,8 @@ function WindCalculator() {
   );
   const [tas, setTas] = useState<string>(searchParams.get("tas") || "100");
   const [magDev, setMagDev] = useState<string>(searchParams.get("md") || "0");
-  const [results, setResults] = useState<WindCalculations | null>(null);
+  const [distance, setDistance] = useState<string>(searchParams.get("dist") || "");
+  const [fuelFlow, setFuelFlow] = useState<string>(searchParams.get("ff") || "");
   const [shareSuccess, setShareSuccess] = useState(false);
 
   // Update URL when parameters change
@@ -99,32 +120,30 @@ function WindCalculator() {
     if (trueHeading) params.set("th", trueHeading);
     if (tas) params.set("tas", tas);
     if (magDev) params.set("md", magDev);
+    if (distance) params.set("dist", distance);
+    if (fuelFlow) params.set("ff", fuelFlow);
 
     router.replace(`?${params.toString()}`, { scroll: false });
-  }, [windDir, windSpeed, trueHeading, tas, magDev, router]);
+  }, [windDir, windSpeed, trueHeading, tas, magDev, distance, fuelFlow, router]);
 
-  // Calculate results
-  useEffect(() => {
-    const wd = parseFloat(windDir);
-    const ws = parseFloat(windSpeed);
-    const th = parseFloat(trueHeading);
-    const tasVal = parseFloat(tas);
-    const md = parseFloat(magDev);
+  // Calculate results during render (not in useEffect to avoid cascading renders)
+  const wd = parseFloat(windDir);
+  const ws = parseFloat(windSpeed);
+  const th = parseFloat(trueHeading);
+  const tasVal = parseFloat(tas);
+  const md = parseFloat(magDev);
+  const dist = distance ? parseFloat(distance) : undefined;
+  const ff = fuelFlow ? parseFloat(fuelFlow) : undefined;
 
-    if (
-      !isNaN(wd) &&
-      !isNaN(ws) &&
-      !isNaN(th) &&
-      !isNaN(tasVal) &&
-      !isNaN(md) &&
-      tasVal > 0
-    ) {
-      const calc = calculateWinds(wd, ws, th, tasVal, md);
-      setResults(calc);
-    } else {
-      setResults(null);
-    }
-  }, [windDir, windSpeed, trueHeading, tas, magDev]);
+  const results =
+    !isNaN(wd) &&
+    !isNaN(ws) &&
+    !isNaN(th) &&
+    !isNaN(tasVal) &&
+    !isNaN(md) &&
+    tasVal > 0
+      ? calculateWinds(wd, ws, th, tasVal, md, dist, ff)
+      : null;
 
   // Share function
   const handleShare = async () => {
@@ -149,7 +168,7 @@ function WindCalculator() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 bg-linear-to-br from-slate-900 via-blue-950 to-slate-900">
       {/* Header */}
       <div className="text-center mb-8 sm:mb-12">
         <div className="flex items-center justify-center gap-4 mb-3">
@@ -169,7 +188,7 @@ function WindCalculator() {
             </svg>
           </div>
           <h1 className="text-4xl sm:text-5xl font-bold" style={{ color: "white" }}>
-            José's Wind Calculator
+            José&apos;s Wind Calculator
           </h1>
         </div>
         <p
@@ -395,6 +414,58 @@ function WindCalculator() {
                     </span>
                   </div>
                 </div>
+
+                {/* Distance */}
+                <div>
+                  <label
+                    className="flex items-center text-sm font-medium mb-2"
+                    style={{ color: "oklch(0.72 0.015 240)" }}
+                  >
+                    Distance
+                    <Tooltip content="Flight distance in nautical miles. When provided, this calculator will compute your Estimated Time of Arrival (ETA). Add Fuel Flow to also calculate total fuel consumption." />
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      value={distance}
+                      onChange={(e) => setDistance(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white"
+                      placeholder="Optional"
+                    />
+                    <span
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
+                      style={{ color: "oklch(0.55 0.02 240)" }}
+                    >
+                      NM
+                    </span>
+                  </div>
+                </div>
+
+                {/* Fuel Flow */}
+                <div>
+                  <label
+                    className="flex items-center text-sm font-medium mb-2"
+                    style={{ color: "oklch(0.72 0.015 240)" }}
+                  >
+                    Fuel Flow
+                    <Tooltip content="Your aircraft's fuel consumption rate per hour (e.g., 8.5 gal/hr, 32 L/hr, or 24 kg/hr). The unit doesn't matter - fuel used will be in the same units. Find this in your POH or flight manual." />
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      value={fuelFlow}
+                      onChange={(e) => setFuelFlow(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white"
+                      placeholder="Optional"
+                    />
+                    <span
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
+                      style={{ color: "oklch(0.55 0.02 240)" }}
+                    >
+                      units/hr
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -405,7 +476,7 @@ function WindCalculator() {
               {/* Primary Results */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Ground Speed */}
-                <div className="p-6 rounded-xl text-center bg-gradient-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30">
+                <div className="p-6 rounded-xl text-center bg-linear-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30">
                   <div className="flex items-center justify-center mb-2">
                     <p
                       className="text-xs sm:text-sm font-semibold uppercase tracking-wider"
@@ -430,7 +501,7 @@ function WindCalculator() {
                 </div>
 
                 {/* Compass Heading */}
-                <div className="p-6 rounded-xl text-center bg-gradient-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30">
+                <div className="p-6 rounded-xl text-center bg-linear-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30">
                   <div className="flex items-center justify-center mb-2">
                     <p
                       className="text-xs sm:text-sm font-semibold uppercase tracking-wider"
@@ -456,7 +527,7 @@ function WindCalculator() {
               </div>
 
               {/* Secondary Results */}
-              <div className={`grid grid-cols-1 gap-4 ${results.etas ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-3'}`}>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {/* Wind Correction Angle */}
                 <div className="p-4 rounded-xl bg-slate-900/50 border border-gray-600">
                   <div className="flex items-center justify-center mb-1">
@@ -474,29 +545,27 @@ function WindCalculator() {
                   </p>
                 </div>
 
-                {/* ETAS - only shown when WCA > 10° */}
-                {results.etas && (
-                  <div className="p-4 rounded-xl bg-slate-900/50 border border-amber-500/50">
-                    <div className="flex items-center justify-center mb-1">
-                      <p
-                        className="text-xs font-medium"
-                        style={{ color: "oklch(0.75 0.15 60)" }}
-                      >
-                        ETAS
-                      </p>
-                      <Tooltip content="Effective True Air Speed - Your actual effective forward speed when flying at a large crab angle. ETAS = TAS × cos(WCA). Only shown when wind correction angle exceeds 10° for more accurate ground speed calculations." />
-                    </div>
-                    <p className="text-2xl font-bold" style={{ color: "white" }}>
-                      {results.etas.toFixed(1)} kt
-                    </p>
+                {/* ETAS - always shown, active when WCA > 10° */}
+                <div className={`p-4 rounded-xl ${results.etas ? 'bg-slate-900/50 border-amber-500/50' : 'bg-slate-900/30 border-gray-700'} border`}>
+                  <div className="flex items-center justify-center mb-1">
                     <p
-                      className="text-xs mt-1"
-                      style={{ color: "oklch(0.6 0.02 240)" }}
+                      className="text-xs font-medium"
+                      style={{ color: results.etas ? "oklch(0.75 0.15 60)" : "oklch(0.45 0.02 240)" }}
                     >
-                      effective TAS
+                      ETAS
                     </p>
+                    <Tooltip content="Effective True Air Speed - Your actual effective forward speed when flying at a large crab angle. ETAS = TAS × cos(WCA). Only calculated when wind correction angle exceeds 10° for more accurate ground speed calculations." />
                   </div>
-                )}
+                  <p className="text-2xl font-bold" style={{ color: results.etas ? "white" : "oklch(0.35 0.02 240)" }}>
+                    {results.etas ? `${results.etas.toFixed(1)} kt` : '—'}
+                  </p>
+                  <p
+                    className="text-xs mt-1"
+                    style={{ color: "oklch(0.45 0.02 240)" }}
+                  >
+                    {results.etas ? 'effective TAS' : 'WCA ≤ 10°'}
+                  </p>
+                </div>
 
                 {/* Crosswind */}
                 <div className="p-4 rounded-xl bg-slate-900/50 border border-gray-600">
@@ -533,6 +602,61 @@ function WindCalculator() {
                   </div>
                   <p className="text-2xl font-bold" style={{ color: "white" }}>
                     {Math.abs(results.headwind).toFixed(1)} kt
+                  </p>
+                </div>
+              </div>
+
+              {/* ETA and Fuel Results - always shown, active when inputs provided */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                {/* ETA */}
+                <div className={`p-6 rounded-xl text-center ${results.eta !== undefined ? 'bg-linear-to-br from-emerald-500/10 to-green-500/10 border-emerald-500/30' : 'bg-slate-900/30 border-gray-700'} border`}>
+                  <div className="flex items-center justify-center mb-2">
+                    <p
+                      className="text-xs sm:text-sm font-semibold uppercase tracking-wider"
+                      style={{ color: results.eta !== undefined ? "oklch(0.7 0.15 150)" : "oklch(0.45 0.02 240)" }}
+                    >
+                      ETA
+                    </p>
+                    <Tooltip content="Estimated Time of Arrival based on your ground speed and distance. Displayed in hours and minutes format (e.g., 1:30 means 1 hour and 30 minutes). Accounts for wind effects on your ground speed. Requires Distance input." />
+                  </div>
+                  <p
+                    className="text-3xl sm:text-4xl font-bold"
+                    style={{ color: results.eta !== undefined ? "white" : "oklch(0.35 0.02 240)" }}
+                  >
+                    {results.eta !== undefined
+                      ? `${Math.floor(results.eta)}:${String(Math.round((results.eta % 1) * 60)).padStart(2, '0')}`
+                      : '—'}
+                  </p>
+                  <p
+                    className="text-sm mt-1"
+                    style={{ color: "oklch(0.45 0.02 240)" }}
+                  >
+                    {results.eta !== undefined ? 'hours' : 'enter distance'}
+                  </p>
+                </div>
+
+                {/* Fuel Used */}
+                <div className={`p-6 rounded-xl text-center ${results.fuelUsed !== undefined ? 'bg-linear-to-br from-emerald-500/10 to-green-500/10 border-emerald-500/30' : 'bg-slate-900/30 border-gray-700'} border`}>
+                  <div className="flex items-center justify-center mb-2">
+                    <p
+                      className="text-xs sm:text-sm font-semibold uppercase tracking-wider"
+                      style={{ color: results.fuelUsed !== undefined ? "oklch(0.7 0.15 150)" : "oklch(0.45 0.02 240)" }}
+                    >
+                      Fuel Used
+                    </p>
+                    <Tooltip content="Estimated fuel consumption for this leg based on your fuel flow rate and flight time. Units match your fuel flow input (gallons, liters, kg, etc.). Always add reserves as required by regulations! Requires Distance and Fuel Flow inputs." />
+                  </div>
+                  <p
+                    className="text-3xl sm:text-4xl font-bold"
+                    style={{ color: results.fuelUsed !== undefined ? "white" : "oklch(0.35 0.02 240)" }}
+                  >
+                    {results.fuelUsed !== undefined ? results.fuelUsed.toFixed(1) : '—'}
+                  </p>
+                  <p
+                    className="text-sm mt-1"
+                    style={{ color: "oklch(0.45 0.02 240)" }}
+                  >
+                    {results.fuelUsed !== undefined ? 'units' : 'enter dist & FF'}
                   </p>
                 </div>
               </div>
@@ -643,7 +767,7 @@ export default function WindsPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900">
+        <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-900 via-blue-950 to-slate-900">
           <div className="text-white">Loading...</div>
         </div>
       }
