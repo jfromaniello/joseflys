@@ -39,16 +39,20 @@ export function ConversionCalculatorClient({
     window.history.replaceState(null, '', newUrl);
   }, [category, value, fromUnit]);
 
-  // Update fromUnit when category changes if current unit is invalid
-  useEffect(() => {
-    const currentCategory = categories[category];
-    const isValidUnit = currentCategory.units.some(
+  // Handler for category change that validates and updates fromUnit if needed
+  const handleCategoryChange = (newCategory: Category) => {
+    const newCategoryData = categories[newCategory];
+    const isValidUnit = newCategoryData.units.some(
       (u) => u.symbol === fromUnit
     );
+
+    setCategory(newCategory);
+
+    // If current unit is not valid in new category, reset to first unit
     if (!isValidUnit) {
-      setFromUnit(currentCategory.units[0].symbol);
+      setFromUnit(newCategoryData.units[0].symbol);
     }
-  }, [category, fromUnit]);
+  };
 
   const numValue = parseFloat(value);
   const results = !isNaN(numValue)
@@ -117,7 +121,7 @@ export function ConversionCalculatorClient({
               {(Object.keys(categories) as Category[]).map((cat) => (
                 <button
                   key={cat}
-                  onClick={() => setCategory(cat)}
+                  onClick={() => handleCategoryChange(cat)}
                   className={`px-4 py-3 rounded-xl font-medium transition-all cursor-pointer ${
                     category === cat
                       ? "shadow-lg"

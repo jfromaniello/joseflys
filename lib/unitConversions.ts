@@ -121,6 +121,18 @@ export const fuelUnits: UnitInfo[] = [
     toBase: (v) => v * 0.125,
     fromBase: (v) => v / 0.125,
   },
+  {
+    symbol: 'kg Jet A',
+    name: 'Kilograms Jet A/A-1',
+    toBase: (v) => v / 3.02833, // Jet A density: 0.80 kg/L × 3.78541 L/gal
+    fromBase: (v) => v * 3.02833,
+  },
+  {
+    symbol: 'kg 100LL',
+    name: 'Kilograms 100LL',
+    toBase: (v) => v / 2.72549, // 100LL density: 0.72 kg/L × 3.78541 L/gal
+    fromBase: (v) => v * 2.72549,
+  },
 ];
 
 // Temperature conversions
