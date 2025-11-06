@@ -1,34 +1,79 @@
+/**
+ * Result of course calculations including wind correction and fuel consumption
+ */
 export interface CourseCalculations {
+  /** Crosswind component in knots (positive = wind from right, negative = wind from left) */
   crosswind: number;
+  /** Headwind component in knots (positive = headwind, negative = tailwind) */
   headwind: number;
+  /** Wind correction angle in degrees (angle to compensate for crosswind) */
   windCorrectionAngle: number;
+  /** Compass heading in degrees (true heading + WCA + magnetic deviation) */
   compassHeading: number;
+  /** Ground speed in knots (TAS adjusted for wind) */
   groundSpeed: number;
+  /** Effective True Air Speed in knots (used when WCA > 10°) */
   etas?: number;
-  eta?: number; // in hours
-  fuelUsed?: number; // in same units as fuel flow
+  /** Estimated time of arrival in hours (time for this leg only) */
+  eta?: number;
+  /** Total fuel used in same units as fuel flow (cumulative if previousFuelUsed provided) */
+  fuelUsed?: number;
 }
 
+/**
+ * Waypoint definition for flight planning
+ */
 export interface Waypoint {
+  /** Name of the waypoint (e.g., "Rio Segundo", "KJFK") */
   name: string;
-  distance: number; // NM from start of leg
-}
-
-export interface WaypointResult {
-  name: string;
+  /** Distance from start of leg in nautical miles */
   distance: number;
-  timeSinceLast: number; // minutes
-  cumulativeTime: number; // minutes
-  eta?: string; // HHMM format
-  fuelUsed?: number; // cumulative fuel used to this point
 }
 
+/**
+ * Calculated waypoint information including time and fuel
+ */
+export interface WaypointResult {
+  /** Name of the waypoint */
+  name: string;
+  /** Distance from start of leg in nautical miles */
+  distance: number;
+  /** Time since last waypoint in minutes */
+  timeSinceLast: number;
+  /** Cumulative time from departure in minutes (includes elapsedMinutes if provided) */
+  cumulativeTime: number;
+  /** Estimated time of arrival in HHMM format (e.g., "1545" for 3:45 PM) */
+  eta?: string;
+  /** Cumulative fuel used to this waypoint (includes previousFuelUsed if provided) */
+  fuelUsed?: number;
+}
+
+/**
+ * Flight parameters for time and fuel calculations
+ */
 export interface FlightParameters {
-  departureTime?: string; // HHMM format
-  elapsedMinutes?: number; // minutes flown before this leg
-  previousFuelUsed?: number; // fuel already consumed in previous legs
+  /** Departure time in HHMM format (e.g., "1430" for 2:30 PM) */
+  departureTime?: string;
+  /** Minutes already flown before starting this leg (for multi-leg flights) */
+  elapsedMinutes?: number;
+  /** Fuel already consumed in previous legs (if provided, used instead of calculating from elapsedMinutes) */
+  previousFuelUsed?: number;
 }
 
+/**
+ * Calculate course parameters including wind correction, ground speed, and fuel consumption
+ *
+ * @param windDir - Wind direction in degrees (direction wind is coming FROM, 0-360)
+ * @param windSpeed - Wind speed in knots
+ * @param trueHeading - Desired true heading in degrees (0-360)
+ * @param tas - True airspeed in knots
+ * @param magDev - Magnetic deviation in degrees (negative for East, positive for West)
+ * @param distance - Distance to travel in nautical miles (optional, required for ETA and fuel calculations)
+ * @param fuelFlow - Fuel flow rate in GPH/LPH/PPH/KGH (optional, required for fuel calculations)
+ * @param elapsedMinutes - Minutes already flown before this leg (optional, for multi-leg flights)
+ * @param previousFuelUsed - Fuel already consumed in previous legs (optional, overrides elapsedMinutes calculation if provided)
+ * @returns CourseCalculations object with wind correction angle, ground speed, compass heading, and fuel used
+ */
 export function calculateCourse(
   windDir: number,
   windSpeed: number,
@@ -118,7 +163,14 @@ export function calculateCourse(
 }
 
 /**
- * Calculate waypoint times and fuel consumption
+ * Calculate waypoint times and fuel consumption for a flight leg
+ *
+ * @param waypoints - Array of waypoints with names and distances from start of leg
+ * @param groundSpeed - Ground speed in knots
+ * @param fuelFlow - Fuel flow rate in GPH/LPH/PPH/KGH (optional, required for fuel calculations)
+ * @param flightParams - Flight parameters including departure time, elapsed time, and previous fuel used
+ * @param totalDistance - Total distance of the leg in nautical miles (optional, adds "Arrival" waypoint if greater than last waypoint)
+ * @returns Array of WaypointResult with calculated times, ETAs, and fuel usage for each waypoint
  */
 export function calculateWaypoints(
   waypoints: Waypoint[],

@@ -1,17 +1,32 @@
 "use client";
 
+/**
+ * Props for the NewLegButton component
+ * Used to create a new leg with parameters carried over from the current leg
+ */
 interface NewLegButtonProps {
+  /** Magnetic deviation in degrees (e.g., "-5" for 5° East) */
   magDev: string;
+  /** Departure time in HHMM format (e.g., "1430" for 2:30 PM) */
   departureTime: string;
+  /** Compressed deviation table data to be carried over to the new leg */
   deviationTable: string;
+  /** Fuel flow rate (e.g., "8" for 8 GPH/LPH/PPH/KGH) */
   fuelFlow: string;
+  /** True airspeed (e.g., "120" for 120 KT) */
   tas: string;
+  /** Speed unit selected (kt, kmh, or mph) */
   speedUnit: string;
+  /** Fuel flow unit selected (gph, lph, pph, or kgh) */
   fuelUnit: string;
+  /** Total elapsed minutes at the end of current leg (cumulative flight time) */
   elapsedMinutes: number;
+  /** Wind direction in degrees (e.g., "180" for wind from south) */
   windDir: string;
+  /** Wind speed in knots (e.g., "25") */
   windSpeed: string;
-  fuelUsed?: number; // Total fuel used at the end of current leg
+  /** Total fuel used at the end of current leg (rounded to nearest integer in new leg) */
+  fuelUsed?: number;
 }
 
 export function NewLegButton({
