@@ -18,6 +18,7 @@ import { IntermediateResults } from "./components/IntermediateResults";
 import { PrimaryResults } from "./components/PrimaryResults";
 import { WaypointsResults } from "./components/WaypointsResults";
 import { ShareButton } from "../components/ShareButton";
+import { NewLegButton } from "../components/NewLegButton";
 import { toKnots } from "@/lib/speedConversion";
 
 interface CourseCalculatorClientProps {
@@ -346,6 +347,22 @@ export function CourseCalculatorClient({
                   showFuel={ff !== undefined && ff > 0}
                   showETA={departureTime.length === 4}
                 />
+              )}
+
+              {/* New Leg Button - only show if we have distance (completed leg) */}
+              {results.eta !== undefined && (
+                <div className="pt-4">
+                  <NewLegButton
+                    magDev={magDev}
+                    departureTime={departureTime}
+                    deviationTable={initialDevTable}
+                    fuelFlow={fuelFlow}
+                    tas={tas}
+                    speedUnit={speedUnit}
+                    fuelUnit={fuelUnit}
+                    elapsedMinutes={(elapsedMins || 0) + Math.round((results.eta || 0) * 60)}
+                  />
+                </div>
               )}
 
               {/* Share Button - after all results */}
