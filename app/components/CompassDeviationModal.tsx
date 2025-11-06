@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Fragment } from "react";
+import { Dialog, Transition } from "@headlessui/react";
 import { Tooltip } from "./Tooltip";
 
 export interface DeviationEntry {
@@ -30,8 +31,6 @@ export function CompassDeviationModal({
         ]
   );
   const [showCopiedMessage, setShowCopiedMessage] = useState(false);
-
-  if (!isOpen) return null;
 
   const addEntry = () => {
     setEntries([...entries, { forHeading: 0, steerHeading: 0 }]);
@@ -117,41 +116,73 @@ export function CompassDeviationModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-slate-800 border border-gray-700 shadow-2xl">
-        {/* Header */}
-        <div className="sticky top-0 bg-slate-800 border-b border-gray-700 p-6 z-10">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-2xl font-bold" style={{ color: "white" }}>
-              Compass Deviation Table
-            </h2>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-lg hover:bg-slate-700 transition-colors cursor-pointer"
-              style={{ color: "oklch(0.6 0.02 240)" }}
+    <Transition appear show={isOpen} as={Fragment}>
+      <Dialog as="div" className="relative z-50" onClose={onClose}>
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
+        </Transition.Child>
+
+        <div className="fixed inset-0 overflow-y-auto">
+          <div className="flex min-h-full items-center justify-center p-4">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 scale-95"
+              enterTo="opacity-100 scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 scale-100"
+              leaveTo="opacity-0 scale-95"
             >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          </div>
-          <div className="flex items-start gap-2">
-            <p className="text-sm" style={{ color: "oklch(0.6 0.02 240)" }}>
-              Enter compass deviation values from your aircraft&apos;s deviation card
-            </p>
-            <Tooltip content="The deviation card shows the difference between magnetic heading and compass heading due to aircraft magnetic interference. 'For' is the magnetic heading you want to fly, 'Steer' is what the compass should read. Add at least 2 entries for interpolation." />
-          </div>
-        </div>
+              <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-slate-800 border border-gray-700 shadow-2xl transition-all">
+                {/* Header */}
+                <div className="bg-slate-800 border-b border-gray-700 p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <Dialog.Title
+                      as="h2"
+                      className="text-2xl font-bold"
+                      style={{ color: "white" }}
+                    >
+                      Compass Deviation Table
+                    </Dialog.Title>
+                    <button
+                      onClick={onClose}
+                      className="p-2 rounded-lg hover:bg-slate-700 transition-colors cursor-pointer"
+                      style={{ color: "oklch(0.6 0.02 240)" }}
+                    >
+                      <svg
+                        className="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Dialog.Description
+                      as="p"
+                      className="text-sm"
+                      style={{ color: "oklch(0.6 0.02 240)" }}
+                    >
+                      Enter compass deviation values from your aircraft&apos;s deviation card
+                    </Dialog.Description>
+                    <Tooltip content="The deviation card shows the difference between magnetic heading and compass heading due to aircraft magnetic interference. 'For' is the magnetic heading you want to fly, 'Steer' is what the compass should read. Add at least 2 entries for interpolation." />
+                  </div>
+                </div>
 
         {/* Table */}
         <div className="p-6">
@@ -286,24 +317,28 @@ export function CompassDeviationModal({
           </div>
         </div>
 
-        {/* Footer Actions */}
-        <div className="sticky bottom-0 bg-slate-800 border-t border-gray-700 p-6 flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 py-3 px-6 rounded-xl font-medium border-2 border-gray-600 hover:bg-slate-700 transition-all cursor-pointer"
-            style={{ color: "white" }}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleApply}
-            className="flex-1 py-3 px-6 rounded-xl font-medium border-2 border-sky-500 bg-sky-500/20 hover:bg-sky-500/30 transition-all cursor-pointer"
-            style={{ color: "oklch(0.8 0.15 230)" }}
-          >
-            Apply Deviation Table
-          </button>
+                {/* Footer Actions */}
+                <div className="bg-slate-800 border-t border-gray-700 p-6 flex gap-3">
+                  <button
+                    onClick={onClose}
+                    className="flex-1 py-3 px-6 rounded-xl font-medium border-2 border-gray-600 hover:bg-slate-700 transition-all cursor-pointer"
+                    style={{ color: "white" }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleApply}
+                    className="flex-1 py-3 px-6 rounded-xl font-medium border-2 border-sky-500 bg-sky-500/20 hover:bg-sky-500/30 transition-all cursor-pointer"
+                    style={{ color: "oklch(0.8 0.15 230)" }}
+                  >
+                    Apply Deviation Table
+                  </button>
+                </div>
+              </Dialog.Panel>
+            </Transition.Child>
+          </div>
         </div>
-      </div>
-    </div>
+      </Dialog>
+    </Transition>
   );
 }

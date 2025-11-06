@@ -7,6 +7,7 @@ import { Navigation } from "../components/Navigation";
 import { calculateCourse, calculateWaypoints, Waypoint, FlightParameters } from "@/lib/courseCalculations";
 import { DeviationEntry } from "../components/CompassDeviationModal";
 import { WaypointsModal } from "../components/WaypointsModal";
+import { DistanceCalculatorModal } from "../components/DistanceCalculatorModal";
 import { calculateCompassCourse } from "@/lib/compassDeviation";
 import { compressForUrl, decompressFromUrl } from "@/lib/urlCompression";
 import { CourseSpeedInputs, SpeedUnit } from "./components/CourseSpeedInputs";
@@ -74,6 +75,7 @@ export function CourseCalculatorClient({
     (initialFuelUnit as FuelUnit) || 'gph'
   );
   const [isWaypointsModalOpen, setIsWaypointsModalOpen] = useState(false);
+  const [isDistanceModalOpen, setIsDistanceModalOpen] = useState(false);
 
   // Compass deviation table state - initialize from URL if available
   const [deviationTable, setDeviationTable] = useState<DeviationEntry[]>(() => {
@@ -180,6 +182,19 @@ export function CourseCalculatorClient({
     setWaypoints(exampleWaypoints);
   };
 
+  const handleDistanceCalculatorApply = (data: {
+    bearing: number;
+    distance: number;
+    fromName: string;
+    toName: string;
+  }) => {
+    setTrueHeading(data.bearing.toString());
+    setDistance(data.distance.toString());
+    if (!description) {
+      setDescription(`${data.fromName} to ${data.toName}`);
+    }
+  };
+
   const results =
     !isNaN(th) &&
     !isNaN(tasInKnots) &&
@@ -280,27 +295,65 @@ export function CourseCalculatorClient({
                   Calculate compass course, ground speed, and navigation data
                 </p>
               </div>
-              {/* Load Example Button */}
-              <button
-                onClick={loadExample}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed border-gray-600 hover:border-purple-500/50 hover:bg-purple-500/10 transition-all text-sm font-medium cursor-pointer whitespace-nowrap"
-                style={{ color: "oklch(0.75 0.15 300)" }}
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 10V3L4 14h7v7l9-11h-7z"
-                  />
-                </svg>
-                Load Example
-              </button>
+              {/* Buttons */}
+              <div className="flex gap-2">
+                {/* Distance Calculator Button */}
+                <div className="relative group">
+                  <button
+                    onClick={() => setIsDistanceModalOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed border-gray-600 hover:border-sky-500/50 hover:bg-sky-500/10 transition-all text-sm font-medium cursor-pointer whitespace-nowrap"
+                    style={{ color: "oklch(0.65 0.15 230)" }}
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+                      />
+                    </svg>
+                    Route Lookup
+                  </button>
+                  {/* Custom Tooltip */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none whitespace-nowrap border border-gray-700 z-50">
+                    Search for two cities or airports to automatically populate True Heading, Distance, and Description fields
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-slate-900"></div>
+                  </div>
+                </div>
+                {/* Load Example Button */}
+                <div className="relative group">
+                  <button
+                    onClick={loadExample}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed border-gray-600 hover:border-purple-500/50 hover:bg-purple-500/10 transition-all text-sm font-medium cursor-pointer whitespace-nowrap"
+                    style={{ color: "oklch(0.75 0.15 300)" }}
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                      />
+                    </svg>
+                    Example
+                  </button>
+                  {/* Custom Tooltip */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none whitespace-nowrap border border-gray-700 z-50">
+                    Load sample flight data to see how the calculator works
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-slate-900"></div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -469,6 +522,14 @@ export function CourseCalculatorClient({
         onApply={setWaypoints}
         initialWaypoints={waypoints}
         totalDistance={dist}
+      />
+
+      {/* Distance Calculator Modal */}
+      <DistanceCalculatorModal
+        isOpen={isDistanceModalOpen}
+        onClose={() => setIsDistanceModalOpen(false)}
+        onApply={handleDistanceCalculatorApply}
+        description="Search for cities or airports to populate True Heading, Distance, and Description fields for your flight plan"
       />
     </PageLayout>
   );

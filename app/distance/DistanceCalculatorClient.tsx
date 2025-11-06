@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { Tooltip } from "../components/Tooltip";
 import { PageLayout } from "../components/PageLayout";
 import { Footer } from "../components/Footer";
@@ -12,6 +13,16 @@ import {
   validateCoordinates,
   MAX_RECOMMENDED_DISTANCE_NM,
 } from "@/lib/distanceCalculations";
+
+// Dynamic import for DistanceMap to avoid SSR issues with Leaflet
+const DistanceMap = dynamic(() => import("./DistanceMap").then((mod) => mod.DistanceMap), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-96 rounded-xl bg-slate-800/50 border-2 border-gray-700 flex items-center justify-center">
+      <p className="text-gray-400">Loading map...</p>
+    </div>
+  ),
+});
 
 type InputMode = "search" | "coordinates";
 
@@ -82,6 +93,8 @@ export function DistanceCalculatorClient({
   const [toLon, setToLon] = useState(initialToLon || "");
   const [toSearching, setToSearching] = useState(false);
   const [toShowDropdown, setToShowDropdown] = useState(false);
+  const [showCopiedDistanceMessage, setShowCopiedDistanceMessage] = useState(false);
+  const [showCopiedBearingMessage, setShowCopiedBearingMessage] = useState(false);
 
   // Debounced search for "from" location
   useEffect(() => {
@@ -215,6 +228,30 @@ export function DistanceCalculatorClient({
     setToShowDropdown(false);
   }, []);
 
+  const handleCopyDistance = async () => {
+    if (distance !== null) {
+      try {
+        await navigator.clipboard.writeText(Math.round(distance).toString());
+        setShowCopiedDistanceMessage(true);
+        setTimeout(() => setShowCopiedDistanceMessage(false), 2000);
+      } catch (err) {
+        console.error("Failed to copy:", err);
+      }
+    }
+  };
+
+  const handleCopyBearing = async () => {
+    if (bearing !== null) {
+      try {
+        await navigator.clipboard.writeText(Math.round(bearing).toString().padStart(3, '0'));
+        setShowCopiedBearingMessage(true);
+        setTimeout(() => setShowCopiedBearingMessage(false), 2000);
+      } catch (err) {
+        console.error("Failed to copy:", err);
+      }
+    }
+  };
+
   // Build share URL
   const shareUrl = (() => {
     if (typeof window === "undefined") return "";
@@ -229,8 +266,8 @@ export function DistanceCalculatorClient({
   return (
     <PageLayout>
       {/* Header */}
-      <div className="text-center mb-8 sm:mb-12">
-        <div className="flex items-center justify-center gap-4 mb-3">
+      <div className="text-center mb-8 sm:mb-12 print:mb-3">
+        <div className="flex items-center justify-center gap-4 mb-3 print:mb-1">
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-slate-800/50 backdrop-blur-sm border border-gray-700">
             <svg
               className="w-9 h-9"
@@ -254,7 +291,7 @@ export function DistanceCalculatorClient({
           </h1>
         </div>
         <p
-          className="text-base sm:text-lg mb-4"
+          className="text-base sm:text-lg mb-4 print:mb-2 print:text-sm"
           style={{ color: "oklch(0.58 0.02 240)" }}
         >
           Calculate great circle distance and initial bearing between two points
@@ -262,11 +299,11 @@ export function DistanceCalculatorClient({
         <Navigation currentPage="distance" />
       </div>
 
-      <main className="w-full max-w-4xl">
+      <main className="w-full max-w-4xl print-hide-footer">
         <div className="rounded-2xl p-6 sm:p-8 shadow-2xl bg-slate-800/50 backdrop-blur-sm border border-gray-700">
           {/* Section Header */}
-          <div className="mb-6 pb-6 border-b border-gray-700">
-            <div className="flex items-center justify-between mb-2">
+          <div className="mb-6 pb-6 border-b border-gray-700 print:mb-3 print:pb-3">
+            <div className="flex items-center justify-between mb-2 print:mb-1">
               <h2
                 className="text-xl sm:text-2xl font-bold"
                 style={{ color: "white" }}
@@ -298,7 +335,7 @@ export function DistanceCalculatorClient({
                 </button>
               </div>
             </div>
-            <p className="text-sm" style={{ color: "oklch(0.58 0.02 240)" }}>
+            <p className="text-sm print:hidden" style={{ color: "oklch(0.58 0.02 240)" }}>
               {inputMode === "search"
                 ? "Search for cities or airports"
                 : "Enter coordinates directly"}
@@ -307,7 +344,7 @@ export function DistanceCalculatorClient({
 
           {/* Input Mode: Search */}
           {inputMode === "search" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 print:grid-cols-2 print:gap-4 print:mb-4">
               {/* From Location Search */}
               <div className="relative">
                 <label
@@ -454,7 +491,7 @@ export function DistanceCalculatorClient({
 
           {/* Input Mode: Coordinates */}
           {inputMode === "coordinates" && (
-            <div className="space-y-6 mb-8">
+            <div className="space-y-6 mb-8 print:grid print:grid-cols-2 print:gap-4 print:mb-4 print:space-y-0">
               {/* From Coordinates */}
               <div>
                 <label
@@ -566,12 +603,12 @@ export function DistanceCalculatorClient({
           {/* Results */}
           {distance !== null && bearing !== null && !distanceExceedsLimit && (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 print:grid-cols-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 print:grid-cols-2 print:gap-3 print:mb-4">
                 {/* Distance Result */}
-                <div className="p-6 rounded-xl text-center bg-linear-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30">
-                  <div className="flex items-center justify-center mb-2">
+                <div className="p-6 rounded-xl text-center bg-linear-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30 print:p-4">
+                  <div className="flex items-center justify-center mb-2 print:mb-1">
                     <p
-                      className="text-sm font-semibold uppercase tracking-wider"
+                      className="text-sm font-semibold uppercase tracking-wider print:text-xs"
                       style={{ color: "oklch(0.65 0.15 230)" }}
                     >
                       Distance
@@ -579,24 +616,31 @@ export function DistanceCalculatorClient({
                     <Tooltip content="Great circle distance calculated using the Haversine formula. This is the shortest distance over the Earth's surface." />
                   </div>
                   <p
-                    className="text-4xl sm:text-5xl font-bold mb-1"
+                    className="text-4xl sm:text-5xl font-bold mb-1 print:text-3xl print:mb-0"
                     style={{ color: "white" }}
                   >
-                    {distance.toFixed(1)}
+                    {Math.round(distance)}
                   </p>
                   <p
-                    className="text-base"
+                    className="text-base print:text-sm"
                     style={{ color: "oklch(0.6 0.02 240)" }}
                   >
                     nautical miles
                   </p>
+                  <button
+                    onClick={handleCopyDistance}
+                    className="mt-3 px-4 py-2 rounded-lg border-2 border-sky-500/50 hover:bg-sky-500/10 transition-all text-sm font-medium cursor-pointer print:hidden"
+                    style={{ color: "oklch(0.7 0.15 230)" }}
+                  >
+                    {showCopiedDistanceMessage ? "✓ Copied!" : "📋 Copy"}
+                  </button>
                 </div>
 
                 {/* Bearing Result */}
-                <div className="p-6 rounded-xl text-center bg-linear-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/30">
-                  <div className="flex items-center justify-center mb-2">
+                <div className="p-6 rounded-xl text-center bg-linear-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/30 print:p-4">
+                  <div className="flex items-center justify-center mb-2 print:mb-1">
                     <p
-                      className="text-sm font-semibold uppercase tracking-wider"
+                      className="text-sm font-semibold uppercase tracking-wider print:text-xs"
                       style={{ color: "rgb(192, 132, 252)" }}
                     >
                       Initial True Bearing
@@ -604,33 +648,54 @@ export function DistanceCalculatorClient({
                     <Tooltip content="The true bearing at departure. This is the initial course to fly from the departure point. Note: bearing changes along a great circle route." />
                   </div>
                   <p
-                    className="text-4xl sm:text-5xl font-bold mb-1"
+                    className="text-4xl sm:text-5xl font-bold mb-1 print:text-3xl print:mb-0"
                     style={{ color: "white" }}
                   >
-                    {bearing.toFixed(1)}°
+                    {Math.round(bearing).toString().padStart(3, '0')}°
                   </p>
                   <p
-                    className="text-base"
+                    className="text-base print:text-sm"
                     style={{ color: "oklch(0.6 0.02 240)" }}
                   >
                     true
                   </p>
+                  <button
+                    onClick={handleCopyBearing}
+                    className="mt-3 px-4 py-2 rounded-lg border-2 border-purple-500/50 hover:bg-purple-500/10 transition-all text-sm font-medium cursor-pointer print:hidden"
+                    style={{ color: "rgb(192, 132, 252)" }}
+                  >
+                    {showCopiedBearingMessage ? "✓ Copied!" : "📋 Copy"}
+                  </button>
                 </div>
               </div>
 
+              {/* Map */}
+              <div className="mt-6 print:mt-4">
+                <DistanceMap
+                  fromLat={fromLatNum}
+                  fromLon={fromLonNum}
+                  toLat={toLatNum}
+                  toLon={toLonNum}
+                  fromName={fromLocation?.name}
+                  toName={toLocation?.name}
+                />
+              </div>
+
               {/* Share Button */}
-              <ShareButton
-                shareData={{
-                  title: "José's Distance Calculator",
-                  text: `Distance: ${distance.toFixed(1)} NM, Bearing: ${bearing.toFixed(1)}°T`,
-                  url: shareUrl,
-                }}
-              />
+              <div className="mt-6">
+                <ShareButton
+                  shareData={{
+                    title: "José's Distance Calculator",
+                    text: `Distance: ${Math.round(distance)} NM, Bearing: ${Math.round(bearing).toString().padStart(3, '0')}°T`,
+                    url: shareUrl,
+                  }}
+                />
+              </div>
             </>
           )}
 
           {/* Note */}
-          <div className="mt-6 p-4 rounded-xl bg-slate-900/30 border border-gray-700">
+          <div className="mt-6 p-4 rounded-xl bg-slate-900/30 border border-gray-700 print:mt-3 print:p-3 print-last-element">
             <p
               className="text-xs sm:text-sm leading-relaxed"
               style={{ color: "oklch(0.6 0.02 240)" }}
@@ -640,7 +705,9 @@ export function DistanceCalculatorClient({
               initial bearing is accurate for distances under{" "}
               {MAX_RECOMMENDED_DISTANCE_NM} NM. For longer routes, consider
               that the bearing will change continuously along the great circle
-              path.
+              path.{" "}
+              <span className="font-semibold">All calculations are performed with decimal precision,
+              but displayed values are rounded to the nearest integer for clarity.</span>
             </p>
           </div>
         </div>

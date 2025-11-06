@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 
 :root {
   --background: #ffffff;
@@ -60,6 +61,17 @@ html {
     padding: 0.5rem 1rem !important;
     background: white !important;
     border-top: 1px solid #ddd !important;
+  }
+
+  /* Hide footer for single-page layouts (distance calculator) */
+  .print-hide-footer ~ footer,
+  .print-hide-footer ~ * footer {
+    display: none !important;
+  }
+
+  /* Remove bottom padding when footer is hidden */
+  body:has(.print-hide-footer) {
+    padding-bottom: 0 !important;
   }
 
   /* Make footer text smaller and black */
@@ -346,6 +358,128 @@ html {
   .print\:grid-cols-2 {
     grid-template-columns: repeat(2, 1fr) !important;
     display: grid !important;
+  }
+
+  /* Map styles for print */
+  .print\:h-\[320px\] {
+    height: 320px !important;
+  }
+
+  .print\:border {
+    border-width: 1px !important;
+  }
+
+  .print\:border-gray-400 {
+    border-color: #9ca3af !important;
+  }
+
+  /* Ensure leaflet map container renders in print */
+  .leaflet-container {
+    background: white !important;
+  }
+
+  /* Ensure leaflet controls are hidden in print */
+  .leaflet-control-zoom,
+  .leaflet-control-attribution {
+    display: none !important;
+  }
+
+  /* Distance calculator print optimizations */
+  .print\:mb-1 {
+    margin-bottom: 0.25rem !important;
+  }
+
+  .print\:mb-2 {
+    margin-bottom: 0.5rem !important;
+  }
+
+  .print\:mb-3 {
+    margin-bottom: 0.75rem !important;
+  }
+
+  .print\:mb-4 {
+    margin-bottom: 1rem !important;
+  }
+
+  .print\:pb-3 {
+    padding-bottom: 0.75rem !important;
+  }
+
+  .print\:text-sm {
+    font-size: 0.875rem !important;
+  }
+
+  .print\:gap-4 {
+    gap: 1rem !important;
+  }
+
+  .print\:space-y-0 > * + * {
+    margin-top: 0 !important;
+  }
+
+  .print\:grid {
+    display: grid !important;
+  }
+
+  .print\:gap-3 {
+    gap: 0.75rem !important;
+  }
+
+  .print\:p-4 {
+    padding: 1rem !important;
+  }
+
+  .print\:text-xs {
+    font-size: 0.75rem !important;
+  }
+
+  .print\:text-3xl {
+    font-size: 1.875rem !important;
+  }
+
+  .print\:mb-0 {
+    margin-bottom: 0 !important;
+  }
+
+  .print\:mt-4 {
+    margin-top: 1rem !important;
+  }
+
+  .print\:mt-3 {
+    margin-top: 0.75rem !important;
+  }
+
+  .print\:p-3 {
+    padding: 0.75rem !important;
+  }
+
+  /* Last element in print - cut everything after this */
+  .print-last-element {
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .print-last-element ~ * {
+    display: none !important;
+  }
+
+  /* Also hide everything after main in print */
+  @page {
+    margin: 0.5in;
+  }
+
+  main ~ * {
+    display: none !important;
+  }
+
+  /* Prevent extra pages */
+  html, body {
+    overflow: hidden !important;
+    height: auto !important;
+  }
+
+  body::after {
+    content: none !important;
   }
 
   /* Page breaks */
