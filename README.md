@@ -69,7 +69,7 @@ Calculate time, speed, distance, and fuel consumption. Solve any flight planning
 
 ### Prerequisites
 
-- Node.js 20 or higher
+- Node.js 24 (LTS) - specified in `.nvmrc`
 - npm, yarn, or pnpm
 
 ### Installation
@@ -91,11 +91,11 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ### Testing
 
 ```bash
-# Run tests in watch mode
+# Run tests once (CI/CD mode)
 npm test
 
-# Run tests once (CI mode)
-npm run test:run
+# Run tests in watch mode (development)
+npm run test:watch
 
 # Run tests with UI
 npm run test:ui
