@@ -17,6 +17,8 @@ interface PrimaryResultsProps {
   ogImageUrl?: string;
   speedUnit: SpeedUnit;
   fuelUnit: FuelUnit;
+  departureTime?: string;
+  elapsedMinutes?: number;
 }
 
 export function PrimaryResults({
@@ -29,7 +31,46 @@ export function PrimaryResults({
   ogImageUrl,
   speedUnit,
   fuelUnit,
+  departureTime,
+  elapsedMinutes,
 }: PrimaryResultsProps) {
+  // Calculate actual ETA if departure time is provided
+  const calculateETA = (): string | undefined => {
+    if (!departureTime || departureTime.length !== 4 || results.eta === undefined) {
+      return undefined;
+    }
+
+    const hours = parseInt(departureTime.substring(0, 2), 10);
+    const minutes = parseInt(departureTime.substring(2, 4), 10);
+    const totalMinutesFromDeparture = hours * 60 + minutes;
+
+    // Add elapsed minutes from previous legs
+    const elapsedMins = elapsedMinutes || 0;
+
+    // Add this leg's time in minutes
+    const legMinutes = Math.round(results.eta * 60);
+
+    const etaMinutes = totalMinutesFromDeparture + elapsedMins + legMinutes;
+    const etaHours = Math.floor(etaMinutes / 60) % 24;
+    const etaMins = etaMinutes % 60;
+
+    return `${String(etaHours).padStart(2, '0')}:${String(etaMins).padStart(2, '0')}`;
+  };
+
+  // Calculate total fuel including elapsed time
+  const calculateTotalFuel = (): number | undefined => {
+    if (results.fuelUsed === undefined) {
+      return undefined;
+    }
+
+    // results.fuelUsed already includes elapsed time in the calculation
+    // because it's calculated from total cumulative time
+    return results.fuelUsed;
+  };
+
+  const etaDisplay = calculateETA();
+  const totalFuel = calculateTotalFuel();
+
   return (
     <div>
       <h3 className="text-sm font-semibold mb-3 uppercase tracking-wide" style={{ color: "oklch(0.65 0.15 230)" }}>
@@ -103,13 +144,15 @@ export function PrimaryResults({
               >
                 ETA
               </p>
-              <Tooltip content="Estimated Time of Arrival based on your ground speed and distance. Displayed in hours and minutes format (e.g., 1:30 means 1 hour and 30 minutes). Accounts for wind effects on your ground speed. Requires Distance input." />
+              <Tooltip content="Estimated Time of Arrival. When departure time is set, shows actual arrival time (HHMM format). Without departure time, shows flight duration in hours and minutes. Includes elapsed time from previous legs." />
             </div>
             <p
               className="text-3xl sm:text-4xl font-bold"
               style={{ color: results.eta !== undefined ? "white" : "oklch(0.35 0.02 240)" }}
             >
-              {results.eta !== undefined
+              {etaDisplay
+                ? etaDisplay
+                : results.eta !== undefined
                 ? `${Math.floor(results.eta)}:${String(Math.round((results.eta % 1) * 60)).padStart(2, '0')}`
                 : '—'}
             </p>
@@ -117,46 +160,34 @@ export function PrimaryResults({
               className="text-sm mt-1"
               style={{ color: "oklch(0.45 0.02 240)" }}
             >
-              {results.eta !== undefined ? 'hours' : 'enter distance'}
+              {etaDisplay ? '24h time' : results.eta !== undefined ? 'hours' : 'enter distance'}
             </p>
           </div>
 
           {/* Fuel Used */}
-          <div className={`p-6 rounded-xl text-center ${results.fuelUsed !== undefined ? 'bg-linear-to-br from-emerald-500/10 to-green-500/10 border-emerald-500/30' : 'bg-slate-900/30 border-gray-700'} border`}>
+          <div className={`p-6 rounded-xl text-center ${totalFuel !== undefined ? 'bg-linear-to-br from-emerald-500/10 to-green-500/10 border-emerald-500/30' : 'bg-slate-900/30 border-gray-700'} border`}>
             <div className="flex items-center justify-center mb-2">
               <p
                 className="text-xs sm:text-sm font-semibold uppercase tracking-wider"
-                style={{ color: results.fuelUsed !== undefined ? "oklch(0.7 0.15 150)" : "oklch(0.45 0.02 240)" }}
+                style={{ color: totalFuel !== undefined ? "oklch(0.7 0.15 150)" : "oklch(0.45 0.02 240)" }}
               >
-                Fuel Used
+                Total Fuel Used
               </p>
-              <Tooltip content="Estimated fuel consumption for this leg based on your fuel flow rate and flight time. Units match your fuel flow input (gallons, liters, kg, etc.). Always add reserves as required by regulations! Requires Distance and Fuel Flow inputs." />
+              <Tooltip content="Total cumulative fuel consumption including this leg and any previous legs (based on elapsed time). Units match your fuel flow input. Always add reserves as required by regulations! Requires Distance and Fuel Flow inputs." />
             </div>
             <p
               className="text-3xl sm:text-4xl font-bold"
-              style={{ color: results.fuelUsed !== undefined ? "white" : "oklch(0.35 0.02 240)" }}
+              style={{ color: totalFuel !== undefined ? "white" : "oklch(0.35 0.02 240)" }}
             >
-              {results.fuelUsed !== undefined ? Math.round(results.fuelUsed) : '—'}
+              {totalFuel !== undefined ? Math.round(totalFuel) : '—'}
             </p>
             <p
               className="text-sm mt-1"
               style={{ color: "oklch(0.45 0.02 240)" }}
             >
-              {results.fuelUsed !== undefined ? getFuelResultUnit(fuelUnit) : 'enter dist & FF'}
+              {totalFuel !== undefined ? getFuelResultUnit(fuelUnit) : 'enter dist & FF'}
             </p>
           </div>
-        </div>
-
-        {/* Share Button */}
-        <div className="pt-2">
-          <ShareButton
-            shareData={{
-              title: "José's Course Calculator",
-              text: `Wind: ${windDir}° at ${windSpeed} kt, Heading: ${trueHeading}° → GS: ${results?.groundSpeed.toFixed(1)} kt`,
-              url: typeof window !== "undefined" ? window.location.href : "",
-            }}
-            ogImageUrl={ogImageUrl}
-          />
         </div>
       </div>
     </div>

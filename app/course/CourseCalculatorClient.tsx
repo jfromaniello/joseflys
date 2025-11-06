@@ -4,16 +4,20 @@ import { useState, useEffect } from "react";
 import { PageLayout } from "../components/PageLayout";
 import { Footer } from "../components/Footer";
 import { Navigation } from "../components/Navigation";
-import { calculateCourse } from "@/lib/courseCalculations";
+import { calculateCourse, calculateWaypoints, Waypoint, FlightParameters } from "@/lib/courseCalculations";
 import { DeviationEntry } from "../components/CompassDeviationModal";
+import { WaypointsModal } from "../components/WaypointsModal";
 import { calculateCompassCourse } from "@/lib/compassDeviation";
 import { compressForUrl, decompressFromUrl } from "@/lib/urlCompression";
 import { CourseSpeedInputs, SpeedUnit } from "./components/CourseSpeedInputs";
 import { WindInputs } from "./components/WindInputs";
 import { CorrectionsInputs } from "./components/CorrectionsInputs";
 import { RangeFuelInputs, FuelUnit } from "./components/RangeFuelInputs";
+import { FlightParametersInputs } from "./components/FlightParametersInputs";
 import { IntermediateResults } from "./components/IntermediateResults";
 import { PrimaryResults } from "./components/PrimaryResults";
+import { WaypointsResults } from "./components/WaypointsResults";
+import { ShareButton } from "../components/ShareButton";
 import { toKnots } from "@/lib/speedConversion";
 
 interface CourseCalculatorClientProps {
@@ -28,6 +32,9 @@ interface CourseCalculatorClientProps {
   initialDesc: string;
   initialSpeedUnit: string;
   initialFuelUnit: string;
+  initialWaypoints: string;
+  initialDepTime: string;
+  initialElapsedMin: string;
 }
 
 export function CourseCalculatorClient({
@@ -42,6 +49,9 @@ export function CourseCalculatorClient({
   initialDesc,
   initialSpeedUnit,
   initialFuelUnit,
+  initialWaypoints,
+  initialDepTime,
+  initialElapsedMin,
 }: CourseCalculatorClientProps) {
   const [trueHeading, setTrueHeading] = useState<string>(initialTh);
   const [tas, setTas] = useState<string>(initialTas);
@@ -51,18 +61,36 @@ export function CourseCalculatorClient({
   const [distance, setDistance] = useState<string>(initialDist);
   const [fuelFlow, setFuelFlow] = useState<string>(initialFf);
   const [description, setDescription] = useState<string>(initialDesc);
+  const [departureTime, setDepartureTime] = useState<string>(initialDepTime);
+  const [elapsedMinutes, setElapsedMinutes] = useState<string>(initialElapsedMin);
   const [speedUnit, setSpeedUnit] = useState<SpeedUnit>(
     (initialSpeedUnit as SpeedUnit) || 'kt'
   );
   const [fuelUnit, setFuelUnit] = useState<FuelUnit>(
     (initialFuelUnit as FuelUnit) || 'gph'
   );
+  const [isWaypointsModalOpen, setIsWaypointsModalOpen] = useState(false);
 
   // Compass deviation table state - initialize from URL if available
   const [deviationTable, setDeviationTable] = useState<DeviationEntry[]>(() => {
     if (initialDevTable) {
       try {
         const decompressed = decompressFromUrl(initialDevTable);
+        if (Array.isArray(decompressed)) {
+          return decompressed;
+        }
+      } catch {
+        // Invalid data, ignore
+      }
+    }
+    return [];
+  });
+
+  // Waypoints state - initialize from URL if available
+  const [waypoints, setWaypoints] = useState<Waypoint[]>(() => {
+    if (initialWaypoints) {
+      try {
+        const decompressed = decompressFromUrl(initialWaypoints);
         if (Array.isArray(decompressed)) {
           return decompressed;
         }
@@ -84,6 +112,8 @@ export function CourseCalculatorClient({
     if (distance) params.set("dist", distance);
     if (fuelFlow) params.set("ff", fuelFlow);
     if (description) params.set("desc", description);
+    if (departureTime) params.set("depTime", departureTime);
+    if (elapsedMinutes) params.set("elapsedMin", elapsedMinutes);
     if (speedUnit !== 'kt') params.set("unit", speedUnit);
     if (fuelUnit !== 'gph') params.set("funit", fuelUnit);
 
@@ -95,10 +125,18 @@ export function CourseCalculatorClient({
       }
     }
 
+    // Add waypoints if they exist (compressed)
+    if (waypoints.length > 0) {
+      const compressed = compressForUrl(waypoints);
+      if (compressed) {
+        params.set("waypoints", compressed);
+      }
+    }
+
     // Use window.history.replaceState instead of router.replace to avoid server requests
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState(null, '', newUrl);
-  }, [trueHeading, tas, windDir, windSpeed, magDev, distance, fuelFlow, description, deviationTable, speedUnit, fuelUnit]);
+  }, [trueHeading, tas, windDir, windSpeed, magDev, distance, fuelFlow, description, departureTime, elapsedMinutes, deviationTable, waypoints, speedUnit, fuelUnit]);
 
   // Calculate results during render (not in useEffect to avoid cascading renders)
   const th = parseFloat(trueHeading);
@@ -111,11 +149,13 @@ export function CourseCalculatorClient({
   const dist = distance ? parseFloat(distance) : undefined;
   const ff = fuelFlow ? parseFloat(fuelFlow) : undefined;
 
+  const elapsedMins = elapsedMinutes ? parseInt(elapsedMinutes) : undefined;
+
   const results =
     !isNaN(th) &&
     !isNaN(tasInKnots) &&
     tasInKnots > 0
-      ? calculateCourse(wd, ws, th, tasInKnots, md, dist, ff)
+      ? calculateCourse(wd, ws, th, tasInKnots, md, dist, ff, elapsedMins)
       : null;
 
   // Calculate compass course when deviation table is available and results exist
@@ -123,6 +163,17 @@ export function CourseCalculatorClient({
     results && deviationTable.length >= 2
       ? calculateCompassCourse(results.compassHeading, deviationTable)
       : null;
+
+  // Calculate waypoint results
+  const flightParams: FlightParameters = {
+    departureTime: departureTime || undefined,
+    elapsedMinutes: elapsedMinutes ? parseInt(elapsedMinutes) : undefined,
+  };
+
+  const waypointResults =
+    results && waypoints.length > 0 && dist !== undefined
+      ? calculateWaypoints(waypoints, results.groundSpeed, ff, flightParams)
+      : [];
 
 
   // Build OG image URL for download
@@ -249,6 +300,16 @@ export function CourseCalculatorClient({
               setFuelFlow={setFuelFlow}
               fuelUnit={fuelUnit}
               setFuelUnit={setFuelUnit}
+              onWaypointsClick={() => setIsWaypointsModalOpen(true)}
+              waypointsCount={waypoints.length}
+            />
+
+            {/* Flight Parameters */}
+            <FlightParametersInputs
+              departureTime={departureTime}
+              setDepartureTime={setDepartureTime}
+              elapsedMinutes={elapsedMinutes}
+              setElapsedMinutes={setElapsedMinutes}
             />
           </div>
 
@@ -256,7 +317,11 @@ export function CourseCalculatorClient({
           {results !== null && (
             <div className="space-y-6">
               {/* Intermediate Results */}
-              <IntermediateResults results={results} />
+              <IntermediateResults
+                results={results}
+                fuelUnit={fuelUnit}
+                fuelFlow={ff}
+              />
 
               {/* Primary Results */}
               <PrimaryResults
@@ -269,7 +334,31 @@ export function CourseCalculatorClient({
                 ogImageUrl={ogImageUrl}
                 speedUnit={speedUnit}
                 fuelUnit={fuelUnit}
+                departureTime={departureTime}
+                elapsedMinutes={elapsedMins}
               />
+
+              {/* Waypoints Results */}
+              {waypointResults.length > 0 && (
+                <WaypointsResults
+                  waypointResults={waypointResults}
+                  fuelUnit={fuelUnit}
+                  showFuel={ff !== undefined && ff > 0}
+                  showETA={departureTime.length === 4}
+                />
+              )}
+
+              {/* Share Button - after all results */}
+              <div className="pt-2">
+                <ShareButton
+                  shareData={{
+                    title: "José's Course Calculator",
+                    text: `Wind: ${windDir}° at ${windSpeed} kt, Heading: ${trueHeading}° → GS: ${results?.groundSpeed.toFixed(1)} kt`,
+                    url: typeof window !== "undefined" ? window.location.href : "",
+                  }}
+                  ogImageUrl={ogImageUrl}
+                />
+              </div>
             </div>
           )}
 
@@ -295,6 +384,15 @@ export function CourseCalculatorClient({
       </main>
 
       <Footer description="Aviation calculations based on wind triangle principles" />
+
+      {/* Waypoints Modal */}
+      <WaypointsModal
+        isOpen={isWaypointsModalOpen}
+        onClose={() => setIsWaypointsModalOpen(false)}
+        onApply={setWaypoints}
+        initialWaypoints={waypoints}
+        totalDistance={dist}
+      />
     </PageLayout>
   );
 }

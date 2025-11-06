@@ -10,6 +10,8 @@ interface RangeFuelInputsProps {
   setFuelFlow: (value: string) => void;
   fuelUnit: FuelUnit;
   setFuelUnit: (unit: FuelUnit) => void;
+  onWaypointsClick?: () => void;
+  waypointsCount?: number;
 }
 
 export function RangeFuelInputs({
@@ -19,13 +21,17 @@ export function RangeFuelInputs({
   setFuelFlow,
   fuelUnit,
   setFuelUnit,
+  onWaypointsClick,
+  waypointsCount = 0,
 }: RangeFuelInputsProps) {
   return (
     <div>
       <h3 className="text-sm font-semibold mb-3 uppercase tracking-wide" style={{ color: "oklch(0.65 0.15 230)" }}>
         Range & Fuel
       </h3>
-      <div className="grid grid-cols-1 lg:grid-cols-[10.5rem_12rem_2rem_10.5rem_6rem_5rem] gap-x-4 gap-y-4 lg:items-center">
+
+      {/* First Row: Distance + Waypoints Button */}
+      <div className="grid grid-cols-1 lg:grid-cols-[10.5rem_12rem_2rem_10.5rem_12rem] gap-x-4 gap-y-4 lg:items-center mb-4">
         {/* Distance Label */}
         <label
           className="flex items-center text-sm font-medium mb-2 lg:mb-0 lg:col-span-1 col-span-1"
@@ -55,7 +61,47 @@ export function RangeFuelInputs({
         {/* Gap */}
         <div className="hidden lg:block"></div>
 
-        {/* Fuel Flow Label - Full width on mobile */}
+        {/* Waypoints Label */}
+        {onWaypointsClick && (
+          <label
+            className="flex items-center text-sm font-medium mb-2 lg:mb-0 lg:col-span-1 col-span-1"
+            style={{ color: "oklch(0.72 0.015 240)" }}
+          >
+            Waypoints
+            <Tooltip content="Define checkpoints along your route to track estimated times and fuel consumption at specific points. Perfect for VFR navigation planning!" />
+          </label>
+        )}
+
+        {/* Waypoints Button */}
+        {onWaypointsClick && (
+          <button
+            onClick={onWaypointsClick}
+            className={`w-full px-4 py-3 rounded-xl transition-all text-base font-medium border-2 cursor-pointer ${
+              waypointsCount > 0
+                ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
+                : "border-gray-600 bg-slate-900/50 hover:border-sky-500/50 hover:bg-sky-500/5"
+            }`}
+            style={
+              waypointsCount === 0
+                ? { color: "oklch(0.7 0.02 240)" }
+                : undefined
+            }
+          >
+            {waypointsCount > 0 ? (
+              <div className="flex flex-col items-center">
+                <span>✓ Waypoints Set</span>
+                <span className="text-xs mt-0.5">{waypointsCount} waypoint{waypointsCount !== 1 ? 's' : ''}</span>
+              </div>
+            ) : (
+              "Set Waypoints"
+            )}
+          </button>
+        )}
+      </div>
+
+      {/* Second Row: Fuel Flow */}
+      <div className="grid grid-cols-1 lg:grid-cols-[10.5rem_6rem_5rem] gap-x-4 gap-y-4 lg:items-center">
+        {/* Fuel Flow Label */}
         <label
           className="flex items-center text-sm font-medium mb-2 lg:mb-0 lg:col-span-1 col-span-1"
           style={{ color: "oklch(0.72 0.015 240)" }}

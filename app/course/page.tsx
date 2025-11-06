@@ -15,6 +15,9 @@ interface WindsPageProps {
     desc?: string; // Optional description
     unit?: string; // Speed unit (kt, kmh, mph)
     funit?: string; // Fuel unit (gph, lph, pph, kgh)
+    waypoints?: string; // JSON encoded waypoints
+    depTime?: string; // Departure time HHMM
+    elapsedMin?: string; // Elapsed minutes
   }>;
 }
 
@@ -112,6 +115,9 @@ export default async function WindsPage({ searchParams }: WindsPageProps) {
   const desc = params.desc || "";
   const unit = params.unit || "kt";
   const funit = params.funit || "gph";
+  const waypoints = params.waypoints || "";
+  const depTime = params.depTime || "";
+  const elapsedMin = params.elapsedMin || "";
 
   return (
     <Suspense
@@ -133,6 +139,9 @@ export default async function WindsPage({ searchParams }: WindsPageProps) {
         initialDesc={desc}
         initialSpeedUnit={unit}
         initialFuelUnit={funit}
+        initialWaypoints={waypoints}
+        initialDepTime={depTime}
+        initialElapsedMin={elapsedMin}
       />
     </Suspense>
   );

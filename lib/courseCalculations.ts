@@ -9,6 +9,25 @@ export interface CourseCalculations {
   fuelUsed?: number; // in same units as fuel flow
 }
 
+export interface Waypoint {
+  name: string;
+  distance: number; // NM from start of leg
+}
+
+export interface WaypointResult {
+  name: string;
+  distance: number;
+  timeSinceLast: number; // minutes
+  cumulativeTime: number; // minutes
+  eta?: string; // HHMM format
+  fuelUsed?: number; // cumulative fuel used to this point
+}
+
+export interface FlightParameters {
+  departureTime?: string; // HHMM format
+  elapsedMinutes?: number; // minutes flown before this leg
+}
+
 export function calculateCourse(
   windDir: number,
   windSpeed: number,
@@ -16,7 +35,8 @@ export function calculateCourse(
   tas: number,
   magDev: number,
   distance?: number,
-  fuelFlow?: number
+  fuelFlow?: number,
+  elapsedMinutes?: number
 ): CourseCalculations {
   // Convert to radians
   const toRad = (deg: number) => (deg * Math.PI) / 180;
@@ -66,12 +86,14 @@ export function calculateCourse(
   let fuelUsed: number | undefined;
 
   if (distance !== undefined && distance > 0) {
-    // ETA = Distance / Ground Speed (in hours)
+    // ETA = Distance / Ground Speed (in hours) - this is just for THIS leg
     eta = distance / groundSpeed;
 
-    // Fuel Used = Fuel Flow × ETA (only if fuel flow is provided)
+    // Fuel Used = Fuel Flow × Total Time (including elapsed time from previous legs)
     if (fuelFlow !== undefined && fuelFlow > 0) {
-      fuelUsed = fuelFlow * eta;
+      const elapsedHours = (elapsedMinutes || 0) / 60;
+      const totalHours = elapsedHours + eta;
+      fuelUsed = fuelFlow * totalHours;
     }
   }
 
@@ -85,4 +107,80 @@ export function calculateCourse(
     eta,
     fuelUsed,
   };
+}
+
+/**
+ * Calculate waypoint times and fuel consumption
+ */
+export function calculateWaypoints(
+  waypoints: Waypoint[],
+  groundSpeed: number,
+  fuelFlow?: number,
+  flightParams?: FlightParameters
+): WaypointResult[] {
+  if (waypoints.length === 0 || groundSpeed <= 0) {
+    return [];
+  }
+
+  // Sort waypoints by distance
+  const sortedWaypoints = [...waypoints].sort((a, b) => a.distance - b.distance);
+
+  const results: WaypointResult[] = [];
+  let previousDistance = 0;
+
+  sortedWaypoints.forEach((waypoint) => {
+    // Time to this waypoint from previous waypoint (in minutes)
+    const distanceSinceLast = waypoint.distance - previousDistance;
+    const timeSinceLast = Math.round((distanceSinceLast / groundSpeed) * 60);
+
+    // Cumulative time from start of leg + any elapsed time before this leg
+    const timeFromLegStart = Math.round((waypoint.distance / groundSpeed) * 60);
+    const elapsedMinutes = flightParams?.elapsedMinutes || 0;
+    const cumulativeTime = elapsedMinutes + timeFromLegStart;
+
+    // Calculate ETA if departure time is provided
+    let eta: string | undefined;
+    if (flightParams?.departureTime) {
+      eta = addMinutesToTime(flightParams.departureTime, cumulativeTime);
+    }
+
+    // Calculate cumulative fuel used to this waypoint
+    let fuelUsed: number | undefined;
+    if (fuelFlow !== undefined && fuelFlow > 0) {
+      const totalHours = cumulativeTime / 60;
+      fuelUsed = Math.round(fuelFlow * totalHours);
+    }
+
+    results.push({
+      name: waypoint.name,
+      distance: waypoint.distance,
+      timeSinceLast,
+      cumulativeTime,
+      eta,
+      fuelUsed,
+    });
+
+    previousDistance = waypoint.distance;
+  });
+
+  return results;
+}
+
+/**
+ * Add minutes to a time in HHMM format
+ */
+function addMinutesToTime(timeHHMM: string, minutesToAdd: number): string {
+  // Parse HHMM
+  const hours = parseInt(timeHHMM.substring(0, 2), 10);
+  const minutes = parseInt(timeHHMM.substring(2, 4), 10);
+
+  // Calculate total minutes
+  const totalMinutes = hours * 60 + minutes + minutesToAdd;
+
+  // Convert back to hours and minutes (24-hour format with wrap-around)
+  const newHours = Math.floor(totalMinutes / 60) % 24;
+  const newMinutes = totalMinutes % 60;
+
+  // Format as HHMM
+  return `${String(newHours).padStart(2, '0')}${String(newMinutes).padStart(2, '0')}`;
 }
