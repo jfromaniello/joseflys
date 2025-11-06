@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-type Calculator = "home" | "tas" | "course" | "conversions" | "planning";
+type Calculator = "home" | "tas" | "course" | "conversions" | "planning" | "distance";
 
 interface NavigationProps {
   currentPage: Calculator;
@@ -70,6 +70,26 @@ const calculators = [
     ),
   },
   {
+    id: "distance" as const,
+    name: "Distance Calculator",
+    href: "/distance",
+    icon: (
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        strokeWidth={2}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+        />
+      </svg>
+    ),
+  },
+  {
     id: "conversions" as const,
     name: "Unit Converter",
     href: "/conversions",
@@ -113,7 +133,7 @@ const calculators = [
 
 export function Navigation({ currentPage }: NavigationProps) {
   return (
-    <div className="flex items-center justify-center gap-4 flex-wrap">
+    <div className="flex items-center justify-center gap-4 flex-wrap print:hidden">
       {calculators.map((calc, index) => (
         <div key={calc.id} className="flex items-center gap-4">
           <Link

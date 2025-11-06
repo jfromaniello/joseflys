@@ -44,7 +44,8 @@ html {
 
   /* Hide navigation and buttons, but keep footer */
   nav,
-  button {
+  button,
+  .print\:hidden {
     display: none !important;
   }
 
@@ -339,6 +340,12 @@ html {
   /* Force primary results to 2 columns */
   .primary-results-grid {
     grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Force distance calculator results to 2 columns (50% each) */
+  .print\:grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr) !important;
+    display: grid !important;
   }
 
   /* Page breaks */
