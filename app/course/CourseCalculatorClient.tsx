@@ -409,6 +409,8 @@ export function CourseCalculatorClient({
                     speedUnit={speedUnit}
                     fuelUnit={fuelUnit}
                     elapsedMinutes={(elapsedMins || 0) + Math.round((results.eta || 0) * 60)}
+                    windDir={windDir}
+                    windSpeed={windSpeed}
                   />
                 </div>
               )}

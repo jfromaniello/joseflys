@@ -9,6 +9,8 @@ interface NewLegButtonProps {
   speedUnit: string;
   fuelUnit: string;
   elapsedMinutes: number;
+  windDir: string;
+  windSpeed: string;
 }
 
 export function NewLegButton({
@@ -20,6 +22,8 @@ export function NewLegButton({
   speedUnit,
   fuelUnit,
   elapsedMinutes,
+  windDir,
+  windSpeed,
 }: NewLegButtonProps) {
   const handleNewLeg = () => {
     // Build URL with parameters for next leg
@@ -33,6 +37,10 @@ export function NewLegButton({
     if (tas) params.set("tas", tas);
     if (speedUnit && speedUnit !== 'kt') params.set("unit", speedUnit);
     if (fuelUnit && fuelUnit !== 'gph') params.set("funit", fuelUnit);
+
+    // Carry over wind parameters (assume wind remains constant)
+    if (windDir) params.set("wd", windDir);
+    if (windSpeed) params.set("ws", windSpeed);
 
     // Set elapsed minutes
     params.set("elapsedMin", elapsedMinutes.toString());
