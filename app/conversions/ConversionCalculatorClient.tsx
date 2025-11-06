@@ -230,9 +230,12 @@ export function ConversionCalculatorClient({
                       >
                         {unitInfo?.name}
                       </div>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-bold text-white">
-                          {result.value.toFixed(2)}
+                      <div className="flex items-baseline gap-2 justify-end">
+                        <span className="text-3xl font-bold text-white text-right">
+                          {new Intl.NumberFormat(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          }).format(result.value)}
                         </span>
                         <span
                           className="text-lg font-medium"

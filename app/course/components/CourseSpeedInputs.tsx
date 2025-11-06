@@ -20,70 +20,80 @@ export function CourseSpeedInputs({
     }
   };
 
+  const headingNum = parseFloat(trueHeading);
+  const isHeadingInvalid = !isNaN(headingNum) && headingNum > 360;
+
   return (
     <div>
       <h3 className="text-sm font-semibold mb-3 uppercase tracking-wide" style={{ color: "oklch(0.65 0.15 230)" }}>
         Course & Speed
       </h3>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* True Heading */}
-        <div>
-          <label
-            className="flex items-center text-sm font-medium mb-2"
-            style={{ color: "oklch(0.72 0.015 240)" }}
+      <div className="grid grid-cols-1 lg:grid-cols-[10.5rem_12rem_2rem_10.5rem_12rem] gap-x-4 gap-y-4 lg:items-center">
+        {/* True Heading Label */}
+        <label
+          className="flex items-center text-sm font-medium mb-2 lg:mb-0"
+          style={{ color: "oklch(0.72 0.015 240)" }}
+        >
+          True Heading
+          <Tooltip content="Your desired track or course over the ground in true degrees (000-360). This is the direction you want to fly, not accounting for wind drift." />
+        </label>
+
+        {/* True Heading Input */}
+        <div className="relative">
+          <input
+            type="text"
+            value={trueHeading}
+            onChange={(e) => {
+              const value = e.target.value;
+              // Allow empty or valid numbers
+              if (value === '' || /^\d{0,3}$/.test(value)) {
+                setTrueHeading(value);
+              }
+            }}
+            onBlur={handleHeadingBlur}
+            className={`w-full px-4 pr-10 py-3 rounded-xl focus:outline-none focus:ring-2 ${
+              isHeadingInvalid
+                ? 'focus:ring-red-500/50 border-red-500'
+                : 'focus:ring-sky-500/50 border-gray-600'
+            } transition-all text-lg bg-slate-900/50 border-2 text-white text-right`}
+            placeholder="000"
+            maxLength={3}
+          />
+          <span
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
+            style={{ color: "white" }}
           >
-            True Heading
-            <Tooltip content="Your desired track or course over the ground in true degrees (000-360). This is the direction you want to fly, not accounting for wind drift." />
-          </label>
-          <div className="relative">
-            <input
-              type="text"
-              value={trueHeading}
-              onChange={(e) => {
-                const value = e.target.value;
-                // Allow empty or valid numbers
-                if (value === '' || /^\d{0,3}$/.test(value)) {
-                  setTrueHeading(value);
-                }
-              }}
-              onBlur={handleHeadingBlur}
-              className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white"
-              placeholder="000"
-              maxLength={3}
-            />
-            <span
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-              style={{ color: "white" }}
-            >
-              °
-            </span>
-          </div>
+            °
+          </span>
         </div>
 
-        {/* True Airspeed */}
-        <div>
-          <label
-            className="flex items-center text-sm font-medium mb-2"
-            style={{ color: "oklch(0.72 0.015 240)" }}
+        {/* Gap */}
+        <div className="hidden lg:block"></div>
+
+        {/* True Airspeed Label */}
+        <label
+          className="flex items-center text-sm font-medium mb-2 lg:mb-0"
+          style={{ color: "oklch(0.72 0.015 240)" }}
+        >
+          True Airspeed
+          <Tooltip content="Your aircraft's actual speed through the air mass in knots. Corrected for Pressure Altitude and Outside Indicated Air Temperature. Use the TAS Calculator if you only have CAS." />
+        </label>
+
+        {/* True Airspeed Input */}
+        <div className="relative">
+          <input
+            type="number"
+            value={tas}
+            onChange={(e) => setTas(e.target.value)}
+            className="w-full px-4 pr-10 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
+            placeholder="100"
+          />
+          <span
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
+            style={{ color: "white" }}
           >
-            True Airspeed
-            <Tooltip content="Your aircraft's actual speed through the air mass in knots. Use the TAS Calculator if you only have CAS, OAT, and altitude." />
-          </label>
-          <div className="relative">
-            <input
-              type="number"
-              value={tas}
-              onChange={(e) => setTas(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white"
-              placeholder="100"
-            />
-            <span
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-              style={{ color: "white" }}
-            >
-              kt
-            </span>
-          </div>
+            kt
+          </span>
         </div>
       </div>
     </div>

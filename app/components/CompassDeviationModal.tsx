@@ -176,7 +176,11 @@ export function CompassDeviationModal({
                       }}
                       onBlur={() => handleBlur(index, "forHeading")}
                       onPaste={(e) => handlePaste(e, index, "forHeading")}
-                      className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white"
+                      className={`w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 ${
+                        entry.forHeading > 360
+                          ? 'focus:ring-red-500/50 border-red-500'
+                          : 'focus:ring-sky-500/50 border-gray-600'
+                      } transition-all text-lg bg-slate-900/50 border-2 text-white`}
                       placeholder="000"
                       maxLength={3}
                     />
@@ -205,7 +209,11 @@ export function CompassDeviationModal({
                         }
                       }}
                       onBlur={() => handleBlur(index, "steerHeading")}
-                      className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white"
+                      className={`w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 ${
+                        entry.steerHeading > 360
+                          ? 'focus:ring-red-500/50 border-red-500'
+                          : 'focus:ring-sky-500/50 border-gray-600'
+                      } transition-all text-lg bg-slate-900/50 border-2 text-white`}
                       placeholder="000"
                       maxLength={3}
                     />
