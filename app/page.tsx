@@ -196,6 +196,58 @@ export default function Home() {
             </div>
           </Link>
 
+          {/* Distance Calculator Card */}
+          <Link
+            href="/distance"
+            className="group block p-8 rounded-2xl bg-slate-800/50 backdrop-blur-sm border-2 border-gray-700 hover:border-sky-500/50 transition-all hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <div className="flex items-start gap-4 mb-4">
+              <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-linear-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30 group-hover:border-sky-500/50 transition-colors">
+                <svg
+                  className="w-8 h-8"
+                  fill="none"
+                  stroke="oklch(0.65 0.15 230)"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+                  />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h2 className="text-2xl font-bold mb-2" style={{ color: "white" }}>
+                  Distance Calculator
+                </h2>
+                <p
+                  className="text-sm leading-relaxed"
+                  style={{ color: "oklch(0.65 0.02 240)" }}
+                >
+                  Calculate precise distances and bearings between coordinates
+                  using WGS-84 geodesic algorithms for high-precision navigation
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-sm font-medium" style={{ color: "oklch(0.65 0.15 230)" }}>
+              Open Calculator
+              <svg
+                className="w-4 h-4 group-hover:translate-x-1 transition-transform"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M14 5l7 7m0 0l-7 7m7-7H3"
+                />
+              </svg>
+            </div>
+          </Link>
+
           {/* Flight Planning Card */}
           <Link
             href="/planning"
@@ -255,14 +307,14 @@ export default function Home() {
             className="text-sm text-center leading-relaxed"
             style={{ color: "oklch(0.6 0.02 240)" }}
           >
-            Experimental aviation calculators based on ISA standard atmosphere and
-            wind triangle principles. All calculations are performed client-side
-            for instant results.
+            Experimental aviation calculators based on ISA standard atmosphere,
+            WGS-84 geodesic algorithms, and wind triangle principles. All calculations
+            are performed client-side for instant results.
           </p>
         </div>
       </main>
 
-      <Footer description="Experimental aviation calculators for TAS, wind correction, and flight planning" />
+      <Footer description="Experimental aviation calculators for TAS, wind correction, distance & bearing, and flight planning" />
     </PageLayout>
   );
 }

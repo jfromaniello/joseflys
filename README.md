@@ -2,7 +2,9 @@
 
 A collection of experimental aviation calculators for pilots and flight planners. All calculations are performed client-side for instant results.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/yourusername/tas-calculator)
+🌐 **Live at**: [joseflys.com](https://joseflys.com/)
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/jfromaniello/joseflys)
 
 ## Features
 
@@ -14,7 +16,7 @@ Calculate True Airspeed (TAS) from Calibrated Airspeed (CAS), Outside Air Temper
 - Shareable URLs with pre-filled values
 - Dynamic Open Graph images for social sharing
 
-### 🌬️ Wind Calculator
+### 🌬️ Wind & Course Calculator
 Calculate wind correction angle, ground speed, compass heading, and wind components for accurate flight planning.
 
 - Wind Correction Angle (WCA) calculation
@@ -23,6 +25,17 @@ Calculate wind correction angle, ground speed, compass heading, and wind compone
 - Headwind and Crosswind components
 - Effective True Airspeed (ETAS)
 - Time and fuel planning integration
+
+### 📏 Distance Calculator
+Calculate precise distances and bearings between any two coordinates using WGS-84 geodesic algorithms.
+
+- **High-precision calculations** using GeographicLib (Karney's method)
+- **WGS-84 ellipsoid model** for accurate distances worldwide
+- **Initial bearing** (azimuth) calculations
+- More accurate than Haversine, especially for:
+  - Long distances (>1000 NM)
+  - Polar regions
+  - High-precision navigation
 
 ### 🔄 Unit Converter
 Convert aviation units including distances, speeds, fuel volumes, temperatures, weight, and pressure.
@@ -47,6 +60,9 @@ Calculate time, speed, distance, and fuel consumption. Solve any flight planning
 - **Framework**: Next.js 16 with React 19
 - **Styling**: Tailwind CSS 4
 - **Language**: TypeScript
+- **Testing**: Vitest with TypeScript
+- **Geodesic Calculations**: GeographicLib (geographiclib-geodesic)
+- **Maps**: Leaflet with React Leaflet
 - **Deployment**: Vercel
 
 ## Getting Started
@@ -60,8 +76,8 @@ Calculate time, speed, distance, and fuel consumption. Solve any flight planning
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/tas-calculator.git
-cd tas-calculator
+git clone https://github.com/jfromaniello/joseflys.git
+cd joseflys
 
 # Install dependencies
 npm install
@@ -71,6 +87,22 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### Testing
+
+```bash
+# Run tests in watch mode
+npm test
+
+# Run tests once (CI mode)
+npm run test:run
+
+# Run tests with UI
+npm run test:ui
+
+# Run tests with coverage
+npm run test:coverage
+```
 
 ### Build
 
@@ -88,15 +120,23 @@ npm start
 tas-calculator/
 ├── app/
 │   ├── tas/              # TAS calculator page
-│   ├── winds/            # Wind calculator page
+│   ├── course/           # Wind & course calculator page
+│   ├── distance/         # Distance calculator page
 │   ├── conversions/      # Unit converter page
 │   ├── planning/         # Flight planning calculator page
-│   ├── api/              # API routes (OG images)
-│   ├── components/       # Shared components
-│   └── lib/              # Utility functions and calculations
+│   ├── api/              # API routes (OG images, geocoding)
+│   └── components/       # Shared components
+├── lib/
+│   ├── distanceCalculations.ts      # WGS-84 geodesic calculations
+│   ├── distanceCalculations.test.ts # Tests for distance calculations
+│   ├── courseCalculations.ts        # Wind triangle calculations
+│   ├── flightPlanningCalculations.ts
+│   ├── unitConversions.ts
+│   └── compassDeviation.ts
 ├── public/
 │   ├── sitemap.xml       # Sitemap for search engines
 │   └── robots.txt        # Robots.txt for search engines
+├── vitest.config.ts      # Vitest configuration
 └── package.json
 ```
 
@@ -108,6 +148,13 @@ All calculations are based on the International Standard Atmosphere (ISA) model:
 - Sea level temperature: 15°C
 - Temperature lapse rate: -1.98°C per 1000 ft
 
+### WGS-84 Geodesic Calculations
+Distance and bearing calculations use the WGS-84 ellipsoid model:
+- **Algorithm**: Karney's method via GeographicLib
+- **Accuracy**: Superior to Haversine (accounts for Earth's ellipsoidal shape)
+- **Use cases**: Long-distance navigation, polar routes, high-precision planning
+- **Test coverage**: 25+ unit tests validating accuracy across all scenarios
+
 ### Wind Triangle Calculations
 Wind calculations use vector mathematics to compute:
 - Wind correction angle using trigonometry
@@ -117,7 +164,8 @@ Wind calculations use vector mathematics to compute:
 ### Shareable URLs
 All calculators support URL parameters for sharing specific calculations:
 - TAS: `?cas=90&oat=8&alt=4000`
-- Wind: `?wd=270&ws=20&th=360&tas=100`
+- Course: `?wd=270&ws=20&th=360&tas=100`
+- Distance: Geocoded locations stored in URL
 - Conversions: `?cat=distance&val=100&from=nm`
 - Planning: `?mode=time-speed-distance&gs=120&dist=240`
 
@@ -139,7 +187,9 @@ MIT License - feel free to use this project for any purpose.
 
 ## Author
 
-Created by [José](https://twitter.com/jfroma)
+Created by [José Romaniello](https://twitter.com/jfroma)
+
+GitHub: [@jfromaniello](https://github.com/jfromaniello)
 
 ## Disclaimer
 
@@ -149,4 +199,5 @@ These are experimental calculators for educational and flight planning purposes.
 
 - Inspired by the Jeppesen CR-3 flight computer
 - Based on International Standard Atmosphere (ISA) model
+- Geodesic calculations powered by [GeographicLib](https://geographiclib.sourceforge.io/) (Charles Karney)
 - Built with Next.js and React

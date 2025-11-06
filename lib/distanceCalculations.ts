@@ -1,23 +1,13 @@
 /**
- * Aviation distance and bearing calculations using the Haversine formula
- * and great circle navigation principles.
+ * Aviation distance and bearing calculations using GeographicLib's
+ * WGS-84 geodesic algorithms (Karney's method) for high-precision
+ * calculations on an ellipsoidal Earth model.
  */
 
-const EARTH_RADIUS_NM = 3440.065; // Earth's radius in nautical miles
+import { Geodesic } from "geographiclib-geodesic";
 
-/**
- * Converts degrees to radians
- */
-function toRadians(degrees: number): number {
-  return degrees * (Math.PI / 180);
-}
-
-/**
- * Converts radians to degrees
- */
-function toDegrees(radians: number): number {
-  return radians * (180 / Math.PI);
-}
+// Conversion constant: meters to nautical miles
+const METERS_TO_NM = 1 / 1852;
 
 /**
  * Normalizes an angle to the range [0, 360)
@@ -31,8 +21,11 @@ function normalizeAngle(degrees: number): number {
 }
 
 /**
- * Calculates the great circle distance between two points on Earth
- * using the Haversine formula.
+ * Calculates the geodesic distance between two points on Earth
+ * using the WGS-84 ellipsoid model (Karney's method via GeographicLib).
+ *
+ * This method is more accurate than Haversine as it accounts for Earth's
+ * ellipsoidal shape rather than assuming a perfect sphere.
  *
  * @param lat1 - Latitude of the first point in degrees
  * @param lon1 - Longitude of the first point in degrees
@@ -51,32 +44,22 @@ export function calculateHaversineDistance(
   lat2: number,
   lon2: number
 ): number {
-  // Convert to radians
-  const φ1 = toRadians(lat1);
-  const φ2 = toRadians(lat2);
-  const Δφ = toRadians(lat2 - lat1);
-  const Δλ = toRadians(lon2 - lon1);
+  // Use WGS-84 geodesic inverse problem to calculate distance
+  const result = Geodesic.WGS84.Inverse(lat1, lon1, lat2, lon2);
 
-  // Haversine formula
-  const a =
-    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  // Convert meters to nautical miles
+  const distanceNM = (result.s12 ?? 0) * METERS_TO_NM;
 
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-  // Distance in nautical miles
-  const distance = EARTH_RADIUS_NM * c;
-
-  return distance;
+  return distanceNM;
 }
 
 /**
  * Calculates the initial true bearing (course) from one point to another
- * along a great circle route.
+ * along a geodesic route using the WGS-84 ellipsoid model.
  *
- * This is the true bearing at the departure point. Note that on a great circle
- * route, the bearing changes continuously. For distances under ~1000 NM, this
- * initial bearing is sufficiently accurate for navigation purposes.
+ * This is the true bearing (azimuth) at the departure point. Note that on a geodesic
+ * route, the bearing changes continuously. The WGS-84 calculation provides more
+ * accurate bearings than spherical approximations, especially over longer distances.
  *
  * @param lat1 - Latitude of the departure point in degrees
  * @param lon1 - Longitude of the departure point in degrees
@@ -95,21 +78,12 @@ export function calculateInitialBearing(
   lat2: number,
   lon2: number
 ): number {
-  // Convert to radians
-  const φ1 = toRadians(lat1);
-  const φ2 = toRadians(lat2);
-  const Δλ = toRadians(lon2 - lon1);
+  // Use WGS-84 geodesic inverse problem to calculate initial azimuth
+  const result = Geodesic.WGS84.Inverse(lat1, lon1, lat2, lon2);
 
-  // Calculate bearing
-  const y = Math.sin(Δλ) * Math.cos(φ2);
-  const x =
-    Math.cos(φ1) * Math.sin(φ2) -
-    Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
-
-  const θ = Math.atan2(y, x);
-
-  // Convert to degrees and normalize to 0-360
-  const bearing = normalizeAngle(toDegrees(θ));
+  // azi1 is the initial azimuth (bearing) in degrees
+  // Normalize to 0-360 range
+  const bearing = normalizeAngle(result.azi1 ?? 0);
 
   return bearing;
 }

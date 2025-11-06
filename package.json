@@ -6,10 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",
+    "geographiclib-geodesic": "^2.2.0",
     "leaflet": "^1.9.4",
     "next": "16.0.1",
     "react": "19.2.0",
@@ -22,9 +27,11 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/ui": "^3.2.4",
     "eslint": "^9",
     "eslint-config-next": "16.0.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.4"
   }
 }

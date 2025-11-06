@@ -613,7 +613,7 @@ export function DistanceCalculatorClient({
                     >
                       Distance
                     </p>
-                    <Tooltip content="Great circle distance calculated using the Haversine formula. This is the shortest distance over the Earth's surface." />
+                    <Tooltip content="Geodesic distance calculated using WGS-84 ellipsoid model (Karney's method). More accurate than Haversine, especially for long distances and polar routes." />
                   </div>
                   <p
                     className="text-4xl sm:text-5xl font-bold mb-1 print:text-3xl print:mb-0"
@@ -701,10 +701,11 @@ export function DistanceCalculatorClient({
               style={{ color: "oklch(0.6 0.02 240)" }}
             >
               <span className="font-semibold">Note:</span> This calculator uses
-              the Haversine formula to compute great circle distances. The
-              initial bearing is accurate for distances under{" "}
-              {MAX_RECOMMENDED_DISTANCE_NM} NM. For longer routes, consider
-              that the bearing will change continuously along the great circle
+              the WGS-84 geodesic algorithm (Karney's method via GeographicLib) to compute
+              precise distances on Earth's ellipsoid. This is more accurate than the Haversine
+              formula, especially for long distances and polar routes. The
+              initial bearing is accurate at the departure point. For longer routes, consider
+              that the bearing will change continuously along the geodesic
               path.{" "}
               <span className="font-semibold">All calculations are performed with decimal precision,
               but displayed values are rounded to the nearest integer for clarity.</span>
@@ -713,7 +714,7 @@ export function DistanceCalculatorClient({
         </div>
       </main>
 
-      <Footer description="Great circle navigation calculations using Haversine formula" />
+      <Footer description="High-precision geodesic distance and bearing calculations using WGS-84 ellipsoid model" />
     </PageLayout>
   );
 }
