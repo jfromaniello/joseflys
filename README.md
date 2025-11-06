@@ -1,6 +1,10 @@
-# José's Aviation Calculators
+<div align="center">
+  <img src="public/android-chrome-192x192.png" alt="Aviation Calculator Icon" width="120" height="120">
 
-A collection of experimental aviation calculators for pilots and flight planners. All calculations are performed client-side for instant results.
+  # José's Aviation Calculators
+
+  A collection of experimental aviation calculators for pilots and flight planners. All calculations are performed client-side for instant results.
+</div>
 
 🌐 **Live at**: [joseflys.com](https://joseflys.com/)
 
