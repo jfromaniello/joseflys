@@ -53,7 +53,7 @@ export function FlightParametersInputs({
   };
 
   return (
-    <div>
+    <div className="flight-params-inputs">
       <h3 className="text-sm font-semibold mb-3 uppercase tracking-wide" style={{ color: "oklch(0.65 0.15 230)" }}>
         Flight Timeline
       </h3>

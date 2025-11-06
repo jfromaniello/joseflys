@@ -230,7 +230,6 @@ export function TASCalculatorClient({
                   text: `CAS: ${cas} kt, OAT: ${oat}°C, Alt: ${altitude} ft → TAS: ${tas?.toFixed(2)} kt`,
                   url: shareUrl,
                 }}
-                ogImageUrl={ogImageUrl}
               />
             </>
           )}

@@ -697,7 +697,6 @@ export function PlanningCalculatorClient({
               text: "Flight Planning Calculator - Time, Speed, Distance & Fuel",
               url: typeof window !== "undefined" ? window.location.href : "",
             }}
-            ogImageUrl={ogImageUrl}
           />
         </div>
       </main>

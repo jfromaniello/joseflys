@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { PrintButton } from "./PrintButton";
 
 interface ShareButtonProps {
   shareData: {
@@ -8,12 +9,10 @@ interface ShareButtonProps {
     text: string;
     url: string;
   };
-  ogImageUrl?: string;
 }
 
-export function ShareButton({ shareData, ogImageUrl }: ShareButtonProps) {
+export function ShareButton({ shareData }: ShareButtonProps) {
   const [shareSuccess, setShareSuccess] = useState(false);
-  const [downloadSuccess, setDownloadSuccess] = useState(false);
 
   const handleShare = async () => {
     try {
@@ -26,28 +25,6 @@ export function ShareButton({ shareData, ogImageUrl }: ShareButtonProps) {
       }
     } catch (err) {
       console.log("Share cancelled or failed", err);
-    }
-  };
-
-  const handleDownloadImage = async () => {
-    if (!ogImageUrl) return;
-
-    try {
-      const response = await fetch(ogImageUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'calculation-result.png';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-
-      setDownloadSuccess(true);
-      setTimeout(() => setDownloadSuccess(false), 2000);
-    } catch (err) {
-      console.log("Download failed", err);
     }
   };
 
@@ -103,58 +80,8 @@ export function ShareButton({ shareData, ogImageUrl }: ShareButtonProps) {
         )}
       </button>
 
-      {ogImageUrl ? (
-        <button
-          onClick={handleDownloadImage}
-          className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 rounded-xl text-sm font-semibold transition-all hover:brightness-110 active:scale-95 cursor-pointer shadow-lg backdrop-blur-sm border-2"
-          style={{
-            background:
-              "linear-gradient(to bottom right, oklch(0.65 0.15 230), oklch(0.55 0.15 230))",
-            borderColor: "oklch(0.7 0.15 230)",
-            color: "white",
-          }}
-        >
-          {downloadSuccess ? (
-            <>
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-              <span className="hidden sm:inline">Downloaded!</span>
-              <span className="sm:hidden">Done!</span>
-            </>
-          ) : (
-            <>
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                />
-              </svg>
-              <span className="hidden sm:inline">Download Image</span>
-              <span className="sm:hidden">Download</span>
-            </>
-          )}
-        </button>
-      ) : (
-        <div className="hidden md:block"></div>
-      )}
+      <PrintButton />
+
       <div className="hidden md:block"></div>
     </div>
   );

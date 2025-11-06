@@ -104,8 +104,8 @@ export async function generateMetadata({ searchParams }: WindsPageProps): Promis
 
 export default async function WindsPage({ searchParams }: WindsPageProps) {
   const params = await searchParams;
-  const th = params.th || "360";
-  const tas = params.tas || "100";
+  const th = params.th || "";
+  const tas = params.tas || "";
   const wd = params.wd || "";
   const ws = params.ws || "";
   const md = params.md || "";

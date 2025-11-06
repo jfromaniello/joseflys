@@ -30,7 +30,7 @@ export function WindInputs({
   const isWindDirInvalid = !isNaN(windDirNum) && windDirNum > 360;
 
   return (
-    <div>
+    <div className="wind-inputs">
       <h3 className="text-sm font-semibold mb-3 uppercase tracking-wide" style={{ color: "oklch(0.65 0.15 230)" }}>
         Wind
       </h3>
@@ -62,7 +62,7 @@ export function WindInputs({
                 ? 'focus:ring-red-500/50 border-red-500'
                 : 'focus:ring-sky-500/50 border-gray-600'
             } transition-all text-lg bg-slate-900/50 border-2 text-white text-right`}
-            placeholder="000"
+            placeholder="Optional"
             maxLength={3}
           />
           <span

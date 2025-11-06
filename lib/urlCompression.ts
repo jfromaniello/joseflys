@@ -24,9 +24,13 @@ export function compressForUrl(data: unknown): string {
     // Fallback: use base64 encoded JSON for other data types
     const json = JSON.stringify(data);
     if (typeof window !== 'undefined') {
-      return btoa(json);
+      // Encode UTF-8 string to base64 properly in browser
+      // First encode to UTF-8 bytes, then to base64
+      return btoa(encodeURIComponent(json).replace(/%([0-9A-F]{2})/g, (_, p1) => {
+        return String.fromCharCode(parseInt(p1, 16));
+      }));
     }
-    return Buffer.from(json).toString('base64');
+    return Buffer.from(json, 'utf-8').toString('base64');
   } catch (error) {
     console.error('Compression error:', error);
     return '';
@@ -81,7 +85,17 @@ export function decompressFromUrl(compressed: string): unknown {
     // Fallback: try base64 JSON format (for backward compatibility)
     let json: string;
     if (typeof window !== 'undefined') {
-      json = atob(compressed);
+      // Decode base64 to UTF-8 string properly in browser
+      const binary = atob(compressed);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      json = decodeURIComponent(
+        Array.from(bytes)
+          .map(byte => '%' + ('00' + byte.toString(16)).slice(-2))
+          .join('')
+      );
     } else {
       json = Buffer.from(compressed, 'base64').toString('utf-8');
     }

@@ -17,7 +17,7 @@ export function IntermediateResults({ results, fuelUnit, fuelFlow }: Intermediat
     : undefined;
 
   return (
-    <div>
+    <div className="print-page-break-before">
       <h3 className="text-sm font-semibold mb-3 uppercase tracking-wide" style={{ color: "oklch(0.65 0.15 230)" }}>
         Intermediate Values
       </h3>

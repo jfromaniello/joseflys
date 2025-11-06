@@ -152,6 +152,28 @@ export function CourseCalculatorClient({
 
   const elapsedMins = elapsedMinutes ? parseInt(elapsedMinutes) : undefined;
 
+  // Load example data
+  const loadExample = () => {
+    setTrueHeading("090");
+    setTas("120");
+    setWindDir("180");
+    setWindSpeed("25");
+    setMagDev("-5");
+    setDistance("85");
+    setFuelFlow("8");
+    setDescription("SAZS to SACO (Example Flight)");
+    setDepartureTime("1430");
+    setElapsedMinutes("0");
+
+    // Set example waypoints
+    const exampleWaypoints = [
+      { name: "Rio Segundo", distance: 28 },
+      { name: "Villa Maria", distance: 52 },
+      { name: "Laboulaye", distance: 75 }
+    ];
+    setWaypoints(exampleWaypoints);
+  };
+
   const results =
     !isNaN(th) &&
     !isNaN(tasInKnots) &&
@@ -172,8 +194,8 @@ export function CourseCalculatorClient({
   };
 
   const waypointResults =
-    results && waypoints.length > 0 && dist !== undefined
-      ? calculateWaypoints(waypoints, results.groundSpeed, ff, flightParams)
+    results && dist !== undefined
+      ? calculateWaypoints(waypoints, results.groundSpeed, ff, flightParams, dist)
       : [];
 
 
@@ -201,9 +223,9 @@ export function CourseCalculatorClient({
   return (
     <PageLayout>
       {/* Header */}
-      <div className="text-center mb-8 sm:mb-12">
-        <div className="flex items-center justify-center gap-4 mb-3">
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-slate-800/50 backdrop-blur-sm border border-gray-700">
+      <div className="text-center mb-8 sm:mb-12 print:mb-4">
+        <div className="flex items-center justify-center gap-4 mb-3 print:mb-2">
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-slate-800/50 backdrop-blur-sm border border-gray-700 print:hidden">
             <svg
               className="w-9 h-9"
               fill="none"
@@ -218,40 +240,67 @@ export function CourseCalculatorClient({
               />
             </svg>
           </div>
-          <h1 className="text-4xl sm:text-5xl font-bold" style={{ color: "white" }}>
+          <h1 className="text-4xl sm:text-5xl font-bold print:text-2xl" style={{ color: "white" }}>
             {description || "José's Course Calculator"}
           </h1>
         </div>
         {description && (
           <p
-            className="text-base sm:text-lg mb-4"
+            className="text-base sm:text-lg mb-4 print:hidden"
             style={{ color: "oklch(0.58 0.02 240)" }}
           >
             José&apos;s Aviation Tools
           </p>
         )}
-        <Navigation currentPage="course" />
+        <div className="print:hidden">
+          <Navigation currentPage="course" />
+        </div>
       </div>
 
       <main className="w-full max-w-4xl">
         <div className="rounded-2xl p-6 sm:p-8 shadow-2xl bg-slate-800/50 backdrop-blur-sm border border-gray-700">
           {/* Section Header */}
-          <div className="mb-6 pb-6 border-b border-gray-700">
-            <h2
-              className="text-xl sm:text-2xl font-bold mb-2"
-              style={{ color: "white" }}
-            >
-              Flight Parameters
-            </h2>
-            <p className="text-sm" style={{ color: "oklch(0.58 0.02 240)" }}>
-              Calculate compass course, ground speed, and navigation data
-            </p>
+          <div className="mb-6 pb-6 border-b border-gray-700 print:mb-3 print:pb-3">
+            <div className="flex items-start justify-between gap-4 mb-2">
+              <div className="flex-1">
+                <h2
+                  className="text-xl sm:text-2xl font-bold mb-2 print:text-lg print:mb-1"
+                  style={{ color: "white" }}
+                >
+                  Flight Parameters
+                </h2>
+                <p className="text-sm print:hidden" style={{ color: "oklch(0.58 0.02 240)" }}>
+                  Calculate compass course, ground speed, and navigation data
+                </p>
+              </div>
+              {/* Load Example Button */}
+              <button
+                onClick={loadExample}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed border-gray-600 hover:border-purple-500/50 hover:bg-purple-500/10 transition-all text-sm font-medium cursor-pointer whitespace-nowrap"
+                style={{ color: "oklch(0.75 0.15 300)" }}
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                  />
+                </svg>
+                Load Example
+              </button>
+            </div>
           </div>
 
           {/* Description Input */}
-          <div className="mb-6">
+          <div className="mb-6 print:mb-3">
             <label
-              className="flex items-center text-sm font-medium mb-2"
+              className="flex items-center text-sm font-medium mb-2 print:hidden"
               style={{ color: "oklch(0.72 0.015 240)" }}
             >
               Description (Optional)
@@ -260,13 +309,13 @@ export function CourseCalculatorClient({
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white"
+              className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white print:hidden"
               placeholder="e.g., KJFK to KLAX"
             />
           </div>
 
           {/* Input Fields - Grouped */}
-          <div className="space-y-6 mb-8">
+          <div className="space-y-6 mb-8 print:space-y-3 print:mb-4">
             {/* Course & Speed */}
             <CourseSpeedInputs
               trueHeading={trueHeading}
@@ -316,7 +365,7 @@ export function CourseCalculatorClient({
 
           {/* Results */}
           {results !== null && (
-            <div className="space-y-6">
+            <div className="space-y-6 print:space-y-3">
               {/* Intermediate Results */}
               <IntermediateResults
                 results={results}
@@ -332,7 +381,6 @@ export function CourseCalculatorClient({
                 windDir={windDir}
                 windSpeed={windSpeed}
                 trueHeading={trueHeading}
-                ogImageUrl={ogImageUrl}
                 speedUnit={speedUnit}
                 fuelUnit={fuelUnit}
                 departureTime={departureTime}
@@ -351,7 +399,7 @@ export function CourseCalculatorClient({
 
               {/* New Leg Button - only show if we have distance (completed leg) */}
               {results.eta !== undefined && (
-                <div className="pt-4">
+                <div className="pt-4 print:hidden">
                   <NewLegButton
                     magDev={magDev}
                     departureTime={departureTime}
@@ -366,14 +414,13 @@ export function CourseCalculatorClient({
               )}
 
               {/* Share Button - after all results */}
-              <div className="pt-2">
+              <div className="pt-2 print:hidden">
                 <ShareButton
                   shareData={{
                     title: "José's Course Calculator",
                     text: `Wind: ${windDir}° at ${windSpeed} kt, Heading: ${trueHeading}° → GS: ${results?.groundSpeed.toFixed(1)} kt`,
                     url: typeof window !== "undefined" ? window.location.href : "",
                   }}
-                  ogImageUrl={ogImageUrl}
                 />
               </div>
             </div>

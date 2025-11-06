@@ -14,7 +14,6 @@ interface PrimaryResultsProps {
   windDir: string;
   windSpeed: string;
   trueHeading: string;
-  ogImageUrl?: string;
   speedUnit: SpeedUnit;
   fuelUnit: FuelUnit;
   departureTime?: string;
@@ -28,7 +27,6 @@ export function PrimaryResults({
   windDir,
   windSpeed,
   trueHeading,
-  ogImageUrl,
   speedUnit,
   fuelUnit,
   departureTime,
@@ -79,7 +77,7 @@ export function PrimaryResults({
 
       <div className="space-y-4">
         {/* Primary Results - Ground Speed and Compass Course */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 primary-results-grid">
           {/* Ground Speed */}
           <div className="p-6 rounded-xl text-center bg-linear-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30">
             <div className="flex items-center justify-center mb-2">
@@ -134,7 +132,7 @@ export function PrimaryResults({
         </div>
 
         {/* ETA and Fuel Results - always shown, active when inputs provided */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 primary-results-grid">
           {/* ETA */}
           <div className={`p-6 rounded-xl text-center ${results.eta !== undefined ? 'bg-linear-to-br from-emerald-500/10 to-green-500/10 border-emerald-500/30' : 'bg-slate-900/30 border-gray-700'} border`}>
             <div className="flex items-center justify-center mb-2">

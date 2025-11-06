@@ -25,7 +25,7 @@ export function RangeFuelInputs({
   waypointsCount = 0,
 }: RangeFuelInputsProps) {
   return (
-    <div>
+    <div className="range-fuel-inputs">
       <h3 className="text-sm font-semibold mb-3 uppercase tracking-wide" style={{ color: "oklch(0.65 0.15 230)" }}>
         Range & Fuel
       </h3>
@@ -64,7 +64,7 @@ export function RangeFuelInputs({
         {/* Waypoints Label */}
         {onWaypointsClick && (
           <label
-            className="flex items-center text-sm font-medium mb-2 lg:mb-0 lg:col-span-1 col-span-1"
+            className="flex items-center text-sm font-medium mb-2 lg:mb-0 lg:col-span-1 col-span-1 print-hide-waypoints"
             style={{ color: "oklch(0.72 0.015 240)" }}
           >
             Waypoints
@@ -76,7 +76,7 @@ export function RangeFuelInputs({
         {onWaypointsClick && (
           <button
             onClick={onWaypointsClick}
-            className={`w-full px-4 py-3 rounded-xl transition-all text-base font-medium border-2 cursor-pointer ${
+            className={`w-full px-4 py-3 rounded-xl transition-all text-base font-medium border-2 cursor-pointer print-hide-waypoints ${
               waypointsCount > 0
                 ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
                 : "border-gray-600 bg-slate-900/50 hover:border-sky-500/50 hover:bg-sky-500/5"

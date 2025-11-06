@@ -28,3 +28,432 @@ body {
 html {
   background: #0f172a;
 }
+
+/* Print Styles */
+@media print {
+  /* Force white background and black text for print */
+  html, body {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Add padding at bottom for fixed footer */
+  body {
+    padding-bottom: 3rem !important;
+  }
+
+  /* Hide navigation and buttons, but keep footer */
+  nav,
+  button {
+    display: none !important;
+  }
+
+  /* Footer configuration - repeat on every page */
+  .print-footer {
+    display: block !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    margin: 0 !important;
+    padding: 0.5rem 1rem !important;
+    background: white !important;
+    border-top: 1px solid #ddd !important;
+  }
+
+  /* Make footer text smaller and black */
+  .print-footer * {
+    font-size: 0.7rem !important;
+    color: black !important;
+  }
+
+  /* Hide social links in footer */
+  .print-footer a {
+    display: none !important;
+  }
+
+  /* Hide waypoints and compass deviation in print - make it very specific */
+  .print-hide-waypoints,
+  .print-hide-compass-deviation,
+  label.print-hide-waypoints,
+  button.print-hide-waypoints,
+  label.print-hide-compass-deviation,
+  button.print-hide-compass-deviation {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Vertical layout for input sections */
+  .course-speed-inputs > h3,
+  .wind-inputs > h3,
+  .corrections-inputs > h3,
+  .range-fuel-inputs > h3,
+  .flight-params-inputs > h3 {
+    margin-bottom: 0.5rem !important;
+  }
+
+  /* Make all grids vertical */
+  .course-speed-inputs > .grid,
+  .wind-inputs > .grid,
+  .corrections-inputs > .grid,
+  .flight-params-inputs > .grid {
+    display: block !important;
+  }
+
+  /* Nested grids (input+select containers) should be inline-block */
+  .course-speed-inputs .grid .grid,
+  .wind-inputs .grid .grid,
+  .corrections-inputs .grid .grid,
+  .flight-params-inputs .grid .grid {
+    display: inline-block !important;
+    width: auto !important;
+    margin: 0.5rem 0 0 0 !important;
+    vertical-align: middle !important;
+  }
+
+  .course-speed-inputs .grid .grid > *,
+  .wind-inputs .grid .grid > *,
+  .corrections-inputs .grid .grid > *,
+  .flight-params-inputs .grid .grid > * {
+    display: inline-block !important;
+    vertical-align: middle !important;
+    margin: 0 !important;
+  }
+
+  .course-speed-inputs .grid .grid input {
+    width: 12rem !important;
+    margin-right: 0.5rem !important;
+  }
+
+  .course-speed-inputs .grid .grid select {
+    width: 6rem !important;
+  }
+
+  /* Each field row */
+  .course-speed-inputs .grid > label,
+  .wind-inputs .grid > label,
+  .corrections-inputs .grid > label,
+  .flight-params-inputs .grid > label {
+    display: inline-block !important;
+    width: 10rem !important;
+    margin: 0.5rem 0 0 0 !important;
+    vertical-align: middle !important;
+  }
+
+  /* Input containers */
+  .course-speed-inputs .grid > div,
+  .wind-inputs .grid > div,
+  .corrections-inputs .grid > div,
+  .flight-params-inputs .grid > div,
+  .course-speed-inputs .grid > input,
+  .wind-inputs .grid > input,
+  .corrections-inputs .grid > input,
+  .flight-params-inputs .grid > input {
+    display: inline-block !important;
+    width: 12rem !important;
+    margin: 0.5rem 0.5rem 0 0 !important;
+    vertical-align: middle !important;
+  }
+
+  /* Relative containers (inputs with absolute positioned units) */
+  .relative {
+    position: relative !important;
+  }
+
+  .relative input {
+    width: 100% !important;
+  }
+
+  /* Selects (unit selectors) */
+  .course-speed-inputs select,
+  .wind-inputs select,
+  .corrections-inputs select,
+  .flight-params-inputs select {
+    display: inline-block !important;
+    width: 6rem !important;
+    margin: 0.5rem 0 0 0 !important;
+    vertical-align: middle !important;
+  }
+
+  /* Reduce padding on inputs for print */
+  input,
+  select {
+    padding: 0.5rem 0.75rem !important;
+  }
+
+  /* Inputs with absolute positioned units - reduce right padding and move units closer */
+  .relative input {
+    padding-right: 2rem !important;
+  }
+
+  /* Absolute positioned units (°, KT, NM, etc) - move closer to text */
+  .absolute.right-4 {
+    right: 0.5rem !important;
+  }
+
+  /* Hide 24H label in departure time - target the departure time input specifically */
+  .flight-params-inputs .grid > label:first-child + .relative .absolute {
+    display: none !important;
+  }
+
+  /* Reduce right padding on departure time input since 24H is hidden */
+  .flight-params-inputs .grid > label:first-child + .relative input {
+    padding-right: 0.75rem !important;
+  }
+
+  /* Range & Fuel special handling */
+  .range-fuel-inputs > div.grid {
+    display: block !important;
+  }
+
+  .range-fuel-inputs label:not(.print-hide-waypoints) {
+    display: inline-block !important;
+    width: 10rem !important;
+    margin: 0.5rem 0 0 0 !important;
+    vertical-align: middle !important;
+  }
+
+  /* Distance input container - direct child relative div */
+  .range-fuel-inputs > div.grid > div.relative {
+    display: inline-block !important;
+    width: 12rem !important;
+    margin: 0.5rem 0.5rem 0 0 !important;
+    vertical-align: middle !important;
+  }
+
+  .range-fuel-inputs > div.grid > div.relative input {
+    width: 100% !important;
+  }
+
+  /* Regular inputs in Range & Fuel */
+  .range-fuel-inputs input:not(.relative input) {
+    display: inline-block !important;
+    width: 12rem !important;
+    margin: 0.5rem 0.5rem 0 0 !important;
+    vertical-align: middle !important;
+  }
+
+  /* Selects in Range & Fuel */
+  .range-fuel-inputs select {
+    display: inline-block !important;
+    width: 6rem !important;
+    margin: 0.5rem 0 0 0 !important;
+    vertical-align: middle !important;
+  }
+
+  /* Nested grid for input+select combos in Range & Fuel */
+  .range-fuel-inputs .grid .grid {
+    display: inline-block !important;
+    width: auto !important;
+    margin: 0.5rem 0 0 0 !important;
+    vertical-align: middle !important;
+  }
+
+  .range-fuel-inputs .grid .grid > * {
+    display: inline-block !important;
+    vertical-align: middle !important;
+    margin: 0 !important;
+  }
+
+  .range-fuel-inputs .grid .grid input {
+    width: 12rem !important;
+    margin-right: 0.5rem !important;
+  }
+
+  .range-fuel-inputs .grid .grid select {
+    width: 6rem !important;
+  }
+
+  .range-fuel-inputs .mb-4 {
+    margin-bottom: 0.75rem !important;
+  }
+
+  /* Hide gap elements */
+  .hidden {
+    display: none !important;
+  }
+
+  /* Container divs for input+select combos - keep them inline */
+  [class*="grid-cols-[1fr"] {
+    display: inline-block !important;
+    width: auto !important;
+    margin: 0.5rem 0 0 0 !important;
+    vertical-align: middle !important;
+  }
+
+  [class*="grid-cols-[1fr"] > * {
+    display: inline-block !important;
+    vertical-align: middle !important;
+    margin: 0 !important;
+  }
+
+  [class*="grid-cols-[1fr"] input {
+    width: 12rem !important;
+    margin: 0 0.5rem 0 0 !important;
+  }
+
+  [class*="grid-cols-[1fr"] select {
+    width: 6rem !important;
+    margin: 0 !important;
+  }
+
+  /* Results sections: use compact 2-column layout */
+  .results-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Force primary results to 2 columns */
+  .primary-results-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Page breaks */
+  .print-page-break-before {
+    page-break-before: always !important;
+    break-before: page !important;
+  }
+
+  /* Avoid breaking inside result cards */
+  .print-avoid-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Adjust text colors for print */
+  * {
+    color: black !important;
+    border-color: #666 !important;
+  }
+
+  /* Keep backgrounds minimal - target divs with these Tailwind classes */
+  [class*="bg-slate"] {
+    background: white !important;
+  }
+
+  /* Only add subtle borders to result cards */
+  [class*="from-sky-500"],
+  [class*="from-emerald-500"] {
+    border: 1px solid #ddd !important;
+  }
+
+  /* Remove borders from section dividers */
+  [class*="border-b"] {
+    border-bottom: 1px solid #ddd !important;
+  }
+
+  /* Optimize page breaks */
+  .main-container {
+    page-break-inside: avoid;
+  }
+
+  /* Reduce header size */
+  h1 {
+    font-size: 1.5rem !important;
+  }
+
+  h2 {
+    font-size: 1.25rem !important;
+  }
+
+  h3 {
+    font-size: 1rem !important;
+  }
+
+  /* Remove shadows and blur effects */
+  * {
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+
+  /* Make sure inputs show their values */
+  input {
+    border: 1px solid #999 !important;
+    background: white !important;
+  }
+
+  /* Compact spacing */
+  .space-y-6 > * + * {
+    margin-top: 1rem !important;
+  }
+
+  /* Icon container smaller */
+  .w-16.h-16 {
+    width: 2rem !important;
+    height: 2rem !important;
+  }
+
+  .w-9.h-9 {
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+  }
+
+  /* Remove borders and shadows from main container */
+  main > div {
+    padding: 1rem !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: white !important;
+  }
+
+  /* Remove all borders from containers */
+  main {
+    border: none !important;
+  }
+
+  /* Ensure labels stay visible */
+  label {
+    color: black !important;
+  }
+
+  /* Tooltips hidden in print */
+  [role="tooltip"],
+  .tooltip {
+    display: none !important;
+  }
+
+  /* Make grid gaps smaller */
+  .gap-x-4 {
+    column-gap: 0.75rem !important;
+  }
+
+  .gap-y-4 {
+    row-gap: 0.5rem !important;
+  }
+
+  /* Reduce text sizes for better fit */
+  .text-lg {
+    font-size: 0.9rem !important;
+  }
+
+  .text-xl {
+    font-size: 1rem !important;
+  }
+
+  .text-2xl {
+    font-size: 1.1rem !important;
+  }
+
+  /* Remove rounded corners for cleaner print */
+  * {
+    border-radius: 0 !important;
+  }
+
+  /* Keep max-width but center content */
+  .max-w-4xl {
+    max-width: 100% !important;
+  }
+
+  /* Waypoints table - reduce font size to prevent wrapping */
+  table {
+    font-size: 0.8rem !important;
+  }
+
+  table th,
+  table td {
+    padding: 0.4rem 0.5rem !important;
+  }
+
+  table th {
+    font-size: 0.7rem !important;
+  }
+}

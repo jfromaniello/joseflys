@@ -27,7 +27,7 @@ export function WaypointsResults({
   };
 
   return (
-    <div>
+    <div className="print-page-break-before">
       <div className="flex items-center gap-2 mb-3">
         <h3 className="text-sm font-semibold uppercase tracking-wide" style={{ color: "oklch(0.65 0.15 230)" }}>
           Waypoints Progress

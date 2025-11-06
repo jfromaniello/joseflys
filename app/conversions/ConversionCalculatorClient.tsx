@@ -263,7 +263,6 @@ export function ConversionCalculatorClient({
                 text: `Convert ${value} ${fromUnit} - Aviation Unit Converter`,
                 url: typeof window !== "undefined" ? window.location.href : "",
               }}
-              ogImageUrl={ogImageUrl}
             />
           </div>
         </div>

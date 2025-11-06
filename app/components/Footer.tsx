@@ -4,7 +4,7 @@ interface FooterProps {
 
 export function Footer({ description }: FooterProps) {
   return (
-    <div className="text-center mt-8">
+    <footer className="text-center mt-8 print-footer">
       <p
         className="text-sm mb-3"
         style={{ color: "oklch(0.52 0.015 240)" }}
@@ -32,6 +32,6 @@ export function Footer({ description }: FooterProps) {
           @jfroma
         </a>
       </div>
-    </div>
+    </footer>
   );
 }

@@ -28,7 +28,7 @@ export function CorrectionsInputs({
   const isMagDevInvalid = !isNaN(magDevNum) && (magDevNum > 360 || magDevNum < -360);
 
   return (
-    <div>
+    <div className="corrections-inputs">
       <h3 className="text-sm font-semibold mb-3 uppercase tracking-wide" style={{ color: "oklch(0.65 0.15 230)" }}>
         Corrections
       </h3>
@@ -68,7 +68,7 @@ export function CorrectionsInputs({
 
         {/* Compass Deviation Label */}
         <label
-          className="flex items-center text-sm font-medium mb-2 lg:mb-0"
+          className="flex items-center text-sm font-medium mb-2 lg:mb-0 print-hide-compass-deviation"
           style={{ color: "oklch(0.72 0.015 240)" }}
         >
           Compass Deviation
@@ -78,7 +78,7 @@ export function CorrectionsInputs({
         {/* Compass Deviation Table Button */}
         <button
           onClick={() => setIsDeviationModalOpen(true)}
-          className={`w-full px-4 py-3 rounded-xl transition-all text-base font-medium border-2 cursor-pointer ${
+          className={`w-full px-4 py-3 rounded-xl transition-all text-base font-medium border-2 cursor-pointer print-hide-compass-deviation ${
             deviationTable.length > 0
               ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
               : "border-gray-600 bg-slate-900/50 hover:border-sky-500/50 hover:bg-sky-500/5"

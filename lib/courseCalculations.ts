@@ -116,14 +116,29 @@ export function calculateWaypoints(
   waypoints: Waypoint[],
   groundSpeed: number,
   fuelFlow?: number,
-  flightParams?: FlightParameters
+  flightParams?: FlightParameters,
+  totalDistance?: number
 ): WaypointResult[] {
-  if (waypoints.length === 0 || groundSpeed <= 0) {
+  if (groundSpeed <= 0) {
     return [];
   }
 
   // Sort waypoints by distance
   const sortedWaypoints = [...waypoints].sort((a, b) => a.distance - b.distance);
+
+  // If we have a total distance and it's greater than the last waypoint, add "Arrival" waypoint
+  if (totalDistance !== undefined && totalDistance > 0) {
+    const lastWaypointDistance = sortedWaypoints.length > 0
+      ? sortedWaypoints[sortedWaypoints.length - 1].distance
+      : 0;
+
+    if (totalDistance > lastWaypointDistance) {
+      sortedWaypoints.push({
+        name: "Arrival",
+        distance: totalDistance
+      });
+    }
+  }
 
   const results: WaypointResult[] = [];
   let previousDistance = 0;

@@ -31,7 +31,7 @@ export function CourseSpeedInputs({
   const isHeadingInvalid = !isNaN(headingNum) && headingNum > 360;
 
   return (
-    <div>
+    <div className="course-speed-inputs">
       <h3 className="text-sm font-semibold mb-3 uppercase tracking-wide" style={{ color: "oklch(0.65 0.15 230)" }}>
         Course & Speed
       </h3>
