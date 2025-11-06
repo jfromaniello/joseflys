@@ -265,6 +265,8 @@ export function WindCalculatorClient({
               <span className="font-semibold">ETAS (Effective True Air Speed)</span> is
               shown when WCA exceeds 10° to account for the reduced effective forward
               speed when crabbing at large angles.
+              {" "}<span className="font-semibold">All calculations are performed with decimal precision,
+              but displayed values are rounded to the nearest integer for clarity.</span>
             </p>
           </div>
         </div>

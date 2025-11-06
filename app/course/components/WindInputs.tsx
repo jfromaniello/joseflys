@@ -13,6 +13,18 @@ export function WindInputs({
   windSpeed,
   setWindSpeed,
 }: WindInputsProps) {
+  const handleWindDirBlur = () => {
+    const num = parseFloat(windDir);
+    if (!isNaN(num) && num >= 0 && num <= 360) {
+      setWindDir(String(Math.round(num)).padStart(3, '0'));
+    }
+  };
+
+  // Check if wind fields have incomplete data
+  const hasWindDir = windDir.trim() !== '';
+  const hasWindSpeed = windSpeed.trim() !== '';
+  const isWindIncomplete = (hasWindDir && !hasWindSpeed) || (!hasWindDir && hasWindSpeed);
+
   return (
     <div>
       <h3 className="text-sm font-semibold mb-3 uppercase tracking-wide" style={{ color: "oklch(0.65 0.15 230)" }}>
@@ -26,21 +38,31 @@ export function WindInputs({
             style={{ color: "oklch(0.72 0.015 240)" }}
           >
             Wind Direction
-            <Tooltip content="Optional: The direction the wind is coming FROM in degrees (0-360). For example, 270° means wind from the west. Leave empty if no wind." />
+            <Tooltip content="Optional: The direction the wind is coming FROM in degrees (000°-360°). For example, 270° means wind from the west. Leave empty if no wind." />
           </label>
           <div className="relative">
             <input
-              type="number"
+              type="text"
               value={windDir}
-              onChange={(e) => setWindDir(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white"
-              placeholder="Optional"
-              min="0"
-              max="360"
+              onChange={(e) => {
+                const value = e.target.value;
+                // Allow empty or valid numbers
+                if (value === '' || /^\d{0,3}$/.test(value)) {
+                  setWindDir(value);
+                }
+              }}
+              onBlur={handleWindDirBlur}
+              className={`w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 ${
+                isWindIncomplete && !hasWindDir
+                  ? 'focus:ring-red-500/50 border-red-500'
+                  : 'focus:ring-sky-500/50 border-gray-600'
+              } transition-all text-lg bg-slate-900/50 border-2 text-white`}
+              placeholder="000"
+              maxLength={3}
             />
             <span
               className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-              style={{ color: "oklch(0.55 0.02 240)" }}
+              style={{ color: "white" }}
             >
               °
             </span>
@@ -61,12 +83,16 @@ export function WindInputs({
               type="number"
               value={windSpeed}
               onChange={(e) => setWindSpeed(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white"
+              className={`w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 ${
+                isWindIncomplete && !hasWindSpeed
+                  ? 'focus:ring-red-500/50 border-red-500'
+                  : 'focus:ring-sky-500/50 border-gray-600'
+              } transition-all text-lg bg-slate-900/50 border-2 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white`}
               placeholder="Optional"
             />
             <span
               className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-              style={{ color: "oklch(0.55 0.02 240)" }}
+              style={{ color: "white" }}
             >
               kt
             </span>

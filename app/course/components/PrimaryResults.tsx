@@ -46,7 +46,7 @@ export function PrimaryResults({
               className="text-3xl sm:text-4xl font-bold"
               style={{ color: "white" }}
             >
-              {results.groundSpeed.toFixed(1)}
+              {Math.round(results.groundSpeed)}
             </p>
             <p
               className="text-sm mt-1"
@@ -71,7 +71,7 @@ export function PrimaryResults({
               className="text-3xl sm:text-4xl font-bold"
               style={{ color: "white" }}
             >
-              {compassCourse !== null ? `${compassCourse.toFixed(1)}°` : "—"}
+              {compassCourse !== null ? `${String(Math.round(compassCourse)).padStart(3, '0')}°` : "—"}
             </p>
             <p
               className="text-sm mt-1"
@@ -128,7 +128,7 @@ export function PrimaryResults({
               className="text-3xl sm:text-4xl font-bold"
               style={{ color: results.fuelUsed !== undefined ? "white" : "oklch(0.35 0.02 240)" }}
             >
-              {results.fuelUsed !== undefined ? results.fuelUsed.toFixed(1) : '—'}
+              {results.fuelUsed !== undefined ? Math.round(results.fuelUsed) : '—'}
             </p>
             <p
               className="text-sm mt-1"

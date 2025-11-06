@@ -38,7 +38,7 @@ export function RangeFuelInputs({
             />
             <span
               className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-              style={{ color: "oklch(0.55 0.02 240)" }}
+              style={{ color: "white" }}
             >
               NM
             </span>
@@ -64,7 +64,7 @@ export function RangeFuelInputs({
             />
             <span
               className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-              style={{ color: "oklch(0.55 0.02 240)" }}
+              style={{ color: "white" }}
             >
               units/hr
             </span>

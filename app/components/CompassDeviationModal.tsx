@@ -46,11 +46,25 @@ export function CompassDeviationModal({
   const updateEntry = (
     index: number,
     field: "forHeading" | "steerHeading",
-    value: number
+    value: string
   ) => {
     const newEntries = [...entries];
-    newEntries[index][field] = value;
+    const num = parseFloat(value);
+    newEntries[index][field] = isNaN(num) ? 0 : num;
     setEntries(newEntries);
+  };
+
+  const handleBlur = (index: number, field: "forHeading" | "steerHeading") => {
+    const value = entries[index][field];
+    if (value >= 0 && value <= 360) {
+      const newEntries = [...entries];
+      newEntries[index][field] = Math.round(value);
+      setEntries(newEntries);
+    }
+  };
+
+  const formatHeadingDisplay = (value: number): string => {
+    return String(Math.round(value)).padStart(3, '0');
   };
 
   const handleApply = () => {
@@ -152,24 +166,23 @@ export function CompassDeviationModal({
                   </label>
                   <div className="relative flex-1">
                     <input
-                      type="number"
-                      value={entry.forHeading}
-                      onChange={(e) =>
-                        updateEntry(
-                          index,
-                          "forHeading",
-                          parseFloat(e.target.value) || 0
-                        )
-                      }
+                      type="text"
+                      value={formatHeadingDisplay(entry.forHeading)}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '' || /^\d{0,3}$/.test(value)) {
+                          updateEntry(index, "forHeading", value);
+                        }
+                      }}
+                      onBlur={() => handleBlur(index, "forHeading")}
                       onPaste={(e) => handlePaste(e, index, "forHeading")}
-                      className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white"
-                      placeholder="0"
-                      min="0"
-                      max="360"
+                      className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white"
+                      placeholder="000"
+                      maxLength={3}
                     />
                     <span
                       className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-                      style={{ color: "oklch(0.55 0.02 240)" }}
+                      style={{ color: "white" }}
                     >
                       °
                     </span>
@@ -183,23 +196,22 @@ export function CompassDeviationModal({
                   </label>
                   <div className="relative flex-1">
                     <input
-                      type="number"
-                      value={entry.steerHeading}
-                      onChange={(e) =>
-                        updateEntry(
-                          index,
-                          "steerHeading",
-                          parseFloat(e.target.value) || 0
-                        )
-                      }
-                      className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white"
-                      placeholder="0"
-                      min="0"
-                      max="360"
+                      type="text"
+                      value={formatHeadingDisplay(entry.steerHeading)}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '' || /^\d{0,3}$/.test(value)) {
+                          updateEntry(index, "steerHeading", value);
+                        }
+                      }}
+                      onBlur={() => handleBlur(index, "steerHeading")}
+                      className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white"
+                      placeholder="000"
+                      maxLength={3}
                     />
                     <span
                       className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-                      style={{ color: "oklch(0.55 0.02 240)" }}
+                      style={{ color: "white" }}
                     >
                       °
                     </span>
