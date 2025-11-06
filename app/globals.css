@@ -201,6 +201,27 @@ html {
     padding-right: 0.75rem !important;
   }
 
+  /* Add more right padding to Previous Fuel Used input for better spacing with unit */
+  .flight-params-inputs .grid > div.relative:last-child input {
+    padding-right: 2.5rem !important;
+  }
+
+  /* Reduce right padding for inputs with degree symbol (°) - closer spacing */
+  /* True Heading in course-speed-inputs */
+  .course-speed-inputs .grid > div.relative:first-of-type input {
+    padding-right: 1.5rem !important;
+  }
+
+  /* Wind Direction in wind-inputs (first relative div) */
+  .wind-inputs .grid > div.relative:first-of-type input {
+    padding-right: 1.5rem !important;
+  }
+
+  /* Magnetic Deviation in corrections-inputs */
+  .corrections-inputs .grid > div.relative input {
+    padding-right: 1.5rem !important;
+  }
+
   /* Range & Fuel special handling */
   .range-fuel-inputs > div.grid {
     display: block !important;
@@ -271,6 +292,19 @@ html {
   /* Hide gap elements */
   .hidden {
     display: none !important;
+  }
+
+  /* Force line break elements in print */
+  .print\:block {
+    display: block !important;
+  }
+
+  .print\:w-full {
+    width: 100% !important;
+  }
+
+  .print\:h-0 {
+    height: 0 !important;
   }
 
   /* Container divs for input+select combos - keep them inline */

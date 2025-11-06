@@ -1,10 +1,14 @@
 import { Tooltip } from "@/app/components/Tooltip";
+import { getFuelResultUnit, FuelUnit } from "@/lib/fuelConversion";
 
 interface FlightParametersInputsProps {
   departureTime: string;
   setDepartureTime: (value: string) => void;
   elapsedMinutes: string;
   setElapsedMinutes: (value: string) => void;
+  previousFuelUsed: string;
+  setPreviousFuelUsed: (value: string) => void;
+  fuelUnit: FuelUnit;
 }
 
 export function FlightParametersInputs({
@@ -12,6 +16,9 @@ export function FlightParametersInputs({
   setDepartureTime,
   elapsedMinutes,
   setElapsedMinutes,
+  previousFuelUsed,
+  setPreviousFuelUsed,
+  fuelUnit,
 }: FlightParametersInputsProps) {
   const handleDepartureTimeChange = (value: string) => {
     // Allow only digits and limit to 4 characters
@@ -58,6 +65,8 @@ export function FlightParametersInputs({
         Flight Timeline
       </h3>
       <div className="grid grid-cols-1 lg:grid-cols-[10.5rem_12rem_2rem_10.5rem_12rem] gap-x-4 gap-y-4 lg:items-center">
+        {/* Row 1: Departure Time and Elapsed Minutes */}
+
         {/* Departure Time Label */}
         <label
           className="flex items-center text-sm font-medium mb-2 lg:mb-0 lg:col-span-1 col-span-1"
@@ -118,6 +127,39 @@ export function FlightParametersInputs({
             style={{ color: "white" }}
           >
             min
+          </span>
+        </div>
+
+        {/* Row 2: Previous Fuel Used (aligned with Departure Time) */}
+
+        {/* Force line break before this field in print */}
+        <div className="hidden lg:hidden print:block print:w-full print:h-0"></div>
+
+        {/* Previous Fuel Used Label */}
+        <label
+          className="flex items-center text-sm font-medium mb-2 lg:mb-0 lg:col-span-1 col-span-1"
+          style={{ color: "oklch(0.72 0.015 240)" }}
+        >
+          Previous Fuel Used
+          <Tooltip content="Fuel already consumed in previous legs. If specified, this value will be added to the fuel consumed in this leg. Leave empty to calculate fuel from elapsed time." />
+        </label>
+
+        {/* Previous Fuel Used Input */}
+        <div className="relative lg:col-span-1 col-span-1">
+          <input
+            type="number"
+            value={previousFuelUsed}
+            onChange={(e) => setPreviousFuelUsed(e.target.value)}
+            className="w-full px-4 pr-16 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
+            placeholder="0"
+            min="0"
+            step="any"
+          />
+          <span
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
+            style={{ color: "white" }}
+          >
+            {getFuelResultUnit(fuelUnit)}
           </span>
         </div>
       </div>

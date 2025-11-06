@@ -11,6 +11,7 @@ interface NewLegButtonProps {
   elapsedMinutes: number;
   windDir: string;
   windSpeed: string;
+  fuelUsed?: number; // Total fuel used at the end of current leg
 }
 
 export function NewLegButton({
@@ -24,6 +25,7 @@ export function NewLegButton({
   elapsedMinutes,
   windDir,
   windSpeed,
+  fuelUsed,
 }: NewLegButtonProps) {
   const handleNewLeg = () => {
     // Build URL with parameters for next leg
@@ -44,6 +46,11 @@ export function NewLegButton({
 
     // Set elapsed minutes
     params.set("elapsedMin", elapsedMinutes.toString());
+
+    // Set previous fuel used (total fuel used from current leg) - rounded to nearest integer
+    if (fuelUsed !== undefined && fuelUsed > 0) {
+      params.set("prevFuel", Math.round(fuelUsed).toString());
+    }
 
     // Open new tab with carried-over parameters
     const newUrl = `/course?${params.toString()}`;

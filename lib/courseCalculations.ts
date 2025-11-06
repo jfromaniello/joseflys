@@ -26,6 +26,7 @@ export interface WaypointResult {
 export interface FlightParameters {
   departureTime?: string; // HHMM format
   elapsedMinutes?: number; // minutes flown before this leg
+  previousFuelUsed?: number; // fuel already consumed in previous legs
 }
 
 export function calculateCourse(
@@ -36,7 +37,8 @@ export function calculateCourse(
   magDev: number,
   distance?: number,
   fuelFlow?: number,
-  elapsedMinutes?: number
+  elapsedMinutes?: number,
+  previousFuelUsed?: number
 ): CourseCalculations {
   // Convert to radians
   const toRad = (deg: number) => (deg * Math.PI) / 180;
@@ -89,11 +91,17 @@ export function calculateCourse(
     // ETA = Distance / Ground Speed (in hours) - this is just for THIS leg
     eta = distance / groundSpeed;
 
-    // Fuel Used = Fuel Flow × Total Time (including elapsed time from previous legs)
+    // Fuel Used calculation
     if (fuelFlow !== undefined && fuelFlow > 0) {
-      const elapsedHours = (elapsedMinutes || 0) / 60;
-      const totalHours = elapsedHours + eta;
-      fuelUsed = fuelFlow * totalHours;
+      if (previousFuelUsed !== undefined) {
+        // If previous fuel used is specified, add fuel consumed in this leg only
+        fuelUsed = previousFuelUsed + (fuelFlow * eta);
+      } else {
+        // Otherwise, use the old behavior: fuel flow × total time (elapsed + this leg)
+        const elapsedHours = (elapsedMinutes || 0) / 60;
+        const totalHours = elapsedHours + eta;
+        fuelUsed = fuelFlow * totalHours;
+      }
     }
   }
 
@@ -162,8 +170,16 @@ export function calculateWaypoints(
     // Calculate cumulative fuel used to this waypoint
     let fuelUsed: number | undefined;
     if (fuelFlow !== undefined && fuelFlow > 0) {
-      const totalHours = cumulativeTime / 60;
-      fuelUsed = Math.round(fuelFlow * totalHours);
+      const previousFuel = flightParams?.previousFuelUsed || 0;
+      if (previousFuel > 0) {
+        // If previous fuel used is specified, add fuel consumed from start of this leg only
+        const timeFromLegStartHours = timeFromLegStart / 60;
+        fuelUsed = Math.round(previousFuel + (fuelFlow * timeFromLegStartHours));
+      } else {
+        // Otherwise, use the old behavior: fuel flow × cumulative time
+        const totalHours = cumulativeTime / 60;
+        fuelUsed = Math.round(fuelFlow * totalHours);
+      }
     }
 
     results.push({

@@ -36,6 +36,7 @@ interface CourseCalculatorClientProps {
   initialWaypoints: string;
   initialDepTime: string;
   initialElapsedMin: string;
+  initialPrevFuel: string;
 }
 
 export function CourseCalculatorClient({
@@ -53,6 +54,7 @@ export function CourseCalculatorClient({
   initialWaypoints,
   initialDepTime,
   initialElapsedMin,
+  initialPrevFuel,
 }: CourseCalculatorClientProps) {
   const [trueHeading, setTrueHeading] = useState<string>(initialTh);
   const [tas, setTas] = useState<string>(initialTas);
@@ -64,6 +66,7 @@ export function CourseCalculatorClient({
   const [description, setDescription] = useState<string>(initialDesc);
   const [departureTime, setDepartureTime] = useState<string>(initialDepTime);
   const [elapsedMinutes, setElapsedMinutes] = useState<string>(initialElapsedMin);
+  const [previousFuelUsed, setPreviousFuelUsed] = useState<string>(initialPrevFuel);
   const [speedUnit, setSpeedUnit] = useState<SpeedUnit>(
     (initialSpeedUnit as SpeedUnit) || 'kt'
   );
@@ -115,6 +118,7 @@ export function CourseCalculatorClient({
     if (description) params.set("desc", description);
     if (departureTime) params.set("depTime", departureTime);
     if (elapsedMinutes) params.set("elapsedMin", elapsedMinutes);
+    if (previousFuelUsed) params.set("prevFuel", previousFuelUsed);
     if (speedUnit !== 'kt') params.set("unit", speedUnit);
     if (fuelUnit !== 'gph') params.set("funit", fuelUnit);
 
@@ -137,7 +141,7 @@ export function CourseCalculatorClient({
     // Use window.history.replaceState instead of router.replace to avoid server requests
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState(null, '', newUrl);
-  }, [trueHeading, tas, windDir, windSpeed, magDev, distance, fuelFlow, description, departureTime, elapsedMinutes, deviationTable, waypoints, speedUnit, fuelUnit]);
+  }, [trueHeading, tas, windDir, windSpeed, magDev, distance, fuelFlow, description, departureTime, elapsedMinutes, previousFuelUsed, deviationTable, waypoints, speedUnit, fuelUnit]);
 
   // Calculate results during render (not in useEffect to avoid cascading renders)
   const th = parseFloat(trueHeading);
@@ -151,6 +155,7 @@ export function CourseCalculatorClient({
   const ff = fuelFlow ? parseFloat(fuelFlow) : undefined;
 
   const elapsedMins = elapsedMinutes ? parseInt(elapsedMinutes) : undefined;
+  const prevFuel = previousFuelUsed ? parseFloat(previousFuelUsed) : undefined;
 
   // Load example data
   const loadExample = () => {
@@ -164,6 +169,7 @@ export function CourseCalculatorClient({
     setDescription("SAZS to SACO (Example Flight)");
     setDepartureTime("1430");
     setElapsedMinutes("0");
+    setPreviousFuelUsed("");
 
     // Set example waypoints
     const exampleWaypoints = [
@@ -178,7 +184,7 @@ export function CourseCalculatorClient({
     !isNaN(th) &&
     !isNaN(tasInKnots) &&
     tasInKnots > 0
-      ? calculateCourse(wd, ws, th, tasInKnots, md, dist, ff, elapsedMins)
+      ? calculateCourse(wd, ws, th, tasInKnots, md, dist, ff, elapsedMins, prevFuel)
       : null;
 
   // Calculate compass course when deviation table is available and results exist
@@ -191,6 +197,7 @@ export function CourseCalculatorClient({
   const flightParams: FlightParameters = {
     departureTime: departureTime || undefined,
     elapsedMinutes: elapsedMinutes ? parseInt(elapsedMinutes) : undefined,
+    previousFuelUsed: prevFuel,
   };
 
   const waypointResults =
@@ -360,6 +367,9 @@ export function CourseCalculatorClient({
               setDepartureTime={setDepartureTime}
               elapsedMinutes={elapsedMinutes}
               setElapsedMinutes={setElapsedMinutes}
+              previousFuelUsed={previousFuelUsed}
+              setPreviousFuelUsed={setPreviousFuelUsed}
+              fuelUnit={fuelUnit}
             />
           </div>
 
@@ -411,6 +421,7 @@ export function CourseCalculatorClient({
                     elapsedMinutes={(elapsedMins || 0) + Math.round((results.eta || 0) * 60)}
                     windDir={windDir}
                     windSpeed={windSpeed}
+                    fuelUsed={results.fuelUsed}
                   />
                 </div>
               )}

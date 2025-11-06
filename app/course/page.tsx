@@ -18,6 +18,7 @@ interface WindsPageProps {
     waypoints?: string; // JSON encoded waypoints
     depTime?: string; // Departure time HHMM
     elapsedMin?: string; // Elapsed minutes
+    prevFuel?: string; // Previous fuel used
   }>;
 }
 
@@ -118,6 +119,7 @@ export default async function WindsPage({ searchParams }: WindsPageProps) {
   const waypoints = params.waypoints || "";
   const depTime = params.depTime || "";
   const elapsedMin = params.elapsedMin || "";
+  const prevFuel = params.prevFuel || "";
 
   return (
     <Suspense
@@ -142,6 +144,7 @@ export default async function WindsPage({ searchParams }: WindsPageProps) {
         initialWaypoints={waypoints}
         initialDepTime={depTime}
         initialElapsedMin={elapsedMin}
+        initialPrevFuel={prevFuel}
       />
     </Suspense>
   );
