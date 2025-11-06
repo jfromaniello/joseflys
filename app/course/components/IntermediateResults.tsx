@@ -1,8 +1,8 @@
 import { Tooltip } from "@/app/components/Tooltip";
-import { WindCalculations } from "@/lib/windCalculations";
+import { CourseCalculations } from "@/lib/courseCalculations";
 
 interface IntermediateResultsProps {
-  results: WindCalculations;
+  results: CourseCalculations;
 }
 
 export function IntermediateResults({ results }: IntermediateResultsProps) {

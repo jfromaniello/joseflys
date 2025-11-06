@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { PageLayout } from "../components/PageLayout";
 import { Footer } from "../components/Footer";
 import { Navigation } from "../components/Navigation";
-import { calculateWinds } from "@/lib/windCalculations";
+import { calculateCourse } from "@/lib/courseCalculations";
 import { DeviationEntry } from "../components/CompassDeviationModal";
 import { calculateCompassCourse } from "@/lib/compassDeviation";
 import { compressForUrl, decompressFromUrl } from "@/lib/urlCompression";
@@ -16,7 +16,7 @@ import { IntermediateResults } from "./components/IntermediateResults";
 import { PrimaryResults } from "./components/PrimaryResults";
 import { toKnots } from "@/lib/speedConversion";
 
-interface WindCalculatorClientProps {
+interface CourseCalculatorClientProps {
   initialTh: string;
   initialTas: string;
   initialWd: string;
@@ -30,7 +30,7 @@ interface WindCalculatorClientProps {
   initialFuelUnit: string;
 }
 
-export function WindCalculatorClient({
+export function CourseCalculatorClient({
   initialTh,
   initialTas,
   initialWd,
@@ -42,7 +42,7 @@ export function WindCalculatorClient({
   initialDesc,
   initialSpeedUnit,
   initialFuelUnit,
-}: WindCalculatorClientProps) {
+}: CourseCalculatorClientProps) {
   const [trueHeading, setTrueHeading] = useState<string>(initialTh);
   const [tas, setTas] = useState<string>(initialTas);
   const [windDir, setWindDir] = useState<string>(initialWd);
@@ -115,7 +115,7 @@ export function WindCalculatorClient({
     !isNaN(th) &&
     !isNaN(tasInKnots) &&
     tasInKnots > 0
-      ? calculateWinds(wd, ws, th, tasInKnots, md, dist, ff)
+      ? calculateCourse(wd, ws, th, tasInKnots, md, dist, ff)
       : null;
 
   // Calculate compass course when deviation table is available and results exist

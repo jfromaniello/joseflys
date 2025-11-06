@@ -1,4 +1,4 @@
-export interface WindCalculations {
+export interface CourseCalculations {
   crosswind: number;
   headwind: number;
   windCorrectionAngle: number;
@@ -9,7 +9,7 @@ export interface WindCalculations {
   fuelUsed?: number; // in same units as fuel flow
 }
 
-export function calculateWinds(
+export function calculateCourse(
   windDir: number,
   windSpeed: number,
   trueHeading: number,
@@ -17,7 +17,7 @@ export function calculateWinds(
   magDev: number,
   distance?: number,
   fuelFlow?: number
-): WindCalculations {
+): CourseCalculations {
   // Convert to radians
   const toRad = (deg: number) => (deg * Math.PI) / 180;
   const toDeg = (rad: number) => (rad * 180) / Math.PI;

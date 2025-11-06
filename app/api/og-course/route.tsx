@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og';
 import { NextRequest } from 'next/server';
-import { calculateWinds } from '@/lib/windCalculations';
+import { calculateCourse } from '@/lib/courseCalculations';
 import { calculateCompassCourse } from '@/lib/compassDeviation';
 import { decompressFromUrl } from '@/lib/urlCompression';
 
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     const distance = dist ? parseFloat(dist) : undefined;
     const fuelFlow = ff ? parseFloat(ff) : undefined;
 
-    const results = calculateWinds(windDir, windSpeed, trueHeading, tasVal, magDev, distance, fuelFlow);
+    const results = calculateCourse(windDir, windSpeed, trueHeading, tasVal, magDev, distance, fuelFlow);
 
     // Try to calculate Compass Course if deviation table is provided
     let compassCourse: number | null = null;

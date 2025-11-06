@@ -1,5 +1,5 @@
 import { Tooltip } from "@/app/components/Tooltip";
-import { WindCalculations } from "@/lib/windCalculations";
+import { CourseCalculations } from "@/lib/courseCalculations";
 import { DeviationEntry } from "@/app/components/CompassDeviationModal";
 import { ShareButton } from "@/app/components/ShareButton";
 import { SpeedUnit } from "./CourseSpeedInputs";
@@ -8,7 +8,7 @@ import { getSpeedUnitLabel } from "@/lib/speedConversion";
 import { getFuelResultUnit } from "@/lib/fuelConversion";
 
 interface PrimaryResultsProps {
-  results: WindCalculations;
+  results: CourseCalculations;
   compassCourse: number | null;
   deviationTable: DeviationEntry[];
   windDir: string;

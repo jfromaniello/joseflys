@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { WindCalculatorClient } from "./WindCalculatorClient";
+import { CourseCalculatorClient } from "./CourseCalculatorClient";
 
 interface WindsPageProps {
   searchParams: Promise<{
@@ -121,7 +121,7 @@ export default async function WindsPage({ searchParams }: WindsPageProps) {
         </div>
       }
     >
-      <WindCalculatorClient
+      <CourseCalculatorClient
         initialTh={th}
         initialTas={tas}
         initialWd={wd}
