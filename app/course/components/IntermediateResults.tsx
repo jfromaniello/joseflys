@@ -48,7 +48,7 @@ export function IntermediateResults({ results }: IntermediateResultsProps) {
             <Tooltip content="Effective True Air Speed - Your actual effective forward speed when flying at a large crab angle. ETAS = TAS × cos(WCA). Only calculated when wind correction angle exceeds 10°." />
           </div>
           <p className="text-xl font-bold text-center" style={{ color: results.etas ? "oklch(0.7 0.02 240)" : "oklch(0.35 0.02 240)" }}>
-            {results.etas ? `${Math.round(results.etas)} kt` : '—'}
+            {results.etas ? `${Math.round(results.etas)} KT` : '—'}
           </p>
           <p className="text-xs text-center mt-0.5" style={{ color: "oklch(0.4 0.02 240)" }}>
             {results.etas ? 'WCA > 10°' : 'WCA ≤ 10°'}
@@ -64,7 +64,7 @@ export function IntermediateResults({ results }: IntermediateResultsProps) {
             <Tooltip content="The component of wind blowing perpendicular to your flight path. 'From right' means wind from your right, 'from left' means wind from your left." />
           </div>
           <p className="text-xl font-bold text-center" style={{ color: "oklch(0.7 0.02 240)" }}>
-            {Math.round(Math.abs(results.crosswind))} kt
+            {Math.round(Math.abs(results.crosswind))} KT
           </p>
           <p className="text-xs text-center mt-0.5" style={{ color: "oklch(0.5 0.02 240)" }}>
             {results.crosswind > 0 ? "from right" : results.crosswind < 0 ? "from left" : "none"}
@@ -80,7 +80,7 @@ export function IntermediateResults({ results }: IntermediateResultsProps) {
             <Tooltip content="The component of wind blowing along your flight path. Headwind slows you down, tailwind speeds you up. This directly affects your ground speed." />
           </div>
           <p className="text-xl font-bold text-center" style={{ color: "oklch(0.7 0.02 240)" }}>
-            {Math.round(Math.abs(results.headwind))} kt
+            {Math.round(Math.abs(results.headwind))} KT
           </p>
         </div>
       </div>

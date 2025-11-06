@@ -82,7 +82,7 @@ export function WindInputs({
           style={{ color: "oklch(0.72 0.015 240)" }}
         >
           Wind Speed
-          <Tooltip content="Optional: The wind speed in knots. Leave empty if no wind." />
+          <Tooltip content="Optional: The wind speed in KT (knots). Leave empty if no wind." />
         </label>
 
         {/* Wind Speed Input */}
@@ -102,7 +102,7 @@ export function WindInputs({
             className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
             style={{ color: "white" }}
           >
-            kt
+            KT
           </span>
         </div>
       </div>

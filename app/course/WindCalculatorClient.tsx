@@ -8,12 +8,13 @@ import { calculateWinds } from "@/lib/windCalculations";
 import { DeviationEntry } from "../components/CompassDeviationModal";
 import { calculateCompassCourse } from "@/lib/compassDeviation";
 import { compressForUrl, decompressFromUrl } from "@/lib/urlCompression";
-import { CourseSpeedInputs } from "./components/CourseSpeedInputs";
+import { CourseSpeedInputs, SpeedUnit } from "./components/CourseSpeedInputs";
 import { WindInputs } from "./components/WindInputs";
 import { CorrectionsInputs } from "./components/CorrectionsInputs";
-import { RangeFuelInputs } from "./components/RangeFuelInputs";
+import { RangeFuelInputs, FuelUnit } from "./components/RangeFuelInputs";
 import { IntermediateResults } from "./components/IntermediateResults";
 import { PrimaryResults } from "./components/PrimaryResults";
+import { toKnots } from "@/lib/speedConversion";
 
 interface WindCalculatorClientProps {
   initialTh: string;
@@ -25,6 +26,8 @@ interface WindCalculatorClientProps {
   initialFf: string;
   initialDevTable: string;
   initialDesc: string;
+  initialSpeedUnit: string;
+  initialFuelUnit: string;
 }
 
 export function WindCalculatorClient({
@@ -37,6 +40,8 @@ export function WindCalculatorClient({
   initialFf,
   initialDevTable,
   initialDesc,
+  initialSpeedUnit,
+  initialFuelUnit,
 }: WindCalculatorClientProps) {
   const [trueHeading, setTrueHeading] = useState<string>(initialTh);
   const [tas, setTas] = useState<string>(initialTas);
@@ -46,6 +51,12 @@ export function WindCalculatorClient({
   const [distance, setDistance] = useState<string>(initialDist);
   const [fuelFlow, setFuelFlow] = useState<string>(initialFf);
   const [description, setDescription] = useState<string>(initialDesc);
+  const [speedUnit, setSpeedUnit] = useState<SpeedUnit>(
+    (initialSpeedUnit as SpeedUnit) || 'kt'
+  );
+  const [fuelUnit, setFuelUnit] = useState<FuelUnit>(
+    (initialFuelUnit as FuelUnit) || 'gph'
+  );
 
   // Compass deviation table state - initialize from URL if available
   const [deviationTable, setDeviationTable] = useState<DeviationEntry[]>(() => {
@@ -73,6 +84,8 @@ export function WindCalculatorClient({
     if (distance) params.set("dist", distance);
     if (fuelFlow) params.set("ff", fuelFlow);
     if (description) params.set("desc", description);
+    if (speedUnit !== 'kt') params.set("unit", speedUnit);
+    if (fuelUnit !== 'gph') params.set("funit", fuelUnit);
 
     // Add deviation table if it exists (compressed)
     if (deviationTable.length > 0) {
@@ -85,11 +98,13 @@ export function WindCalculatorClient({
     // Use window.history.replaceState instead of router.replace to avoid server requests
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState(null, '', newUrl);
-  }, [trueHeading, tas, windDir, windSpeed, magDev, distance, fuelFlow, description, deviationTable]);
+  }, [trueHeading, tas, windDir, windSpeed, magDev, distance, fuelFlow, description, deviationTable, speedUnit, fuelUnit]);
 
   // Calculate results during render (not in useEffect to avoid cascading renders)
   const th = parseFloat(trueHeading);
   const tasVal = parseFloat(tas);
+  // Convert TAS to knots for calculations
+  const tasInKnots = !isNaN(tasVal) ? toKnots(tasVal, speedUnit) : NaN;
   const wd = windDir ? parseFloat(windDir) : 0; // Default to 0 if empty
   const ws = windSpeed ? parseFloat(windSpeed) : 0; // Default to 0 if empty
   const md = parseFloat(magDev) || 0; // Default to 0 if empty
@@ -98,9 +113,9 @@ export function WindCalculatorClient({
 
   const results =
     !isNaN(th) &&
-    !isNaN(tasVal) &&
-    tasVal > 0
-      ? calculateWinds(wd, ws, th, tasVal, md, dist, ff)
+    !isNaN(tasInKnots) &&
+    tasInKnots > 0
+      ? calculateWinds(wd, ws, th, tasInKnots, md, dist, ff)
       : null;
 
   // Calculate compass course when deviation table is available and results exist
@@ -206,6 +221,8 @@ export function WindCalculatorClient({
               setTrueHeading={setTrueHeading}
               tas={tas}
               setTas={setTas}
+              speedUnit={speedUnit}
+              setSpeedUnit={setSpeedUnit}
             />
 
             {/* Wind */}
@@ -230,6 +247,8 @@ export function WindCalculatorClient({
               setDistance={setDistance}
               fuelFlow={fuelFlow}
               setFuelFlow={setFuelFlow}
+              fuelUnit={fuelUnit}
+              setFuelUnit={setFuelUnit}
             />
           </div>
 
@@ -248,6 +267,8 @@ export function WindCalculatorClient({
                 windSpeed={windSpeed}
                 trueHeading={trueHeading}
                 ogImageUrl={ogImageUrl}
+                speedUnit={speedUnit}
+                fuelUnit={fuelUnit}
               />
             </div>
           )}

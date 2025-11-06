@@ -2,6 +2,10 @@ import { Tooltip } from "@/app/components/Tooltip";
 import { WindCalculations } from "@/lib/windCalculations";
 import { DeviationEntry } from "@/app/components/CompassDeviationModal";
 import { ShareButton } from "@/app/components/ShareButton";
+import { SpeedUnit } from "./CourseSpeedInputs";
+import { FuelUnit } from "./RangeFuelInputs";
+import { getSpeedUnitLabel } from "@/lib/speedConversion";
+import { getFuelResultUnit } from "@/lib/fuelConversion";
 
 interface PrimaryResultsProps {
   results: WindCalculations;
@@ -11,6 +15,8 @@ interface PrimaryResultsProps {
   windSpeed: string;
   trueHeading: string;
   ogImageUrl?: string;
+  speedUnit: SpeedUnit;
+  fuelUnit: FuelUnit;
 }
 
 export function PrimaryResults({
@@ -21,6 +27,8 @@ export function PrimaryResults({
   windSpeed,
   trueHeading,
   ogImageUrl,
+  speedUnit,
+  fuelUnit,
 }: PrimaryResultsProps) {
   return (
     <div>
@@ -52,7 +60,7 @@ export function PrimaryResults({
               className="text-sm mt-1"
               style={{ color: "oklch(0.6 0.02 240)" }}
             >
-              knots
+              {getSpeedUnitLabel(speedUnit)}
             </p>
           </div>
 
@@ -134,7 +142,7 @@ export function PrimaryResults({
               className="text-sm mt-1"
               style={{ color: "oklch(0.45 0.02 240)" }}
             >
-              {results.fuelUsed !== undefined ? 'units' : 'enter dist & FF'}
+              {results.fuelUsed !== undefined ? getFuelResultUnit(fuelUnit) : 'enter dist & FF'}
             </p>
           </div>
         </div>

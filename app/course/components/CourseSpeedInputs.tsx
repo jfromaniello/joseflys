@@ -1,10 +1,15 @@
 import { Tooltip } from "@/app/components/Tooltip";
+import { SpeedUnit, getSpeedUnitLabel } from "@/lib/speedConversion";
+
+export type { SpeedUnit };
 
 interface CourseSpeedInputsProps {
   trueHeading: string;
   setTrueHeading: (value: string) => void;
   tas: string;
   setTas: (value: string) => void;
+  speedUnit: SpeedUnit;
+  setSpeedUnit: (unit: SpeedUnit) => void;
 }
 
 export function CourseSpeedInputs({
@@ -12,6 +17,8 @@ export function CourseSpeedInputs({
   setTrueHeading,
   tas,
   setTas,
+  speedUnit,
+  setSpeedUnit,
 }: CourseSpeedInputsProps) {
   const handleHeadingBlur = () => {
     const num = parseFloat(trueHeading);
@@ -28,10 +35,10 @@ export function CourseSpeedInputs({
       <h3 className="text-sm font-semibold mb-3 uppercase tracking-wide" style={{ color: "oklch(0.65 0.15 230)" }}>
         Course & Speed
       </h3>
-      <div className="grid grid-cols-1 lg:grid-cols-[10.5rem_12rem_2rem_10.5rem_12rem] gap-x-4 gap-y-4 lg:items-center">
+      <div className="grid grid-cols-1 lg:grid-cols-[10.5rem_12rem_2rem_10.5rem_6rem_5rem] gap-x-4 gap-y-4 lg:items-center">
         {/* True Heading Label */}
         <label
-          className="flex items-center text-sm font-medium mb-2 lg:mb-0"
+          className="flex items-center text-sm font-medium mb-2 lg:mb-0 lg:col-span-1 col-span-1"
           style={{ color: "oklch(0.72 0.015 240)" }}
         >
           True Heading
@@ -39,7 +46,7 @@ export function CourseSpeedInputs({
         </label>
 
         {/* True Heading Input */}
-        <div className="relative">
+        <div className="relative lg:col-span-1 col-span-1">
           <input
             type="text"
             value={trueHeading}
@@ -70,30 +77,39 @@ export function CourseSpeedInputs({
         {/* Gap */}
         <div className="hidden lg:block"></div>
 
-        {/* True Airspeed Label */}
+        {/* True Airspeed Label - Full width on mobile */}
         <label
-          className="flex items-center text-sm font-medium mb-2 lg:mb-0"
+          className="flex items-center text-sm font-medium mb-2 lg:mb-0 lg:col-span-1 col-span-1"
           style={{ color: "oklch(0.72 0.015 240)" }}
         >
           True Airspeed
-          <Tooltip content="Your aircraft's actual speed through the air mass in knots. Corrected for Pressure Altitude and Outside Indicated Air Temperature. Use the TAS Calculator if you only have CAS." />
+          <Tooltip content="Your aircraft's actual speed through the air mass. Corrected for Pressure Altitude and Outside Indicated Air Temperature. Use the TAS Calculator if you only have CAS. Select your preferred units." />
         </label>
 
-        {/* True Airspeed Input */}
-        <div className="relative">
+        {/* Container for input + selector on mobile */}
+        <div className="grid grid-cols-[1fr_auto] gap-x-4 lg:contents">
+          {/* True Airspeed Input */}
           <input
             type="number"
             value={tas}
             onChange={(e) => setTas(e.target.value)}
-            className="w-full px-4 pr-10 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
+            className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
             placeholder="100"
           />
-          <span
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-            style={{ color: "white" }}
+
+          {/* Speed Unit Selector */}
+          <select
+            value={speedUnit}
+            onChange={(e) => setSpeedUnit(e.target.value as SpeedUnit)}
+            className="w-[5.5rem] lg:w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white cursor-pointer appearance-none"
+            style={{
+              backgroundImage: 'none',
+            }}
           >
-            kt
-          </span>
+            <option value="kt">KT</option>
+            <option value="kmh">km/h</option>
+            <option value="mph">mph</option>
+          </select>
         </div>
       </div>
     </div>

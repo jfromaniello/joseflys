@@ -13,6 +13,8 @@ interface WindsPageProps {
     ff?: string;
     devTable?: string; // JSON encoded deviation table
     desc?: string; // Optional description
+    unit?: string; // Speed unit (kt, kmh, mph)
+    funit?: string; // Fuel unit (gph, lph, pph, kgh)
   }>;
 }
 
@@ -108,6 +110,8 @@ export default async function WindsPage({ searchParams }: WindsPageProps) {
   const ff = params.ff || "";
   const devTable = params.devTable || "";
   const desc = params.desc || "";
+  const unit = params.unit || "kt";
+  const funit = params.funit || "gph";
 
   return (
     <Suspense
@@ -127,6 +131,8 @@ export default async function WindsPage({ searchParams }: WindsPageProps) {
         initialFf={ff}
         initialDevTable={devTable}
         initialDesc={desc}
+        initialSpeedUnit={unit}
+        initialFuelUnit={funit}
       />
     </Suspense>
   );

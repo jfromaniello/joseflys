@@ -1,10 +1,15 @@
 import { Tooltip } from "@/app/components/Tooltip";
+import { FuelUnit, getFuelUnitLabel } from "@/lib/fuelConversion";
+
+export type { FuelUnit };
 
 interface RangeFuelInputsProps {
   distance: string;
   setDistance: (value: string) => void;
   fuelFlow: string;
   setFuelFlow: (value: string) => void;
+  fuelUnit: FuelUnit;
+  setFuelUnit: (unit: FuelUnit) => void;
 }
 
 export function RangeFuelInputs({
@@ -12,16 +17,18 @@ export function RangeFuelInputs({
   setDistance,
   fuelFlow,
   setFuelFlow,
+  fuelUnit,
+  setFuelUnit,
 }: RangeFuelInputsProps) {
   return (
     <div>
       <h3 className="text-sm font-semibold mb-3 uppercase tracking-wide" style={{ color: "oklch(0.65 0.15 230)" }}>
         Range & Fuel
       </h3>
-      <div className="grid grid-cols-1 lg:grid-cols-[10.5rem_12rem_2rem_10.5rem_12rem] gap-x-4 gap-y-4 lg:items-center">
+      <div className="grid grid-cols-1 lg:grid-cols-[10.5rem_12rem_2rem_10.5rem_6rem_5rem] gap-x-4 gap-y-4 lg:items-center">
         {/* Distance Label */}
         <label
-          className="flex items-center text-sm font-medium mb-2 lg:mb-0"
+          className="flex items-center text-sm font-medium mb-2 lg:mb-0 lg:col-span-1 col-span-1"
           style={{ color: "oklch(0.72 0.015 240)" }}
         >
           Distance
@@ -29,7 +36,7 @@ export function RangeFuelInputs({
         </label>
 
         {/* Distance Input */}
-        <div className="relative">
+        <div className="relative lg:col-span-1 col-span-1">
           <input
             type="number"
             value={distance}
@@ -48,30 +55,40 @@ export function RangeFuelInputs({
         {/* Gap */}
         <div className="hidden lg:block"></div>
 
-        {/* Fuel Flow Label */}
+        {/* Fuel Flow Label - Full width on mobile */}
         <label
-          className="flex items-center text-sm font-medium mb-2 lg:mb-0"
+          className="flex items-center text-sm font-medium mb-2 lg:mb-0 lg:col-span-1 col-span-1"
           style={{ color: "oklch(0.72 0.015 240)" }}
         >
           Fuel Flow
-          <Tooltip content="Your aircraft's fuel consumption rate per hour (e.g., 8.5 gal/hr, 32 L/hr, or 24 kg/hr). The unit doesn't matter - fuel used will be in the same units. Find this in your POH or flight manual." />
+          <Tooltip content="Your aircraft's fuel consumption rate per hour. Select your preferred units. Find this in your POH or flight manual." />
         </label>
 
-        {/* Fuel Flow Input */}
-        <div className="relative">
+        {/* Container for input + selector on mobile */}
+        <div className="grid grid-cols-[1fr_auto] gap-x-4 lg:contents">
+          {/* Fuel Flow Input */}
           <input
             type="number"
             value={fuelFlow}
             onChange={(e) => setFuelFlow(e.target.value)}
-            className="w-full px-4 pr-11 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
-            placeholder="Optional"
+            className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
+            placeholder="Opt."
           />
-          <span
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-            style={{ color: "white" }}
+
+          {/* Fuel Unit Selector */}
+          <select
+            value={fuelUnit}
+            onChange={(e) => setFuelUnit(e.target.value as FuelUnit)}
+            className="w-[5.5rem] lg:w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white cursor-pointer appearance-none"
+            style={{
+              backgroundImage: 'none',
+            }}
           >
-            u/h
-          </span>
+            <option value="gph">GPH</option>
+            <option value="lph">LPH</option>
+            <option value="pph">PPH</option>
+            <option value="kgh">KG/H</option>
+          </select>
         </div>
       </div>
     </div>
