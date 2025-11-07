@@ -9,24 +9,32 @@ export default withPWA({
   dest: "public",
   disable: process.env.NODE_ENV === "development",
   register: true,
+  cacheOnFrontEndNav: true,
   fallbacks: {
     document: "/offline",
   },
-  cacheOnFrontEndNav: true,
   workboxOptions: {
     skipWaiting: true,
     clientsClaim: true,
-    additionalManifestEntries: [
-      { url: "/", revision: "2" },
-      { url: "/tas", revision: "2" },
-      { url: "/course", revision: "2" },
-      { url: "/winds", revision: "2" },
-      { url: "/distance", revision: "2" },
-      { url: "/planning", revision: "2" },
-      { url: "/conversions", revision: "2" },
-      { url: "/offline", revision: "2" },
-    ],
+    disableDevLogs: true,
     runtimeCaching: [
+      // Pages - cache navigations
+      {
+        urlPattern: ({ request, url }) => {
+          const isSameOrigin = self.origin === url.origin;
+          const isNavigate = request.mode === 'navigate';
+          return isSameOrigin && isNavigate;
+        },
+        handler: "NetworkFirst",
+        options: {
+          cacheName: "pages",
+          expiration: {
+            maxEntries: 32,
+            maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
+          },
+          networkTimeoutSeconds: 3,
+        },
+      },
       {
         urlPattern: /^https:\/\/fonts\.(?:gstatic)\.com\/.*/i,
         handler: "CacheFirst",
@@ -116,34 +124,26 @@ export default withPWA({
           networkTimeoutSeconds: 3,
         },
       },
-      {
-        urlPattern: /\.(?:json|xml|csv)$/i,
-        handler: "NetworkFirst",
-        options: {
-          cacheName: "static-data-assets",
-          expiration: {
-            maxEntries: 32,
-            maxAgeSeconds: 24 * 60 * 60, // 24 hours
-          },
-        },
-      },
+      // API routes - don't cache geocode and search
       {
         urlPattern: ({ url }) => {
           const isSameOrigin = self.origin === url.origin;
           if (!isSameOrigin) return false;
           const pathname = url.pathname;
-          // Exclude /api/search and /api/geocode routes from caching
-          if (pathname.startsWith("/api/search") || pathname.startsWith("/api/geocode")) return false;
-          return true;
+          // Only cache non-search/geocode API routes
+          if (pathname.startsWith("/api/")) {
+            return !pathname.startsWith("/api/search") && !pathname.startsWith("/api/geocode");
+          }
+          return false;
         },
         handler: "NetworkFirst",
         options: {
-          cacheName: "pages",
+          cacheName: "api-cache",
           expiration: {
-            maxEntries: 32,
-            maxAgeSeconds: 24 * 60 * 60, // 24 hours
+            maxEntries: 16,
+            maxAgeSeconds: 60 * 60, // 1 hour
           },
-          networkTimeoutSeconds: 3,
+          networkTimeoutSeconds: 5,
         },
       },
     ],
