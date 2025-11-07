@@ -9,6 +9,7 @@ import { ShareButton } from "../components/ShareButton";
 import {
   categories,
   getAllConversions,
+  getConversionFormula,
   type Category,
 } from "@/lib/unitConversions";
 
@@ -26,6 +27,7 @@ export function ConversionCalculatorClient({
   const [category, setCategory] = useState<Category>(initialCategory);
   const [value, setValue] = useState<string>(initialValue);
   const [fromUnit, setFromUnit] = useState<string>(initialFromUnit);
+  const [showFormulas, setShowFormulas] = useState<Set<number>>(new Set());
 
   // Update URL when inputs change
   useEffect(() => {
@@ -47,11 +49,24 @@ export function ConversionCalculatorClient({
     );
 
     setCategory(newCategory);
+    setShowFormulas(new Set()); // Reset formulas when changing category
 
     // If current unit is not valid in new category, reset to first unit
     if (!isValidUnit) {
       setFromUnit(newCategoryData.units[0].symbol);
     }
+  };
+
+  const toggleFormulaVisibility = (index: number) => {
+    setShowFormulas((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(index)) {
+        newSet.delete(index);
+      } else {
+        newSet.add(index);
+      }
+      return newSet;
+    });
   };
 
   const numValue = parseFloat(value);
@@ -218,6 +233,9 @@ export function ConversionCalculatorClient({
                   const unitInfo = currentCategory.units.find(
                     (u) => u.symbol === result.unit
                   );
+                  const formula = getConversionFormula(fromUnit, result.unit, category);
+                  const isFormulaVisible = showFormulas.has(idx);
+
                   return (
                     <div
                       key={idx}
@@ -228,11 +246,32 @@ export function ConversionCalculatorClient({
                         borderColor: "oklch(0.65 0.15 230 / 0.3)",
                       }}
                     >
-                      <div
-                        className="text-xs font-medium mb-1 uppercase tracking-wide"
-                        style={{ color: "oklch(0.72 0.015 240)" }}
-                      >
-                        {unitInfo?.name}
+                      <div className="flex items-center justify-between mb-1">
+                        <div
+                          className="text-xs font-medium uppercase tracking-wide"
+                          style={{ color: "oklch(0.72 0.015 240)" }}
+                        >
+                          {unitInfo?.name}
+                        </div>
+                        <button
+                          onClick={() => toggleFormulaVisibility(idx)}
+                          className="p-1 rounded-md hover:bg-slate-700/50 transition-colors"
+                          title={isFormulaVisible ? "Hide formula" : "Show formula"}
+                        >
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="oklch(0.65 0.15 230)"
+                            viewBox="0 0 24 24"
+                            strokeWidth={2}
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                            />
+                          </svg>
+                        </button>
                       </div>
                       <div className="flex items-baseline gap-2 justify-end">
                         <span className="text-3xl font-bold text-white text-right">
@@ -248,6 +287,20 @@ export function ConversionCalculatorClient({
                           {result.unit}
                         </span>
                       </div>
+                      {isFormulaVisible && formula && (
+                        <div
+                          className="mt-3 pt-3 border-t text-sm font-mono"
+                          style={{
+                            borderColor: "oklch(0.65 0.15 230 / 0.2)",
+                            color: "oklch(0.7 0.15 230)",
+                          }}
+                        >
+                          <div className="text-xs uppercase tracking-wide mb-1" style={{ color: "oklch(0.72 0.015 240)" }}>
+                            Formula:
+                          </div>
+                          {formula}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
