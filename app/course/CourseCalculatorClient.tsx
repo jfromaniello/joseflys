@@ -188,7 +188,7 @@ export function CourseCalculatorClient({
     fromName: string;
     toName: string;
   }) => {
-    setTrueHeading(data.bearing.toString());
+    setTrueHeading(data.bearing.toString().padStart(3, '0'));
     setDistance(data.distance.toString());
     if (!description) {
       setDescription(`${data.fromName} to ${data.toName}`);
