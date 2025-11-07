@@ -163,6 +163,17 @@ export function createRootMetadata(): Metadata {
     applicationName: SITE_CONFIG.name,
     referrer: "origin-when-cross-origin",
     metadataBase: new URL(SITE_CONFIG.baseUrl),
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "black-translucent",
+      title: SITE_CONFIG.name,
+    },
+    formatDetection: {
+      telephone: false,
+    },
+    other: {
+      "mobile-web-app-capable": "yes",
+    },
   };
 }
 
