@@ -104,13 +104,14 @@ export default withPWA({
       },
       {
         urlPattern: /\/_next\/data\/.+\/.+\.json$/i,
-        handler: "StaleWhileRevalidate",
+        handler: "NetworkFirst",
         options: {
           cacheName: "next-data",
           expiration: {
             maxEntries: 32,
             maxAgeSeconds: 24 * 60 * 60, // 24 hours
           },
+          networkTimeoutSeconds: 3,
         },
       },
       {
@@ -129,18 +130,18 @@ export default withPWA({
           const isSameOrigin = self.origin === url.origin;
           if (!isSameOrigin) return false;
           const pathname = url.pathname;
-          // Exclude /api/search route from caching
-          if (pathname.startsWith("/api/search")) return false;
+          // Exclude /api/search and /api/geocode routes from caching
+          if (pathname.startsWith("/api/search") || pathname.startsWith("/api/geocode")) return false;
           return true;
         },
         handler: "NetworkFirst",
         options: {
-          cacheName: "others",
+          cacheName: "pages",
           expiration: {
             maxEntries: 32,
             maxAgeSeconds: 24 * 60 * 60, // 24 hours
           },
-          networkTimeoutSeconds: 10,
+          networkTimeoutSeconds: 3,
         },
       },
     ],
