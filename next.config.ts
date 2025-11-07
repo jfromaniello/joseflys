@@ -14,15 +14,17 @@ export default withPWA({
   },
   cacheOnFrontEndNav: true,
   workboxOptions: {
+    skipWaiting: true,
+    clientsClaim: true,
     additionalManifestEntries: [
-      { url: "/", revision: "1" },
-      { url: "/tas", revision: "1" },
-      { url: "/course", revision: "1" },
-      { url: "/winds", revision: "1" },
-      { url: "/distance", revision: "1" },
-      { url: "/planning", revision: "1" },
-      { url: "/conversions", revision: "1" },
-      { url: "/offline", revision: "1" },
+      { url: "/", revision: "2" },
+      { url: "/tas", revision: "2" },
+      { url: "/course", revision: "2" },
+      { url: "/winds", revision: "2" },
+      { url: "/distance", revision: "2" },
+      { url: "/planning", revision: "2" },
+      { url: "/conversions", revision: "2" },
+      { url: "/offline", revision: "2" },
     ],
     runtimeCaching: [
       {
