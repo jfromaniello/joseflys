@@ -130,7 +130,7 @@ export function WaypointsModal({
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4">
+          <div className="flex min-h-full items-start sm:items-center justify-center p-4 pt-20 sm:pt-4">
             <Transition.Child
               as={Fragment}
               enter="ease-out duration-300"

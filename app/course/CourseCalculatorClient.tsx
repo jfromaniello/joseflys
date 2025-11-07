@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
+import { Menu, Transition } from "@headlessui/react";
 import { PageLayout } from "../components/PageLayout";
 import { Footer } from "../components/Footer";
 import { Navigation } from "../components/Navigation";
@@ -8,6 +9,7 @@ import { calculateCourse, calculateWaypoints, Waypoint, FlightParameters } from 
 import { DeviationEntry } from "../components/CompassDeviationModal";
 import { WaypointsModal } from "../components/WaypointsModal";
 import { DistanceCalculatorModal } from "../components/DistanceCalculatorModal";
+import { TASCalculatorModal } from "../components/TASCalculatorModal";
 import { calculateCompassCourse } from "@/lib/compassDeviation";
 import { compressForUrl, decompressFromUrl } from "@/lib/urlCompression";
 import { CourseSpeedInputs, SpeedUnit } from "./components/CourseSpeedInputs";
@@ -76,6 +78,7 @@ export function CourseCalculatorClient({
   );
   const [isWaypointsModalOpen, setIsWaypointsModalOpen] = useState(false);
   const [isDistanceModalOpen, setIsDistanceModalOpen] = useState(false);
+  const [isTASModalOpen, setIsTASModalOpen] = useState(false);
 
   // Compass deviation table state - initialize from URL if available
   const [deviationTable, setDeviationTable] = useState<DeviationEntry[]>(() => {
@@ -195,6 +198,11 @@ export function CourseCalculatorClient({
     }
   };
 
+  const handleTASCalculatorApply = (data: { tas: number; speedUnit: SpeedUnit }) => {
+    setTas(data.tas.toString());
+    setSpeedUnit(data.speedUnit);
+  };
+
   const results =
     !isNaN(th) &&
     !isNaN(tasInKnots) &&
@@ -295,8 +303,8 @@ export function CourseCalculatorClient({
                   Calculate compass course, ground speed, and navigation data
                 </p>
               </div>
-              {/* Buttons */}
-              <div className="flex gap-2">
+              {/* Buttons - Desktop */}
+              <div className="hidden md:flex gap-2">
                 {/* Distance Calculator Button */}
                 <div className="relative group">
                   <button
@@ -322,6 +330,34 @@ export function CourseCalculatorClient({
                   {/* Custom Tooltip */}
                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none whitespace-nowrap border border-gray-700 z-50">
                     Search for two cities or airports to automatically populate True Heading, Distance, and Description fields
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-slate-900"></div>
+                  </div>
+                </div>
+                {/* TAS Calculator Button */}
+                <div className="relative group">
+                  <button
+                    onClick={() => setIsTASModalOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed border-gray-600 hover:border-green-500/50 hover:bg-green-500/10 transition-all text-sm font-medium cursor-pointer whitespace-nowrap"
+                    style={{ color: "oklch(0.7 0.15 150)" }}
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                      />
+                    </svg>
+                    TAS Calculator
+                  </button>
+                  {/* Custom Tooltip */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none whitespace-nowrap border border-gray-700 z-50">
+                    Calculate True Airspeed from CAS, OAT, and altitude
                     <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-slate-900"></div>
                   </div>
                 </div>
@@ -354,6 +390,117 @@ export function CourseCalculatorClient({
                   </div>
                 </div>
               </div>
+
+              {/* Buttons - Mobile Menu */}
+              <Menu as="div" className="relative md:hidden">
+                <Menu.Button className="flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-gray-600 hover:bg-slate-700 transition-all text-sm font-medium cursor-pointer text-gray-300">
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
+                  </svg>
+                  Tools
+                </Menu.Button>
+                <Transition
+                  as={Fragment}
+                  enter="transition ease-out duration-100"
+                  enterFrom="transform opacity-0 scale-95"
+                  enterTo="transform opacity-100 scale-100"
+                  leave="transition ease-in duration-75"
+                  leaveFrom="transform opacity-100 scale-100"
+                  leaveTo="transform opacity-0 scale-95"
+                >
+                  <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right rounded-xl bg-slate-800 shadow-lg border border-gray-700 focus:outline-none z-10">
+                    <div className="p-1">
+                      <Menu.Item>
+                        {({ active }) => (
+                          <button
+                            onClick={() => setIsDistanceModalOpen(true)}
+                            className={`${
+                              active ? 'bg-slate-700' : ''
+                            } group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-sky-400`}
+                          >
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+                              />
+                            </svg>
+                            Route Lookup
+                          </button>
+                        )}
+                      </Menu.Item>
+                      <Menu.Item>
+                        {({ active }) => (
+                          <button
+                            onClick={() => setIsTASModalOpen(true)}
+                            className={`${
+                              active ? 'bg-slate-700' : ''
+                            } group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm`}
+                            style={{ color: "oklch(0.7 0.15 150)" }}
+                          >
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                              />
+                            </svg>
+                            TAS Calculator
+                          </button>
+                        )}
+                      </Menu.Item>
+                      <Menu.Item>
+                        {({ active }) => (
+                          <button
+                            onClick={loadExample}
+                            className={`${
+                              active ? 'bg-slate-700' : ''
+                            } group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm`}
+                            style={{ color: "oklch(0.75 0.15 300)" }}
+                          >
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M13 10V3L4 14h7v7l9-11h-7z"
+                              />
+                            </svg>
+                            Load Example
+                          </button>
+                        )}
+                      </Menu.Item>
+                    </div>
+                  </Menu.Items>
+                </Transition>
+              </Menu>
             </div>
           </div>
 
@@ -530,6 +677,16 @@ export function CourseCalculatorClient({
         onClose={() => setIsDistanceModalOpen(false)}
         onApply={handleDistanceCalculatorApply}
         description="Search for cities or airports to populate True Heading, Distance, and Description fields for your flight plan"
+      />
+
+      {/* TAS Calculator Modal */}
+      <TASCalculatorModal
+        isOpen={isTASModalOpen}
+        onClose={() => setIsTASModalOpen(false)}
+        onApply={handleTASCalculatorApply}
+        initialSpeedUnit={speedUnit}
+        applyButtonText="Apply to Course"
+        description="Calculate True Airspeed from Calibrated Airspeed, Outside Air Temperature, and Pressure Altitude"
       />
     </PageLayout>
   );
