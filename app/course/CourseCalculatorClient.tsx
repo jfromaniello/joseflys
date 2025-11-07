@@ -4,7 +4,6 @@ import { useState, useEffect, Fragment } from "react";
 import { Menu, Transition } from "@headlessui/react";
 import { PageLayout } from "../components/PageLayout";
 import { Footer } from "../components/Footer";
-import { Navigation } from "../components/Navigation";
 import { calculateCourse, calculateWaypoints, Waypoint, FlightParameters } from "@/lib/courseCalculations";
 import { DeviationEntry } from "../components/CompassDeviationModal";
 import { WaypointsModal } from "../components/WaypointsModal";
@@ -251,41 +250,15 @@ export function CourseCalculatorClient({
     : undefined;
 
   return (
-    <PageLayout>
-      {/* Header */}
-      <div className="text-center mb-8 sm:mb-12 print:mb-4">
-        <div className="flex items-center justify-center gap-4 mb-3 print:mb-2">
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-slate-800/50 backdrop-blur-sm border border-gray-700 print:hidden">
-            <svg
-              className="w-9 h-9"
-              fill="none"
-              stroke="oklch(0.65 0.15 230)"
-              viewBox="0 0 24 24"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M14 5l7 7m0 0l-7 7m7-7H3"
-              />
-            </svg>
-          </div>
-          <h1 className="text-4xl sm:text-5xl font-bold print:text-2xl" style={{ color: "white" }}>
-            {description || "José's Course Calculator"}
+    <PageLayout currentPage="course">
+      {/* Header - only show if there's a description */}
+      {description && (
+        <div className="text-center mb-8 sm:mb-12 print:mb-4">
+          <h1 className="text-3xl sm:text-4xl font-bold print:text-2xl" style={{ color: "white" }}>
+            {description}
           </h1>
         </div>
-        {description && (
-          <p
-            className="text-base sm:text-lg mb-4 print:hidden"
-            style={{ color: "oklch(0.58 0.02 240)" }}
-          >
-            José&apos;s Aviation Tools
-          </p>
-        )}
-        <div className="print:hidden">
-          <Navigation currentPage="course" />
-        </div>
-      </div>
+      )}
 
       <main className="w-full max-w-4xl">
         <div className="rounded-2xl p-6 sm:p-8 shadow-2xl bg-slate-800/50 backdrop-blur-sm border border-gray-700">

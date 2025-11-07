@@ -6,35 +6,42 @@ import { Footer } from "./components/Footer";
 
 export default function Home() {
   return (
-    <PageLayout>
-      {/* Header */}
-      <div className="text-center mb-12 sm:mb-16">
-        <div className="flex items-center justify-center gap-4 mb-4">
-          <div className="w-20 h-20 rounded-2xl flex items-center justify-center bg-slate-800/50 backdrop-blur-sm border border-gray-700">
-            <svg
-              className="w-12 h-12"
-              fill="none"
-              stroke="oklch(0.65 0.15 230)"
-              viewBox="0 0 24 24"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-              />
-            </svg>
-          </div>
-          <h1 className="text-5xl sm:text-6xl font-bold" style={{ color: "white" }}>
-            José&apos;s Aviation Calculators
-          </h1>
-        </div>
+    <PageLayout currentPage="home">
+      {/* Hero Section */}
+      <div className="text-center mb-12 sm:mb-16 max-w-4xl">
+        <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-4 sm:mb-6" style={{ color: "white" }}>
+          Aviation Calculators
+          <span className="block mt-2 text-3xl sm:text-4xl md:text-5xl" style={{ color: "oklch(0.75 0.15 230)" }}>
+            for Pilots
+          </span>
+        </h1>
         <p
-          className="text-lg sm:text-xl"
-          style={{ color: "oklch(0.58 0.02 240)" }}
+          className="text-base sm:text-lg md:text-xl mb-6 leading-relaxed max-w-2xl mx-auto"
+          style={{ color: "oklch(0.7 0.02 240)" }}
         >
-          Experimental flight planning tools
+          Professional flight planning tools for accurate navigation. Calculate TAS, compass course,
+          wind correction, distance & bearing, and fuel consumption.
         </p>
+        <div className="flex flex-wrap items-center justify-center gap-3 text-sm" style={{ color: "oklch(0.6 0.02 240)" }}>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/50 border border-gray-700">
+            <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <span>ISA Standard Atmosphere</span>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/50 border border-gray-700">
+            <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <span>WGS-84 Geodesic</span>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/50 border border-gray-700">
+            <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <span>Instant Results</span>
+          </div>
+        </div>
       </div>
 
       {/* Calculator Cards */}

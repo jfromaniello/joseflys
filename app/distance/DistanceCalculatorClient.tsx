@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import { Tooltip } from "../components/Tooltip";
 import { PageLayout } from "../components/PageLayout";
 import { Footer } from "../components/Footer";
-import { Navigation } from "../components/Navigation";
 import { ShareButton } from "../components/ShareButton";
 import {
   calculateHaversineDistance,
@@ -264,39 +263,15 @@ export function DistanceCalculatorClient({
   })();
 
   return (
-    <PageLayout>
+    <PageLayout currentPage="distance">
       {/* Header */}
       <div className="text-center mb-8 sm:mb-12 print:mb-3">
-        <div className="flex items-center justify-center gap-4 mb-3 print:mb-1">
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-slate-800/50 backdrop-blur-sm border border-gray-700">
-            <svg
-              className="w-9 h-9"
-              fill="none"
-              stroke="oklch(0.65 0.15 230)"
-              viewBox="0 0 24 24"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
-              />
-            </svg>
-          </div>
-          <h1
-            className="text-4xl sm:text-5xl font-bold"
-            style={{ color: "white" }}
-          >
-            José&apos;s Distance Calculator
-          </h1>
-        </div>
         <p
-          className="text-base sm:text-lg mb-4 print:mb-2 print:text-sm"
+          className="text-base sm:text-lg print:text-sm"
           style={{ color: "oklch(0.58 0.02 240)" }}
         >
           Calculate great circle distance and initial bearing between two points
         </p>
-        <Navigation currentPage="distance" />
       </div>
 
       <main className="w-full max-w-4xl print-hide-footer">
