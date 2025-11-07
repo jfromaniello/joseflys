@@ -12,7 +12,18 @@ export default withPWA({
   fallbacks: {
     document: "/offline",
   },
+  cacheOnFrontEndNav: true,
   workboxOptions: {
+    additionalManifestEntries: [
+      { url: "/", revision: "1" },
+      { url: "/tas", revision: "1" },
+      { url: "/course", revision: "1" },
+      { url: "/winds", revision: "1" },
+      { url: "/distance", revision: "1" },
+      { url: "/planning", revision: "1" },
+      { url: "/conversions", revision: "1" },
+      { url: "/offline", revision: "1" },
+    ],
     runtimeCaching: [
       {
         urlPattern: /^https:\/\/fonts\.(?:gstatic)\.com\/.*/i,
