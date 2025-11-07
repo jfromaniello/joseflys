@@ -25,8 +25,8 @@ export async function generateMetadata({ searchParams }: ConversionsPageProps): 
   const categoryName = categories[category as Category]?.name || "Unit";
 
   return createPageMetadata({
-    title: `Aviation Unit Converter - ${categoryName} Conversions | Free Pilot Tool`,
-    description: "Professional aviation unit converter for pilots. Convert distance (nautical miles, statute miles, km), speed (knots, mph, km/h), fuel (gallons, liters, pounds), temperature (Celsius, Fahrenheit, Kelvin), weight, and pressure. Inspired by the Jeppesen CR-3 flight computer. Free online conversion tool.",
+    title: `Aviation Unit Converter | ${categoryName} Conversions`,
+    description: "Convert aviation units: distance (nm, mi, km), speed (knots, mph, km/h), fuel, temperature, weight, and pressure. Inspired by Jeppesen CR-3 for pilots.",
     keywords: [
       "aviation unit converter",
       "unit conversion calculator",

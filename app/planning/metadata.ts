@@ -47,8 +47,8 @@ export async function generateMetadata({ searchParams }: PlanningPageProps): Pro
   const modeTitle = mode === "fuel" ? "Fuel Consumption" : "Time, Speed & Distance";
 
   return createPageMetadata({
-    title: `Flight Planning Calculator - ${modeTitle} | Free Aviation Tool`,
-    description: "Professional flight planning calculator for pilots. Calculate time, speed, distance, and fuel consumption. Solve any flight planning problem by entering two known values. Includes fuel endurance calculator and flight time calculator. Essential tool for pre-flight planning and navigation. Free online calculator.",
+    title: `Flight Planning Calculator | ${modeTitle}`,
+    description: "Calculate time, speed, distance, and fuel consumption for flight planning. Solve any problem by entering two known values. Includes fuel endurance and flight time calculators.",
     keywords: [
       "flight planning calculator",
       "time speed distance calculator",

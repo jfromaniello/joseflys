@@ -44,7 +44,7 @@ export async function generateMetadata({ searchParams }: CoursePageProps): Promi
 
   return createPageMetadata({
     title,
-    description: "Professional course calculator for pilots. Calculate compass course, ground speed, wind correction angle (WCA), and magnetic heading with compass deviation correction. Solve the wind triangle with instant results. Free online navigation tool for accurate flight planning.",
+    description: "Calculate compass course, ground speed, wind correction angle (WCA), and magnetic heading with deviation correction. Wind triangle calculator for pilots.",
     keywords: [
       "course calculator",
       "compass course calculator",

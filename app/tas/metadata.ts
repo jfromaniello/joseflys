@@ -22,8 +22,8 @@ export async function generateMetadata({ searchParams }: TASPageProps): Promise<
     : undefined;
 
   return createPageMetadata({
-    title: "TAS Calculator - True Airspeed from CAS, OAT & Altitude | Free Aviation Tool",
-    description: "Calculate True Airspeed (TAS) from Calibrated Airspeed (CAS), Outside Air Temperature (OAT), and Pressure Altitude using the ISA (International Standard Atmosphere) model. Accurate, instant calculations for flight planning and navigation. Free online calculator for pilots.",
+    title: "TAS Calculator | True Airspeed from CAS, OAT & Altitude",
+    description: "Calculate True Airspeed (TAS) from Calibrated Airspeed, Outside Air Temperature, and Pressure Altitude. ISA-based calculator for pilots.",
     keywords: [
       "TAS calculator",
       "true airspeed calculator",

@@ -92,9 +92,9 @@ export function createPageMetadata({
  */
 export function createRootMetadata(): Metadata {
   return {
-    title: "Aviation Calculators - TAS, Course, Distance & Flight Planning Tools | José Flies",
+    title: "Aviation Calculators for Pilots | TAS, Course & Flight Planning",
     description:
-      "Professional aviation calculators for pilots and flight planners. Calculate true airspeed (TAS), compass course, wind correction, geodesic distance, fuel consumption, and more. Free online tools based on ISA model and WGS-84 algorithms.",
+      "Aviation calculators for pilots. Calculate TAS, compass course, wind correction, distance & bearing, fuel consumption. Based on ISA and WGS-84.",
     keywords: [
       "aviation calculator",
       "flight planning calculator",
@@ -140,9 +140,9 @@ export function createRootMetadata(): Metadata {
     },
     robots: COMMON_ROBOTS,
     openGraph: {
-      title: "Aviation Calculators - TAS, Course, Distance & Flight Planning Tools",
+      title: "Aviation Calculators for Pilots",
       description:
-        "Professional aviation calculators for pilots. Calculate TAS, compass course, wind correction, geodesic distance, and fuel consumption. Free online tools.",
+        "Calculators for pilots. TAS, compass course, wind correction, distance & bearing, fuel consumption. ISA & WGS-84 based.",
       type: "website",
       url: SITE_CONFIG.baseUrl,
       siteName: SITE_CONFIG.name,
@@ -150,9 +150,9 @@ export function createRootMetadata(): Metadata {
     },
     twitter: {
       card: "summary_large_image",
-      title: "Aviation Calculators - TAS, Course, Distance & Flight Planning Tools",
+      title: "Aviation Calculators for Pilots",
       description:
-        "Professional aviation calculators for pilots. Calculate TAS, compass course, wind correction, geodesic distance, and fuel consumption.",
+        "Calculators: TAS, compass course, wind correction, distance & bearing, fuel consumption. ISA & WGS-84 based.",
       creator: SITE_CONFIG.author.twitter,
       site: SITE_CONFIG.author.twitter,
     },

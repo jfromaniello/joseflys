@@ -22,9 +22,9 @@ export async function generateMetadata({
   const toLon = params.toLon || "";
 
   return createPageMetadata({
-    title: "Distance & Bearing Calculator - WGS-84 Geodesic Navigation | Free Aviation Tool",
+    title: "Distance & Bearing Calculator | WGS-84 Geodesic Navigation",
     description:
-      "Calculate precise geodesic distance and true bearing between two points using WGS-84 ellipsoid model with Karney's algorithm (GeographicLib). High-precision navigation for aviation with millimeter accuracy. Search cities or enter GPS coordinates directly. Free online calculator for pilots and flight planners.",
+      "Calculate precise geodesic distance and true bearing using WGS-84 with Karney's algorithm. High-precision navigation calculator for pilots. Search cities or enter coordinates.",
     keywords: [
       "distance calculator",
       "geodesic distance calculator",
