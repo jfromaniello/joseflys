@@ -658,7 +658,6 @@ export function DistanceCalculatorClient({
                   shareData={{
                     title: "José's Distance Calculator",
                     text: `Distance: ${Math.round(distance)} NM, Bearing: ${Math.round(bearing).toString().padStart(3, '0')}°T`,
-                    url: shareUrl,
                   }}
                 />
               </div>

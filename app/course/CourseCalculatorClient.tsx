@@ -615,7 +615,6 @@ export function CourseCalculatorClient({
                   shareData={{
                     title: "José's Course Calculator",
                     text: `Wind: ${windDir}° at ${windSpeed} kt, Heading: ${trueHeading}° → GS: ${results?.groundSpeed.toFixed(1)} kt`,
-                    url: typeof window !== "undefined" ? window.location.href : "",
                   }}
                 />
               </div>

@@ -199,7 +199,6 @@ export function TASCalculatorClient({
                 shareData={{
                   title: "José's TAS Calculator",
                   text: `CAS: ${cas} kt, OAT: ${oat}°C, Alt: ${altitude} ft → TAS: ${tas?.toFixed(2)} kt`,
-                  url: shareUrl,
                 }}
               />
             </>

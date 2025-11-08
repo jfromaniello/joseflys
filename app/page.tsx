@@ -358,6 +358,58 @@ export default function Home() {
               </svg>
             </div>
           </Link>
+
+          {/* ISA Calculator Card */}
+          <Link
+            href="/isa"
+            className="group block p-8 rounded-2xl bg-slate-800/50 backdrop-blur-sm border-2 border-gray-700 hover:border-sky-500/50 transition-all hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <div className="flex items-start gap-4 mb-4">
+              <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-linear-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30 group-hover:border-sky-500/50 transition-colors">
+                <svg
+                  className="w-8 h-8"
+                  fill="none"
+                  stroke="oklch(0.65 0.15 230)"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"
+                  />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h2 className="text-2xl font-bold mb-2" style={{ color: "white" }}>
+                  ISA Calculator
+                </h2>
+                <p
+                  className="text-sm leading-relaxed"
+                  style={{ color: "oklch(0.65 0.02 240)" }}
+                >
+                  Calculate ISA Temperature, Pressure Altitude, and Density Altitude
+                  from elevation, QNH, and actual temperature
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-sm font-medium" style={{ color: "oklch(0.65 0.15 230)" }}>
+              Open Calculator
+              <svg
+                className="w-4 h-4 group-hover:translate-x-1 transition-transform"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M14 5l7 7m0 0l-7 7m7-7H3"
+                />
+              </svg>
+            </div>
+          </Link>
         </div>
 
         {/* Info Box */}

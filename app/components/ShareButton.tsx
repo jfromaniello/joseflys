@@ -7,7 +7,7 @@ interface ShareButtonProps {
   shareData: {
     title: string;
     text: string;
-    url: string;
+    url?: string;
   };
 }
 
@@ -16,10 +16,16 @@ export function ShareButton({ shareData }: ShareButtonProps) {
 
   const handleShare = async () => {
     try {
+      // Use current URL if no URL is provided
+      const urlToShare = shareData.url || (typeof window !== "undefined" ? window.location.href : "");
+
       if (navigator.share) {
-        await navigator.share(shareData);
+        await navigator.share({
+          ...shareData,
+          url: urlToShare,
+        });
       } else {
-        await navigator.clipboard.writeText(shareData.url);
+        await navigator.clipboard.writeText(urlToShare);
         setShareSuccess(true);
         setTimeout(() => setShareSuccess(false), 2000);
       }

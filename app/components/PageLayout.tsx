@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { Navbar } from "./Navbar";
 
-type Calculator = "home" | "tas" | "course" | "leg" | "conversions" | "planning" | "distance";
+type Calculator = "home" | "tas" | "course" | "leg" | "conversions" | "planning" | "distance" | "isa";
 
 interface PageLayoutProps {
   children: ReactNode;

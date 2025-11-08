@@ -666,7 +666,6 @@ export function PlanningCalculatorClient({
             shareData={{
               title: "Flight Planning Calculator",
               text: "Flight Planning Calculator - Time, Speed, Distance & Fuel",
-              url: typeof window !== "undefined" ? window.location.href : "",
             }}
           />
         </div>

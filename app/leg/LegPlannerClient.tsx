@@ -713,7 +713,6 @@ export function LegPlannerClient({
                   shareData={{
                     title: "José's Leg Planner",
                     text: `Wind: ${windDir}° at ${windSpeed} kt, Heading: ${trueHeading}° → GS: ${results?.groundSpeed.toFixed(1)} kt`,
-                    url: typeof window !== "undefined" ? window.location.href : "",
                   }}
                 />
               </div>

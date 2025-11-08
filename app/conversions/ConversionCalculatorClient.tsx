@@ -285,7 +285,6 @@ export function ConversionCalculatorClient({
               shareData={{
                 title: "Aviation Unit Converter",
                 text: `Convert ${value} ${fromUnit} - Aviation Unit Converter`,
-                url: typeof window !== "undefined" ? window.location.href : "",
               }}
             />
           </div>
