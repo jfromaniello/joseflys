@@ -2,7 +2,7 @@
 
 import { useState, Fragment } from "react";
 import Link from "next/link";
-import { Dialog, Transition } from "@headlessui/react";
+import { Dialog, Transition, Menu } from "@headlessui/react";
 
 type Calculator = "home" | "tas" | "course" | "leg" | "conversions" | "planning" | "distance" | "isa";
 
@@ -180,7 +180,7 @@ export function Navbar({ currentPage }: NavbarProps) {
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-gray-800 print:hidden">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-14">
             {/* Logo / Brand */}
             <Link href="/" className="flex items-center gap-2.5 group flex-shrink-0">
@@ -206,28 +206,78 @@ export function Navbar({ currentPage }: NavbarProps) {
             </Link>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center gap-1 ml-auto">
-              {calculators
-                .filter((calc) => calc.id !== "home")
-                .map((calc) => (
-                  <Link
-                    key={calc.id}
-                    href={calc.href}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                      calc.id === currentPage
-                        ? "bg-sky-500/20 text-sky-400"
-                        : "text-gray-300 hover:bg-slate-800 hover:text-white"
-                    }`}
-                    onClick={(e) => {
-                      if (calc.id === currentPage) {
-                        e.preventDefault();
-                      }
-                    }}
+            <div className="hidden md:flex items-center ml-auto">
+              <Menu as="div" className="relative">
+                <Menu.Button className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-300 hover:bg-slate-800 hover:text-white transition-all">
+                  {currentPage === "home" ? (
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                      />
+                    </svg>
+                  ) : (
+                    currentCalc?.icon
+                  )}
+                  <span>{currentPage === "home" ? "Calculators" : currentCalc?.name}</span>
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
                   >
-                    {calc.icon}
-                    <span className="hidden lg:inline">{calc.name}</span>
-                  </Link>
-                ))}
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </Menu.Button>
+
+                <Transition
+                  as={Fragment}
+                  enter="transition ease-out duration-100"
+                  enterFrom="transform opacity-0 scale-95"
+                  enterTo="transform opacity-100 scale-100"
+                  leave="transition ease-in duration-75"
+                  leaveFrom="transform opacity-100 scale-100"
+                  leaveTo="transform opacity-0 scale-95"
+                >
+                  <Menu.Items className="absolute right-0 mt-2 w-64 origin-top-right rounded-xl bg-slate-900 shadow-xl border border-gray-700 ring-1 ring-black ring-opacity-5 focus:outline-none overflow-hidden">
+                    <div className="py-1">
+                      {calculators
+                        .filter((calc) => calc.id !== "home")
+                        .map((calc) => (
+                          <Menu.Item key={calc.id}>
+                            {({ active }) => (
+                              <Link
+                                href={calc.href}
+                                className={`flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
+                                  calc.id === currentPage
+                                    ? "bg-sky-500/20 text-sky-400"
+                                    : active
+                                    ? "bg-slate-800 text-white"
+                                    : "text-gray-300"
+                                }`}
+                              >
+                                {calc.icon}
+                                <span>{calc.name}</span>
+                              </Link>
+                            )}
+                          </Menu.Item>
+                        ))}
+                    </div>
+                  </Menu.Items>
+                </Transition>
+              </Menu>
             </div>
 
             {/* Mobile menu button */}
