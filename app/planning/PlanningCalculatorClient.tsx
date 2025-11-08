@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { PageLayout } from "../components/PageLayout";
+import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
 import { Footer } from "../components/Footer";
 import { Tooltip } from "../components/Tooltip";
 import { ShareButton } from "../components/ShareButton";
@@ -120,15 +121,10 @@ export function PlanningCalculatorClient({
 
   return (
     <PageLayout currentPage="planning">
-      {/* Header */}
-      <div className="text-center mb-8 sm:mb-12">
-        <p
-          className="text-base sm:text-lg"
-          style={{ color: "oklch(0.58 0.02 240)" }}
-        >
-          Time, Speed, Distance & Fuel calculations
-        </p>
-      </div>
+      <CalculatorPageHeader
+        title="Flight Planning Calculator"
+        description="Calculate time, speed, distance, and fuel consumption. Solve any flight planning problem by entering two known values"
+      />
 
       <main className="w-full max-w-3xl">
         <div className="bg-slate-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl p-8 mb-8 shadow-2xl">

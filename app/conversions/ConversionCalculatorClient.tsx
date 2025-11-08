@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { PageLayout } from "../components/PageLayout";
+import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
 import { Footer } from "../components/Footer";
 import { Tooltip } from "../components/Tooltip";
 import { ShareButton } from "../components/ShareButton";
@@ -83,15 +84,10 @@ export function ConversionCalculatorClient({
 
   return (
     <PageLayout currentPage="conversions">
-      {/* Header */}
-      <div className="text-center mb-8 sm:mb-12">
-        <p
-          className="text-base sm:text-lg"
-          style={{ color: "oklch(0.58 0.02 240)" }}
-        >
-          Aviation unit conversions inspired by the Jeppesen CR-3
-        </p>
-      </div>
+      <CalculatorPageHeader
+        title="Unit Converter"
+        description="Aviation unit conversions for distance, speed, fuel volume, temperature, weight, and pressure. Inspired by the Jeppesen CR-3"
+      />
 
       <main className="w-full max-w-3xl">
         {/* Main Calculator Card */}

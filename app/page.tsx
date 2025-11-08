@@ -19,8 +19,8 @@ export default function Home() {
           className="text-base sm:text-lg md:text-xl mb-6 leading-relaxed max-w-2xl mx-auto"
           style={{ color: "oklch(0.7 0.02 240)" }}
         >
-          Professional flight planning tools for accurate navigation. Calculate TAS, compass course,
-          wind correction, distance & bearing, and fuel consumption.
+          Professional flight planning tools for accurate navigation. Plan complete flight legs with waypoints,
+          calculate TAS, compass course, wind correction, distance & bearing, and fuel consumption.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3 text-sm" style={{ color: "oklch(0.6 0.02 240)" }}>
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/50 border border-gray-700">
@@ -47,6 +47,58 @@ export default function Home() {
       {/* Calculator Cards */}
       <main className="w-full max-w-4xl">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Leg Planner Card */}
+          <Link
+            href="/leg"
+            className="group block p-8 rounded-2xl bg-slate-800/50 backdrop-blur-sm border-2 border-gray-700 hover:border-sky-500/50 transition-all hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <div className="flex items-start gap-4 mb-4">
+              <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-linear-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30 group-hover:border-sky-500/50 transition-colors">
+                <svg
+                  className="w-8 h-8"
+                  fill="none"
+                  stroke="oklch(0.65 0.15 230)"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                  />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h2 className="text-2xl font-bold mb-2" style={{ color: "white" }}>
+                  Leg Planner
+                </h2>
+                <p
+                  className="text-sm leading-relaxed"
+                  style={{ color: "oklch(0.65 0.02 240)" }}
+                >
+                  Complete flight leg planning with course, fuel consumption, waypoints,
+                  and time estimates. Perfect for VFR navigation
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-sm font-medium" style={{ color: "oklch(0.65 0.15 230)" }}>
+              Open Planner
+              <svg
+                className="w-4 h-4 group-hover:translate-x-1 transition-transform"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M14 5l7 7m0 0l-7 7m7-7H3"
+                />
+              </svg>
+            </div>
+          </Link>
+
           {/* Course Calculator Card */}
           <Link
             href="/course"
@@ -76,8 +128,8 @@ export default function Home() {
                   className="text-sm leading-relaxed"
                   style={{ color: "oklch(0.65 0.02 240)" }}
                 >
-                  Calculate true course, wind correction angle, ground speed,
-                  and compass heading for accurate navigation
+                  Calculate wind correction angle, ground speed, and compass heading.
+                  Simple and focused on basic course calculations
                 </p>
               </div>
             </div>
@@ -315,13 +367,13 @@ export default function Home() {
             style={{ color: "oklch(0.6 0.02 240)" }}
           >
             Experimental aviation calculators based on ISA standard atmosphere,
-            WGS-84 geodesic algorithms, and wind triangle principles. All calculations
-            are performed client-side for instant results.
+            WGS-84 geodesic algorithms, and wind triangle principles. Plan complete flight legs
+            with waypoints, ETAs, and fuel consumption. All calculations are performed client-side for instant results.
           </p>
         </div>
       </main>
 
-      <Footer description="Experimental aviation calculators for TAS, wind correction, distance & bearing, and flight planning" />
+      <Footer description="Experimental aviation calculators for leg planning, TAS, wind correction, distance & bearing, and fuel calculations" />
     </PageLayout>
   );
 }

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { Tooltip } from "../components/Tooltip";
 import { PageLayout } from "../components/PageLayout";
+import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
 import { Footer } from "../components/Footer";
 import { ShareButton } from "../components/ShareButton";
 import {
@@ -264,15 +265,10 @@ export function DistanceCalculatorClient({
 
   return (
     <PageLayout currentPage="distance">
-      {/* Header */}
-      <div className="text-center mb-8 sm:mb-12 print:mb-3">
-        <p
-          className="text-base sm:text-lg print:text-sm"
-          style={{ color: "oklch(0.58 0.02 240)" }}
-        >
-          Calculate great circle distance and initial bearing between two points
-        </p>
-      </div>
+      <CalculatorPageHeader
+        title="Distance Calculator"
+        description="Calculate great circle distance and initial bearing between two points using WGS-84 geodesic algorithms for high-precision navigation"
+      />
 
       <main className="w-full max-w-4xl print-hide-footer">
         <div className="rounded-2xl p-6 sm:p-8 shadow-2xl bg-slate-800/50 backdrop-blur-sm border border-gray-700">
@@ -310,10 +306,10 @@ export function DistanceCalculatorClient({
                 </button>
               </div>
             </div>
-            <p className="text-sm print:hidden" style={{ color: "oklch(0.58 0.02 240)" }}>
+            <p className="text-sm print:hidden" style={{ color: "oklch(0.7 0.02 240)" }}>
               {inputMode === "search"
-                ? "Search for cities or airports"
-                : "Enter coordinates directly"}
+                ? "Search for two locations to get distance and bearing"
+                : "Enter two coordinates to get distance and bearing"}
             </p>
           </div>
 

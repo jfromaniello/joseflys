@@ -5,20 +5,27 @@ import { Menu, Transition } from "@headlessui/react";
 import { PageLayout } from "../components/PageLayout";
 import { Footer } from "../components/Footer";
 import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
-import { calculateCourse } from "@/lib/courseCalculations";
+import { calculateCourse, calculateWaypoints, Waypoint, FlightParameters } from "@/lib/courseCalculations";
 import { DeviationEntry } from "../components/CompassDeviationModal";
+import { WaypointsModal } from "../components/WaypointsModal";
 import { DistanceCalculatorModal } from "../components/DistanceCalculatorModal";
 import { TASCalculatorModal } from "../components/TASCalculatorModal";
 import { calculateCompassCourse } from "@/lib/compassDeviation";
 import { compressForUrl, decompressFromUrl } from "@/lib/urlCompression";
-import { CourseSpeedInputs, SpeedUnit } from "./components/CourseSpeedInputs";
-import { WindInputs } from "./components/WindInputs";
-import { CorrectionsInputs } from "./components/CorrectionsInputs";
+import { CourseSpeedInputs, SpeedUnit } from "../course/components/CourseSpeedInputs";
+import { WindInputs } from "../course/components/WindInputs";
+import { CorrectionsInputs } from "../course/components/CorrectionsInputs";
+import { RangeFuelInputs, FuelUnit } from "../course/components/RangeFuelInputs";
+import { FlightParametersInputs } from "../course/components/FlightParametersInputs";
+import { IntermediateResults } from "../course/components/IntermediateResults";
+import { PrimaryResults } from "../course/components/PrimaryResults";
+import { WaypointsResults } from "../course/components/WaypointsResults";
 import { ShareButton } from "../components/ShareButton";
+import { NewLegButton } from "../components/NewLegButton";
+import { Tooltip } from "../components/Tooltip";
 import { toKnots } from "@/lib/speedConversion";
-import { Tooltip } from "@/app/components/Tooltip";
 
-interface CourseCalculatorClientProps {
+interface LegPlannerClientProps {
   initialTh: string;
   initialTas: string;
   initialWd: string;
@@ -36,25 +43,41 @@ interface CourseCalculatorClientProps {
   initialPrevFuel: string;
 }
 
-export function CourseCalculatorClient({
+export function LegPlannerClient({
   initialTh,
   initialTas,
   initialWd,
   initialWs,
   initialMd,
+  initialDist,
+  initialFf,
   initialDevTable,
   initialDesc,
   initialSpeedUnit,
-}: CourseCalculatorClientProps) {
+  initialFuelUnit,
+  initialWaypoints,
+  initialDepTime,
+  initialElapsedMin,
+  initialPrevFuel,
+}: LegPlannerClientProps) {
   const [trueHeading, setTrueHeading] = useState<string>(initialTh);
   const [tas, setTas] = useState<string>(initialTas);
   const [windDir, setWindDir] = useState<string>(initialWd);
   const [windSpeed, setWindSpeed] = useState<string>(initialWs);
   const [magDev, setMagDev] = useState<string>(initialMd);
+  const [distance, setDistance] = useState<string>(initialDist);
+  const [fuelFlow, setFuelFlow] = useState<string>(initialFf);
   const [description, setDescription] = useState<string>(initialDesc);
+  const [departureTime, setDepartureTime] = useState<string>(initialDepTime);
+  const [elapsedMinutes, setElapsedMinutes] = useState<string>(initialElapsedMin);
+  const [previousFuelUsed, setPreviousFuelUsed] = useState<string>(initialPrevFuel);
   const [speedUnit, setSpeedUnit] = useState<SpeedUnit>(
     (initialSpeedUnit as SpeedUnit) || 'kt'
   );
+  const [fuelUnit, setFuelUnit] = useState<FuelUnit>(
+    (initialFuelUnit as FuelUnit) || 'gph'
+  );
+  const [isWaypointsModalOpen, setIsWaypointsModalOpen] = useState(false);
   const [isDistanceModalOpen, setIsDistanceModalOpen] = useState(false);
   const [isTASModalOpen, setIsTASModalOpen] = useState(false);
 
@@ -73,6 +96,21 @@ export function CourseCalculatorClient({
     return [];
   });
 
+  // Waypoints state - initialize from URL if available
+  const [waypoints, setWaypoints] = useState<Waypoint[]>(() => {
+    if (initialWaypoints) {
+      try {
+        const decompressed = decompressFromUrl(initialWaypoints);
+        if (Array.isArray(decompressed)) {
+          return decompressed;
+        }
+      } catch {
+        // Invalid data, ignore
+      }
+    }
+    return [];
+  });
+
   // Update URL when parameters change (client-side only, no page reload)
   useEffect(() => {
     const params = new URLSearchParams();
@@ -81,8 +119,14 @@ export function CourseCalculatorClient({
     if (windDir) params.set("wd", windDir);
     if (windSpeed) params.set("ws", windSpeed);
     if (magDev) params.set("md", magDev);
+    if (distance) params.set("dist", distance);
+    if (fuelFlow) params.set("ff", fuelFlow);
     if (description) params.set("desc", description);
+    if (departureTime) params.set("depTime", departureTime);
+    if (elapsedMinutes) params.set("elapsedMin", elapsedMinutes);
+    if (previousFuelUsed) params.set("prevFuel", previousFuelUsed);
     if (speedUnit !== 'kt') params.set("unit", speedUnit);
+    if (fuelUnit !== 'gph') params.set("funit", fuelUnit);
 
     // Add deviation table if it exists (compressed)
     if (deviationTable.length > 0) {
@@ -92,10 +136,18 @@ export function CourseCalculatorClient({
       }
     }
 
+    // Add waypoints if they exist (compressed)
+    if (waypoints.length > 0) {
+      const compressed = compressForUrl(waypoints);
+      if (compressed) {
+        params.set("waypoints", compressed);
+      }
+    }
+
     // Use window.history.replaceState instead of router.replace to avoid server requests
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState(null, '', newUrl);
-  }, [trueHeading, tas, windDir, windSpeed, magDev, description, deviationTable, speedUnit]);
+  }, [trueHeading, tas, windDir, windSpeed, magDev, distance, fuelFlow, description, departureTime, elapsedMinutes, previousFuelUsed, deviationTable, waypoints, speedUnit, fuelUnit]);
 
   // Calculate results during render (not in useEffect to avoid cascading renders)
   const th = parseFloat(trueHeading);
@@ -105,6 +157,11 @@ export function CourseCalculatorClient({
   const wd = windDir ? parseFloat(windDir) : 0; // Default to 0 if empty
   const ws = windSpeed ? parseFloat(windSpeed) : 0; // Default to 0 if empty
   const md = parseFloat(magDev) || 0; // Default to 0 if empty
+  const dist = distance ? parseFloat(distance) : undefined;
+  const ff = fuelFlow ? parseFloat(fuelFlow) : undefined;
+
+  const elapsedMins = elapsedMinutes ? parseInt(elapsedMinutes) : undefined;
+  const prevFuel = previousFuelUsed ? parseFloat(previousFuelUsed) : undefined;
 
   // Load example data
   const loadExample = () => {
@@ -113,7 +170,20 @@ export function CourseCalculatorClient({
     setWindDir("180");
     setWindSpeed("25");
     setMagDev("-5");
-    setDescription("SAZS to SACO (Example)");
+    setDistance("85");
+    setFuelFlow("8");
+    setDescription("SAZS to SACO (Example Flight)");
+    setDepartureTime("1430");
+    setElapsedMinutes("0");
+    setPreviousFuelUsed("");
+
+    // Set example waypoints
+    const exampleWaypoints = [
+      { name: "Rio Segundo", distance: 28 },
+      { name: "Villa Maria", distance: 52 },
+      { name: "Laboulaye", distance: 75 }
+    ];
+    setWaypoints(exampleWaypoints);
   };
 
   const handleDistanceCalculatorApply = (data: {
@@ -123,6 +193,7 @@ export function CourseCalculatorClient({
     toName: string;
   }) => {
     setTrueHeading(data.bearing.toString().padStart(3, '0'));
+    setDistance(data.distance.toString());
     if (!description) {
       setDescription(`${data.fromName} to ${data.toName}`);
     }
@@ -137,7 +208,7 @@ export function CourseCalculatorClient({
     !isNaN(th) &&
     !isNaN(tasInKnots) &&
     tasInKnots > 0
-      ? calculateCourse(wd, ws, th, tasInKnots, md)
+      ? calculateCourse(wd, ws, th, tasInKnots, md, dist, ff, elapsedMins, prevFuel)
       : null;
 
   // Calculate compass course when deviation table is available and results exist
@@ -146,11 +217,45 @@ export function CourseCalculatorClient({
       ? calculateCompassCourse(results.compassHeading, deviationTable)
       : null;
 
+  // Calculate waypoint results
+  const flightParams: FlightParameters = {
+    departureTime: departureTime || undefined,
+    elapsedMinutes: elapsedMinutes ? parseInt(elapsedMinutes) : undefined,
+    previousFuelUsed: prevFuel,
+  };
+
+  const waypointResults =
+    results && dist !== undefined
+      ? calculateWaypoints(waypoints, results.groundSpeed, ff, flightParams, dist)
+      : [];
+
+
+  // Build OG image URL for download
+  const hasParams = windDir || windSpeed || trueHeading || tas;
+  const ogImageUrl = hasParams
+    ? (() => {
+        const params = new URLSearchParams();
+        params.set('wd', windDir);
+        params.set('ws', windSpeed);
+        params.set('th', trueHeading);
+        params.set('tas', tas);
+        params.set('md', magDev);
+        if (distance) params.set('dist', distance);
+        if (fuelFlow) params.set('ff', fuelFlow);
+        if (description) params.set('desc', description);
+        if (deviationTable.length > 0) {
+          const compressed = compressForUrl(deviationTable);
+          if (compressed) params.set('devTable', compressed);
+        }
+        return `/api/og-course?${params.toString()}`;
+      })()
+    : undefined;
+
   return (
-    <PageLayout currentPage="course">
+    <PageLayout currentPage="leg">
       <CalculatorPageHeader
-        title="Course Calculator"
-        description="Calculate wind correction angle, ground speed, and compass heading from true heading and wind conditions"
+        title="Leg Planner"
+        description="Complete flight leg planning with course calculations, fuel consumption, waypoints, and time estimates"
         subtitle={description || undefined}
       />
 
@@ -164,10 +269,10 @@ export function CourseCalculatorClient({
                   className="text-xl sm:text-2xl font-bold mb-2 print:text-lg print:mb-1"
                   style={{ color: "white" }}
                 >
-                  Course Calculator
+                  Flight Parameters
                 </h2>
                 <p className="text-sm print:hidden" style={{ color: "oklch(0.7 0.02 240)" }}>
-                  Enter true heading, TAS, and wind to get compass course and ground speed
+                  Enter heading, TAS, wind, distance, and fuel flow to get complete leg planning with waypoints and ETAs
                 </p>
               </div>
               {/* Buttons - Desktop */}
@@ -196,7 +301,7 @@ export function CourseCalculatorClient({
                   </button>
                   {/* Custom Tooltip */}
                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none whitespace-nowrap border border-gray-700 z-50">
-                    Search for two cities or airports to automatically populate True Heading and Description fields
+                    Search for two cities or airports to automatically populate True Heading, Distance, and Description fields
                     <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-slate-900"></div>
                   </div>
                 </div>
@@ -252,7 +357,7 @@ export function CourseCalculatorClient({
                   </button>
                   {/* Custom Tooltip */}
                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none whitespace-nowrap border border-gray-700 z-50">
-                    Load sample data to see how the calculator works
+                    Load sample flight data to see how the calculator works
                     <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-slate-900"></div>
                   </div>
                 </div>
@@ -400,6 +505,81 @@ export function CourseCalculatorClient({
               setSpeedUnit={setSpeedUnit}
             />
 
+            {/* Leg Distance & Waypoints */}
+            <div className="leg-distance-waypoints">
+              <h3 className="text-sm font-semibold mb-3 uppercase tracking-wide" style={{ color: "oklch(0.65 0.15 230)" }}>
+                Leg Distance & Waypoints
+              </h3>
+              <div className="grid grid-cols-1 lg:grid-cols-[10.5rem_12rem_2rem_10.5rem_1fr] gap-x-4 gap-y-4 lg:items-center">
+                {/* Distance Label */}
+                <label
+                  className="flex items-center text-sm font-medium mb-2 lg:mb-0 lg:col-span-1 col-span-1"
+                  style={{ color: "oklch(0.72 0.015 240)" }}
+                >
+                  Distance
+                  <Tooltip content="The total distance of this flight leg in nautical miles. You can use the Route Lookup tool above to automatically calculate distance between two locations." />
+                </label>
+
+                {/* Distance Input */}
+                <div className="relative lg:col-span-1 col-span-1">
+                  <input
+                    type="number"
+                    value={distance}
+                    onChange={(e) => setDistance(e.target.value)}
+                    className="w-full px-4 pr-10 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white text-right"
+                    placeholder="0.0"
+                    min="0"
+                    step="0.1"
+                  />
+                  <span
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
+                    style={{ color: "white" }}
+                  >
+                    NM
+                  </span>
+                </div>
+
+                {/* Gap */}
+                <div className="hidden lg:block"></div>
+
+                {/* Waypoints Label */}
+                <label
+                  className="flex items-center text-sm font-medium mb-2 lg:mb-0 lg:col-span-1 col-span-1 print-hide-waypoints"
+                  style={{ color: "oklch(0.72 0.015 240)" }}
+                >
+                  Waypoints
+                  <Tooltip content="Add intermediate waypoints for this leg. The calculator will compute ETAs and fuel consumption for each waypoint based on your ground speed and fuel flow." />
+                </label>
+
+                {/* Waypoints Button */}
+                <button
+                  onClick={() => setIsWaypointsModalOpen(true)}
+                  className="w-full px-4 py-3 rounded-xl border-2 border-dashed border-gray-600 hover:border-sky-500/50 hover:bg-sky-500/10 transition-all text-base font-medium cursor-pointer flex items-center justify-center gap-2 lg:col-span-1 col-span-1 print-hide-waypoints"
+                  style={{ color: "oklch(0.65 0.15 230)" }}
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                  {waypoints.length > 0 ? `${waypoints.length} Waypoint${waypoints.length > 1 ? 's' : ''}` : 'Add Waypoints'}
+                </button>
+              </div>
+            </div>
+
             {/* Wind */}
             <WindInputs
               windDir={windDir}
@@ -415,205 +595,123 @@ export function CourseCalculatorClient({
               deviationTable={deviationTable}
               onDeviationTableChange={setDeviationTable}
             />
+
+            {/* Fuel Consumption */}
+            <div className="fuel-consumption">
+              <h3 className="text-sm font-semibold mb-3 uppercase tracking-wide" style={{ color: "oklch(0.65 0.15 230)" }}>
+                Fuel Consumption
+              </h3>
+              <div className="grid grid-cols-1 lg:grid-cols-[10.5rem_6rem_5rem] gap-x-4 gap-y-4 lg:items-center">
+                {/* Fuel Flow Label */}
+                <label
+                  className="flex items-center text-sm font-medium mb-2 lg:mb-0 lg:col-span-1 col-span-1"
+                  style={{ color: "oklch(0.72 0.015 240)" }}
+                >
+                  Fuel Flow
+                  <Tooltip content="Your aircraft's fuel consumption rate. This will be used to calculate total fuel used for the leg and ETAs for waypoints. Select your preferred units." />
+                </label>
+
+                {/* Container for input + selector on mobile */}
+                <div className="grid grid-cols-[1fr_auto] gap-x-4 lg:contents">
+                  {/* Fuel Flow Input */}
+                  <input
+                    type="number"
+                    value={fuelFlow}
+                    onChange={(e) => setFuelFlow(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
+                    placeholder="0.0"
+                    min="0"
+                    step="0.1"
+                  />
+
+                  {/* Fuel Unit Selector */}
+                  <select
+                    value={fuelUnit}
+                    onChange={(e) => setFuelUnit(e.target.value as FuelUnit)}
+                    className="w-[5.5rem] lg:w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white cursor-pointer appearance-none"
+                    style={{
+                      backgroundImage: 'none',
+                    }}
+                  >
+                    <option value="gph">GPH</option>
+                    <option value="lph">LPH</option>
+                    <option value="pph">PPH</option>
+                    <option value="kgh">KGH</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Flight Time Tracking */}
+            <FlightParametersInputs
+              departureTime={departureTime}
+              setDepartureTime={setDepartureTime}
+              elapsedMinutes={elapsedMinutes}
+              setElapsedMinutes={setElapsedMinutes}
+              previousFuelUsed={previousFuelUsed}
+              setPreviousFuelUsed={setPreviousFuelUsed}
+              fuelUnit={fuelUnit}
+            />
           </div>
 
           {/* Results */}
           {results !== null && (
             <div className="space-y-6 print:space-y-3">
               {/* Intermediate Results */}
-              <div className="print-page-break-before">
-                <h3 className="text-sm font-semibold mb-3 uppercase tracking-wide" style={{ color: "oklch(0.65 0.15 230)" }}>
-                  Intermediate Values
-                </h3>
-
-                {/* All intermediate values in one row on desktop */}
-                <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-                  {/* Wind Correction Angle */}
-                  <div className="p-3 rounded-lg bg-slate-900/30 border border-gray-700">
-                    <div className="flex items-center justify-center mb-1">
-                      <p className="text-xs font-medium" style={{ color: "white" }}>
-                        WCA
-                      </p>
-                      <Tooltip content="Wind Correction Angle: The angle you need to adjust your heading to compensate for wind drift. Positive (+) means turn right, negative (-) means turn left from your true heading." />
-                    </div>
-                    <p className="text-xl font-bold text-center" style={{ color: "white" }}>
-                      {results.windCorrectionAngle >= 0 ? "+" : ""}
-                      {Math.round(results.windCorrectionAngle)}°
-                    </p>
-                  </div>
-
-                  {/* Magnetic Heading */}
-                  <div className="p-3 rounded-lg bg-slate-900/30 border border-gray-700">
-                    <div className="flex items-center justify-center mb-1">
-                      <p className="text-xs font-medium" style={{ color: "white" }}>
-                        MH
-                      </p>
-                      <Tooltip content="Magnetic Heading: The heading after applying wind correction angle and magnetic deviation. This is used to calculate the final Compass Course." />
-                    </div>
-                    <p className="text-xl font-bold text-center" style={{ color: "white" }}>
-                      {String(Math.round(results.compassHeading)).padStart(3, '0')}°
-                    </p>
-                  </div>
-
-                  {/* Crosswind */}
-                  <div className="p-3 rounded-lg bg-slate-900/30 border border-gray-700">
-                    <div className="flex items-center justify-center mb-1">
-                      <p className="text-xs font-medium" style={{ color: "white" }}>
-                        Crosswind
-                      </p>
-                      <Tooltip content="The component of wind blowing perpendicular to your flight path. 'From right' means wind from your right, 'from left' means wind from your left." />
-                    </div>
-                    <p className="text-xl font-bold text-center" style={{ color: "white" }}>
-                      {Math.round(Math.abs(results.crosswind))} KT
-                    </p>
-                    <p className="text-xs text-center mt-0.5" style={{ color: "oklch(0.7 0.02 240)" }}>
-                      {results.crosswind > 0 ? "from right" : results.crosswind < 0 ? "from left" : "none"}
-                    </p>
-                  </div>
-
-                  {/* Headwind/Tailwind */}
-                  <div className="p-3 rounded-lg bg-slate-900/30 border border-gray-700">
-                    <div className="flex items-center justify-center mb-1">
-                      <p className="text-xs font-medium" style={{ color: "white" }}>
-                        {results.headwind <= 0 ? "Headwind" : "Tailwind"}
-                      </p>
-                      <Tooltip content="The component of wind blowing along your flight path. Headwind slows you down, tailwind speeds you up. This directly affects your ground speed." />
-                    </div>
-                    <p className="text-xl font-bold text-center" style={{ color: "white" }}>
-                      {Math.round(Math.abs(results.headwind))} KT
-                    </p>
-                  </div>
-
-                  {/* ETAS */}
-                  <div className={`p-3 rounded-lg ${results.etas ? 'bg-slate-900/30 border-amber-500/30' : 'bg-slate-900/20 border-gray-800'} border`}>
-                    <div className="flex items-center justify-center mb-1">
-                      <p className="text-xs font-medium" style={{ color: results.etas ? "oklch(0.65 0.15 60)" : "oklch(0.4 0.02 240)" }}>
-                        ETAS
-                      </p>
-                      <Tooltip content="Effective True Air Speed - Your actual effective forward speed when flying at a large crab angle. ETAS = TAS × cos(WCA). Only calculated when wind correction angle exceeds 10°." />
-                    </div>
-                    <p className="text-xl font-bold text-center" style={{ color: results.etas ? "white" : "oklch(0.35 0.02 240)" }}>
-                      {results.etas ? `${Math.round(results.etas)} KT` : '—'}
-                    </p>
-                    <p className="text-xs text-center mt-0.5" style={{ color: "oklch(0.4 0.02 240)" }}>
-                      {results.etas ? 'WCA > 10°' : 'WCA ≤ 10°'}
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <IntermediateResults
+                results={results}
+                fuelUnit={fuelUnit}
+                fuelFlow={ff}
+              />
 
               {/* Primary Results */}
-              <div>
-                <h3 className="text-sm font-semibold mb-3 uppercase tracking-wide" style={{ color: "oklch(0.65 0.15 230)" }}>
-                  Results
-                </h3>
+              <PrimaryResults
+                results={results}
+                compassCourse={compassCourse}
+                deviationTable={deviationTable}
+                windDir={windDir}
+                windSpeed={windSpeed}
+                trueHeading={trueHeading}
+                speedUnit={speedUnit}
+                fuelUnit={fuelUnit}
+                departureTime={departureTime}
+                elapsedMinutes={elapsedMins}
+              />
 
-                <div className="space-y-4">
-                  {/* Primary Results - Ground Speed and Compass Course */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 primary-results-grid">
-                    {/* Ground Speed */}
-                    <div className="p-6 rounded-xl text-center bg-linear-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30">
-                      <div className="flex items-center justify-center mb-2">
-                        <p
-                          className="text-xs sm:text-sm font-semibold uppercase tracking-wider"
-                          style={{ color: "oklch(0.65 0.15 230)" }}
-                        >
-                          Ground Speed
-                        </p>
-                        <Tooltip content="Ground Speed (GS) is your actual speed over the ground, accounting for wind. This is what determines your actual time en route. When WCA > 10°, GS is calculated using ETAS for improved accuracy." />
-                      </div>
-                      <p
-                        className="text-3xl sm:text-4xl font-bold"
-                        style={{ color: "white" }}
-                      >
-                        {Math.round(results.groundSpeed)}
-                      </p>
-                      <p
-                        className="text-sm mt-1"
-                        style={{ color: "oklch(0.6 0.02 240)" }}
-                      >
-                        KT
-                      </p>
-                    </div>
+              {/* Waypoints Results */}
+              {waypointResults.length > 0 && (
+                <WaypointsResults
+                  waypointResults={waypointResults}
+                  fuelUnit={fuelUnit}
+                  showFuel={ff !== undefined && ff > 0}
+                  showETA={departureTime.length === 4}
+                />
+              )}
 
-                    {/* Compass Course */}
-                    <div className="p-6 rounded-xl text-center bg-linear-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30">
-                      <div className="flex items-center justify-center mb-2">
-                        <p
-                          className="text-xs sm:text-sm font-semibold uppercase tracking-wider"
-                          style={{ color: "oklch(0.65 0.15 230)" }}
-                        >
-                          Compass Course
-                        </p>
-                        <Tooltip content="The actual heading to fly on your aircraft's compass. If you have a deviation table set, this is corrected for compass deviation. Otherwise, this equals your magnetic heading." />
-                      </div>
-                      <p
-                        className="text-3xl sm:text-4xl font-bold"
-                        style={{ color: "white" }}
-                      >
-                        {compassCourse !== null ? `${String(Math.round(compassCourse)).padStart(3, '0')}°` : `${String(Math.round(results.compassHeading)).padStart(3, '0')}°`}
-                      </p>
-                      <p
-                        className="text-sm mt-1"
-                        style={{ color: "oklch(0.6 0.02 240)" }}
-                      >
-                        {compassCourse !== null && deviationTable.length > 0
-                          ? "with deviation table"
-                          : "= magnetic heading"}
-                      </p>
-                    </div>
-                  </div>
+              {/* New Leg Button - only show if we have distance (completed leg) */}
+              {results.eta !== undefined && (
+                <div className="pt-4 print:hidden">
+                  <NewLegButton
+                    magDev={magDev}
+                    departureTime={departureTime}
+                    deviationTable={initialDevTable}
+                    fuelFlow={fuelFlow}
+                    tas={tas}
+                    speedUnit={speedUnit}
+                    fuelUnit={fuelUnit}
+                    elapsedMinutes={(elapsedMins || 0) + Math.round((results.eta || 0) * 60)}
+                    windDir={windDir}
+                    windSpeed={windSpeed}
+                    fuelUsed={results.fuelUsed}
+                  />
                 </div>
-              </div>
-
-              {/* Start Leg Planning Button */}
-              <div className="pt-4 print:hidden">
-                <a
-                  href={`/leg?th=${trueHeading}&tas=${tas}&wd=${windDir}&ws=${windSpeed}&md=${magDev}${description ? `&desc=${encodeURIComponent(description)}` : ''}${speedUnit !== 'kt' ? `&unit=${speedUnit}` : ''}${deviationTable.length > 0 ? `&devTable=${compressForUrl(deviationTable)}` : ''}`}
-                  className="block w-full px-6 py-4 rounded-xl bg-linear-to-br from-emerald-500/10 to-green-500/10 border-2 border-emerald-500/30 hover:border-emerald-500/50 hover:bg-emerald-500/20 transition-all text-center group"
-                >
-                  <div className="flex items-center justify-center gap-3">
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="oklch(0.7 0.15 150)"
-                      viewBox="0 0 24 24"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
-                      />
-                    </svg>
-                    <span className="text-base font-semibold" style={{ color: "oklch(0.7 0.15 150)" }}>
-                      Start Leg Planning
-                    </span>
-                    <svg
-                      className="w-4 h-4 group-hover:translate-x-1 transition-transform"
-                      fill="none"
-                      stroke="oklch(0.7 0.15 150)"
-                      viewBox="0 0 24 24"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M14 5l7 7m0 0l-7 7m7-7H3"
-                      />
-                    </svg>
-                  </div>
-                  <p className="text-xs mt-2" style={{ color: "oklch(0.6 0.02 240)" }}>
-                    Continue with distance, fuel consumption, waypoints, and time estimates
-                  </p>
-                </a>
-              </div>
+              )}
 
               {/* Share Button - after all results */}
               <div className="pt-2 print:hidden">
                 <ShareButton
                   shareData={{
-                    title: "José's Course Calculator",
+                    title: "José's Leg Planner",
                     text: `Wind: ${windDir}° at ${windSpeed} kt, Heading: ${trueHeading}° → GS: ${results?.groundSpeed.toFixed(1)} kt`,
                     url: typeof window !== "undefined" ? window.location.href : "",
                   }}
@@ -635,7 +733,8 @@ export function CourseCalculatorClient({
               <span className="font-semibold">ETAS (Effective True Air Speed)</span> is
               shown when WCA exceeds 10° to account for the reduced effective forward
               speed when crabbing at large angles.
-              {" "}<span className="font-semibold">For complete flight planning with fuel, time estimates, and waypoints, use the <a href="/leg" className="underline hover:text-sky-400 transition-colors">Leg Planner</a>.</span>
+              {" "}<span className="font-semibold">All calculations are performed with decimal precision,
+              but displayed values are rounded to the nearest integer for clarity.</span>
             </p>
           </div>
         </div>
@@ -644,12 +743,21 @@ export function CourseCalculatorClient({
 
       <Footer description="Aviation calculations based on wind triangle principles" />
 
+      {/* Waypoints Modal */}
+      <WaypointsModal
+        isOpen={isWaypointsModalOpen}
+        onClose={() => setIsWaypointsModalOpen(false)}
+        onApply={setWaypoints}
+        initialWaypoints={waypoints}
+        totalDistance={dist}
+      />
+
       {/* Distance Calculator Modal */}
       <DistanceCalculatorModal
         isOpen={isDistanceModalOpen}
         onClose={() => setIsDistanceModalOpen(false)}
         onApply={handleDistanceCalculatorApply}
-        description="Search for cities or airports to populate True Heading and Description fields for your course calculation"
+        description="Search for cities or airports to populate True Heading, Distance, and Description fields for your flight plan"
       />
 
       {/* TAS Calculator Modal */}

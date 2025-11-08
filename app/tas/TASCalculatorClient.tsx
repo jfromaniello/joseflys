@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Tooltip } from "../components/Tooltip";
 import { PageLayout } from "../components/PageLayout";
+import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
 import { Footer } from "../components/Footer";
 import { ShareButton } from "../components/ShareButton";
 import { calculateTAS } from "@/lib/tasCalculations";
@@ -62,15 +63,10 @@ export function TASCalculatorClient({
 
   return (
     <PageLayout currentPage="tas">
-      {/* Header */}
-      <div className="text-center mb-8 sm:mb-12">
-        <p
-          className="text-base sm:text-lg"
-          style={{ color: "oklch(0.58 0.02 240)" }}
-        >
-          Calculate True Airspeed from Calibrated Airspeed
-        </p>
-      </div>
+      <CalculatorPageHeader
+        title="TAS Calculator"
+        description="Calculate True Airspeed from Calibrated Airspeed, Outside Air Temperature, and Pressure Altitude using the ISA standard atmosphere model"
+      />
 
       <main className="w-full max-w-4xl">
         <div className="rounded-2xl p-6 sm:p-8 shadow-2xl bg-slate-800/50 backdrop-blur-sm border border-gray-700">
@@ -84,9 +80,9 @@ export function TASCalculatorClient({
             </h2>
             <p
               className="text-sm"
-              style={{ color: "oklch(0.58 0.02 240)" }}
+              style={{ color: "oklch(0.7 0.02 240)" }}
             >
-              Enter your flight data to calculate True Airspeed
+              Enter CAS, OAT, and altitude to get True Airspeed
             </p>
           </div>
 
