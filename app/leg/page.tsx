@@ -1,5 +1,4 @@
-import { Suspense } from "react";
-import { LegPlannerClient } from "./LegPlannerClient";
+import { ClientWrapper } from "./ClientWrapper";
 
 export { generateMetadata } from "./metadata";
 
@@ -44,31 +43,23 @@ export default async function LegPage({ searchParams }: LegPageProps) {
   const prevFuel = params.prevFuel || "";
 
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-900 via-blue-950 to-slate-900">
-          <div className="text-white">Loading...</div>
-        </div>
-      }
-    >
-      <LegPlannerClient
-        initialTh={th}
-        initialTas={tas}
-        initialWd={wd}
-        initialWs={ws}
-        initialMd={md}
-        initialDist={dist}
-        initialFf={ff}
-        initialDevTable={devTable}
-        initialPlane={plane}
-        initialDesc={desc}
-        initialSpeedUnit={unit}
-        initialFuelUnit={funit}
-        initialWaypoints={waypoints}
-        initialDepTime={depTime}
-        initialElapsedMin={elapsedMin}
-        initialPrevFuel={prevFuel}
-      />
-    </Suspense>
+    <ClientWrapper
+      initialTh={th}
+      initialTas={tas}
+      initialWd={wd}
+      initialWs={ws}
+      initialMd={md}
+      initialDist={dist}
+      initialFf={ff}
+      initialDevTable={devTable}
+      initialPlane={plane}
+      initialDesc={desc}
+      initialSpeedUnit={unit}
+      initialFuelUnit={funit}
+      initialWaypoints={waypoints}
+      initialDepTime={depTime}
+      initialElapsedMin={elapsedMin}
+      initialPrevFuel={prevFuel}
+    />
   );
 }

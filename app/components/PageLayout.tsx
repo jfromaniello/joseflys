@@ -1,11 +1,11 @@
 import { ReactNode } from "react";
 import { Navbar } from "./Navbar";
 
-type Calculator = "home" | "tas" | "course" | "leg" | "conversions" | "planning" | "distance" | "isa" | "climb";
+type Page = "home" | "tas" | "course" | "leg" | "conversions" | "planning" | "distance" | "isa" | "climb" | "my-planes";
 
 interface PageLayoutProps {
   children: ReactNode;
-  currentPage?: Calculator;
+  currentPage?: Page;
 }
 
 export function PageLayout({ children, currentPage = "home" }: PageLayoutProps) {

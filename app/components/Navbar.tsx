@@ -4,33 +4,13 @@ import { useState, Fragment } from "react";
 import Link from "next/link";
 import { Dialog, Transition, TransitionChild, DialogPanel, DialogTitle, Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/react";
 
-type Calculator = "home" | "tas" | "course" | "leg" | "conversions" | "planning" | "distance" | "isa" | "climb";
+type Page = "home" | "tas" | "course" | "leg" | "conversions" | "planning" | "distance" | "isa" | "climb" | "my-planes";
 
 interface NavbarProps {
-  currentPage: Calculator;
+  currentPage: Page;
 }
 
 const calculators = [
-  {
-    id: "home" as const,
-    name: "Home",
-    href: "/",
-    icon: (
-      <svg
-        className="w-5 h-5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        strokeWidth={2}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-        />
-      </svg>
-    ),
-  },
   {
     id: "course" as const,
     name: "Course Calculator",
@@ -193,9 +173,34 @@ const calculators = [
   },
 ];
 
+const otherPages = [
+  {
+    id: "my-planes" as const,
+    name: "My Planes",
+    href: "/my-planes",
+    icon: (
+      <svg
+        className="w-5 h-5"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        strokeWidth={2}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
+        />
+      </svg>
+    ),
+  },
+];
+
+const allPages = [...calculators, ...otherPages];
+
 export function Navbar({ currentPage }: NavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const currentCalc = calculators.find((c) => c.id === currentPage);
+  const currentPageData = allPages.find((p) => p.id === currentPage);
 
   return (
     <>
@@ -244,9 +249,9 @@ export function Navbar({ currentPage }: NavbarProps) {
                       />
                     </svg>
                   ) : (
-                    currentCalc?.icon
+                    currentPageData?.icon
                   )}
-                  <span>{currentPage === "home" ? "Calculators" : currentCalc?.name}</span>
+                  <span>{currentPage === "home" ? "Home" : currentPageData?.name}</span>
                   <svg
                     className="w-4 h-4"
                     fill="none"
@@ -273,27 +278,48 @@ export function Navbar({ currentPage }: NavbarProps) {
                 >
                   <MenuItems className="absolute right-0 mt-2 w-64 origin-top-right rounded-xl bg-slate-900 shadow-xl border border-gray-700 ring-1 ring-black ring-opacity-5 focus:outline-none overflow-hidden">
                     <div className="py-1">
-                      {calculators
-                        .filter((calc) => calc.id !== "home")
-                        .map((calc) => (
-                          <MenuItem key={calc.id}>
-                            {({ active }) => (
-                              <Link
-                                href={calc.href}
-                                className={`flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
-                                  calc.id === currentPage
-                                    ? "bg-sky-500/20 text-sky-400"
-                                    : active
-                                    ? "bg-slate-800 text-white"
-                                    : "text-gray-300"
-                                }`}
-                              >
-                                {calc.icon}
-                                <span>{calc.name}</span>
-                              </Link>
-                            )}
-                          </MenuItem>
-                        ))}
+                      {calculators.map((calc) => (
+                        <MenuItem key={calc.id}>
+                          {({ active }) => (
+                            <Link
+                              href={calc.href}
+                              className={`flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
+                                calc.id === currentPage
+                                  ? "bg-sky-500/20 text-sky-400"
+                                  : active
+                                  ? "bg-slate-800 text-white"
+                                  : "text-gray-300"
+                              }`}
+                            >
+                              {calc.icon}
+                              <span>{calc.name}</span>
+                            </Link>
+                          )}
+                        </MenuItem>
+                      ))}
+
+                      {/* Separator */}
+                      <div className="border-t border-gray-700 my-1" />
+
+                      {otherPages.map((page) => (
+                        <MenuItem key={page.id}>
+                          {({ active }) => (
+                            <Link
+                              href={page.href}
+                              className={`flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
+                                page.id === currentPage
+                                  ? "bg-sky-500/20 text-sky-400"
+                                  : active
+                                  ? "bg-slate-800 text-white"
+                                  : "text-gray-300"
+                              }`}
+                            >
+                              {page.icon}
+                              <span>{page.name}</span>
+                            </Link>
+                          )}
+                        </MenuItem>
+                      ))}
                     </div>
                   </MenuItems>
                 </Transition>
@@ -305,7 +331,7 @@ export function Navbar({ currentPage }: NavbarProps) {
               onClick={() => setIsMobileMenuOpen(true)}
               className="md:hidden flex items-center gap-2 px-3 py-1.5 rounded-lg text-gray-300 hover:bg-slate-800 hover:text-white transition-colors"
             >
-              <span className="text-sm font-medium">{currentCalc?.name || 'Menu'}</span>
+              <span className="text-sm font-medium">{currentPageData?.name || 'Menu'}</span>
               <svg
                 className="w-5 h-5"
                 fill="none"
@@ -400,6 +426,31 @@ export function Navbar({ currentPage }: NavbarProps) {
 
                   {/* Mobile menu items */}
                   <div className="p-4 space-y-1">
+                    <Link
+                      href="/"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-all ${
+                        currentPage === "home"
+                          ? "bg-sky-500/20 text-sky-400"
+                          : "text-gray-300 hover:bg-slate-800 hover:text-white"
+                      }`}
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                        />
+                      </svg>
+                      Home
+                    </Link>
+
                     {calculators.map((calc) => (
                       <Link
                         key={calc.id}
@@ -413,6 +464,25 @@ export function Navbar({ currentPage }: NavbarProps) {
                       >
                         {calc.icon}
                         {calc.name}
+                      </Link>
+                    ))}
+
+                    {/* Separator */}
+                    <div className="border-t border-gray-700 my-2" />
+
+                    {otherPages.map((page) => (
+                      <Link
+                        key={page.id}
+                        href={page.href}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-all ${
+                          page.id === currentPage
+                            ? "bg-sky-500/20 text-sky-400"
+                            : "text-gray-300 hover:bg-slate-800 hover:text-white"
+                        }`}
+                      >
+                        {page.icon}
+                        {page.name}
                       </Link>
                     ))}
                   </div>

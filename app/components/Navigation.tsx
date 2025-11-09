@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 
-type Calculator = "home" | "tas" | "course" | "leg" | "conversions" | "planning" | "distance" | "isa" | "climb";
+type Page = "home" | "tas" | "course" | "leg" | "conversions" | "planning" | "distance" | "isa" | "climb" | "my-planes";
 
 interface NavigationProps {
-  currentPage: Calculator;
+  currentPage: Page;
 }
 
-const calculators = [
+const pages = [
   {
     id: "home" as const,
     name: "Home",
@@ -189,36 +189,56 @@ const calculators = [
       </svg>
     ),
   },
+  {
+    id: "my-planes" as const,
+    name: "My Planes",
+    href: "/my-planes",
+    icon: (
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        strokeWidth={2}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
+        />
+      </svg>
+    ),
+  },
 ];
 
 export function Navigation({ currentPage }: NavigationProps) {
   return (
     <div className="flex items-center justify-center gap-4 flex-wrap print:hidden">
-      {calculators.map((calc, index) => (
-        <div key={calc.id} className="flex items-center gap-4">
+      {pages.map((page, index) => (
+        <div key={page.id} className="flex items-center gap-4">
           <Link
-            href={calc.href}
+            href={page.href}
             className={`inline-flex items-center gap-2 text-sm transition-colors ${
-              calc.id === currentPage
+              page.id === currentPage
                 ? "font-semibold cursor-default"
                 : "hover:brightness-125"
             }`}
             style={{
               color:
-                calc.id === currentPage
+                page.id === currentPage
                   ? "white"
                   : "oklch(0.65 0.15 230)",
             }}
             onClick={(e) => {
-              if (calc.id === currentPage) {
+              if (page.id === currentPage) {
                 e.preventDefault();
               }
             }}
           >
-            {calc.icon}
-            {calc.name}
+            {page.icon}
+            {page.name}
           </Link>
-          {index < calculators.length - 1 && (
+          {index < pages.length - 1 && (
             <span style={{ color: "oklch(0.4 0.02 240)" }}>•</span>
           )}
         </div>

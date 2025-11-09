@@ -100,6 +100,7 @@ export function CorrectionsInputs({
               ? { color: "oklch(0.7 0.02 240)" }
               : undefined
           }
+          suppressHydrationWarning
         >
           {deviationTable.length > 0 ? (
             <div className="flex flex-col items-center">

@@ -1,6 +1,5 @@
-import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { CourseCalculatorClient } from "./CourseCalculatorClient";
+import { ClientWrapper } from "./ClientWrapper";
 
 export { generateMetadata } from "./metadata";
 
@@ -70,30 +69,22 @@ export default async function WindsPage({ searchParams }: WindsPageProps) {
   const unit = params.unit || "kt";
 
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-900 via-blue-950 to-slate-900">
-          <div className="text-white">Loading...</div>
-        </div>
-      }
-    >
-      <CourseCalculatorClient
-        initialTh={th}
-        initialTas={tas}
-        initialWd={wd}
-        initialWs={ws}
-        initialMd={md}
-        initialDist=""
-        initialFf=""
-        initialDevTable={devTable}
-        initialDesc={desc}
-        initialSpeedUnit={unit}
-        initialFuelUnit="gph"
-        initialWaypoints=""
-        initialDepTime=""
-        initialElapsedMin=""
-        initialPrevFuel=""
-      />
-    </Suspense>
+    <ClientWrapper
+      initialTh={th}
+      initialTas={tas}
+      initialWd={wd}
+      initialWs={ws}
+      initialMd={md}
+      initialDist=""
+      initialFf=""
+      initialDevTable={devTable}
+      initialDesc={desc}
+      initialSpeedUnit={unit}
+      initialFuelUnit="gph"
+      initialWaypoints=""
+      initialDepTime=""
+      initialElapsedMin=""
+      initialPrevFuel=""
+    />
   );
 }

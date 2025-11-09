@@ -588,6 +588,7 @@ export function CourseCalculatorClient({
                       <p
                         className="text-sm mt-1"
                         style={{ color: "oklch(0.6 0.02 240)" }}
+                        suppressHydrationWarning
                       >
                         {compassCourse !== null && deviationTable.length > 0
                           ? "with deviation table"
