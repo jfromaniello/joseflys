@@ -12,7 +12,8 @@ interface LegPageProps {
     md?: string;
     dist?: string;
     ff?: string;
-    devTable?: string; // JSON encoded deviation table
+    devTable?: string; // JSON encoded deviation table (legacy)
+    plane?: string; // Serialized aircraft data (new format)
     desc?: string; // Optional description
     unit?: string; // Speed unit (kt, kmh, mph)
     funit?: string; // Fuel unit (gph, lph, pph, kgh)
@@ -33,6 +34,7 @@ export default async function LegPage({ searchParams }: LegPageProps) {
   const dist = params.dist || "";
   const ff = params.ff || "";
   const devTable = params.devTable || "";
+  const plane = params.plane || "";
   const desc = params.desc || "";
   const unit = params.unit || "kt";
   const funit = params.funit || "gph";
@@ -58,6 +60,7 @@ export default async function LegPage({ searchParams }: LegPageProps) {
         initialDist={dist}
         initialFf={ff}
         initialDevTable={devTable}
+        initialPlane={plane}
         initialDesc={desc}
         initialSpeedUnit={unit}
         initialFuelUnit={funit}

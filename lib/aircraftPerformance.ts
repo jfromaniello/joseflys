@@ -19,15 +19,26 @@ export interface ClimbPerformanceData {
   distanceToClimb?: number;
 }
 
+export interface DeviationEntry {
+  forHeading: number;
+  steerHeading: number;
+}
+
 export interface AircraftPerformance {
   name: string;
   model: string;
   // Climb performance table (usually at standard weight, ISA conditions)
-  climbTable: ClimbPerformanceData[];
+  // Optional - user may only have deviation table initially
+  climbTable?: ClimbPerformanceData[];
   // Standard weight for which the table is valid (lbs)
-  standardWeight: number;
+  // Optional - may not be set yet
+  standardWeight?: number;
   // Max gross weight (lbs)
-  maxWeight: number;
+  // Optional - may not be set yet
+  maxWeight?: number;
+  // Compass deviation table
+  // Optional - user may add this separately
+  deviationTable?: DeviationEntry[];
 }
 
 /**
@@ -247,11 +258,22 @@ export function getAircraftByModel(model: string): AircraftPerformance | undefin
 }
 
 /**
- * Create empty aircraft performance template
+ * Create empty aircraft template
+ * Can be used for creating aircraft with just a name, then progressively add data
  */
-export function createEmptyAircraft(): AircraftPerformance {
+export function createEmptyAircraft(name?: string): AircraftPerformance {
   return {
-    name: "Custom Aircraft",
+    name: name || "Custom Aircraft",
+    model: "CUSTOM",
+  };
+}
+
+/**
+ * Create empty aircraft with climb performance template
+ */
+export function createEmptyAircraftWithClimb(name?: string): AircraftPerformance {
+  return {
+    name: name || "Custom Aircraft",
     model: "CUSTOM",
     standardWeight: 2000,
     maxWeight: 2200,

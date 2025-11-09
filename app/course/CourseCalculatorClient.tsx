@@ -11,6 +11,8 @@ import { DistanceCalculatorModal } from "../components/DistanceCalculatorModal";
 import { TASCalculatorModal } from "../components/TASCalculatorModal";
 import { calculateCompassCourse } from "@/lib/compassDeviation";
 import { compressForUrl, decompressFromUrl } from "@/lib/urlCompression";
+import { loadAircraftFromUrl, serializeAircraft } from "@/lib/aircraftStorage";
+import { AircraftPerformance } from "@/lib/aircraftPerformance";
 import { CourseSpeedInputs, SpeedUnit } from "./components/CourseSpeedInputs";
 import { WindInputs } from "./components/WindInputs";
 import { CorrectionsInputs } from "./components/CorrectionsInputs";
@@ -27,6 +29,7 @@ interface CourseCalculatorClientProps {
   initialDist: string;
   initialFf: string;
   initialDevTable: string;
+  initialPlane?: string;
   initialDesc: string;
   initialSpeedUnit: string;
   initialFuelUnit: string;
@@ -43,6 +46,7 @@ export function CourseCalculatorClient({
   initialWs,
   initialMd,
   initialDevTable,
+  initialPlane,
   initialDesc,
   initialSpeedUnit,
 }: CourseCalculatorClientProps) {
@@ -58,8 +62,22 @@ export function CourseCalculatorClient({
   const [isDistanceModalOpen, setIsDistanceModalOpen] = useState(false);
   const [isTASModalOpen, setIsTASModalOpen] = useState(false);
 
-  // Compass deviation table state - initialize from URL if available
+  // Aircraft state - initialize from URL if plane param exists
+  const [aircraft, setAircraft] = useState<AircraftPerformance | null>(() => {
+    if (initialPlane) {
+      return loadAircraftFromUrl(initialPlane);
+    }
+    return null;
+  });
+
+  // Compass deviation table state - initialize from aircraft or legacy devTable param
   const [deviationTable, setDeviationTable] = useState<DeviationEntry[]>(() => {
+    // Priority 1: From aircraft if loaded
+    if (aircraft?.deviationTable) {
+      return aircraft.deviationTable;
+    }
+
+    // Priority 2: Legacy devTable param (compressed JSON)
     if (initialDevTable) {
       try {
         const decompressed = decompressFromUrl(initialDevTable);
@@ -84,8 +102,20 @@ export function CourseCalculatorClient({
     if (description) params.set("desc", description);
     if (speedUnit !== 'kt') params.set("unit", speedUnit);
 
-    // Add deviation table if it exists (compressed)
-    if (deviationTable.length > 0) {
+    // Add aircraft with deviation table if exists
+    if (aircraft && deviationTable.length > 0) {
+      // Update aircraft with current deviation table
+      const updatedAircraft = {
+        ...aircraft,
+        deviationTable: deviationTable,
+      };
+      // For course page, only serialize name, model, and deviation table
+      const serialized = serializeAircraft(updatedAircraft, {
+        includeDeviationTable: true,
+      });
+      params.set("plane", serialized);
+    } else if (deviationTable.length > 0) {
+      // Legacy: just deviation table (compressed)
       const compressed = compressForUrl(deviationTable);
       if (compressed) {
         params.set("devTable", compressed);
@@ -95,7 +125,7 @@ export function CourseCalculatorClient({
     // Use window.history.replaceState instead of router.replace to avoid server requests
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState(null, '', newUrl);
-  }, [trueHeading, tas, windDir, windSpeed, magDev, description, deviationTable, speedUnit]);
+  }, [trueHeading, tas, windDir, windSpeed, magDev, description, deviationTable, speedUnit, aircraft]);
 
   // Calculate results during render (not in useEffect to avoid cascading renders)
   const th = parseFloat(trueHeading);
@@ -414,6 +444,8 @@ export function CourseCalculatorClient({
               setMagDev={setMagDev}
               deviationTable={deviationTable}
               onDeviationTableChange={setDeviationTable}
+              aircraft={aircraft}
+              onAircraftChange={setAircraft}
             />
           </div>
 

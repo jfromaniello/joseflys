@@ -108,6 +108,20 @@ export function calculateClimbPerformance(
     };
   }
 
+  // Check if aircraft has climb table
+  if (!aircraft.climbTable || aircraft.climbTable.length === 0) {
+    console.warn("Aircraft has no climb performance table");
+    return {
+      segments: [],
+      totalTime: 0,
+      totalDistance: 0,
+      totalFuel: 0,
+      topOfClimbAltitude: currentAltitude,
+      averageROC: 0,
+      averageTAS: 0,
+    };
+  }
+
   const segments: ClimbSegment[] = [];
   let currentAlt = currentAltitude;
 

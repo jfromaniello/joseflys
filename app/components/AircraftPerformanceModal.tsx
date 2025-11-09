@@ -7,9 +7,9 @@ import {
   AircraftPerformance,
   ClimbPerformanceData,
   PRESET_AIRCRAFT,
-  createEmptyAircraft,
+  createEmptyAircraftWithClimb,
 } from "@/lib/aircraftPerformance";
-import { saveAircraft, loadCustomAircraft } from "@/lib/aircraftStorage";
+import { saveAircraft, loadCustomAircraft, updateAircraft } from "@/lib/aircraftStorage";
 
 interface AircraftPerformanceModalProps {
   isOpen: boolean;
@@ -56,7 +56,7 @@ export function AircraftPerformanceModal({
     if (model === "CUSTOM") {
       setIsCustom(true);
       setIsEditing(true);
-      setAircraft(createEmptyAircraft());
+      setAircraft(createEmptyAircraftWithClimb());
     } else {
       // Check presets first
       const preset = PRESET_AIRCRAFT.find((ac) => ac.model === model);
@@ -71,7 +71,22 @@ export function AircraftPerformanceModal({
         if (custom) {
           setIsCustom(true);
           setIsEditing(false);
-          setAircraft(JSON.parse(JSON.stringify(custom))); // Deep copy to allow editing
+          // If aircraft has no climb table, add default one for editing
+          const aircraftCopy = JSON.parse(JSON.stringify(custom));
+          if (!aircraftCopy.climbTable || aircraftCopy.climbTable.length === 0) {
+            aircraftCopy.climbTable = [
+              {
+                altitudeFrom: 0,
+                altitudeTo: 2000,
+                rateOfClimb: 500,
+                climbTAS: 70,
+                fuelFlow: 8.0,
+              },
+            ];
+            aircraftCopy.standardWeight = aircraftCopy.standardWeight || 2000;
+            aircraftCopy.maxWeight = aircraftCopy.maxWeight || 2200;
+          }
+          setAircraft(aircraftCopy);
           setSelectedPreset(model);
         }
       }
@@ -79,14 +94,30 @@ export function AircraftPerformanceModal({
   };
 
   const handleApply = () => {
-    // Save custom aircraft to localStorage (handles conflicts, returns possibly renamed aircraft)
-    const savedAircraft = (isCustom || isEditing) ? saveAircraft(aircraft) : aircraft;
+    let savedAircraft = aircraft;
+
+    if (isCustom || isEditing) {
+      // Check if this is an existing custom aircraft being edited
+      const existingCustom = customAircraft.find(ac => ac.model === aircraft.model && aircraft.model.startsWith("CUSTOM_"));
+
+      if (existingCustom) {
+        // Update existing aircraft
+        const updated = updateAircraft(aircraft.model, aircraft);
+        if (updated) {
+          savedAircraft = updated;
+        }
+      } else {
+        // Save as new aircraft
+        savedAircraft = saveAircraft(aircraft);
+      }
+    }
+
     onApply(savedAircraft);
     onClose();
   };
 
   const addSegment = () => {
-    const lastSegment = aircraft.climbTable[aircraft.climbTable.length - 1];
+    const lastSegment = aircraft.climbTable?.[aircraft.climbTable.length - 1];
     const newSegment: ClimbPerformanceData = {
       altitudeFrom: lastSegment?.altitudeTo || 0,
       altitudeTo: (lastSegment?.altitudeTo || 0) + 2000,
@@ -97,12 +128,12 @@ export function AircraftPerformanceModal({
 
     setAircraft({
       ...aircraft,
-      climbTable: [...aircraft.climbTable, newSegment],
+      climbTable: [...(aircraft.climbTable || []), newSegment],
     });
   };
 
   const removeSegment = (index: number) => {
-    if (aircraft.climbTable.length > 1) {
+    if (aircraft.climbTable && aircraft.climbTable.length > 1) {
       setAircraft({
         ...aircraft,
         climbTable: aircraft.climbTable.filter((_, i) => i !== index),
@@ -111,6 +142,7 @@ export function AircraftPerformanceModal({
   };
 
   const updateSegment = (index: number, field: keyof ClimbPerformanceData, value: number) => {
+    if (!aircraft.climbTable) return;
     const newTable = [...aircraft.climbTable];
     newTable[index] = { ...newTable[index], [field]: value };
     setAircraft({ ...aircraft, climbTable: newTable });
@@ -325,7 +357,7 @@ export function AircraftPerformanceModal({
                           </tr>
                         </thead>
                         <tbody>
-                          {aircraft.climbTable.map((segment, index) => (
+                          {(aircraft.climbTable || []).map((segment, index) => (
                             <tr key={index} className="border-t border-gray-700/50">
                               <td className="px-3 py-2">
                                 <input
@@ -387,7 +419,7 @@ export function AircraftPerformanceModal({
                                 <td className="px-3 py-2">
                                   <button
                                     onClick={() => removeSegment(index)}
-                                    disabled={aircraft.climbTable.length === 1}
+                                    disabled={(aircraft.climbTable?.length || 0) === 1}
                                     className="px-2 py-1 rounded text-xs bg-red-500/20 hover:bg-red-500/30 text-red-400 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                                   >
                                     Remove

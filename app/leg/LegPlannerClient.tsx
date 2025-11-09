@@ -12,6 +12,8 @@ import { DistanceCalculatorModal } from "../components/DistanceCalculatorModal";
 import { TASCalculatorModal } from "../components/TASCalculatorModal";
 import { calculateCompassCourse } from "@/lib/compassDeviation";
 import { compressForUrl, decompressFromUrl } from "@/lib/urlCompression";
+import { loadAircraftFromUrl, serializeAircraft } from "@/lib/aircraftStorage";
+import { AircraftPerformance } from "@/lib/aircraftPerformance";
 import { CourseSpeedInputs, SpeedUnit } from "../course/components/CourseSpeedInputs";
 import { WindInputs } from "../course/components/WindInputs";
 import { CorrectionsInputs } from "../course/components/CorrectionsInputs";
@@ -34,6 +36,7 @@ interface LegPlannerClientProps {
   initialDist: string;
   initialFf: string;
   initialDevTable: string;
+  initialPlane: string;
   initialDesc: string;
   initialSpeedUnit: string;
   initialFuelUnit: string;
@@ -52,6 +55,7 @@ export function LegPlannerClient({
   initialDist,
   initialFf,
   initialDevTable,
+  initialPlane,
   initialDesc,
   initialSpeedUnit,
   initialFuelUnit,
@@ -81,8 +85,22 @@ export function LegPlannerClient({
   const [isDistanceModalOpen, setIsDistanceModalOpen] = useState(false);
   const [isTASModalOpen, setIsTASModalOpen] = useState(false);
 
-  // Compass deviation table state - initialize from URL if available
+  // Aircraft state - initialize from URL if plane param exists
+  const [aircraft, setAircraft] = useState<AircraftPerformance | null>(() => {
+    if (initialPlane) {
+      return loadAircraftFromUrl(initialPlane);
+    }
+    return null;
+  });
+
+  // Compass deviation table state - initialize from aircraft or legacy devTable param
   const [deviationTable, setDeviationTable] = useState<DeviationEntry[]>(() => {
+    // Priority 1: From aircraft if loaded
+    if (aircraft?.deviationTable) {
+      return aircraft.deviationTable;
+    }
+
+    // Priority 2: Legacy devTable param (compressed JSON)
     if (initialDevTable) {
       try {
         const decompressed = decompressFromUrl(initialDevTable);
@@ -128,8 +146,20 @@ export function LegPlannerClient({
     if (speedUnit !== 'kt') params.set("unit", speedUnit);
     if (fuelUnit !== 'gph') params.set("funit", fuelUnit);
 
-    // Add deviation table if it exists (compressed)
-    if (deviationTable.length > 0) {
+    // Add aircraft with deviation table if exists
+    if (aircraft && deviationTable.length > 0) {
+      // Update aircraft with current deviation table
+      const updatedAircraft = {
+        ...aircraft,
+        deviationTable: deviationTable,
+      };
+      // For leg page, only serialize name, model, and deviation table
+      const serialized = serializeAircraft(updatedAircraft, {
+        includeDeviationTable: true,
+      });
+      params.set("plane", serialized);
+    } else if (deviationTable.length > 0) {
+      // Legacy: just deviation table (compressed)
       const compressed = compressForUrl(deviationTable);
       if (compressed) {
         params.set("devTable", compressed);
@@ -147,7 +177,7 @@ export function LegPlannerClient({
     // Use window.history.replaceState instead of router.replace to avoid server requests
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState(null, '', newUrl);
-  }, [trueHeading, tas, windDir, windSpeed, magDev, distance, fuelFlow, description, departureTime, elapsedMinutes, previousFuelUsed, deviationTable, waypoints, speedUnit, fuelUnit]);
+  }, [trueHeading, tas, windDir, windSpeed, magDev, distance, fuelFlow, description, departureTime, elapsedMinutes, previousFuelUsed, deviationTable, waypoints, speedUnit, fuelUnit, aircraft]);
 
   // Calculate results during render (not in useEffect to avoid cascading renders)
   const th = parseFloat(trueHeading);
@@ -594,6 +624,8 @@ export function LegPlannerClient({
               setMagDev={setMagDev}
               deviationTable={deviationTable}
               onDeviationTableChange={setDeviationTable}
+              aircraft={aircraft}
+              onAircraftChange={setAircraft}
             />
 
             {/* Fuel Consumption */}

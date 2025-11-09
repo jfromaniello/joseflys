@@ -7,12 +7,15 @@ import {
   CompassDeviationModal,
   DeviationEntry,
 } from "@/app/components/CompassDeviationModal";
+import { AircraftPerformance } from "@/lib/aircraftPerformance";
 
 interface CorrectionsInputsProps {
   magDev: string;
   setMagDev: (value: string) => void;
   deviationTable: DeviationEntry[];
   onDeviationTableChange: (entries: DeviationEntry[]) => void;
+  aircraft?: AircraftPerformance | null;
+  onAircraftChange?: (aircraft: AircraftPerformance | null) => void;
 }
 
 export function CorrectionsInputs({
@@ -20,8 +23,17 @@ export function CorrectionsInputs({
   setMagDev,
   deviationTable,
   onDeviationTableChange,
+  aircraft,
+  onAircraftChange,
 }: CorrectionsInputsProps) {
   const [isDeviationModalOpen, setIsDeviationModalOpen] = useState(false);
+
+  const handleDeviationApply = (entries: DeviationEntry[], updatedAircraft?: AircraftPerformance) => {
+    onDeviationTableChange(entries);
+    if (onAircraftChange && updatedAircraft) {
+      onAircraftChange(updatedAircraft);
+    }
+  };
 
   // Check if magnetic deviation is invalid (> 360 or < -360)
   const magDevNum = parseFloat(magDev);
@@ -105,8 +117,9 @@ export function CorrectionsInputs({
         <CompassDeviationModal
           isOpen={isDeviationModalOpen}
           onClose={() => setIsDeviationModalOpen(false)}
-          onApply={onDeviationTableChange}
+          onApply={handleDeviationApply}
           initialEntries={deviationTable}
+          initialAircraft={aircraft}
         />,
         document.body
       )}

@@ -1,8 +1,14 @@
 "use client";
 
-import { useState, Fragment } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { Dialog, Transition, TransitionChild, DialogPanel, DialogTitle, DialogDescription } from "@headlessui/react";
 import { Tooltip } from "./Tooltip";
+import {
+  loadCustomAircraft,
+  saveAircraft,
+  updateAircraft,
+} from "@/lib/aircraftStorage";
+import { AircraftPerformance, createEmptyAircraft, PRESET_AIRCRAFT } from "@/lib/aircraftPerformance";
 
 export interface DeviationEntry {
   forHeading: number;
@@ -12,8 +18,9 @@ export interface DeviationEntry {
 interface CompassDeviationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onApply: (entries: DeviationEntry[]) => void;
+  onApply: (entries: DeviationEntry[], aircraft?: AircraftPerformance) => void;
   initialEntries?: DeviationEntry[];
+  initialAircraft?: AircraftPerformance | null;
 }
 
 export function CompassDeviationModal({
@@ -21,6 +28,7 @@ export function CompassDeviationModal({
   onClose,
   onApply,
   initialEntries = [],
+  initialAircraft = null,
 }: CompassDeviationModalProps) {
   const [entries, setEntries] = useState<DeviationEntry[]>(
     initialEntries.length > 0
@@ -31,6 +39,70 @@ export function CompassDeviationModal({
         ]
   );
   const [showCopiedMessage, setShowCopiedMessage] = useState(false);
+  const [customAircraft, setCustomAircraft] = useState<AircraftPerformance[]>([]);
+  const [selectedAircraftModel, setSelectedAircraftModel] = useState<string>("");
+  const [newAircraftName, setNewAircraftName] = useState<string>("");
+  const [isCreatingNew, setIsCreatingNew] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Set<string>>(new Set());
+  const [editingFields, setEditingFields] = useState<Set<string>>(new Set()); // Track which fields are being edited
+
+  // Load custom aircraft when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      const loaded = loadCustomAircraft();
+      setCustomAircraft(loaded);
+
+      // If initialAircraft is provided, use it
+      if (initialAircraft) {
+        setIsCreatingNew(false);
+        setSelectedAircraftModel(initialAircraft.model);
+        if (initialAircraft.deviationTable && initialAircraft.deviationTable.length > 0) {
+          setEntries(initialAircraft.deviationTable);
+        }
+      } else if (loaded.length === 0) {
+        // No aircraft saved, start in creation mode
+        setIsCreatingNew(true);
+        setSelectedAircraftModel("");
+      } else {
+        // Has aircraft, select first one by default
+        setIsCreatingNew(false);
+        setSelectedAircraftModel(loaded[0].model);
+        // Load deviation table from selected aircraft if it exists
+        if (loaded[0].deviationTable && loaded[0].deviationTable.length > 0) {
+          setEntries(loaded[0].deviationTable);
+        }
+      }
+    }
+  }, [isOpen, initialAircraft]);
+
+  // Update entries when aircraft selection changes
+  const handleAircraftChange = (model: string) => {
+    if (model === "NEW") {
+      setIsCreatingNew(true);
+      setSelectedAircraftModel("");
+      setNewAircraftName("");
+      // Reset to default entries
+      setEntries([
+        { forHeading: 0, steerHeading: 0 },
+        { forHeading: 30, steerHeading: 30 },
+      ]);
+    } else {
+      setIsCreatingNew(false);
+      setSelectedAircraftModel(model);
+      // Load deviation table from selected aircraft
+      const aircraft = customAircraft.find(ac => ac.model === model);
+      if (aircraft?.deviationTable && aircraft.deviationTable.length > 0) {
+        setEntries(aircraft.deviationTable);
+      } else {
+        // Aircraft has no deviation table, start with defaults
+        setEntries([
+          { forHeading: 0, steerHeading: 0 },
+          { forHeading: 30, steerHeading: 30 },
+        ]);
+      }
+    }
+  };
 
   const addEntry = () => {
     setEntries([...entries, { forHeading: 0, steerHeading: 0 }]);
@@ -47,23 +119,67 @@ export function CompassDeviationModal({
     field: "forHeading" | "steerHeading",
     value: string
   ) => {
+    const fieldKey = `${index}-${field}`;
+    // Mark as editing (user started typing)
+    setEditingFields(prev => new Set(prev).add(fieldKey));
+
     const newEntries = [...entries];
     const num = parseFloat(value);
     newEntries[index][field] = isNaN(num) ? 0 : num;
     setEntries(newEntries);
   };
 
+  const handleFocus = (index: number, field: "forHeading" | "steerHeading", e: React.FocusEvent<HTMLInputElement>) => {
+    setFocusedField(`${index}-${field}`);
+    // Select all text for easy replacement
+    e.target.select();
+  };
+
   const handleBlur = (index: number, field: "forHeading" | "steerHeading") => {
+    setFocusedField(null);
     const value = entries[index][field];
-    if (value >= 0 && value <= 360) {
+    const fieldKey = `${index}-${field}`;
+
+    // Stop editing mode
+    setEditingFields(prev => {
+      const next = new Set(prev);
+      next.delete(fieldKey);
+      return next;
+    });
+
+    if (value > 360 || value < 0) {
+      // Mark as error
+      setErrors(prev => new Set(prev).add(fieldKey));
+    } else {
+      // Remove error if valid
+      setErrors(prev => {
+        const next = new Set(prev);
+        next.delete(fieldKey);
+        return next;
+      });
+
+      // Round the value
       const newEntries = [...entries];
       newEntries[index][field] = Math.round(value);
       setEntries(newEntries);
     }
   };
 
-  const formatHeadingDisplay = (value: number): string => {
-    return String(Math.round(value)).padStart(3, '0');
+  const hasErrors = errors.size > 0;
+
+  const getDisplayValue = (index: number, field: "forHeading" | "steerHeading"): string => {
+    const value = entries[index][field];
+    const fieldKey = `${index}-${field}`;
+    const isEditing = editingFields.has(fieldKey);
+
+    if (isEditing) {
+      // User is actively typing, show raw value without padding
+      return String(Math.round(value));
+    } else {
+      // Not editing (either not focused, or just focused but not typed yet)
+      // Show formatted value (padded to 3 digits)
+      return String(Math.round(value)).padStart(3, '0');
+    }
   };
 
   const handleApply = () => {
@@ -71,7 +187,32 @@ export function CompassDeviationModal({
     const sortedEntries = [...entries].sort(
       (a, b) => a.forHeading - b.forHeading
     );
-    onApply(sortedEntries);
+
+    let savedAircraft: AircraftPerformance | undefined;
+
+    if (isCreatingNew) {
+      // Create new aircraft with deviation table
+      if (!newAircraftName.trim()) {
+        alert("Please enter an aircraft name");
+        return;
+      }
+
+      const newAircraft = createEmptyAircraft(newAircraftName);
+      newAircraft.deviationTable = sortedEntries;
+      savedAircraft = saveAircraft(newAircraft);
+    } else {
+      // Update existing aircraft with deviation table
+      if (selectedAircraftModel) {
+        const updated = updateAircraft(selectedAircraftModel, {
+          deviationTable: sortedEntries,
+        });
+        if (updated) {
+          savedAircraft = updated;
+        }
+      }
+    }
+
+    onApply(sortedEntries, savedAircraft);
     onClose();
   };
 
@@ -184,121 +325,172 @@ export function CompassDeviationModal({
                   </div>
                 </div>
 
-        {/* Table */}
-        <div className="p-6">
+        {/* Content */}
+        <div className="p-6 space-y-6">
+          {/* Aircraft Selection */}
           <div className="space-y-3">
-            {/* Table Rows */}
-            {entries.map((entry, index) => (
-              <div key={index} className="flex flex-wrap md:flex-nowrap items-center gap-3">
-                {/* For Label + Input */}
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <label className="text-sm font-medium whitespace-nowrap" style={{ color: "oklch(0.65 0.15 230)" }}>
-                    For
-                  </label>
-                  <div className="relative flex-1">
-                    <input
-                      type="text"
-                      value={formatHeadingDisplay(entry.forHeading)}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === '' || /^\d{0,3}$/.test(value)) {
-                          updateEntry(index, "forHeading", value);
-                        }
-                      }}
-                      onBlur={() => handleBlur(index, "forHeading")}
-                      onPaste={(e) => handlePaste(e, index, "forHeading")}
-                      className={`w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 ${
-                        entry.forHeading > 360
-                          ? 'focus:ring-red-500/50 border-red-500'
-                          : 'focus:ring-sky-500/50 border-gray-600'
-                      } transition-all text-lg bg-slate-900/50 border-2 text-white`}
-                      placeholder="000"
-                      maxLength={3}
-                    />
-                    <span
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-                      style={{ color: "white" }}
-                    >
-                      °
-                    </span>
-                  </div>
-                </div>
+            <label className="text-sm font-medium mb-2 flex items-center" style={{ color: "oklch(0.72 0.015 240)" }}>
+              Aircraft
+              <Tooltip content="Select an existing aircraft or create a new one. Deviation table will be saved with the aircraft." />
+            </label>
 
-                {/* Steer Label + Input */}
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <label className="text-sm font-medium whitespace-nowrap" style={{ color: "oklch(0.65 0.15 230)" }}>
-                    Steer
-                  </label>
-                  <div className="relative flex-1">
-                    <input
-                      type="text"
-                      value={formatHeadingDisplay(entry.steerHeading)}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === '' || /^\d{0,3}$/.test(value)) {
-                          updateEntry(index, "steerHeading", value);
-                        }
-                      }}
-                      onBlur={() => handleBlur(index, "steerHeading")}
-                      className={`w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 ${
-                        entry.steerHeading > 360
-                          ? 'focus:ring-red-500/50 border-red-500'
-                          : 'focus:ring-sky-500/50 border-gray-600'
-                      } transition-all text-lg bg-slate-900/50 border-2 text-white`}
-                      placeholder="000"
-                      maxLength={3}
-                    />
-                    <span
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-                      style={{ color: "white" }}
-                    >
-                      °
-                    </span>
-                  </div>
-                </div>
-
-                {/* Remove Button */}
-                <button
-                  onClick={() => removeEntry(index)}
-                  disabled={entries.length <= 2}
-                  className="p-2 rounded-lg hover:bg-red-500/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer shrink-0"
-                  style={{ color: "oklch(0.65 0.15 10)" }}
+            {!isCreatingNew ? (
+              <div className="flex gap-3">
+                <select
+                  value={selectedAircraftModel}
+                  onChange={(e) => handleAircraftChange(e.target.value)}
+                  className="flex-1 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white cursor-pointer"
                 >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                    />
-                  </svg>
+                  {customAircraft.map((ac) => (
+                    <option key={ac.model} value={ac.model}>
+                      {ac.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => handleAircraftChange("NEW")}
+                  className="px-4 py-3 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 transition-all cursor-pointer border border-sky-500/30 text-sm font-medium whitespace-nowrap"
+                  style={{ color: "oklch(0.8 0.15 230)" }}
+                >
+                  + New
                 </button>
               </div>
-            ))}
+            ) : (
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={newAircraftName}
+                  onChange={(e) => setNewAircraftName(e.target.value)}
+                  placeholder="Enter aircraft name (e.g., N12345)"
+                  className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white"
+                />
+                {customAircraft.length > 0 && (
+                  <button
+                    onClick={() => handleAircraftChange(customAircraft[0].model)}
+                    className="text-sm px-3 py-1.5 rounded-lg hover:bg-slate-700 transition-colors cursor-pointer"
+                    style={{ color: "oklch(0.65 0.15 230)" }}
+                  >
+                    ← Back to selection
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Action Buttons */}
-          <div className="mt-4 flex gap-3">
-            <button
-              onClick={addEntry}
-              className="flex-1 py-3 rounded-xl border-2 border-dashed border-gray-600 hover:border-sky-500/50 hover:bg-sky-500/5 transition-all font-medium cursor-pointer"
-              style={{ color: "oklch(0.65 0.15 230)" }}
-            >
-              + Add Entry
-            </button>
+          {/* Deviation Table */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold uppercase tracking-wide" style={{ color: "oklch(0.65 0.15 230)" }}>
+                Deviation Table
+              </h3>
+              <button
+                onClick={addEntry}
+                className="text-sm px-3 py-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 transition-colors cursor-pointer"
+                style={{ color: "oklch(0.8 0.15 230)" }}
+              >
+                + Add Entry
+              </button>
+            </div>
+
+            <div className="overflow-x-auto rounded-xl border border-gray-600 bg-slate-900/50">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-800/80">
+                  <tr>
+                    <th className="px-3 py-2 text-left font-medium" style={{ color: "oklch(0.7 0.02 240)" }}>
+                      For (°)
+                    </th>
+                    <th className="px-3 py-2 text-left font-medium" style={{ color: "oklch(0.7 0.02 240)" }}>
+                      Steer (°)
+                    </th>
+                    <th className="px-3 py-2 text-left font-medium" style={{ color: "oklch(0.7 0.02 240)" }}>
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {entries.map((entry, index) => (
+                    <tr key={index} className="border-t border-gray-700/50">
+                      <td className="px-3 py-2">
+                        <input
+                          type="text"
+                          value={getDisplayValue(index, "forHeading")}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === '' || /^\d{0,3}$/.test(value)) {
+                              updateEntry(index, "forHeading", value || '0');
+                            }
+                          }}
+                          onFocus={(e) => handleFocus(index, "forHeading", e)}
+                          onBlur={() => handleBlur(index, "forHeading")}
+                          onPaste={(e) => handlePaste(e, index, "forHeading")}
+                          className={`w-full px-2 py-1.5 rounded text-sm bg-slate-800 border text-white text-right ${
+                            errors.has(`${index}-forHeading`)
+                              ? 'border-red-500 border-2'
+                              : 'border-gray-600'
+                          }`}
+                          placeholder="000"
+                          maxLength={3}
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <input
+                          type="text"
+                          value={getDisplayValue(index, "steerHeading")}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === '' || /^\d{0,3}$/.test(value)) {
+                              updateEntry(index, "steerHeading", value || '0');
+                            }
+                          }}
+                          onFocus={(e) => handleFocus(index, "steerHeading", e)}
+                          onBlur={() => handleBlur(index, "steerHeading")}
+                          className={`w-full px-2 py-1.5 rounded text-sm bg-slate-800 border text-white text-right ${
+                            errors.has(`${index}-steerHeading`)
+                              ? 'border-red-500 border-2'
+                              : 'border-gray-600'
+                          }`}
+                          placeholder="000"
+                          maxLength={3}
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <button
+                          onClick={() => removeEntry(index)}
+                          disabled={entries.length <= 2}
+                          className="px-2 py-1 rounded text-xs bg-red-500/20 hover:bg-red-500/30 text-red-400 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          Remove
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Copy Button */}
+          <div className="mt-4">
             <button
               onClick={handleCopyTable}
-              className="px-6 py-3 rounded-xl border-2 border-gray-600 hover:border-emerald-500/50 hover:bg-emerald-500/10 transition-all font-medium cursor-pointer relative"
+              className="w-full px-6 py-3 rounded-xl border-2 border-gray-600 hover:border-emerald-500/50 hover:bg-emerald-500/10 transition-all font-medium cursor-pointer"
               style={{ color: "oklch(0.7 0.15 150)" }}
             >
               {showCopiedMessage ? "✓ Copied!" : "📋 Copy Table"}
             </button>
           </div>
+
+          {/* Error/Info Note */}
+          {hasErrors && (
+            <div className="mt-4 p-4 rounded-xl bg-red-500/10 border border-red-500/30">
+              <p className="text-sm font-semibold" style={{ color: "oklch(0.8 0.15 10)" }}>
+                ⚠️ Invalid values detected
+              </p>
+              <p className="text-xs mt-1" style={{ color: "oklch(0.7 0.1 10)" }}>
+                Heading values must be between 0° and 360°. Please correct the highlighted fields.
+              </p>
+            </div>
+          )}
 
           {/* Info Note */}
           <div className="mt-6 p-4 rounded-xl bg-slate-900/50 border border-gray-700">
@@ -328,7 +520,8 @@ export function CompassDeviationModal({
                   </button>
                   <button
                     onClick={handleApply}
-                    className="flex-1 py-3 px-6 rounded-xl font-medium border-2 border-sky-500 bg-sky-500/20 hover:bg-sky-500/30 transition-all cursor-pointer"
+                    disabled={hasErrors}
+                    className="flex-1 py-3 px-6 rounded-xl font-medium border-2 border-sky-500 bg-sky-500/20 hover:bg-sky-500/30 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{ color: "oklch(0.8 0.15 230)" }}
                   >
                     Apply Deviation Table
