@@ -9,6 +9,7 @@ import {
   PRESET_AIRCRAFT,
   createEmptyAircraft,
 } from "@/lib/aircraftPerformance";
+import { saveAircraft, loadCustomAircraft } from "@/lib/aircraftStorage";
 
 interface AircraftPerformanceModalProps {
   isOpen: boolean;
@@ -29,6 +30,14 @@ export function AircraftPerformanceModal({
   );
   const [isCustom, setIsCustom] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [customAircraft, setCustomAircraft] = useState<AircraftPerformance[]>([]);
+
+  // Load custom aircraft from localStorage when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setCustomAircraft(loadCustomAircraft());
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (initialAircraft) {
@@ -49,18 +58,30 @@ export function AircraftPerformanceModal({
       setIsEditing(true);
       setAircraft(createEmptyAircraft());
     } else {
-      setIsCustom(false);
-      setIsEditing(false);
+      // Check presets first
       const preset = PRESET_AIRCRAFT.find((ac) => ac.model === model);
       if (preset) {
+        setIsCustom(false);
+        setIsEditing(false);
         setAircraft(JSON.parse(JSON.stringify(preset))); // Deep copy to allow editing
         setSelectedPreset(model);
+      } else {
+        // Check custom aircraft
+        const custom = customAircraft.find((ac) => ac.model === model);
+        if (custom) {
+          setIsCustom(true);
+          setIsEditing(false);
+          setAircraft(JSON.parse(JSON.stringify(custom))); // Deep copy to allow editing
+          setSelectedPreset(model);
+        }
       }
     }
   };
 
   const handleApply = () => {
-    onApply(aircraft);
+    // Save custom aircraft to localStorage (handles conflicts, returns possibly renamed aircraft)
+    const savedAircraft = (isCustom || isEditing) ? saveAircraft(aircraft) : aircraft;
+    onApply(savedAircraft);
     onClose();
   };
 
@@ -166,7 +187,7 @@ export function AircraftPerformanceModal({
                         Select Aircraft
                       </label>
                       <select
-                        value={isCustom ? "CUSTOM" : selectedPreset}
+                        value={isCustom ? (aircraft.model.startsWith("CUSTOM_") ? aircraft.model : "CUSTOM") : selectedPreset}
                         onChange={(e) => handlePresetChange(e.target.value)}
                         className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white cursor-pointer"
                       >
@@ -175,7 +196,16 @@ export function AircraftPerformanceModal({
                             {ac.name}
                           </option>
                         ))}
-                        <option value="CUSTOM">Custom Aircraft</option>
+                        {customAircraft.length > 0 && (
+                          <optgroup label="Custom Aircraft" style={{ color: "oklch(0.75 0.15 150)" }}>
+                            {customAircraft.map((ac) => (
+                              <option key={ac.model} value={ac.model} style={{ color: "oklch(0.75 0.15 150)" }}>
+                                {ac.name}
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                        <option value="CUSTOM">+ New Custom Aircraft</option>
                       </select>
                     </div>
                     {!isCustom && !isEditing && (
@@ -184,19 +214,10 @@ export function AircraftPerformanceModal({
                         className="px-4 py-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 transition-all cursor-pointer border border-amber-500/30 text-sm font-medium whitespace-nowrap"
                         style={{ color: "oklch(0.8 0.1 30)" }}
                       >
-                        Edit Table
+                        Edit
                       </button>
                     )}
                   </div>
-
-                  {/* Warning for preset editing */}
-                  {!isCustom && isEditing && (
-                    <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
-                      <p className="text-xs leading-relaxed" style={{ color: "oklch(0.7 0.1 30)" }}>
-                        <span className="font-semibold">⚠️ Editing Preset:</span> You are modifying the {aircraft.name} performance table. Changes will be applied to this calculation only. Always verify with your aircraft&apos;s POH for accurate performance data.
-                      </p>
-                    </div>
-                  )}
 
                   {/* Aircraft Info */}
                   {(isCustom || isEditing) && (

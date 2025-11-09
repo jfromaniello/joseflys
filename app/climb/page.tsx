@@ -13,6 +13,7 @@ interface ClimbPageProps {
     wd?: string;
     ws?: string;
     ac?: string;
+    plane?: string; // Serialized custom aircraft data
   }>;
 }
 
@@ -26,6 +27,7 @@ export default async function ClimbPage({ searchParams }: ClimbPageProps) {
   const windDir = params.wd || "";
   const windSpeed = params.ws || "";
   const aircraft = params.ac || "C150";
+  const plane = params.plane || "";
 
   return (
     <Suspense
@@ -44,6 +46,7 @@ export default async function ClimbPage({ searchParams }: ClimbPageProps) {
         initialWD={windDir}
         initialWS={windSpeed}
         initialAircraft={aircraft}
+        initialPlane={plane}
       />
     </Suspense>
   );

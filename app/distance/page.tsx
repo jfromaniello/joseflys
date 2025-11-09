@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { DistanceCalculatorClient } from "./DistanceCalculatorClient";
+import { parseLocationParams } from "@/lib/coordinateUrlParams";
 
 export { generateMetadata } from "./metadata";
 
@@ -11,6 +12,9 @@ interface DistancePageProps {
     toLat?: string;
     toLon?: string;
     toName?: string;
+    from?: string;
+    to?: string;
+    s?: string;
   }>;
 }
 
@@ -18,12 +22,15 @@ export default async function DistancePage({
   searchParams,
 }: DistancePageProps) {
   const params = await searchParams;
-  const fromLat = params.fromLat;
-  const fromLon = params.fromLon;
-  const fromName = params.fromName;
-  const toLat = params.toLat;
-  const toLon = params.toLon;
-  const toName = params.toName;
+
+  // Convert to URLSearchParams for parsing
+  const urlParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) urlParams.set(key, value);
+  });
+
+  // Parse using utility (supports both old and new formats)
+  const { fromLat, fromLon, fromName, toLat, toLon, toName } = parseLocationParams(urlParams);
 
   return (
     <Suspense

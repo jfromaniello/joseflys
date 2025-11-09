@@ -13,6 +13,7 @@ import {
   validateCoordinates,
   MAX_RECOMMENDED_DISTANCE_NM,
 } from "@/lib/distanceCalculations";
+import { serializeLocationsToUrl } from "@/lib/coordinateUrlParams";
 
 // Dynamic import for DistanceMap to avoid SSR issues with Leaflet
 const DistanceMap = dynamic(() => import("./DistanceMap").then((mod) => mod.DistanceMap), {
@@ -157,22 +158,24 @@ export function DistanceCalculatorClient({
   // Update URL when locations change
   useEffect(() => {
     if (fromLat && fromLon && toLat && toLon) {
-      const params = new URLSearchParams();
-      params.set("fromLat", fromLat);
-      params.set("fromLon", fromLon);
-      params.set("toLat", toLat);
-      params.set("toLon", toLon);
+      const fromLatNum = parseFloat(fromLat);
+      const fromLonNum = parseFloat(fromLon);
+      const toLatNum = parseFloat(toLat);
+      const toLonNum = parseFloat(toLon);
 
-      // Add city names if available (from search mode)
-      if (fromLocation) {
-        params.set("fromName", fromLocation.name);
-      }
-      if (toLocation) {
-        params.set("toName", toLocation.name);
-      }
+      if (!isNaN(fromLatNum) && !isNaN(fromLonNum) && !isNaN(toLatNum) && !isNaN(toLonNum)) {
+        const queryString = serializeLocationsToUrl(
+          fromLatNum,
+          fromLonNum,
+          toLatNum,
+          toLonNum,
+          fromLocation?.name,
+          toLocation?.name
+        );
 
-      const newUrl = `${window.location.pathname}?${params.toString()}`;
-      window.history.replaceState(null, "", newUrl);
+        const newUrl = `${window.location.pathname}?${queryString}`;
+        window.history.replaceState(null, "", newUrl);
+      }
     }
   }, [fromLat, fromLon, toLat, toLon, fromLocation, toLocation]);
 

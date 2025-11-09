@@ -11,6 +11,11 @@ import { DensityAltitudeModal } from "../components/DensityAltitudeModal";
 import { AircraftPerformance, PRESET_AIRCRAFT } from "@/lib/aircraftPerformance";
 import { calculateClimbPerformance, ClimbResults } from "@/lib/climbCalculations";
 import { calculateCourse } from "@/lib/courseCalculations";
+import {
+  getAircraftByModel,
+  loadAircraftFromUrl,
+  serializeAircraft,
+} from "@/lib/aircraftStorage";
 import { WindInputs } from "../course/components/WindInputs";
 import { AltitudeInputs } from "./components/AltitudeInputs";
 import { CourseInput } from "./components/CourseInput";
@@ -24,6 +29,7 @@ interface ClimbCalculatorClientProps {
   initialWD: string;
   initialWS: string;
   initialAircraft: string;
+  initialPlane: string;
 }
 
 export function ClimbCalculatorClient({
@@ -35,6 +41,7 @@ export function ClimbCalculatorClient({
   initialWD,
   initialWS,
   initialAircraft,
+  initialPlane,
 }: ClimbCalculatorClientProps) {
   const [currentAlt, setCurrentAlt] = useState<string>(initialCurrentAlt);
   const [targetAlt, setTargetAlt] = useState<string>(initialTargetAlt);
@@ -44,9 +51,18 @@ export function ClimbCalculatorClient({
   const [windDir, setWindDir] = useState<string>(initialWD);
   const [windSpeed, setWindSpeed] = useState<string>(initialWS);
 
-  const [aircraft, setAircraft] = useState<AircraftPerformance>(
-    PRESET_AIRCRAFT.find((ac) => ac.model === initialAircraft) || PRESET_AIRCRAFT[0]
-  );
+  // Initialize aircraft from URL (prioritize plane param, then ac param)
+  const [aircraft, setAircraft] = useState<AircraftPerformance>(() => {
+    // Try loading from serialized plane parameter first
+    if (initialPlane) {
+      const loadedAircraft = loadAircraftFromUrl(initialPlane);
+      if (loadedAircraft) return loadedAircraft;
+    }
+
+    // Fall back to model code (ac parameter)
+    const aircraftFromModel = getAircraftByModel(initialAircraft);
+    return aircraftFromModel || PRESET_AIRCRAFT[0];
+  });
 
   const [isAircraftModalOpen, setIsAircraftModalOpen] = useState(false);
   const [isDAModalOpen, setIsDAModalOpen] = useState(false);
@@ -61,7 +77,20 @@ export function ClimbCalculatorClient({
     if (trueHeading) params.set("th", trueHeading);
     if (windDir) params.set("wd", windDir);
     if (windSpeed) params.set("ws", windSpeed);
-    if (aircraft.model) params.set("ac", aircraft.model);
+
+    // For custom aircraft (not presets), serialize to URL
+    const isPreset = PRESET_AIRCRAFT.some(
+      (preset) => preset.model === aircraft.model
+    );
+
+    if (isPreset) {
+      // Use short model code for presets
+      params.set("ac", aircraft.model);
+    } else {
+      // Serialize custom aircraft to URL
+      const serialized = serializeAircraft(aircraft);
+      params.set("plane", serialized);
+    }
 
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState(null, "", newUrl);
