@@ -2,9 +2,9 @@
 
 import { useState, Fragment } from "react";
 import Link from "next/link";
-import { Dialog, Transition, Menu } from "@headlessui/react";
+import { Dialog, Transition, TransitionChild, DialogPanel, DialogTitle, Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/react";
 
-type Calculator = "home" | "tas" | "course" | "leg" | "conversions" | "planning" | "distance" | "isa";
+type Calculator = "home" | "tas" | "course" | "leg" | "conversions" | "planning" | "distance" | "isa" | "climb";
 
 interface NavbarProps {
   currentPage: Calculator;
@@ -171,6 +171,26 @@ const calculators = [
       </svg>
     ),
   },
+  {
+    id: "climb" as const,
+    name: "Climb Calculator",
+    href: "/climb",
+    icon: (
+      <svg
+        className="w-5 h-5"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        strokeWidth={2}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M5 10l7-7m0 0l7 7m-7-7v18"
+        />
+      </svg>
+    ),
+  },
 ];
 
 export function Navbar({ currentPage }: NavbarProps) {
@@ -208,7 +228,7 @@ export function Navbar({ currentPage }: NavbarProps) {
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center ml-auto">
               <Menu as="div" className="relative">
-                <Menu.Button className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-300 hover:bg-slate-800 hover:text-white transition-all">
+                <MenuButton className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-300 hover:bg-slate-800 hover:text-white transition-all">
                   {currentPage === "home" ? (
                     <svg
                       className="w-5 h-5"
@@ -240,7 +260,7 @@ export function Navbar({ currentPage }: NavbarProps) {
                       d="M19 9l-7 7-7-7"
                     />
                   </svg>
-                </Menu.Button>
+                </MenuButton>
 
                 <Transition
                   as={Fragment}
@@ -251,12 +271,12 @@ export function Navbar({ currentPage }: NavbarProps) {
                   leaveFrom="transform opacity-100 scale-100"
                   leaveTo="transform opacity-0 scale-95"
                 >
-                  <Menu.Items className="absolute right-0 mt-2 w-64 origin-top-right rounded-xl bg-slate-900 shadow-xl border border-gray-700 ring-1 ring-black ring-opacity-5 focus:outline-none overflow-hidden">
+                  <MenuItems className="absolute right-0 mt-2 w-64 origin-top-right rounded-xl bg-slate-900 shadow-xl border border-gray-700 ring-1 ring-black ring-opacity-5 focus:outline-none overflow-hidden">
                     <div className="py-1">
                       {calculators
                         .filter((calc) => calc.id !== "home")
                         .map((calc) => (
-                          <Menu.Item key={calc.id}>
+                          <MenuItem key={calc.id}>
                             {({ active }) => (
                               <Link
                                 href={calc.href}
@@ -272,10 +292,10 @@ export function Navbar({ currentPage }: NavbarProps) {
                                 <span>{calc.name}</span>
                               </Link>
                             )}
-                          </Menu.Item>
+                          </MenuItem>
                         ))}
                     </div>
-                  </Menu.Items>
+                  </MenuItems>
                 </Transition>
               </Menu>
             </div>
@@ -311,7 +331,7 @@ export function Navbar({ currentPage }: NavbarProps) {
           className="relative z-50 md:hidden"
           onClose={() => setIsMobileMenuOpen(false)}
         >
-          <Transition.Child
+          <TransitionChild
             as={Fragment}
             enter="ease-out duration-300"
             enterFrom="opacity-0"
@@ -321,11 +341,11 @@ export function Navbar({ currentPage }: NavbarProps) {
             leaveTo="opacity-0"
           >
             <div className="fixed inset-0 bg-black/80" />
-          </Transition.Child>
+          </TransitionChild>
 
           <div className="fixed inset-0">
             <div className="flex min-h-full items-start justify-end">
-              <Transition.Child
+              <TransitionChild
                 as={Fragment}
                 enter="ease-out duration-300"
                 enterFrom="translate-x-full"
@@ -334,7 +354,7 @@ export function Navbar({ currentPage }: NavbarProps) {
                 leaveFrom="translate-x-0"
                 leaveTo="translate-x-full"
               >
-                <Dialog.Panel className="w-full max-w-sm h-full bg-slate-900 shadow-xl">
+                <DialogPanel className="w-full max-w-sm h-full bg-slate-900 shadow-xl">
                   {/* Mobile menu header */}
                   <div className="flex items-center justify-between p-4 border-b border-gray-800">
                     <div className="flex items-center gap-3">
@@ -396,8 +416,8 @@ export function Navbar({ currentPage }: NavbarProps) {
                       </Link>
                     ))}
                   </div>
-                </Dialog.Panel>
-              </Transition.Child>
+                </DialogPanel>
+              </TransitionChild>
             </div>
           </div>
         </Dialog>

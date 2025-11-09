@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, Fragment } from "react";
-import { Dialog, Transition } from "@headlessui/react";
+import { Dialog, Transition, TransitionChild, DialogPanel, DialogTitle } from "@headlessui/react";
 import { Tooltip } from "./Tooltip";
 import {
   calculateHaversineDistance,
@@ -185,7 +185,7 @@ export function DistanceCalculatorModal({
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
-        <Transition.Child
+        <TransitionChild
           as={Fragment}
           enter="ease-out duration-300"
           enterFrom="opacity-0"
@@ -195,11 +195,11 @@ export function DistanceCalculatorModal({
           leaveTo="opacity-0"
         >
           <div className="fixed inset-0 bg-black/80" />
-        </Transition.Child>
+        </TransitionChild>
 
         <div className="fixed inset-0 overflow-y-auto">
           <div className="flex min-h-full items-start sm:items-center justify-center p-4 pt-20 sm:pt-4">
-            <Transition.Child
+            <TransitionChild
               as={Fragment}
               enter="ease-out duration-300"
               enterFrom="opacity-0 scale-95"
@@ -208,17 +208,17 @@ export function DistanceCalculatorModal({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-slate-800 shadow-2xl transition-all border border-gray-700">
+              <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-slate-800 shadow-2xl transition-all border border-gray-700">
                 {/* Header */}
                 <div className="bg-slate-800 border-b border-gray-700 p-6">
                   <div className="flex items-center justify-between mb-2">
-                    <Dialog.Title
+                    <DialogTitle
                       as="h2"
                       className="text-2xl font-bold"
                       style={{ color: "white" }}
                     >
                       Calculate Distance & Bearing
-                    </Dialog.Title>
+                    </DialogTitle>
                     <button
                       onClick={onClose}
                       className="p-2 rounded-lg hover:bg-slate-700 transition-colors cursor-pointer"
@@ -498,8 +498,8 @@ export function DistanceCalculatorModal({
                     Apply to Course
                   </button>
                 </div>
-              </Dialog.Panel>
-            </Transition.Child>
+              </DialogPanel>
+            </TransitionChild>
           </div>
         </div>
       </Dialog>

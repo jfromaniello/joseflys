@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, Fragment } from "react";
-import { Menu, Transition } from "@headlessui/react";
+import { Menu, MenuButton, MenuItems, MenuItem, Transition, TransitionChild } from "@headlessui/react";
 import { PageLayout } from "../components/PageLayout";
 import { Footer } from "../components/Footer";
 import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
@@ -260,7 +260,7 @@ export function CourseCalculatorClient({
 
               {/* Buttons - Mobile Menu */}
               <Menu as="div" className="relative md:hidden">
-                <Menu.Button className="flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-gray-600 hover:bg-slate-700 transition-all text-sm font-medium cursor-pointer text-gray-300">
+                <MenuButton className="flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-gray-600 hover:bg-slate-700 transition-all text-sm font-medium cursor-pointer text-gray-300">
                   <svg
                     className="w-5 h-5"
                     fill="none"
@@ -275,7 +275,7 @@ export function CourseCalculatorClient({
                     />
                   </svg>
                   Tools
-                </Menu.Button>
+                </MenuButton>
                 <Transition
                   as={Fragment}
                   enter="transition ease-out duration-100"
@@ -285,9 +285,9 @@ export function CourseCalculatorClient({
                   leaveFrom="transform opacity-100 scale-100"
                   leaveTo="transform opacity-0 scale-95"
                 >
-                  <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right rounded-xl bg-slate-800 shadow-lg border border-gray-700 focus:outline-none z-10">
+                  <MenuItems className="absolute right-0 mt-2 w-56 origin-top-right rounded-xl bg-slate-800 shadow-lg border border-gray-700 focus:outline-none z-10">
                     <div className="p-1">
-                      <Menu.Item>
+                      <MenuItem>
                         {({ active }) => (
                           <button
                             onClick={() => setIsDistanceModalOpen(true)}
@@ -311,8 +311,8 @@ export function CourseCalculatorClient({
                             Route Lookup
                           </button>
                         )}
-                      </Menu.Item>
-                      <Menu.Item>
+                      </MenuItem>
+                      <MenuItem>
                         {({ active }) => (
                           <button
                             onClick={() => setIsTASModalOpen(true)}
@@ -337,8 +337,8 @@ export function CourseCalculatorClient({
                             TAS Calculator
                           </button>
                         )}
-                      </Menu.Item>
-                      <Menu.Item>
+                      </MenuItem>
+                      <MenuItem>
                         {({ active }) => (
                           <button
                             onClick={loadExample}
@@ -363,9 +363,9 @@ export function CourseCalculatorClient({
                             Load Example
                           </button>
                         )}
-                      </Menu.Item>
+                      </MenuItem>
                     </div>
-                  </Menu.Items>
+                  </MenuItems>
                 </Transition>
               </Menu>
             </div>

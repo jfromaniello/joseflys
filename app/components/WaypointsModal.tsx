@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, Fragment } from "react";
-import { Dialog, Transition } from "@headlessui/react";
+import { Dialog, Transition, TransitionChild, DialogPanel, DialogTitle, DialogDescription } from "@headlessui/react";
 import { Tooltip } from "./Tooltip";
 import { Waypoint } from "@/lib/courseCalculations";
 
@@ -117,7 +117,7 @@ export function WaypointsModal({
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
-        <Transition.Child
+        <TransitionChild
           as={Fragment}
           enter="ease-out duration-300"
           enterFrom="opacity-0"
@@ -127,11 +127,11 @@ export function WaypointsModal({
           leaveTo="opacity-0"
         >
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
-        </Transition.Child>
+        </TransitionChild>
 
         <div className="fixed inset-0 overflow-y-auto">
           <div className="flex min-h-full items-start sm:items-center justify-center p-4 pt-20 sm:pt-4">
-            <Transition.Child
+            <TransitionChild
               as={Fragment}
               enter="ease-out duration-300"
               enterFrom="opacity-0 scale-95"
@@ -140,17 +140,17 @@ export function WaypointsModal({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-3xl transform overflow-hidden rounded-2xl bg-slate-800 border border-gray-700 shadow-2xl transition-all">
+              <DialogPanel className="w-full max-w-3xl transform overflow-hidden rounded-2xl bg-slate-800 border border-gray-700 shadow-2xl transition-all">
                 {/* Header */}
                 <div className="bg-slate-800 border-b border-gray-700 p-6">
                   <div className="flex items-center justify-between mb-2">
-                    <Dialog.Title
+                    <DialogTitle
                       as="h2"
                       className="text-2xl font-bold"
                       style={{ color: "white" }}
                     >
                       Waypoints / Checkpoints
-                    </Dialog.Title>
+                    </DialogTitle>
                     <button
                       onClick={onClose}
                       className="p-2 rounded-lg hover:bg-slate-700 transition-colors cursor-pointer"
@@ -172,14 +172,14 @@ export function WaypointsModal({
                     </button>
                   </div>
                   <div className="flex items-start gap-2">
-                    <Dialog.Description
+                    <DialogDescription
                       as="p"
                       className="text-sm"
                       style={{ color: "oklch(0.6 0.02 240)" }}
                     >
                       Define notable points along your route for time and fuel calculations
                       {totalDistance && ` (Total distance: ${totalDistance} NM)`}
-                    </Dialog.Description>
+                    </DialogDescription>
                     <Tooltip content="Add waypoints or checkpoints to track your progress during the flight. The calculator will show estimated time and fuel consumption for each point. Perfect for VFR navigation!" />
                   </div>
                 </div>
@@ -310,8 +310,8 @@ export function WaypointsModal({
                     Apply Waypoints
                   </button>
                 </div>
-              </Dialog.Panel>
-            </Transition.Child>
+              </DialogPanel>
+            </TransitionChild>
           </div>
         </div>
       </Dialog>

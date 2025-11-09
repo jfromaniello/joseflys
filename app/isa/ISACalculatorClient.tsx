@@ -6,47 +6,12 @@ import { PageLayout } from "../components/PageLayout";
 import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
 import { Footer } from "../components/Footer";
 import { ShareButton } from "../components/ShareButton";
+import { calculateISA, isInHg, isValidQNH, getQNHRange } from "@/lib/isaCalculations";
 
 interface ISACalculatorClientProps {
   initialElevation: string;
   initialQnh: string;
   initialTemp: string;
-}
-
-// Helper function to detect QNH format and convert to hPa
-function convertQnhToHpa(qnh: number): number {
-  // If QNH is between 25-35, assume it's in inHg
-  if (qnh >= 25 && qnh <= 35) {
-    return qnh * 33.8639; // Convert inHg to hPa
-  }
-  // Otherwise assume it's already in hPa
-  return qnh;
-}
-
-// Helper function to detect if QNH is in inHg
-function isInHg(qnh: number): boolean {
-  return qnh >= 25 && qnh <= 35;
-}
-
-// Calculate ISA temperature at given elevation
-function calculateISATemp(elevationFt: number): number {
-  return 15 - 1.98 * (elevationFt / 1000);
-}
-
-// Calculate Pressure Altitude
-function calculatePA(elevationFt: number, qnh: number): number {
-  if (isInHg(qnh)) {
-    // QNH in inHg
-    return elevationFt + (29.92 - qnh) * 1000;
-  } else {
-    // QNH in hPa
-    return elevationFt + (1013 - qnh) * 27;
-  }
-}
-
-// Calculate Density Altitude
-function calculateDA(pa: number, tempC: number, isaTemp: number): number {
-  return pa + 118.8 * (tempC - isaTemp);
 }
 
 export function ISACalculatorClient({
@@ -74,17 +39,17 @@ export function ISACalculatorClient({
   const qnhVal = parseFloat(qnh);
   const tempVal = parseFloat(temp);
 
+  // Detect QNH format independently
+  const qnhFormat = !isNaN(qnhVal) && isInHg(qnhVal) ? "inHg" : "hPa";
+
   // Calculate results
   const hasValidInputs = !isNaN(elevVal) && !isNaN(qnhVal) && !isNaN(tempVal);
 
-  const isaTemp = hasValidInputs ? calculateISATemp(elevVal) : null;
-  const pa = hasValidInputs ? calculatePA(elevVal, qnhVal) : null;
-  const da = hasValidInputs && isaTemp !== null && pa !== null
-    ? calculateDA(pa, tempVal, isaTemp)
-    : null;
+  const results = hasValidInputs ? calculateISA(elevVal, qnhVal, tempVal) : null;
 
-  // Detect QNH format for display
-  const qnhFormat = !isNaN(qnhVal) && isInHg(qnhVal) ? "inHg" : "hPa";
+  const isaTemp = results?.isaTemp ?? null;
+  const pa = results?.pressureAltitude ?? null;
+  const da = results?.densityAltitude ?? null;
 
   // Build share URL
   const shareUrl = (() => {
@@ -202,6 +167,17 @@ export function ISACalculatorClient({
               </div>
             </div>
           </div>
+
+          {/* QNH Validation Warning */}
+          {!isNaN(qnhVal) && qnh && !isValidQNH(qnhVal) && (
+            <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/30">
+              <p className="text-xs sm:text-sm leading-relaxed" style={{ color: "oklch(0.75 0.15 15)" }}>
+                <span className="font-semibold">⚠️ Invalid QNH:</span> The value {qnhVal.toFixed(2)} {qnhFormat} is outside the typical range.
+                Expected range: {getQNHRange(qnhVal).min} - {getQNHRange(qnhVal).max} {getQNHRange(qnhVal).unit}.
+                Please verify your input.
+              </p>
+            </div>
+          )}
 
           {/* Results */}
           {hasValidInputs && isaTemp !== null && pa !== null && da !== null && (

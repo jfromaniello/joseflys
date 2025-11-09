@@ -1,5 +1,5 @@
 import { Tooltip } from "@/app/components/Tooltip";
-import { FuelUnit, getFuelUnitLabel } from "@/lib/fuelConversion";
+import { FuelUnit } from "@/lib/fuelConversion";
 
 export type { FuelUnit };
 
@@ -125,7 +125,7 @@ export function RangeFuelInputs({
           <select
             value={fuelUnit}
             onChange={(e) => setFuelUnit(e.target.value as FuelUnit)}
-            className="w-[5.5rem] lg:w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white cursor-pointer appearance-none"
+            className="w-22 lg:w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white cursor-pointer appearance-none"
             style={{
               backgroundImage: 'none',
             }}
