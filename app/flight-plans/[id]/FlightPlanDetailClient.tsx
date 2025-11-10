@@ -15,6 +15,7 @@ import {
   calculateLegResults,
   calculateLegWaypoints,
   formatHoursToTime,
+  formatTimeHHMM,
   formatFuel,
   type LegCalculatedResults,
 } from "@/lib/flightPlanCalculations";
@@ -446,6 +447,14 @@ export function FlightPlanDetailClient({
                               Flight Parameters
                             </div>
                             <div className="space-y-2">
+                              {result?.startTime && (
+                                <div className="flex justify-between items-center">
+                                  <span className="text-sm" style={{ color: "oklch(0.65 0.05 240)" }}>Start Time</span>
+                                  <span className="text-base font-bold" style={{ color: "oklch(0.85 0.15 230)" }}>
+                                    {formatTimeHHMM(result.startTime)}
+                                  </span>
+                                </div>
+                              )}
                               <div className="flex justify-between items-center">
                                 <span className="text-sm" style={{ color: "oklch(0.65 0.05 240)" }}>True Heading</span>
                                 <span className="text-base font-bold" style={{ color: "oklch(0.85 0.15 230)" }}>
@@ -508,31 +517,43 @@ export function FlightPlanDetailClient({
                                     </span>
                                   </div>
                                 )}
-                                <div className="flex justify-between items-center">
-                                  <span className="text-sm" style={{ color: "oklch(0.7 0.08 160)" }}>ETA</span>
-                                  <span className="text-base font-bold" style={{ color: "oklch(0.85 0.15 160)" }}>
-                                    {formatHoursToTime(result.eta)}
-                                  </span>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                  <span className="text-sm" style={{ color: "oklch(0.7 0.08 160)" }}>Fuel Used</span>
-                                  <span className="text-base font-bold" style={{ color: "oklch(0.85 0.15 160)" }}>
-                                    {formatFuel(result.fuelUsed, leg.fuelUnit)}
-                                  </span>
-                                </div>
+                                {result.climbTime !== null && result.climbTime > 0 && (
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-sm" style={{ color: "oklch(0.7 0.08 160)" }}>Climb Time</span>
+                                    <span className="text-base font-bold" style={{ color: "oklch(0.85 0.15 160)" }}>
+                                      {formatHoursToTime(result.climbTime)}
+                                    </span>
+                                  </div>
+                                )}
+                                {result.cruiseTime !== null && result.cruiseTime > 0 && (
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-sm" style={{ color: "oklch(0.7 0.08 160)" }}>Cruise Time</span>
+                                    <span className="text-base font-bold" style={{ color: "oklch(0.85 0.15 160)" }}>
+                                      {formatHoursToTime(result.cruiseTime)}
+                                    </span>
+                                  </div>
+                                )}
                                 <div className="h-px bg-emerald-500/30 my-2"></div>
                                 <div className="flex justify-between items-center">
                                   <span className="text-sm font-semibold" style={{ color: "oklch(0.75 0.1 160)" }}>Total Time</span>
                                   <span className="text-lg font-bold" style={{ color: "oklch(0.9 0.18 160)" }}>
-                                    {formatHoursToTime(result.totalTime)}
+                                    {formatHoursToTime(result.legDuration)}
                                   </span>
                                 </div>
                                 <div className="flex justify-between items-center">
                                   <span className="text-sm font-semibold" style={{ color: "oklch(0.75 0.1 160)" }}>Total Fuel</span>
                                   <span className="text-lg font-bold" style={{ color: "oklch(0.9 0.18 160)" }}>
-                                    {formatFuel(result.totalFuel, leg.fuelUnit)}
+                                    {formatFuel(result.fuelUsed, leg.fuelUnit)}
                                   </span>
                                 </div>
+                                {result.arrivalTime && (
+                                  <div className="flex justify-between items-center pt-2 border-t border-emerald-500/30">
+                                    <span className="text-sm font-semibold" style={{ color: "oklch(0.75 0.1 160)" }}>ETA</span>
+                                    <span className="text-lg font-bold" style={{ color: "oklch(0.9 0.18 160)" }}>
+                                      {formatTimeHHMM(result.arrivalTime)}
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           )}

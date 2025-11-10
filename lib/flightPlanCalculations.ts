@@ -12,11 +12,35 @@ import type { FlightPlanLeg } from "./flightPlanStorage";
 export interface LegCalculatedResults {
   groundSpeed: number; // knots
   compassCourse: number | null; // degrees
-  eta: number; // hours
-  fuelUsed: number; // based on fuel unit
-  totalDistance: number; // NM
+  legDuration: number; // hours (just this leg, without elapsed)
+  climbTime: number | null; // hours (time in climb phase)
+  cruiseTime: number | null; // hours (time in cruise phase)
+  fuelUsed: number; // based on fuel unit (just this leg)
+  climbFuelUsed: number | null; // fuel used in climb
+  cruiseFuelUsed: number | null; // fuel used in cruise
+  totalDistance: number; // NM (cumulative)
   totalTime: number; // hours (including elapsed)
   totalFuel: number; // cumulative fuel used
+  startTime: string | null; // HHMM format (depTime + elapsed)
+  arrivalTime: string | null; // HHMM format (startTime + legDuration)
+}
+
+/**
+ * Add minutes to a time in HHMM format
+ */
+function addMinutesToTime(timeHHMM: string, minutes: number): string {
+  if (!timeHHMM || timeHHMM.length !== 4) return "";
+
+  const hours = parseInt(timeHHMM.substring(0, 2));
+  const mins = parseInt(timeHHMM.substring(2, 4));
+
+  if (isNaN(hours) || isNaN(mins)) return "";
+
+  const totalMinutes = hours * 60 + mins + minutes;
+  const newHours = Math.floor(totalMinutes / 60) % 24; // Wrap around at 24 hours
+  const newMins = totalMinutes % 60;
+
+  return `${newHours.toString().padStart(2, "0")}${newMins.toString().padStart(2, "0")}`;
 }
 
 /**
@@ -76,14 +100,41 @@ export function calculateLegResults(leg: FlightPlanLeg): LegCalculatedResults | 
       }
     }
 
+    // Extract climb and cruise times
+    const climbTime = results.climbPhase ? results.climbPhase.time : null;
+    const cruiseTime = results.cruisePhase ? results.cruisePhase.time : null;
+    const climbFuelUsed = results.climbPhase ? results.climbPhase.fuelUsed : null;
+    const cruiseFuelUsed = results.cruisePhase ? results.cruisePhase.fuelUsed : null;
+
+    const legDuration = results.eta || 0;
+
+    // Calculate start time (depTime + elapsed)
+    let startTime: string | null = null;
+    if (leg.depTime && leg.depTime.length === 4) {
+      startTime = addMinutesToTime(leg.depTime, elapsedMins || 0);
+    }
+
+    // Calculate arrival time (startTime + legDuration)
+    let arrivalTime: string | null = null;
+    if (startTime) {
+      const legDurationMinutes = Math.round(legDuration * 60);
+      arrivalTime = addMinutesToTime(startTime, legDurationMinutes);
+    }
+
     return {
       groundSpeed: results.groundSpeed,
       compassCourse,
-      eta: results.eta || 0,
+      legDuration,
+      climbTime,
+      cruiseTime,
       fuelUsed: results.fuelUsed || 0,
+      climbFuelUsed,
+      cruiseFuelUsed,
       totalDistance: dist,
-      totalTime: ((elapsedMins || 0) / 60) + (results.eta || 0),
+      totalTime: ((elapsedMins || 0) / 60) + legDuration,
       totalFuel: (prevFuel || 0) + (results.fuelUsed || 0),
+      startTime,
+      arrivalTime,
     };
   } catch (error) {
     console.error("Error calculating leg results:", error);
@@ -167,6 +218,14 @@ export function formatHoursToTime(hours: number): string {
   const h = Math.floor(totalMinutes / 60);
   const m = totalMinutes % 60;
   return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+}
+
+/**
+ * Format time in HHMM format to HH:MM format
+ */
+export function formatTimeHHMM(timeHHMM: string): string {
+  if (!timeHHMM || timeHHMM.length !== 4) return "N/A";
+  return `${timeHHMM.substring(0, 2)}:${timeHHMM.substring(2, 4)}`;
 }
 
 /**
