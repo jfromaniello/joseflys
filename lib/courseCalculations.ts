@@ -288,6 +288,15 @@ export function calculateWaypoints(
   // Sort waypoints by distance
   const sortedWaypoints = [...waypoints].sort((a, b) => a.distance - b.distance);
 
+  // Add "Cruise Altitude Reached" checkpoint if there's climb data
+  if (climbPhase && climbPhase.distance > 0) {
+    // Insert the cruise altitude checkpoint at the correct position
+    sortedWaypoints.unshift({
+      name: "Cruise Altitude Reached",
+      distance: climbPhase.distance
+    });
+  }
+
   // If we have a total distance and it's greater than the last waypoint, add "Arrival" waypoint
   if (totalDistance !== undefined && totalDistance > 0) {
     const lastWaypointDistance = sortedWaypoints.length > 0

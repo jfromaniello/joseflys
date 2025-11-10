@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",
+    "@heroicons/react": "^2.2.0",
     "cbor-x": "^1.6.0",
     "geographiclib-geodesic": "^2.2.0",
     "leaflet": "^1.9.4",

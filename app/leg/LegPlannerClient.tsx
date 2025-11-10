@@ -27,6 +27,15 @@ import { ShareButtonSimple } from "../components/ShareButtonSimple";
 import { NewLegButton } from "../components/NewLegButton";
 import { Tooltip } from "../components/Tooltip";
 import { toKnots } from "@/lib/speedConversion";
+import { FlightPlanModal } from "../components/FlightPlanModal";
+import {
+  addOrUpdateLeg,
+  getFlightPlanById,
+  type FlightPlan,
+  type FlightPlanLeg,
+} from "@/lib/flightPlanStorage";
+import { BookmarkIcon } from "@heroicons/react/24/outline";
+import { BookmarkIcon as BookmarkSolidIcon } from "@heroicons/react/24/solid";
 
 interface LegPlannerClientProps {
   initialTh: string;
@@ -48,6 +57,8 @@ interface LegPlannerClientProps {
   initialClimbTas: string;
   initialClimbDist: string;
   initialClimbFuel: string;
+  initialFlightPlanId: string;
+  initialLegId: string;
 }
 
 export function LegPlannerClient({
@@ -70,6 +81,8 @@ export function LegPlannerClient({
   initialClimbTas,
   initialClimbDist,
   initialClimbFuel,
+  initialFlightPlanId,
+  initialLegId,
 }: LegPlannerClientProps) {
   const [trueHeading, setTrueHeading] = useState<string>(initialTh);
   const [tas, setTas] = useState<string>(initialTas);
@@ -94,6 +107,17 @@ export function LegPlannerClient({
   const [isWaypointsModalOpen, setIsWaypointsModalOpen] = useState(false);
   const [isDistanceModalOpen, setIsDistanceModalOpen] = useState(false);
   const [isTASModalOpen, setIsTASModalOpen] = useState(false);
+  const [isFlightPlanModalOpen, setIsFlightPlanModalOpen] = useState(false);
+
+  // Flight plan tracking state
+  const [flightPlanId, setFlightPlanId] = useState<string>(initialFlightPlanId);
+  const [legId, setLegId] = useState<string>(initialLegId);
+  const [currentFlightPlan, setCurrentFlightPlan] = useState<FlightPlan | null>(() => {
+    if (initialFlightPlanId) {
+      return getFlightPlanById(initialFlightPlanId);
+    }
+    return null;
+  });
 
   // Aircraft state - initialize from URL if plane param exists
   const [aircraft, setAircraft] = useState<AircraftPerformance | null>(() => {
@@ -138,6 +162,54 @@ export function LegPlannerClient({
     }
     return [];
   });
+
+  // Auto-populate from last leg when only flight plan ID is provided
+  useEffect(() => {
+    // Only run if we have a flight plan ID but no other parameters
+    const hasNoOtherParams = !initialTh && !initialTas && !initialMd && !initialDist && !initialFf;
+
+    if (initialFlightPlanId && hasNoOtherParams) {
+      const { calculateLegResults } = require("@/lib/flightPlanCalculations");
+      const { extractNextLegParams } = require("@/lib/nextLegParams");
+
+      const plan = getFlightPlanById(initialFlightPlanId);
+      if (plan && plan.legs.length > 0) {
+        // Get the last leg
+        const lastLeg = plan.legs[plan.legs.length - 1];
+
+        // Calculate its results
+        const legResults = calculateLegResults(lastLeg);
+
+        // Extract next leg parameters
+        const nextParams = extractNextLegParams(lastLeg, legResults, initialFlightPlanId);
+
+        // Pre-fill all fields
+        setTrueHeading("");
+        setTas(nextParams.tas);
+        setWindDir(nextParams.windDir);
+        setWindSpeed(nextParams.windSpeed);
+        setMagDev(nextParams.magDev);
+        setDistance("");
+        setFuelFlow(nextParams.fuelFlow);
+        setDepartureTime(nextParams.departureTime);
+        setElapsedMinutes(nextParams.elapsedMinutes.toString());
+        setPreviousFuelUsed(nextParams.fuelUsed !== undefined ? nextParams.fuelUsed.toFixed(1) : "");
+        setSpeedUnit(nextParams.speedUnit as SpeedUnit);
+        setFuelUnit(nextParams.fuelUnit as FuelUnit);
+
+        // Load aircraft if present
+        if (nextParams.plane) {
+          const loadedAircraft = loadAircraftFromUrl(nextParams.plane);
+          if (loadedAircraft) {
+            setAircraft(loadedAircraft);
+            if (loadedAircraft.deviationTable) {
+              setDeviationTable(loadedAircraft.deviationTable);
+            }
+          }
+        }
+      }
+    }
+  }, []); // Run only once on mount
 
   // Update URL when parameters change (client-side only, no page reload)
   useEffect(() => {
@@ -187,10 +259,14 @@ export function LegPlannerClient({
       }
     }
 
+    // Add flight plan tracking params
+    if (flightPlanId) params.set("fp", flightPlanId);
+    if (legId) params.set("lid", legId);
+
     // Use window.history.replaceState instead of router.replace to avoid server requests
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState(null, '', newUrl);
-  }, [trueHeading, tas, windDir, windSpeed, magDev, distance, fuelFlow, description, departureTime, elapsedMinutes, previousFuelUsed, climbTas, climbDistance, climbFuelUsed, deviationTable, waypoints, speedUnit, fuelUnit, aircraft]);
+  }, [trueHeading, tas, windDir, windSpeed, magDev, distance, fuelFlow, description, departureTime, elapsedMinutes, previousFuelUsed, climbTas, climbDistance, climbFuelUsed, deviationTable, waypoints, speedUnit, fuelUnit, aircraft, flightPlanId, legId]);
 
   // Calculate results during render (not in useEffect to avoid cascading renders)
   const th = parseFloat(trueHeading);
@@ -253,6 +329,39 @@ export function LegPlannerClient({
     setSpeedUnit(data.speedUnit);
   };
 
+  const handleFlightPlanSelect = (flightPlan: FlightPlan, isNew: boolean) => {
+    // Collect all current leg data
+    const legData: Omit<FlightPlanLeg, "id" | "index"> = {
+      th: trueHeading,
+      tas,
+      wd: windDir,
+      ws: windSpeed,
+      md: magDev,
+      dist: distance,
+      waypoints: waypoints.length > 0 ? waypoints : undefined,
+      ff: fuelFlow,
+      fuelUnit,
+      prevFuel: previousFuelUsed,
+      plane: aircraft ? serializeAircraft(aircraft, { includeDeviationTable: true }) : "",
+      depTime: departureTime,
+      elapsedMin: elapsedMinutes,
+      climbTas,
+      climbDist: climbDistance,
+      climbFuel: climbFuelUsed,
+      desc: description,
+      unit: speedUnit,
+    };
+
+    // Save or update the leg
+    const result = addOrUpdateLeg(flightPlan.id, legData, legId || undefined);
+
+    if (result) {
+      setFlightPlanId(result.flightPlan.id);
+      setLegId(result.leg.id);
+      setCurrentFlightPlan(result.flightPlan);
+    }
+  };
+
   const results =
     !isNaN(th) &&
     !isNaN(tasInKnots) &&
@@ -273,27 +382,11 @@ export function LegPlannerClient({
     previousFuelUsed: prevFuel,
   };
 
-  let waypointResults =
+  // Calculate waypoints (includes "Cruise Altitude Reached" automatically if climb phase exists)
+  const waypointResults =
     results && dist !== undefined
       ? calculateWaypoints(waypoints, results.groundSpeed, ff, flightParams, dist, results.climbPhase, ff)
       : [];
-
-  // Add "Cruise Altitude Reached" checkpoint if climb phase exists
-  if (results?.climbPhase && waypointResults.length > 0) {
-    const climbCheckpoint: WaypointResult = {
-      name: "Cruise Altitude Reached",
-      distance: results.climbPhase.distance,
-      timeSinceLast: Math.round(results.climbPhase.time * 60),
-      cumulativeTime: (flightParams.elapsedMinutes || 0) + Math.round(results.climbPhase.time * 60),
-      eta: flightParams.departureTime
-        ? addMinutesToTime(flightParams.departureTime, (flightParams.elapsedMinutes || 0) + Math.round(results.climbPhase.time * 60))
-        : undefined,
-      fuelUsed: results.climbPhase.fuelUsed > 0
-        ? Math.round((flightParams.previousFuelUsed || 0) + results.climbPhase.fuelUsed)
-        : undefined,
-    };
-    waypointResults = [climbCheckpoint, ...waypointResults];
-  }
 
 
   // Build OG image URL for download
@@ -795,10 +888,34 @@ export function LegPlannerClient({
                       windDir={windDir}
                       windSpeed={windSpeed}
                       fuelUsed={results.fuelUsed}
+                      flightPlanId={flightPlanId}
+                      flightPlanName={currentFlightPlan?.name}
                     />
 
-                    {/* Share & Print Buttons (stacked) */}
+                    {/* Share, Print & Flight Plan Buttons (stacked) */}
                     <div className="flex flex-col gap-2">
+                      {/* Flight Plan Button */}
+                      <button
+                        onClick={() => setIsFlightPlanModalOpen(true)}
+                        className={`w-full px-6 py-3 rounded-xl border-2 transition-all text-center flex items-center justify-center gap-2 cursor-pointer ${
+                          flightPlanId
+                            ? "border-blue-500 bg-blue-600/20 hover:bg-blue-600/30"
+                            : "border-gray-600 hover:border-gray-500 hover:bg-slate-700/50"
+                        }`}
+                        style={{ color: flightPlanId ? "oklch(0.8 0.15 230)" : "oklch(0.7 0.02 240)" }}
+                      >
+                        {flightPlanId ? (
+                          <BookmarkSolidIcon className="w-5 h-5" />
+                        ) : (
+                          <BookmarkIcon className="w-5 h-5" />
+                        )}
+                        <span className="text-sm font-medium">
+                          {flightPlanId && currentFlightPlan
+                            ? `Update Leg ${(currentFlightPlan.legs.find(l => l.id === legId)?.index ?? 0) + 1}`
+                            : "Save to Flight Plan"}
+                        </span>
+                      </button>
+
                       <ShareButtonSimple
                         shareData={{
                           title: "José's Leg Planner",
@@ -880,6 +997,14 @@ export function LegPlannerClient({
         initialSpeedUnit={speedUnit}
         applyButtonText="Apply to Course"
         description="Calculate True Airspeed from Calibrated Airspeed, Outside Air Temperature, and Pressure Altitude"
+      />
+
+      {/* Flight Plan Modal */}
+      <FlightPlanModal
+        isOpen={isFlightPlanModalOpen}
+        onClose={() => setIsFlightPlanModalOpen(false)}
+        onSelect={handleFlightPlanSelect}
+        currentFlightPlanId={flightPlanId}
       />
     </PageLayout>
   );

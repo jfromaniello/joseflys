@@ -2,6 +2,45 @@
 
 This document contains important patterns and guidelines for maintaining consistency in the joseflys project.
 
+## Button Cursor Styling
+
+### Always Add cursor-pointer to Interactive Elements
+
+**IMPORTANT**: All interactive elements that trigger actions (buttons, clickable divs, etc.) MUST have `cursor-pointer` class to indicate they are clickable.
+
+```tsx
+// ✅ Correct - Button with cursor-pointer
+<button
+  onClick={handleClick}
+  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 cursor-pointer"
+>
+  Click Me
+</button>
+
+// ❌ Wrong - Missing cursor-pointer
+<button
+  onClick={handleClick}
+  className="px-4 py-2 bg-blue-600 hover:bg-blue-700"
+>
+  Click Me
+</button>
+
+// ✅ Correct - Interactive div with cursor-pointer
+<div
+  onClick={handleClick}
+  className="p-4 hover:bg-slate-700 cursor-pointer"
+>
+  Click Me
+</div>
+```
+
+**When to use:**
+- All `<button>` elements
+- Clickable `<div>` or `<span>` elements with `onClick` handlers
+- Custom interactive components
+
+**Note**: `<Link>` components from Next.js automatically get pointer cursor, so it's optional for them.
+
 ## Grid Layout System for Input Components
 
 ### Overview

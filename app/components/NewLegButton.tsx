@@ -29,6 +29,10 @@ interface NewLegButtonProps {
   windSpeed: string;
   /** Total fuel used at the end of current leg (rounded to nearest integer in new leg) */
   fuelUsed?: number;
+  /** Flight plan ID if this leg belongs to a flight plan */
+  flightPlanId?: string;
+  /** Flight plan name for display purposes */
+  flightPlanName?: string;
 }
 
 export function NewLegButton({
@@ -44,42 +48,31 @@ export function NewLegButton({
   windDir,
   windSpeed,
   fuelUsed,
+  flightPlanId,
+  flightPlanName,
 }: NewLegButtonProps) {
   const handleNewLeg = () => {
-    // Build URL with parameters for next leg
-    const params = new URLSearchParams();
+    // Use shared utility to build next leg URL
+    const { buildNextLegUrl } = require("@/lib/nextLegParams");
 
-    // Carry over these values
-    if (magDev) params.set("md", magDev);
-    if (departureTime) params.set("depTime", departureTime);
-
-    // Prioritize plane (includes deviation table) over legacy devTable param
-    if (plane) {
-      params.set("plane", plane);
-    } else if (deviationTable) {
-      params.set("devTable", deviationTable);
-    }
-
-    if (fuelFlow) params.set("ff", fuelFlow);
-    if (tas) params.set("tas", tas);
-    if (speedUnit && speedUnit !== 'kt') params.set("unit", speedUnit);
-    if (fuelUnit && fuelUnit !== 'gph') params.set("funit", fuelUnit);
-
-    // Carry over wind parameters (assume wind remains constant)
-    if (windDir) params.set("wd", windDir);
-    if (windSpeed) params.set("ws", windSpeed);
-
-    // Set elapsed minutes
-    params.set("elapsedMin", elapsedMinutes.toString());
-
-    // Set previous fuel used (total fuel used from current leg) - rounded to nearest integer
-    if (fuelUsed !== undefined && fuelUsed > 0) {
-      params.set("prevFuel", Math.round(fuelUsed).toString());
-    }
+    const url = buildNextLegUrl({
+      magDev,
+      departureTime,
+      deviationTable,
+      plane,
+      fuelFlow,
+      tas,
+      speedUnit,
+      fuelUnit,
+      elapsedMinutes,
+      windDir,
+      windSpeed,
+      fuelUsed,
+      flightPlanId,
+    });
 
     // Open new tab with carried-over parameters
-    const newUrl = `/leg?${params.toString()}`;
-    window.open(newUrl, '_blank');
+    window.open(url, '_blank');
   };
 
   return (
@@ -101,8 +94,16 @@ export function NewLegButton({
           d="M12 4v16m8-8H4"
         />
       </svg>
-      Create Next Leg
-      <span className="text-xs opacity-75">(opens in new tab)</span>
+      {flightPlanId && flightPlanName ? (
+        <>
+          Add Next Leg to <span className="font-bold ml-1">"{flightPlanName}"</span>
+        </>
+      ) : (
+        <>
+          Create Next Leg
+          <span className="text-xs opacity-75">(opens in new tab)</span>
+        </>
+      )}
     </button>
   );
 }

@@ -31,6 +31,8 @@ interface ClientWrapperProps {
   initialClimbTas: string;
   initialClimbDist: string;
   initialClimbFuel: string;
+  initialFlightPlanId: string;
+  initialLegId: string;
 }
 
 export function ClientWrapper(props: ClientWrapperProps) {

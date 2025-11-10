@@ -23,6 +23,8 @@ interface LegPageProps {
     climbTas?: string; // Climb TAS
     climbDist?: string; // Climb distance
     climbFuel?: string; // Climb fuel used
+    fp?: string; // Flight plan ID
+    lid?: string; // Leg ID
   }>;
 }
 
@@ -47,6 +49,8 @@ export default async function LegPage({ searchParams }: LegPageProps) {
   const climbTas = params.climbTas || "";
   const climbDist = params.climbDist || "";
   const climbFuel = params.climbFuel || "";
+  const fp = params.fp || "";
+  const lid = params.lid || "";
 
   return (
     <ClientWrapper
@@ -69,6 +73,8 @@ export default async function LegPage({ searchParams }: LegPageProps) {
       initialClimbTas={climbTas}
       initialClimbDist={climbDist}
       initialClimbFuel={climbFuel}
+      initialFlightPlanId={fp}
+      initialLegId={lid}
     />
   );
 }
