@@ -75,21 +75,12 @@ export function FlightPlansClient() {
         <div className="rounded-2xl p-6 sm:p-8 shadow-2xl bg-slate-800/50 backdrop-blur-sm border border-gray-700">
           {/* Header */}
           <div className="mb-6 pb-6 border-b border-gray-700">
-            <div className="flex items-center justify-between">
-              <h2
-                className="text-xl sm:text-2xl font-bold"
-                style={{ color: "white" }}
-              >
-                Your Flight Plans
-              </h2>
-              <Link
-                href="/leg"
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-              >
-                <PlusIcon className="w-4 h-4" />
-                New Leg
-              </Link>
-            </div>
+            <h2
+              className="text-xl sm:text-2xl font-bold"
+              style={{ color: "white" }}
+            >
+              Your Flight Plans
+            </h2>
             <p
               className="text-sm mt-2"
               style={{ color: "oklch(0.7 0.02 240)" }}

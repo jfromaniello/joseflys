@@ -27,6 +27,7 @@ import {
   ClockIcon,
   PlusIcon,
   ShareIcon,
+  CheckIcon,
 } from "@heroicons/react/24/outline";
 
 interface FlightPlanDetailClientProps {
@@ -38,9 +39,11 @@ export function FlightPlanDetailClient({
 }: FlightPlanDetailClientProps) {
   const [flightPlan, setFlightPlan] = useState<FlightPlan | null>(null);
   const [loading, setLoading] = useState(true);
+  const [shareSuccess, setShareSuccess] = useState(false);
 
   useEffect(() => {
     const plan = getFlightPlanById(flightPlanId);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFlightPlan(plan);
     setLoading(false);
   }, [flightPlanId]);
@@ -111,7 +114,8 @@ export function FlightPlanDetailClient({
       } else {
         // Fallback to copying to clipboard
         await navigator.clipboard.writeText(shareUrl);
-        alert("Flight plan link copied to clipboard!");
+        setShareSuccess(true);
+        setTimeout(() => setShareSuccess(false), 2000);
       }
     } catch (error) {
       // User cancelled share or clipboard failed
@@ -243,11 +247,20 @@ export function FlightPlanDetailClient({
               <div className="flex gap-2">
                 <button
                   onClick={handleShare}
-                  className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                  className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 cursor-pointer"
                   title="Share flight plan"
                 >
-                  <ShareIcon className="w-4 h-4" />
-                  <span className="hidden sm:inline">Share</span>
+                  {shareSuccess ? (
+                    <>
+                      <CheckIcon className="w-4 h-4" />
+                      <span className="hidden sm:inline">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShareIcon className="w-4 h-4" />
+                      <span className="hidden sm:inline">Share</span>
+                    </>
+                  )}
                 </button>
                 <Link
                   href={`/leg?fp=${flightPlan.id}`}
