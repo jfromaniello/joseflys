@@ -64,7 +64,7 @@ export function FlightParametersInputs({
       <h3 className="text-sm font-semibold mb-3 uppercase tracking-wide" style={{ color: "oklch(0.65 0.15 230)" }}>
         Flight Timeline
       </h3>
-      <div className="grid grid-cols-1 lg:grid-cols-[10.5rem_12rem_2rem_10.5rem_12rem] gap-x-4 gap-y-4 lg:items-center">
+      <div className="grid grid-cols-1 lg:grid-cols-[10.5rem_12rem_2rem_10.5rem_12rem] gap-x-4 gap-y-4 lg:items-center print:grid-cols-[auto_1fr]">
         {/* Row 1: Departure Time and Elapsed Minutes */}
 
         {/* Departure Time Label */}
@@ -100,7 +100,7 @@ export function FlightParametersInputs({
         </div>
 
         {/* Gap */}
-        <div className="hidden lg:block"></div>
+        <div className="hidden lg:block print:hidden"></div>
 
         {/* Elapsed Minutes Label */}
         <label
@@ -150,7 +150,7 @@ export function FlightParametersInputs({
             type="number"
             value={previousFuelUsed}
             onChange={(e) => setPreviousFuelUsed(e.target.value)}
-            className="w-full px-4 pr-16 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
+            className="w-full px-4 pr-14 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
             placeholder="0"
             min="0"
             step="any"

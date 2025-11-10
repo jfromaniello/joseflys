@@ -44,7 +44,7 @@ export function CorrectionsInputs({
       <h3 className="text-sm font-semibold mb-3 uppercase tracking-wide" style={{ color: "oklch(0.65 0.15 230)" }}>
         Corrections
       </h3>
-      <div className="grid grid-cols-1 lg:grid-cols-[10.5rem_12rem_2rem_10.5rem_12rem] gap-x-4 gap-y-4 lg:items-center">
+      <div className="grid grid-cols-1 lg:grid-cols-[10.5rem_12rem_2rem_10.5rem_12rem] gap-x-4 gap-y-4 lg:items-center print:grid-cols-[auto_1fr]">
         {/* Magnetic Deviation Label */}
         <label
           className="flex items-center text-sm font-medium mb-2 lg:mb-0"
@@ -76,7 +76,7 @@ export function CorrectionsInputs({
         </div>
 
         {/* Gap */}
-        <div className="hidden lg:block"></div>
+        <div className="hidden lg:block print:hidden"></div>
 
         {/* Compass Deviation Label */}
         <label

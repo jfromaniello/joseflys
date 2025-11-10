@@ -35,10 +35,10 @@ export function CourseSpeedInputs({
       <h3 className="text-sm font-semibold mb-3 uppercase tracking-wide" style={{ color: "oklch(0.65 0.15 230)" }}>
         Course & Speed
       </h3>
-      <div className="grid grid-cols-1 lg:grid-cols-[10.5rem_12rem_2rem_10.5rem_6rem_5rem] gap-x-4 gap-y-4 lg:items-center">
+      <div className="grid grid-cols-1 lg:grid-cols-[10.5rem_12rem_2rem_10.5rem_6rem_5rem] gap-x-4 gap-y-4 lg:items-center print:grid-cols-[auto_1fr]">
         {/* True Heading Label */}
         <label
-          className="flex items-center text-sm font-medium mb-2 lg:mb-0 lg:col-span-1 col-span-1"
+          className="flex items-center text-sm font-medium mb-2 lg:mb-0"
           style={{ color: "oklch(0.72 0.015 240)" }}
         >
           True Heading
@@ -46,7 +46,7 @@ export function CourseSpeedInputs({
         </label>
 
         {/* True Heading Input */}
-        <div className="relative lg:col-span-1 col-span-1">
+        <div className="relative">
           <input
             type="text"
             value={trueHeading}
@@ -75,11 +75,11 @@ export function CourseSpeedInputs({
         </div>
 
         {/* Gap */}
-        <div className="hidden lg:block"></div>
+        <div className="hidden lg:block print:hidden"></div>
 
-        {/* True Airspeed Label - Full width on mobile */}
+        {/* True Airspeed Label */}
         <label
-          className="flex items-center text-sm font-medium mb-2 lg:mb-0 lg:col-span-1 col-span-1"
+          className="flex items-center text-sm font-medium mb-2 lg:mb-0"
           style={{ color: "oklch(0.72 0.015 240)" }}
         >
           True Airspeed
@@ -87,7 +87,7 @@ export function CourseSpeedInputs({
         </label>
 
         {/* Container for input + selector on mobile */}
-        <div className="grid grid-cols-[1fr_auto] gap-x-4 lg:contents">
+        <div className="grid grid-cols-[1fr_auto] gap-x-4 lg:contents print:grid">
           {/* True Airspeed Input */}
           <input
             type="number"

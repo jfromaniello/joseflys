@@ -24,9 +24,9 @@ export function ClimbDataInputs({
   fuelUnit,
 }: ClimbDataInputsProps) {
   // Get speed unit label
-  const speedUnitLabel = speedUnit === 'kt' ? 'kt' :
+  const speedUnitLabel = speedUnit === 'kt' ? 'KT' :
                          speedUnit === 'mph' ? 'mph' :
-                         speedUnit === 'kmh' ? 'km/h' : 'kt';
+                         speedUnit === 'kmh' ? 'km/h' : 'KT';
 
   // Get fuel unit label
   const fuelUnitLabel = fuelUnit === 'gph' ? 'GAL' :
@@ -77,7 +77,7 @@ export function ClimbDataInputs({
         </h3>
         <Tooltip content="Optional: Enter climb phase data manually or paste from Climb Calculator into the first field." />
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-[10.5rem_12rem_2rem_10.5rem_12rem] gap-x-4 gap-y-4 lg:items-center">
+      <div className="grid grid-cols-1 lg:grid-cols-[10.5rem_12rem_2rem_10.5rem_12rem] gap-x-4 gap-y-4 lg:items-center print:grid-cols-[auto_1fr]">
         {/* Row 1: Climb TAS and Climb Distance */}
         <label
           className="flex items-center text-sm font-medium mb-2 lg:mb-0"
@@ -112,7 +112,7 @@ export function ClimbDataInputs({
         </div>
 
         {/* Gap column */}
-        <div className="hidden lg:block"></div>
+        <div className="hidden lg:block print:hidden"></div>
 
         <label
           className="flex items-center text-sm font-medium mb-2 lg:mb-0"

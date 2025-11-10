@@ -123,14 +123,18 @@ html {
     margin-bottom: 0.5rem !important;
   }
 
-  /* Make all grids vertical - override all responsive grid classes */
+  /* Make all grids use 2-column layout: label + input (fixed widths) */
   .course-speed-inputs > .grid,
   .wind-inputs > .grid,
   .corrections-inputs > .grid,
   .flight-params-inputs > .grid,
-  .climb-data > .grid {
-    display: block !important;
-    grid-template-columns: none !important;
+  .climb-data > .grid,
+  .leg-distance-waypoints > .grid,
+  .fuel-consumption > .grid {
+    display: grid !important;
+    grid-template-columns: 10rem auto !important;
+    gap: 0.5rem 1rem !important;
+    align-items: center !important;
   }
 
   /* Hide gap spacer columns in print */
@@ -139,70 +143,104 @@ html {
   .corrections-inputs .grid > div.hidden,
   .flight-params-inputs .grid > div.hidden,
   .climb-data .grid > div.hidden,
-  .range-fuel-inputs .grid > div.hidden {
+  .range-fuel-inputs .grid > div.hidden,
+  .leg-distance-waypoints .grid > div.hidden,
+  .fuel-consumption .grid > div.hidden {
     display: none !important;
   }
 
-  /* Nested grids (input+select containers) should be inline-block */
+  /* Nested grids (input+select containers) should display as flex with fixed widths */
   .course-speed-inputs .grid .grid,
   .wind-inputs .grid .grid,
   .corrections-inputs .grid .grid,
   .flight-params-inputs .grid .grid,
-  .climb-data .grid .grid {
-    display: inline-block !important;
-    grid-template-columns: none !important;
-    width: auto !important;
-    margin: 0.5rem 0 0 0 !important;
-    vertical-align: middle !important;
+  .climb-data .grid .grid,
+  .leg-distance-waypoints .grid .grid,
+  .fuel-consumption .grid .grid {
+    display: flex !important;
+    gap: 0.5rem !important;
+    align-items: center !important;
+    width: 9.6rem !important; /* 4.6rem input + 0.5rem gap + 4.5rem select */
   }
 
   .course-speed-inputs .grid .grid > *,
   .wind-inputs .grid .grid > *,
   .corrections-inputs .grid .grid > *,
   .flight-params-inputs .grid .grid > *,
-  .climb-data .grid .grid > * {
-    display: inline-block !important;
-    vertical-align: middle !important;
+  .climb-data .grid .grid > *,
+  .leg-distance-waypoints .grid .grid > *,
+  .fuel-consumption .grid .grid > * {
     margin: 0 !important;
+    flex-shrink: 0 !important;
   }
 
-  .course-speed-inputs .grid .grid input {
-    width: 6rem !important;
-    margin-right: 0.5rem !important;
+  .course-speed-inputs .grid .grid input,
+  .fuel-consumption .grid .grid input {
+    width: 4.6rem !important;
   }
 
-  .course-speed-inputs .grid .grid select {
-    width: 6rem !important;
+  .course-speed-inputs .grid .grid select,
+  .fuel-consumption .grid .grid select {
+    width: 4.5rem !important;
   }
 
-  /* Each field row */
+  /* Labels should take first column - all same width */
   .course-speed-inputs .grid > label,
   .wind-inputs .grid > label,
   .corrections-inputs .grid > label,
   .flight-params-inputs .grid > label,
-  .climb-data .grid > label {
-    display: inline-block !important;
+  .climb-data .grid > label,
+  .leg-distance-waypoints .grid > label,
+  .fuel-consumption .grid > label {
+    display: flex !important;
+    align-items: center !important;
+    margin: 0 !important;
     width: 10rem !important;
-    margin: 0.5rem 0 0 0 !important;
-    margin-bottom: 0 !important;
-    vertical-align: middle !important;
   }
 
-  /* Input containers */
-  .course-speed-inputs .grid > div,
-  .wind-inputs .grid > div,
-  .corrections-inputs .grid > div,
-  .flight-params-inputs .grid > div,
-  .climb-data .grid > div,
+  /* Input containers with relative positioning (for absolute units) */
+  .course-speed-inputs .grid > div.relative,
+  .wind-inputs .grid > div.relative,
+  .corrections-inputs .grid > div.relative,
+  .flight-params-inputs .grid > div.relative,
+  .climb-data .grid > div.relative,
+  .leg-distance-waypoints .grid > div.relative {
+    width: 9.6rem !important;
+    margin: 0 !important;
+  }
+
+  /* Inputs inside relative containers should be full width of container */
+  .course-speed-inputs .grid > div.relative input,
+  .wind-inputs .grid > div.relative input,
+  .corrections-inputs .grid > div.relative input,
+  .flight-params-inputs .grid > div.relative input,
+  .climb-data .grid > div.relative input,
+  .leg-distance-waypoints .grid > div.relative input {
+    width: 100% !important;
+  }
+
+  /* Other input containers (non-relative, non-nested-grid) */
+  .course-speed-inputs .grid > div:not(.hidden):not(.relative):not([class*="grid-cols"]),
+  .wind-inputs .grid > div:not(.hidden):not(.relative):not([class*="grid-cols"]),
+  .corrections-inputs .grid > div:not(.hidden):not(.relative):not([class*="grid-cols"]),
+  .flight-params-inputs .grid > div:not(.hidden):not(.relative):not([class*="grid-cols"]),
+  .climb-data .grid > div:not(.hidden):not(.relative):not([class*="grid-cols"]),
+  .leg-distance-waypoints .grid > div:not(.hidden):not(.relative):not([class*="grid-cols"]) {
+    display: block !important;
+    width: 9.6rem !important;
+    margin: 0 !important;
+  }
+
+  /* Direct input children (without wrapper div) */
   .course-speed-inputs .grid > input,
   .wind-inputs .grid > input,
   .corrections-inputs .grid > input,
   .flight-params-inputs .grid > input,
-  .climb-data .grid > input {
-    display: inline-block !important;
-    width: 12rem !important;
-    margin: 0.5rem 0.5rem 0 0 !important;
-    vertical-align: middle !important;
+  .climb-data .grid > input,
+  .leg-distance-waypoints .grid > input {
+    display: block !important;
+    width: 9.6rem !important;
+    margin: 0 !important;
   }
 
   /* Relative containers (inputs with absolute positioned units) */
@@ -214,16 +252,14 @@ html {
     width: 100% !important;
   }
 
-  /* Selects (unit selectors) */
-  .course-speed-inputs select,
-  .wind-inputs select,
-  .corrections-inputs select,
-  .flight-params-inputs select,
-  .climb-data select {
-    display: inline-block !important;
-    width: 6rem !important;
-    margin: 0.5rem 0 0 0 !important;
-    vertical-align: middle !important;
+  /* Selects (unit selectors) - only apply to those inside nested grids */
+  .course-speed-inputs .grid .grid select,
+  .wind-inputs .grid .grid select,
+  .corrections-inputs .grid .grid select,
+  .flight-params-inputs .grid .grid select,
+  .climb-data .grid .grid select,
+  .fuel-consumption .grid .grid select {
+    width: 4.5rem !important;
   }
 
   /* Reduce padding on inputs for print */
@@ -254,6 +290,17 @@ html {
 
   /* Add more right padding to Previous Fuel Used input for better spacing with unit */
   .flight-params-inputs .grid > div.relative:last-child input {
+    padding-right: 2.5rem !important;
+  }
+
+  /* Add more right padding to Climb Fuel Used input for better spacing with unit */
+  /* Target by looking for inputs with pr-14 class inside climb-data relative containers */
+  .climb-data div.relative input[class*="pr-14"] {
+    padding-right: 2.5rem !important;
+  }
+
+  /* Backup selector for all climb-data relative inputs that aren't the first two */
+  .climb-data .grid > div.relative ~ div.relative ~ div.relative input {
     padding-right: 2.5rem !important;
   }
 
@@ -343,65 +390,6 @@ html {
     margin-bottom: 0.75rem !important;
   }
 
-  /* Leg Distance & Waypoints print styles */
-  .leg-distance-waypoints > div.grid {
-    display: block !important;
-    grid-template-columns: none !important;
-  }
-
-  .leg-distance-waypoints label:not(.print-hide-waypoints) {
-    display: inline-block !important;
-    width: 10rem !important;
-    margin: 0.5rem 0 0 0 !important;
-    margin-bottom: 0 !important;
-    vertical-align: middle !important;
-  }
-
-  .leg-distance-waypoints > div.grid > div.relative {
-    display: inline-block !important;
-    width: 12rem !important;
-    margin: 0.5rem 0.5rem 0 0 !important;
-    vertical-align: middle !important;
-  }
-
-  .leg-distance-waypoints > div.grid > div.relative input {
-    width: 100% !important;
-  }
-
-  /* Fuel Consumption print styles */
-  .fuel-consumption > div.grid {
-    display: block !important;
-  }
-
-  .fuel-consumption label {
-    display: inline-block !important;
-    width: 10rem !important;
-    margin: 0.5rem 0 0 0 !important;
-    vertical-align: middle !important;
-  }
-
-  /* Nested grid for fuel flow input+select combo */
-  .fuel-consumption .grid .grid {
-    display: inline-block !important;
-    width: auto !important;
-    margin: 0.5rem 0 0 0 !important;
-    vertical-align: middle !important;
-  }
-
-  .fuel-consumption .grid .grid > * {
-    display: inline-block !important;
-    vertical-align: middle !important;
-    margin: 0 !important;
-  }
-
-  .fuel-consumption .grid .grid input {
-    width: 6rem !important;
-    margin-right: 0.5rem !important;
-  }
-
-  .fuel-consumption .grid .grid select {
-    width: 6rem !important;
-  }
 
   /* Hide gap elements */
   .hidden {
@@ -421,29 +409,6 @@ html {
     height: 0 !important;
   }
 
-  /* Container divs for input+select combos - keep them inline */
-  [class*="grid-cols-[1fr"] {
-    display: inline-block !important;
-    width: auto !important;
-    margin: 0.5rem 0 0 0 !important;
-    vertical-align: middle !important;
-  }
-
-  [class*="grid-cols-[1fr"] > * {
-    display: inline-block !important;
-    vertical-align: middle !important;
-    margin: 0 !important;
-  }
-
-  [class*="grid-cols-[1fr"] input {
-    width: 12rem !important;
-    margin: 0 0.5rem 0 0 !important;
-  }
-
-  [class*="grid-cols-[1fr"] select {
-    width: 6rem !important;
-    margin: 0 !important;
-  }
 
   /* Results sections: use compact 2-column layout */
   .results-grid {
@@ -585,6 +550,12 @@ html {
 
   /* Page breaks */
   .print-page-break-before {
+    page-break-before: always !important;
+    break-before: page !important;
+  }
+
+  /* Page break before climb data if it has content */
+  .climb-data:not(.print\:hidden) {
     page-break-before: always !important;
     break-before: page !important;
   }

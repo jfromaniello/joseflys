@@ -20,7 +20,7 @@ export function CalculatorPageHeader({
         )}
       </h1>
       <p
-        className="text-sm sm:text-base leading-relaxed"
+        className="text-sm sm:text-base leading-relaxed print:hidden"
         style={{ color: "oklch(0.7 0.02 240)" }}
       >
         {description}
