@@ -279,3 +279,208 @@ import { WindInputs } from "@/app/course/components/WindInputs";
 - Result displays (use flex or different grid)
 - Simple single-column forms
 - Card layouts or content areas
+
+---
+
+## Print Styles
+
+### Overview
+All calculator pages have optimized print layouts defined in `/app/globals.css` within the `@media print` block. Print styles ensure clean, readable output with consistent formatting.
+
+### Print Grid Layout
+
+In print mode, all input grids convert to a **2-column layout**:
+- **Column 1**: Label (10rem fixed width)
+- **Column 2**: Input field (9.6rem fixed width)
+
+This is enforced via CSS in `globals.css`:
+
+```css
+@media print {
+  .course-speed-inputs > .grid,
+  .wind-inputs > .grid,
+  .corrections-inputs > .grid,
+  .flight-params-inputs > .grid,
+  .climb-data > .grid,
+  .leg-distance-waypoints > .grid,
+  .fuel-consumption > .grid {
+    display: grid !important;
+    grid-template-columns: 10rem auto !important;
+    gap: 0.5rem 1rem !important;
+    align-items: center !important;
+  }
+}
+```
+
+### Input Width Standards (Print)
+
+**All inputs must have consistent widths:**
+
+1. **Inputs with absolute positioned units** (°, KT, NM, etc.): `9.6rem` total width
+2. **Inputs with selectors** (unit dropdowns): Total `9.6rem` broken down as:
+   - Input: `4.6rem`
+   - Gap: `0.5rem`
+   - Selector: `4.5rem`
+
+### Padding for Absolute Units
+
+Different units require different right padding to prevent overlap:
+
+```css
+/* Short units (°) - closer spacing */
+.course-speed-inputs .grid > div.relative:first-of-type input {
+  padding-right: 1.5rem !important;
+}
+
+/* Medium units (KT, NM) - standard spacing */
+.relative input {
+  padding-right: 2rem !important;
+}
+
+/* Long units (GAL, lb, kg) - extra spacing */
+.flight-params-inputs .grid > div.relative:last-child input,
+.climb-data div.relative input[class*="pr-14"] {
+  padding-right: 2.5rem !important;
+}
+```
+
+**Rule of thumb:** Use `pr-14` for inputs with fuel units (GAL, L, lb, kg) to ensure adequate spacing.
+
+### Gap Column Hiding
+
+Gap columns must be hidden in print using `print:hidden`:
+
+```tsx
+<div className="hidden lg:block print:hidden"></div>
+```
+
+### Nested Grids (Input + Selector)
+
+Containers with input + selector combinations must use `print:grid` to maintain horizontal layout:
+
+```tsx
+<div className="grid grid-cols-[1fr_auto] gap-x-4 lg:contents print:grid">
+  <input ... />
+  <select ... />
+</div>
+```
+
+### Section Class Names
+
+All input sections must have consistent class names for CSS targeting:
+
+- `.course-speed-inputs`
+- `.wind-inputs`
+- `.corrections-inputs`
+- `.flight-params-inputs`
+- `.climb-data`
+- `.leg-distance-waypoints`
+- `.fuel-consumption`
+- `.range-fuel-inputs`
+
+### Page Breaks
+
+Use page breaks to improve readability:
+
+```css
+/* Automatic page break before climb data if it has content */
+.climb-data:not(.print\:hidden) {
+  page-break-before: always !important;
+  break-before: page !important;
+}
+```
+
+### Hiding Elements in Print
+
+Use `print:hidden` class to hide non-essential UI elements:
+
+```tsx
+{/* Description text */}
+<p className="text-sm leading-relaxed print:hidden">
+  Complete flight leg planning...
+</p>
+
+{/* Interactive buttons */}
+<button className="print:hidden">Load Example</button>
+```
+
+### Unit Label Consistency
+
+**Important:** Unit labels must match their corresponding input selectors in case and format:
+
+```tsx
+// ❌ Wrong - inconsistent casing
+const speedUnitLabel = speedUnit === 'kt' ? 'kt' : ...
+
+// ✅ Correct - matches selector options
+const speedUnitLabel = speedUnit === 'kt' ? 'KT' : ...
+
+// Selector should match:
+<option value="kt">KT</option>
+```
+
+### Print CSS Location
+
+**All print styles are centralized in `/app/globals.css`** within the `@media print` block. Never add print-specific CSS to component files.
+
+### Testing Print Layouts
+
+When modifying input components:
+
+1. Test desktop layout (lg breakpoint)
+2. Test mobile layout (< lg breakpoint)
+3. **Test print layout** (Cmd/Ctrl + P)
+4. Verify all inputs have consistent widths in print
+5. Check that labels align properly
+6. Ensure units don't overlap with values
+
+### Common Print Issues to Avoid
+
+❌ **Wrong**: Different input widths
+```tsx
+// Some inputs 12rem, others 18rem
+```
+
+✅ **Correct**: All inputs 9.6rem in print
+```css
+width: 9.6rem !important;
+```
+
+---
+
+❌ **Wrong**: Forgetting `print:hidden` on gap columns
+```tsx
+<div className="hidden lg:block"></div>
+```
+
+✅ **Correct**: Include print:hidden
+```tsx
+<div className="hidden lg:block print:hidden"></div>
+```
+
+---
+
+❌ **Wrong**: Not using `print:grid` for nested grids
+```tsx
+<div className="grid ... lg:contents">
+```
+
+✅ **Correct**: Add print:grid
+```tsx
+<div className="grid ... lg:contents print:grid">
+```
+
+---
+
+❌ **Wrong**: Inconsistent unit labels
+```tsx
+// Showing 'kt' but selector shows 'KT'
+const label = 'kt';
+<option value="kt">KT</option>
+```
+
+✅ **Correct**: Match selector case
+```tsx
+const label = 'KT';
+<option value="kt">KT</option>
+```
