@@ -467,5 +467,270 @@ describe("courseCalculations", () => {
         expect(arrival.fuelUsed).toBeGreaterThan(12); // More than previous fuel
       });
     });
+
+    describe("climb phase calculations", () => {
+      const climbPhase = {
+        distance: 10, // 10 NM climb distance
+        groundSpeed: 80, // 80 kt GS during climb
+        time: 0.125, // 7.5 minutes (10 NM / 80 kt)
+        fuelUsed: 2, // 2 gallons during climb
+      };
+
+      it("should calculate waypoint entirely within climb phase", () => {
+        const waypoints: Waypoint[] = [{ name: "WP1", distance: 5 }];
+
+        const results = calculateWaypoints(
+          waypoints,
+          120, // Cruise GS
+          10, // Cruise fuel flow (GPH)
+          undefined,
+          undefined,
+          climbPhase
+        );
+
+        expect(results).toHaveLength(1);
+
+        // WP1 at 5 NM, entirely in climb phase
+        // Time: 5 NM / 80 kt = 0.0625 hr = 3.75 min (rounds to 4)
+        expect(results[0].timeSinceLast).toBe(4);
+        expect(results[0].cumulativeTime).toBe(4);
+
+        // Fuel: proportional to distance in climb (2 gal / 10 NM = 0.2 gal/NM)
+        // 5 NM * 0.2 = 1 gal
+        expect(results[0].fuelUsed).toBe(1);
+      });
+
+      it("should calculate waypoint after climb phase", () => {
+        const waypoints: Waypoint[] = [{ name: "WP1", distance: 30 }];
+
+        const results = calculateWaypoints(
+          waypoints,
+          120, // Cruise GS
+          10, // Cruise fuel flow (GPH)
+          undefined,
+          undefined,
+          climbPhase
+        );
+
+        expect(results).toHaveLength(1);
+
+        // WP1 at 30 NM: 10 NM climb + 20 NM cruise
+        // Climb time: 10 / 80 = 0.125 hr = 7.5 min
+        // Cruise time: 20 / 120 = 0.1667 hr = 10 min
+        // Total: 17.5 min (rounds to 18)
+        expect(results[0].timeSinceLast).toBe(18);
+        expect(results[0].cumulativeTime).toBe(18);
+
+        // Fuel: 2 gal (climb) + (10 GPH * 0.1667 hr) = 2 + 1.667 = 3.667 (rounds to 4)
+        expect(results[0].fuelUsed).toBe(4);
+      });
+
+      it("should calculate multiple waypoints spanning climb and cruise", () => {
+        const waypoints: Waypoint[] = [
+          { name: "WP1", distance: 5 }, // In climb
+          { name: "WP2", distance: 15 }, // After climb
+          { name: "WP3", distance: 35 }, // Further in cruise
+        ];
+
+        const results = calculateWaypoints(
+          waypoints,
+          120, // Cruise GS
+          10, // Cruise fuel flow (GPH)
+          undefined,
+          undefined,
+          climbPhase
+        );
+
+        expect(results).toHaveLength(3);
+
+        // WP1: 5 NM in climb
+        expect(results[0].distance).toBe(5);
+        expect(results[0].timeSinceLast).toBe(4); // 5/80 * 60 = 3.75 -> 4
+        expect(results[0].fuelUsed).toBe(1); // 5 * 0.2 = 1
+
+        // WP2: 10 NM climb + 5 NM cruise
+        expect(results[1].distance).toBe(15);
+        // Time from WP1 to WP2: 5 NM climb + 5 NM cruise
+        // (5/80 + 5/120) * 60 = (0.0625 + 0.0417) * 60 = 6.25 -> 6 min
+        expect(results[1].timeSinceLast).toBe(6);
+        // Total time from start: 7.5 (climb) + 2.5 (cruise) = 10 min
+        expect(results[1].cumulativeTime).toBe(10);
+        // Fuel: 2 (all climb) + 10 * (5/120) = 2 + 0.417 = 2.417 -> 2
+        expect(results[1].fuelUsed).toBe(2);
+
+        // WP3: 10 NM climb + 25 NM cruise
+        expect(results[2].distance).toBe(35);
+        // Time from WP2 to WP3: 20 NM cruise
+        // 20/120 * 60 = 10 min
+        expect(results[2].timeSinceLast).toBe(10);
+        // Total time: 7.5 (climb) + 12.5 (cruise) = 20 min
+        expect(results[2].cumulativeTime).toBe(20);
+        // Fuel: 2 (climb) + 10 * (25/120) = 2 + 2.083 = 4.083 -> 4
+        expect(results[2].fuelUsed).toBe(4);
+      });
+
+      it("should handle waypoints with previous fuel used during climb", () => {
+        const waypoints: Waypoint[] = [
+          { name: "WP1", distance: 5 },
+          { name: "WP2", distance: 20 },
+        ];
+
+        const flightParams: FlightParameters = {
+          previousFuelUsed: 10,
+        };
+
+        const results = calculateWaypoints(
+          waypoints,
+          120,
+          10,
+          flightParams,
+          undefined,
+          climbPhase
+        );
+
+        expect(results).toHaveLength(2);
+
+        // WP1: 10 (previous) + 1 (climb fuel) = 11
+        expect(results[0].fuelUsed).toBe(11);
+
+        // WP2: 10 (previous) + 2 (all climb) + 0.833 (cruise) = 12.833 -> 13
+        expect(results[1].fuelUsed).toBe(13);
+      });
+
+      it("should calculate ETAs correctly with climb phase", () => {
+        const waypoints: Waypoint[] = [
+          { name: "In Climb", distance: 5 },
+          { name: "After Climb", distance: 20 },
+        ];
+
+        const flightParams: FlightParameters = {
+          departureTime: "1400", // 2:00 PM
+        };
+
+        const results = calculateWaypoints(
+          waypoints,
+          120,
+          10,
+          flightParams,
+          undefined,
+          climbPhase
+        );
+
+        expect(results).toHaveLength(2);
+
+        // WP1 at 5 NM: 4 min from departure = 14:04
+        expect(results[0].eta).toBe("1404");
+
+        // WP2 at 20 NM: climb (7.5 min) + cruise (5 min) = 12.5 min -> 13 min = 14:13
+        expect(results[1].eta).toBe("1413");
+      });
+
+      it("should handle edge case where waypoint is exactly at climb distance", () => {
+        const waypoints: Waypoint[] = [{ name: "Top of Climb", distance: 10 }];
+
+        const results = calculateWaypoints(
+          waypoints,
+          120,
+          10,
+          undefined,
+          undefined,
+          climbPhase
+        );
+
+        expect(results).toHaveLength(1);
+
+        // At exactly climb distance, should use climb calculations
+        // 10 NM / 80 kt = 0.125 hr = 7.5 min -> 8
+        expect(results[0].timeSinceLast).toBe(8);
+        // Fuel: all climb fuel = 2 gal
+        expect(results[0].fuelUsed).toBe(2);
+      });
+
+      it("should handle arrival waypoint with climb phase", () => {
+        const waypoints: Waypoint[] = [
+          { name: "WP1", distance: 8 },
+        ];
+
+        const results = calculateWaypoints(
+          waypoints,
+          120,
+          10,
+          undefined,
+          50, // Total distance (arrival at 50 NM)
+          climbPhase
+        );
+
+        expect(results).toHaveLength(2);
+        expect(results[1].name).toBe("Arrival");
+        expect(results[1].distance).toBe(50);
+
+        // Arrival at 50 NM: 10 climb + 40 cruise
+        // Time: 7.5 (climb) + 20 (cruise) = 27.5 -> 28 min
+        expect(results[1].cumulativeTime).toBe(28);
+
+        // Fuel: 2 (climb) + 10 * (40/120) = 2 + 3.333 = 5.333 -> 5
+        expect(results[1].fuelUsed).toBe(5);
+      });
+
+      it("should use different cruise fuel flow if provided", () => {
+        const waypoints: Waypoint[] = [{ name: "WP1", distance: 30 }];
+
+        // Cruise fuel flow is 12 GPH instead of 10
+        const results = calculateWaypoints(
+          waypoints,
+          120,
+          10, // This becomes the default, but we override with cruiseFuelFlow
+          undefined,
+          undefined,
+          climbPhase,
+          12 // Different cruise fuel flow
+        );
+
+        expect(results).toHaveLength(1);
+
+        // WP1: 10 climb + 20 cruise
+        // Fuel: 2 (climb) + 12 * (20/120) = 2 + 2 = 4
+        expect(results[0].fuelUsed).toBe(4);
+      });
+
+      it("should handle no fuel flow with climb phase (time only)", () => {
+        const waypoints: Waypoint[] = [
+          { name: "WP1", distance: 5 },
+          { name: "WP2", distance: 20 },
+        ];
+
+        // Climb phase with NO fuel data (fuelUsed: 0)
+        const climbPhaseNoFuel = {
+          distance: 10,
+          groundSpeed: 80,
+          time: 0.125,
+          fuelUsed: 0, // No fuel data
+        };
+
+        const results = calculateWaypoints(
+          waypoints,
+          120,
+          undefined, // No fuel flow
+          undefined,
+          undefined,
+          climbPhaseNoFuel
+        );
+
+        expect(results).toHaveLength(2);
+
+        // Should calculate times correctly
+        // WP1: 5 NM / 80 kt = 3.75 min -> 4
+        expect(results[0].timeSinceLast).toBe(4);
+        // WP2: From WP1 to WP2 = 15 NM
+        // Remaining climb: 5 NM @ 80 kt = 3.75 min
+        // Cruise: 10 NM @ 120 kt = 5 min
+        // Total: 8.75 -> 9 min
+        expect(results[1].timeSinceLast).toBe(9);
+
+        // But no fuel calculations (no fuel flow and no climb fuel)
+        expect(results[0].fuelUsed).toBeUndefined();
+        expect(results[1].fuelUsed).toBeUndefined();
+      });
+    });
   });
 });

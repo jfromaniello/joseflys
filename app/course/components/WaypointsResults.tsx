@@ -30,9 +30,9 @@ export function WaypointsResults({
     <div className="print-page-break-before">
       <div className="flex items-center gap-2 mb-3">
         <h3 className="text-sm font-semibold uppercase tracking-wide" style={{ color: "oklch(0.65 0.15 230)" }}>
-          Waypoints Progress
+          Flight Checkpoints
         </h3>
-        <Tooltip content="Time and fuel calculations for each waypoint along your route. Times are shown in whole minutes. ETA is displayed when departure time is set." />
+        <Tooltip content="Time and fuel calculations for each checkpoint along your route. Times are shown in whole minutes. ETA is displayed when departure time is set." />
       </div>
 
       <div className="overflow-x-auto">
@@ -43,7 +43,7 @@ export function WaypointsResults({
                 className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wide"
                 style={{ color: "oklch(0.65 0.15 230)" }}
               >
-                Waypoint
+                Checkpoint
               </th>
               <th
                 className="text-right py-3 px-4 text-xs font-semibold uppercase tracking-wide"

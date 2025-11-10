@@ -453,13 +453,37 @@ export function ClimbCalculatorClient({
                   </div>
                 )}
 
-                {/* Share Button */}
-                <ShareButton
-                  shareData={{
-                    title: "José's Climb Calculator",
-                    text: `${aircraft.name}: Climb from ${currentAlt} to ${targetAlt} ft → Time: ${results.totalTime.toFixed(1)} min, Distance: ${results.totalDistance.toFixed(1)} NM, Fuel: ${results.totalFuel.toFixed(1)} gal`,
+                {/* Copy Climb Data Button */}
+                <button
+                  onClick={() => {
+                    const climbData = {
+                      climbTas: Math.round(results.averageTAS),
+                      climbDistance: parseFloat(results.totalDistance.toFixed(1)),
+                      climbFuel: parseFloat(results.totalFuel.toFixed(1)),
+                    };
+                    navigator.clipboard.writeText(JSON.stringify(climbData));
+                    // Optional: Show success feedback
+                    const btn = document.activeElement as HTMLElement;
+                    const originalText = btn.textContent;
+                    btn.textContent = '✓ Copied!';
+                    setTimeout(() => {
+                      btn.textContent = originalText;
+                    }, 2000);
                   }}
-                />
+                  className="w-full py-3 px-6 rounded-xl font-semibold text-base transition-all duration-200 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] print:hidden"
+                >
+                  📋 Copy Climb Data for Leg Planner
+                </button>
+
+                {/* Share Button */}
+                <div className="mt-4">
+                  <ShareButton
+                    shareData={{
+                      title: "José's Climb Calculator",
+                      text: `${aircraft.name}: Climb from ${currentAlt} to ${targetAlt} ft → Time: ${results.totalTime.toFixed(1)} min, Distance: ${results.totalDistance.toFixed(1)} NM, Fuel: ${results.totalFuel.toFixed(1)} gal`,
+                    }}
+                  />
+                </div>
               </div>
             </>
           )}

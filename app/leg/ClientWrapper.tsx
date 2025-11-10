@@ -28,6 +28,9 @@ interface ClientWrapperProps {
   initialDepTime: string;
   initialElapsedMin: string;
   initialPrevFuel: string;
+  initialClimbTas: string;
+  initialClimbDist: string;
+  initialClimbFuel: string;
 }
 
 export function ClientWrapper(props: ClientWrapperProps) {

@@ -141,7 +141,7 @@ export function FlightParametersInputs({
           style={{ color: "oklch(0.72 0.015 240)" }}
         >
           Previous Fuel Used
-          <Tooltip content="Fuel already consumed in previous legs. If specified, this value will be added to the fuel consumed in this leg. Leave empty to calculate fuel from elapsed time." />
+          <Tooltip content="Fuel already consumed before this leg. Use cases: (1) Fuel consumed in previous legs for multi-leg flights, (2) Planned taxi/ground fuel for the first leg. If specified, this value will be added to the fuel consumed during this leg. Leave empty to calculate fuel from elapsed time." />
         </label>
 
         {/* Previous Fuel Used Input */}

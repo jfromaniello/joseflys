@@ -5,7 +5,7 @@ import { Menu, MenuButton, MenuItems, MenuItem, Transition, TransitionChild } fr
 import { PageLayout } from "../components/PageLayout";
 import { Footer } from "../components/Footer";
 import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
-import { calculateCourse, calculateWaypoints, Waypoint, FlightParameters } from "@/lib/courseCalculations";
+import { calculateCourse, calculateWaypoints, Waypoint, FlightParameters, WaypointResult, addMinutesToTime } from "@/lib/courseCalculations";
 import { DeviationEntry } from "../components/CompassDeviationModal";
 import { WaypointsModal } from "../components/WaypointsModal";
 import { DistanceCalculatorModal } from "../components/DistanceCalculatorModal";
@@ -19,6 +19,7 @@ import { WindInputs } from "../course/components/WindInputs";
 import { CorrectionsInputs } from "../course/components/CorrectionsInputs";
 import { RangeFuelInputs, FuelUnit } from "../course/components/RangeFuelInputs";
 import { FlightParametersInputs } from "../course/components/FlightParametersInputs";
+import { ClimbDataInputs } from "../course/components/ClimbDataInputs";
 import { IntermediateResults } from "../course/components/IntermediateResults";
 import { PrimaryResults } from "../course/components/PrimaryResults";
 import { WaypointsResults } from "../course/components/WaypointsResults";
@@ -44,6 +45,9 @@ interface LegPlannerClientProps {
   initialDepTime: string;
   initialElapsedMin: string;
   initialPrevFuel: string;
+  initialClimbTas: string;
+  initialClimbDist: string;
+  initialClimbFuel: string;
 }
 
 export function LegPlannerClient({
@@ -63,6 +67,9 @@ export function LegPlannerClient({
   initialDepTime,
   initialElapsedMin,
   initialPrevFuel,
+  initialClimbTas,
+  initialClimbDist,
+  initialClimbFuel,
 }: LegPlannerClientProps) {
   const [trueHeading, setTrueHeading] = useState<string>(initialTh);
   const [tas, setTas] = useState<string>(initialTas);
@@ -75,6 +82,9 @@ export function LegPlannerClient({
   const [departureTime, setDepartureTime] = useState<string>(initialDepTime);
   const [elapsedMinutes, setElapsedMinutes] = useState<string>(initialElapsedMin);
   const [previousFuelUsed, setPreviousFuelUsed] = useState<string>(initialPrevFuel);
+  const [climbTas, setClimbTas] = useState<string>(initialClimbTas);
+  const [climbDistance, setClimbDistance] = useState<string>(initialClimbDist);
+  const [climbFuelUsed, setClimbFuelUsed] = useState<string>(initialClimbFuel);
   const [speedUnit, setSpeedUnit] = useState<SpeedUnit>(
     (initialSpeedUnit as SpeedUnit) || 'kt'
   );
@@ -143,6 +153,9 @@ export function LegPlannerClient({
     if (departureTime) params.set("depTime", departureTime);
     if (elapsedMinutes) params.set("elapsedMin", elapsedMinutes);
     if (previousFuelUsed) params.set("prevFuel", previousFuelUsed);
+    if (climbTas) params.set("climbTas", climbTas);
+    if (climbDistance) params.set("climbDist", climbDistance);
+    if (climbFuelUsed) params.set("climbFuel", climbFuelUsed);
     if (speedUnit !== 'kt') params.set("unit", speedUnit);
     if (fuelUnit !== 'gph') params.set("funit", fuelUnit);
 
@@ -177,7 +190,7 @@ export function LegPlannerClient({
     // Use window.history.replaceState instead of router.replace to avoid server requests
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState(null, '', newUrl);
-  }, [trueHeading, tas, windDir, windSpeed, magDev, distance, fuelFlow, description, departureTime, elapsedMinutes, previousFuelUsed, deviationTable, waypoints, speedUnit, fuelUnit, aircraft]);
+  }, [trueHeading, tas, windDir, windSpeed, magDev, distance, fuelFlow, description, departureTime, elapsedMinutes, previousFuelUsed, climbTas, climbDistance, climbFuelUsed, deviationTable, waypoints, speedUnit, fuelUnit, aircraft]);
 
   // Calculate results during render (not in useEffect to avoid cascading renders)
   const th = parseFloat(trueHeading);
@@ -192,6 +205,12 @@ export function LegPlannerClient({
 
   const elapsedMins = elapsedMinutes ? parseInt(elapsedMinutes) : undefined;
   const prevFuel = previousFuelUsed ? parseFloat(previousFuelUsed) : undefined;
+
+  // Parse climb data
+  const climbTasVal = climbTas ? parseFloat(climbTas) : undefined;
+  const climbTasInKnots = climbTasVal && !isNaN(climbTasVal) ? toKnots(climbTasVal, speedUnit) : undefined;
+  const climbDist = climbDistance ? parseFloat(climbDistance) : undefined;
+  const climbFuel = climbFuelUsed ? parseFloat(climbFuelUsed) : undefined;
 
   // Load example data
   const loadExample = () => {
@@ -238,7 +257,7 @@ export function LegPlannerClient({
     !isNaN(th) &&
     !isNaN(tasInKnots) &&
     tasInKnots > 0
-      ? calculateCourse(wd, ws, th, tasInKnots, md, dist, ff, elapsedMins, prevFuel)
+      ? calculateCourse(wd, ws, th, tasInKnots, md, dist, ff, elapsedMins, prevFuel, climbTasInKnots, climbDist, climbFuel)
       : null;
 
   // Calculate compass course when deviation table is available and results exist
@@ -254,10 +273,27 @@ export function LegPlannerClient({
     previousFuelUsed: prevFuel,
   };
 
-  const waypointResults =
+  let waypointResults =
     results && dist !== undefined
-      ? calculateWaypoints(waypoints, results.groundSpeed, ff, flightParams, dist)
+      ? calculateWaypoints(waypoints, results.groundSpeed, ff, flightParams, dist, results.climbPhase, ff)
       : [];
+
+  // Add "Cruise Altitude Reached" checkpoint if climb phase exists
+  if (results?.climbPhase && waypointResults.length > 0) {
+    const climbCheckpoint: WaypointResult = {
+      name: "Cruise Altitude Reached",
+      distance: results.climbPhase.distance,
+      timeSinceLast: Math.round(results.climbPhase.time * 60),
+      cumulativeTime: (flightParams.elapsedMinutes || 0) + Math.round(results.climbPhase.time * 60),
+      eta: flightParams.departureTime
+        ? addMinutesToTime(flightParams.departureTime, (flightParams.elapsedMinutes || 0) + Math.round(results.climbPhase.time * 60))
+        : undefined,
+      fuelUsed: results.climbPhase.fuelUsed > 0
+        ? Math.round((flightParams.previousFuelUsed || 0) + results.climbPhase.fuelUsed)
+        : undefined,
+    };
+    waypointResults = [climbCheckpoint, ...waypointResults];
+  }
 
 
   // Build OG image URL for download
@@ -682,6 +718,18 @@ export function LegPlannerClient({
               setElapsedMinutes={setElapsedMinutes}
               previousFuelUsed={previousFuelUsed}
               setPreviousFuelUsed={setPreviousFuelUsed}
+              fuelUnit={fuelUnit}
+            />
+
+            {/* Climb Data */}
+            <ClimbDataInputs
+              climbTas={climbTas}
+              setClimbTas={setClimbTas}
+              climbDistance={climbDistance}
+              setClimbDistance={setClimbDistance}
+              climbFuelUsed={climbFuelUsed}
+              setClimbFuelUsed={setClimbFuelUsed}
+              speedUnit={speedUnit}
               fuelUnit={fuelUnit}
             />
           </div>

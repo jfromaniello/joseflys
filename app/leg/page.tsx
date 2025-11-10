@@ -20,6 +20,9 @@ interface LegPageProps {
     depTime?: string; // Departure time HHMM
     elapsedMin?: string; // Elapsed minutes
     prevFuel?: string; // Previous fuel used
+    climbTas?: string; // Climb TAS
+    climbDist?: string; // Climb distance
+    climbFuel?: string; // Climb fuel used
   }>;
 }
 
@@ -41,6 +44,9 @@ export default async function LegPage({ searchParams }: LegPageProps) {
   const depTime = params.depTime || "";
   const elapsedMin = params.elapsedMin || "";
   const prevFuel = params.prevFuel || "";
+  const climbTas = params.climbTas || "";
+  const climbDist = params.climbDist || "";
+  const climbFuel = params.climbFuel || "";
 
   return (
     <ClientWrapper
@@ -60,6 +66,9 @@ export default async function LegPage({ searchParams }: LegPageProps) {
       initialDepTime={depTime}
       initialElapsedMin={elapsedMin}
       initialPrevFuel={prevFuel}
+      initialClimbTas={climbTas}
+      initialClimbDist={climbDist}
+      initialClimbFuel={climbFuel}
     />
   );
 }

@@ -118,7 +118,8 @@ html {
   .wind-inputs > h3,
   .corrections-inputs > h3,
   .range-fuel-inputs > h3,
-  .flight-params-inputs > h3 {
+  .flight-params-inputs > h3,
+  .climb-data > h3 {
     margin-bottom: 0.5rem !important;
   }
 
@@ -126,7 +127,8 @@ html {
   .course-speed-inputs > .grid,
   .wind-inputs > .grid,
   .corrections-inputs > .grid,
-  .flight-params-inputs > .grid {
+  .flight-params-inputs > .grid,
+  .climb-data > .grid {
     display: block !important;
   }
 
@@ -134,7 +136,8 @@ html {
   .course-speed-inputs .grid .grid,
   .wind-inputs .grid .grid,
   .corrections-inputs .grid .grid,
-  .flight-params-inputs .grid .grid {
+  .flight-params-inputs .grid .grid,
+  .climb-data .grid .grid {
     display: inline-block !important;
     width: auto !important;
     margin: 0.5rem 0 0 0 !important;
@@ -144,7 +147,8 @@ html {
   .course-speed-inputs .grid .grid > *,
   .wind-inputs .grid .grid > *,
   .corrections-inputs .grid .grid > *,
-  .flight-params-inputs .grid .grid > * {
+  .flight-params-inputs .grid .grid > *,
+  .climb-data .grid .grid > * {
     display: inline-block !important;
     vertical-align: middle !important;
     margin: 0 !important;
@@ -163,7 +167,8 @@ html {
   .course-speed-inputs .grid > label,
   .wind-inputs .grid > label,
   .corrections-inputs .grid > label,
-  .flight-params-inputs .grid > label {
+  .flight-params-inputs .grid > label,
+  .climb-data .grid > label {
     display: inline-block !important;
     width: 10rem !important;
     margin: 0.5rem 0 0 0 !important;
@@ -175,10 +180,12 @@ html {
   .wind-inputs .grid > div,
   .corrections-inputs .grid > div,
   .flight-params-inputs .grid > div,
+  .climb-data .grid > div,
   .course-speed-inputs .grid > input,
   .wind-inputs .grid > input,
   .corrections-inputs .grid > input,
-  .flight-params-inputs .grid > input {
+  .flight-params-inputs .grid > input,
+  .climb-data .grid > input {
     display: inline-block !important;
     width: 12rem !important;
     margin: 0.5rem 0.5rem 0 0 !important;
@@ -198,7 +205,8 @@ html {
   .course-speed-inputs select,
   .wind-inputs select,
   .corrections-inputs select,
-  .flight-params-inputs select {
+  .flight-params-inputs select,
+  .climb-data select {
     display: inline-block !important;
     width: 6rem !important;
     margin: 0.5rem 0 0 0 !important;
