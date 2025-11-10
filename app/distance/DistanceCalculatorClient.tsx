@@ -420,7 +420,7 @@ export function DistanceCalculatorClient({
     const waypoints = results
       .filter(r => r.validCoordinates && r.distance !== null)
       .map(r => ({
-        name: r.toLocation.name || `(${r.toLocation.lat.toFixed(2)}, ${r.toLocation.lon.toFixed(2)})`,
+        name: r.toLocation.name ? r.toLocation.name.split(",")[0] : `(${r.toLocation.lat.toFixed(2)}, ${r.toLocation.lon.toFixed(2)})`,
         distance: Math.round(r.distance!),
       }));
 
