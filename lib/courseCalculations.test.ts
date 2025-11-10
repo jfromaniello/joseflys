@@ -366,12 +366,12 @@ describe("courseCalculations", () => {
       it("should calculate fuel consumption for waypoints", () => {
         const results = calculateWaypoints(waypoints, 100, 10); // 10 GPH
 
-        // WP1: 15 min = 0.25 hr × 10 GPH = 2.5 (rounded to 3)
+        // WP1: 15 min = 0.25 hr × 10 GPH = 2.5
         // WP2: 30 min = 0.5 hr × 10 GPH = 5
-        // WP3: 45 min = 0.75 hr × 10 GPH = 7.5 (rounded to 8)
-        expect(results[0].fuelUsed).toBeCloseTo(3, 0);
+        // WP3: 45 min = 0.75 hr × 10 GPH = 7.5
+        expect(results[0].fuelUsed).toBeCloseTo(2.5, 1);
         expect(results[1].fuelUsed).toBe(5);
-        expect(results[2].fuelUsed).toBeCloseTo(8, 0);
+        expect(results[2].fuelUsed).toBeCloseTo(7.5, 1);
       });
 
       it("should account for previous fuel used", () => {
@@ -382,12 +382,12 @@ describe("courseCalculations", () => {
         const results = calculateWaypoints(waypoints, 100, 10, flightParams);
 
         // Previous: 20 gal
-        // WP1: 20 + (0.25 hr × 10 GPH) = 22.5 (rounded to 23)
+        // WP1: 20 + (0.25 hr × 10 GPH) = 22.5
         // WP2: 20 + (0.5 hr × 10 GPH) = 25
-        // WP3: 20 + (0.75 hr × 10 GPH) = 27.5 (rounded to 28)
-        expect(results[0].fuelUsed).toBeCloseTo(23, 0);
+        // WP3: 20 + (0.75 hr × 10 GPH) = 27.5
+        expect(results[0].fuelUsed).toBeCloseTo(22.5, 1);
         expect(results[1].fuelUsed).toBe(25);
-        expect(results[2].fuelUsed).toBeCloseTo(28, 0);
+        expect(results[2].fuelUsed).toBeCloseTo(27.5, 1);
       });
 
       it("should account for elapsed minutes without previousFuelUsed", () => {
@@ -397,12 +397,12 @@ describe("courseCalculations", () => {
 
         const results = calculateWaypoints(waypoints, 100, 10, flightParams);
 
-        // WP1: (30 + 15) min = 45 min = 0.75 hr × 10 GPH = 7.5 (rounded to 8)
+        // WP1: (30 + 15) min = 45 min = 0.75 hr × 10 GPH = 7.5
         // WP2: (30 + 30) min = 60 min = 1 hr × 10 GPH = 10
-        // WP3: (30 + 45) min = 75 min = 1.25 hr × 10 GPH = 12.5 (rounded to 13)
-        expect(results[0].fuelUsed).toBeCloseTo(8, 0);
+        // WP3: (30 + 45) min = 75 min = 1.25 hr × 10 GPH = 12.5
+        expect(results[0].fuelUsed).toBeCloseTo(7.5, 1);
         expect(results[1].fuelUsed).toBe(10);
-        expect(results[2].fuelUsed).toBeCloseTo(13, 0);
+        expect(results[2].fuelUsed).toBeCloseTo(12.5, 1);
       });
 
       it("should not calculate fuel without fuel flow", () => {
@@ -528,8 +528,8 @@ describe("courseCalculations", () => {
         // Total cumulative time: 7.5 (climb) + 10 (cruise) = 17.5 -> 18
         expect(results[1].cumulativeTime).toBe(18);
 
-        // Fuel: 2 gal (climb) + (10 GPH * 0.1667 hr) = 2 + 1.667 = 3.667 (rounds to 4)
-        expect(results[1].fuelUsed).toBe(4);
+        // Fuel: 2 gal (climb) + (10 GPH * 0.1667 hr) = 2 + 1.667 = 3.667
+        expect(results[1].fuelUsed).toBeCloseTo(3.667, 1);
       });
 
       it("should calculate multiple waypoints spanning climb and cruise", () => {
@@ -567,8 +567,8 @@ describe("courseCalculations", () => {
         expect(results[2].timeSinceLast).toBe(3);
         // Total time from start: 7.5 (climb) + 2.5 (cruise) = 10 min
         expect(results[2].cumulativeTime).toBe(10);
-        // Fuel: 2 (all climb) + 10 * (5/120) = 2 + 0.417 = 2.417 -> 2
-        expect(results[2].fuelUsed).toBe(2);
+        // Fuel: 2 (all climb) + 10 * (5/120) = 2 + 0.417 = 2.417
+        expect(results[2].fuelUsed).toBeCloseTo(2.417, 1);
 
         // WP3: 10 NM climb + 25 NM cruise
         expect(results[3].distance).toBe(35);
@@ -577,8 +577,8 @@ describe("courseCalculations", () => {
         expect(results[3].timeSinceLast).toBe(10);
         // Total time: 7.5 (climb) + 12.5 (cruise) = 20 min
         expect(results[3].cumulativeTime).toBe(20);
-        // Fuel: 2 (climb) + 10 * (25/120) = 2 + 2.083 = 4.083 -> 4
-        expect(results[3].fuelUsed).toBe(4);
+        // Fuel: 2 (climb) + 10 * (25/120) = 2 + 2.083 = 4.083
+        expect(results[3].fuelUsed).toBeCloseTo(4.083, 1);
       });
 
       it("should handle waypoints with previous fuel used during climb", () => {
@@ -609,8 +609,8 @@ describe("courseCalculations", () => {
         // WP1: 10 (previous) + 1 (climb fuel) = 11
         expect(results[0].fuelUsed).toBe(11);
 
-        // WP2: 10 (previous) + 2 (all climb) + 0.833 (cruise) = 12.833 -> 13
-        expect(results[2].fuelUsed).toBe(13);
+        // WP2: 10 (previous) + 2 (all climb) + 0.833 (cruise) = 12.833
+        expect(results[2].fuelUsed).toBeCloseTo(12.833, 1);
       });
 
       it("should calculate ETAs correctly with climb phase", () => {
@@ -699,8 +699,8 @@ describe("courseCalculations", () => {
         // Time: 7.5 (climb) + 20 (cruise) = 27.5 -> 28 min
         expect(results[2].cumulativeTime).toBe(28);
 
-        // Fuel: 2 (climb) + 10 * (40/120) = 2 + 3.333 = 5.333 -> 5
-        expect(results[2].fuelUsed).toBe(5);
+        // Fuel: 2 (climb) + 10 * (40/120) = 2 + 3.333 = 5.333
+        expect(results[2].fuelUsed).toBeCloseTo(5.333, 1);
       });
 
       it("should use different cruise fuel flow if provided", () => {
