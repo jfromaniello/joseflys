@@ -19,6 +19,7 @@ import {
   formatFuel,
   type LegCalculatedResults,
 } from "@/lib/flightPlanCalculations";
+import { getFuelResultUnit } from "@/lib/fuelConversion";
 import { generateShareUrl } from "@/lib/flightPlanSharing";
 import {
   ArrowLeftIcon,
@@ -367,7 +368,7 @@ export function FlightPlanDetailClient({
                         {totals.fuel.toFixed(1)}
                       </div>
                       <div className="text-xs" style={{ color: "oklch(0.65 0.08 60)" }}>
-                        {flightPlan.legs[0]?.fuelUnit.toUpperCase()}
+                        {getFuelResultUnit(flightPlan.legs[0]?.fuelUnit as any || 'gph')}
                       </div>
                     </div>
                     <div className="text-center p-3 bg-slate-900/40 rounded-xl border border-amber-500/20">
@@ -466,6 +467,14 @@ export function FlightPlanDetailClient({
                                   <span className="text-sm" style={{ color: "oklch(0.65 0.05 240)" }}>Start Time</span>
                                   <span className="text-base font-bold" style={{ color: "oklch(0.85 0.15 230)" }}>
                                     {formatTimeHHMM(result.startTime)}
+                                  </span>
+                                </div>
+                              )}
+                              {leg.prevFuel && parseFloat(leg.prevFuel) > 0 && (
+                                <div className="flex justify-between items-center">
+                                  <span className="text-sm" style={{ color: "oklch(0.65 0.05 240)" }}>Fuel Used Before</span>
+                                  <span className="text-base font-bold" style={{ color: "oklch(0.85 0.15 230)" }}>
+                                    {formatFuel(parseFloat(leg.prevFuel), leg.fuelUnit)}
                                   </span>
                                 </div>
                               )}

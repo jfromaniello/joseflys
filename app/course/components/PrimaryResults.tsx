@@ -178,7 +178,7 @@ export function PrimaryResults({
               className="text-3xl sm:text-4xl font-bold"
               style={{ color: totalFuel !== undefined ? "white" : "oklch(0.35 0.02 240)" }}
             >
-              {totalFuel !== undefined ? Math.round(totalFuel) : '—'}
+              {totalFuel !== undefined ? totalFuel.toFixed(1) : '—'}
             </p>
             <p
               className="text-sm mt-1"

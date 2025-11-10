@@ -414,15 +414,15 @@ export function calculateWaypoints(
     if (hasFuelData) {
       const previousFuel = flightParams?.previousFuelUsed || 0;
       if (climbPhase && climbPhase.fuelUsed > 0) {
-        fuelUsed = Math.round(previousFuel + waypointFuelFromLegStart);
+        fuelUsed = previousFuel + waypointFuelFromLegStart;
       } else if (fuelFlow !== undefined && fuelFlow > 0) {
         if (previousFuel > 0) {
           // If previous fuel used is specified, add fuel consumed from start of this leg only
-          fuelUsed = Math.round(previousFuel + waypointFuelFromLegStart);
+          fuelUsed = previousFuel + waypointFuelFromLegStart;
         } else {
           // Otherwise, use the old behavior: fuel flow × cumulative time
           const totalHours = cumulativeTime / 60;
-          fuelUsed = Math.round((fuelFlow ?? 0) * totalHours);
+          fuelUsed = (fuelFlow ?? 0) * totalHours;
         }
       }
     }

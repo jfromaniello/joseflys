@@ -7,6 +7,7 @@ import { calculateCourse, calculateWaypoints, type Waypoint } from "./courseCalc
 import { calculateCompassCourse } from "./compassDeviation";
 import { toKnots } from "./speedConversion";
 import { loadAircraftFromUrl } from "./aircraftStorage";
+import { getFuelResultUnit, type FuelUnit } from "./fuelConversion";
 import type { FlightPlanLeg } from "./flightPlanStorage";
 
 export interface LegCalculatedResults {
@@ -121,18 +122,25 @@ export function calculateLegResults(leg: FlightPlanLeg): LegCalculatedResults | 
       arrivalTime = addMinutesToTime(startTime, legDurationMinutes);
     }
 
+    // results.fuelUsed from calculateCourse already includes prevFuel if it was provided
+    // So totalFuel should just be results.fuelUsed
+    const totalFuelAccumulated = results.fuelUsed || 0;
+
+    // Fuel used in just this leg (excluding previous fuel)
+    const legFuelOnly = totalFuelAccumulated - (prevFuel || 0);
+
     return {
       groundSpeed: results.groundSpeed,
       compassCourse,
       legDuration,
       climbTime,
       cruiseTime,
-      fuelUsed: results.fuelUsed || 0,
+      fuelUsed: legFuelOnly,
       climbFuelUsed,
       cruiseFuelUsed,
       totalDistance: dist,
       totalTime: ((elapsedMins || 0) / 60) + legDuration,
-      totalFuel: (prevFuel || 0) + (results.fuelUsed || 0),
+      totalFuel: totalFuelAccumulated,
       startTime,
       arrivalTime,
     };
@@ -231,6 +239,7 @@ export function formatTimeHHMM(timeHHMM: string): string {
 /**
  * Format fuel with appropriate unit label
  */
-export function formatFuel(fuel: number, unit: string): string {
-  return `${fuel.toFixed(1)} ${unit.toUpperCase()}`;
+export function formatFuel(fuel: number, fuelFlowUnit: string): string {
+  const consumptionUnit = getFuelResultUnit(fuelFlowUnit as FuelUnit);
+  return `${fuel.toFixed(1)} ${consumptionUnit}`;
 }

@@ -54,9 +54,9 @@ export function buildNextLegUrl(params: NextLegParams): string {
   // Set elapsed minutes
   urlParams.set("elapsedMin", params.elapsedMinutes.toString());
 
-  // Set previous fuel used (total fuel used from current leg) - rounded to nearest integer
+  // Set previous fuel used (total fuel used from current leg) - rounded to 1 decimal
   if (params.fuelUsed !== undefined && params.fuelUsed > 0) {
-    urlParams.set("prevFuel", Math.round(params.fuelUsed).toString());
+    urlParams.set("prevFuel", params.fuelUsed.toFixed(1));
   }
 
   // Include flight plan ID if this leg belongs to a flight plan

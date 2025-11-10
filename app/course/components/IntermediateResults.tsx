@@ -13,7 +13,7 @@ export function IntermediateResults({ results, fuelUnit, fuelFlow }: Intermediat
   const legTimeMinutes = results.eta ? Math.round(results.eta * 60) : undefined;
   // Leg fuel is just fuelFlow * leg time (not total)
   const legFuel = fuelFlow !== undefined && results.eta !== undefined
-    ? Math.round(fuelFlow * results.eta)
+    ? fuelFlow * results.eta
     : undefined;
 
   const hasClimbData = results.climbPhase !== undefined && results.cruisePhase !== undefined;
@@ -58,7 +58,7 @@ export function IntermediateResults({ results, fuelUnit, fuelFlow }: Intermediat
                 <div className="flex justify-between items-center">
                   <span className="text-xs" style={{ color: "oklch(0.65 0.02 240)" }}>Fuel:</span>
                   <span className="text-sm font-bold" style={{ color: "white" }}>
-                    {Math.round(results.climbPhase!.fuelUsed)} {getFuelResultUnit(fuelUnit)}
+                    {results.climbPhase!.fuelUsed.toFixed(1)} {getFuelResultUnit(fuelUnit)}
                   </span>
                 </div>
               </div>
@@ -91,7 +91,7 @@ export function IntermediateResults({ results, fuelUnit, fuelFlow }: Intermediat
                 <div className="flex justify-between items-center">
                   <span className="text-xs" style={{ color: "oklch(0.65 0.02 240)" }}>Fuel:</span>
                   <span className="text-sm font-bold" style={{ color: "white" }}>
-                    {Math.round(results.cruisePhase!.fuelUsed)} {getFuelResultUnit(fuelUnit)}
+                    {results.cruisePhase!.fuelUsed.toFixed(1)} {getFuelResultUnit(fuelUnit)}
                   </span>
                 </div>
               </div>
@@ -183,7 +183,7 @@ export function IntermediateResults({ results, fuelUnit, fuelFlow }: Intermediat
             <Tooltip content="Fuel consumption for this leg only (not including previous legs). Based on fuel flow and leg time." />
           </div>
           <p className="text-xl font-bold text-center" style={{ color: legFuel !== undefined ? "white" : "oklch(0.35 0.02 240)" }}>
-            {legFuel !== undefined ? `${legFuel} ${getFuelResultUnit(fuelUnit)}` : '—'}
+            {legFuel !== undefined ? `${legFuel.toFixed(1)} ${getFuelResultUnit(fuelUnit)}` : '—'}
           </p>
         </div>
 

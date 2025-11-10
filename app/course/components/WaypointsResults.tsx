@@ -125,7 +125,7 @@ export function WaypointsResults({
                     style={{ color: "oklch(0.7 0.15 150)" }}
                   >
                     {waypoint.fuelUsed !== undefined
-                      ? `${waypoint.fuelUsed} ${getFuelResultUnit(fuelUnit)}`
+                      ? `${waypoint.fuelUsed.toFixed(1)} ${getFuelResultUnit(fuelUnit)}`
                       : "—"}
                   </td>
                 )}
