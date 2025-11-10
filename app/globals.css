@@ -123,13 +123,24 @@ html {
     margin-bottom: 0.5rem !important;
   }
 
-  /* Make all grids vertical */
+  /* Make all grids vertical - override all responsive grid classes */
   .course-speed-inputs > .grid,
   .wind-inputs > .grid,
   .corrections-inputs > .grid,
   .flight-params-inputs > .grid,
   .climb-data > .grid {
     display: block !important;
+    grid-template-columns: none !important;
+  }
+
+  /* Hide gap spacer columns in print */
+  .course-speed-inputs .grid > div.hidden,
+  .wind-inputs .grid > div.hidden,
+  .corrections-inputs .grid > div.hidden,
+  .flight-params-inputs .grid > div.hidden,
+  .climb-data .grid > div.hidden,
+  .range-fuel-inputs .grid > div.hidden {
+    display: none !important;
   }
 
   /* Nested grids (input+select containers) should be inline-block */
@@ -139,6 +150,7 @@ html {
   .flight-params-inputs .grid .grid,
   .climb-data .grid .grid {
     display: inline-block !important;
+    grid-template-columns: none !important;
     width: auto !important;
     margin: 0.5rem 0 0 0 !important;
     vertical-align: middle !important;
@@ -172,6 +184,7 @@ html {
     display: inline-block !important;
     width: 10rem !important;
     margin: 0.5rem 0 0 0 !important;
+    margin-bottom: 0 !important;
     vertical-align: middle !important;
   }
 
@@ -263,12 +276,14 @@ html {
   /* Range & Fuel special handling */
   .range-fuel-inputs > div.grid {
     display: block !important;
+    grid-template-columns: none !important;
   }
 
   .range-fuel-inputs label:not(.print-hide-waypoints) {
     display: inline-block !important;
     width: 10rem !important;
     margin: 0.5rem 0 0 0 !important;
+    margin-bottom: 0 !important;
     vertical-align: middle !important;
   }
 
@@ -303,6 +318,7 @@ html {
   /* Nested grid for input+select combos in Range & Fuel */
   .range-fuel-inputs .grid .grid {
     display: inline-block !important;
+    grid-template-columns: none !important;
     width: auto !important;
     margin: 0.5rem 0 0 0 !important;
     vertical-align: middle !important;
@@ -330,12 +346,14 @@ html {
   /* Leg Distance & Waypoints print styles */
   .leg-distance-waypoints > div.grid {
     display: block !important;
+    grid-template-columns: none !important;
   }
 
   .leg-distance-waypoints label:not(.print-hide-waypoints) {
     display: inline-block !important;
     width: 10rem !important;
     margin: 0.5rem 0 0 0 !important;
+    margin-bottom: 0 !important;
     vertical-align: middle !important;
   }
 

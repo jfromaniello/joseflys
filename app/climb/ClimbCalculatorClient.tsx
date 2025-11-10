@@ -470,9 +470,23 @@ export function ClimbCalculatorClient({
                       btn.textContent = originalText;
                     }, 2000);
                   }}
-                  className="w-full py-3 px-6 rounded-xl font-semibold text-base transition-all duration-200 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] print:hidden"
+                  className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-xl border-2 border-emerald-500/50 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all font-medium cursor-pointer print:hidden"
+                  style={{ color: "oklch(0.7 0.15 150)" }}
                 >
-                  📋 Copy Climb Data for Leg Planner
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                    />
+                  </svg>
+                  Copy Climb Data for Leg Planner
                 </button>
 
                 {/* Share Button */}

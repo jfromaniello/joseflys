@@ -148,7 +148,7 @@ export function ClimbDataInputs({
         {/* Row 2: Climb Fuel Used (below Climb TAS) */}
 
         {/* Force line break before this field in print */}
-        <div className="hidden lg:hidden print:block print:w-full print:h-0"></div>
+        <div className="hidden print:block print:w-full print:h-0"></div>
 
         <label
           className="flex items-center text-sm font-medium mb-2 lg:mb-0"

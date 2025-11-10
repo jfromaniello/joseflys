@@ -133,7 +133,7 @@ export function FlightParametersInputs({
         {/* Row 2: Previous Fuel Used (aligned with Departure Time) */}
 
         {/* Force line break before this field in print */}
-        <div className="hidden lg:hidden print:block print:w-full print:h-0"></div>
+        <div className="hidden print:block print:w-full print:h-0"></div>
 
         {/* Previous Fuel Used Label */}
         <label

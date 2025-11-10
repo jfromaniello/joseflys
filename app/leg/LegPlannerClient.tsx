@@ -576,7 +576,7 @@ export function LegPlannerClient({
               <h3 className="text-sm font-semibold mb-3 uppercase tracking-wide" style={{ color: "oklch(0.65 0.15 230)" }}>
                 Leg Distance & Waypoints
               </h3>
-              <div className="grid grid-cols-1 lg:grid-cols-[10.5rem_12rem_2rem_10.5rem_1fr] gap-x-4 gap-y-4 lg:items-center">
+              <div className="grid grid-cols-1 lg:grid-cols-[10.5rem_12rem_2rem_10.5rem_12rem] gap-x-4 gap-y-4 lg:items-center">
                 {/* Distance Label */}
                 <label
                   className="flex items-center text-sm font-medium mb-2 lg:mb-0 lg:col-span-1 col-span-1"
@@ -620,28 +620,25 @@ export function LegPlannerClient({
                 {/* Waypoints Button */}
                 <button
                   onClick={() => setIsWaypointsModalOpen(true)}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-dashed border-gray-600 hover:border-sky-500/50 hover:bg-sky-500/10 transition-all text-base font-medium cursor-pointer flex items-center justify-center gap-2 lg:col-span-1 col-span-1 print-hide-waypoints"
-                  style={{ color: "oklch(0.65 0.15 230)" }}
+                  className={`w-full px-4 py-3 rounded-xl transition-all text-base font-medium border-2 cursor-pointer print-hide-waypoints ${
+                    waypoints.length > 0
+                      ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
+                      : "border-gray-600 bg-slate-900/50 hover:border-sky-500/50 hover:bg-sky-500/5"
+                  }`}
+                  style={
+                    waypoints.length === 0
+                      ? { color: "oklch(0.7 0.02 240)" }
+                      : undefined
+                  }
                 >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                  </svg>
-                  {waypoints.length > 0 ? `${waypoints.length} Waypoint${waypoints.length > 1 ? 's' : ''}` : 'Add Waypoints'}
+                  {waypoints.length > 0 ? (
+                    <div className="flex flex-col items-center">
+                      <span>✓ Waypoints Set</span>
+                      <span className="text-xs mt-0.5">{waypoints.length} waypoint{waypoints.length !== 1 ? 's' : ''}</span>
+                    </div>
+                  ) : (
+                    "Set Waypoints"
+                  )}
                 </button>
               </div>
             </div>
