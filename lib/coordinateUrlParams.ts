@@ -23,9 +23,76 @@ export function dequantizeCoordinate(quantized: number): number {
 }
 
 /**
- * Serialize two locations to compact URL format
- * Returns: from=lat~lng&to=lat~lng&s=5&fromName=name&toName=name
+ * Location with coordinates and optional name
+ */
+export interface LocationData {
+  lat: number;
+  lon: number;
+  name?: string;
+}
+
+/**
+ * Parse a compact coordinate string: "lat~lon~name" or "lat~lon"
+ * Supports scale factor for quantized coordinates
+ */
+function parseCompactCoordinate(
+  coordString: string,
+  scaleFactor: number
+): { lat: string; lon: string; name?: string } | null {
+  const parts = coordString.split('~');
+  if (parts.length < 2) return null;
+
+  const latQ = parseInt(parts[0], 10);
+  const lonQ = parseInt(parts[1], 10);
+
+  if (isNaN(latQ) || isNaN(lonQ)) return null;
+
+  return {
+    lat: (latQ / scaleFactor).toFixed(6),
+    lon: (lonQ / scaleFactor).toFixed(6),
+    name: parts[2] || undefined,
+  };
+}
+
+/**
+ * Serialize a location to compact format: "lat~lon~name" or "lat~lon"
+ */
+function serializeCompactCoordinate(lat: number, lon: number, name?: string): string {
+  let value = `${quantizeCoordinate(lat)}~${quantizeCoordinate(lon)}`;
+  if (name) {
+    // Only save city name (first part before comma)
+    value += `~${name.split(",")[0]}`;
+  }
+  return value;
+}
+
+/**
+ * Serialize from location and multiple to locations to compact URL format
+ * Returns: from=lat~lng~name&to[0]=lat~lng~name&to[1]=lat~lng~name&s=5
+ */
+export function serializeMultipleLocationsToUrl(
+  from: LocationData,
+  toLocations: LocationData[]
+): string {
+  const params = new URLSearchParams();
+
+  // Serialize from location
+  params.set("from", serializeCompactCoordinate(from.lat, from.lon, from.name));
+  params.set("s", SCALE_DECIMALS.toString());
+
+  // Serialize all to locations
+  toLocations.forEach((to, index) => {
+    params.set(`to[${index}]`, serializeCompactCoordinate(to.lat, to.lon, to.name));
+  });
+
+  return params.toString();
+}
+
+/**
+ * Serialize two locations to compact URL format (legacy single destination)
+ * Returns: from=lat~lng~name&to=lat~lng~name&s=5
  * Uses ~ separator (no URL encoding needed) instead of , (requires %2C)
+ * Name is included as third parameter in the same string
  */
 export function serializeLocationsToUrl(
   fromLat: number,
@@ -35,28 +102,112 @@ export function serializeLocationsToUrl(
   fromName?: string,
   toName?: string
 ): string {
-  const params = new URLSearchParams();
-
-  // Quantized coordinates with ~ separator
-  params.set("from", `${quantizeCoordinate(fromLat)}~${quantizeCoordinate(fromLon)}`);
-  params.set("to", `${quantizeCoordinate(toLat)}~${quantizeCoordinate(toLon)}`);
-  params.set("s", SCALE_DECIMALS.toString());
-
-  // Optional names (short form)
-  if (fromName) {
-    params.set("fromName", fromName.split(",")[0]);
-  }
-  if (toName) {
-    params.set("toName", toName.split(",")[0]);
-  }
-
-  return params.toString();
+  return serializeMultipleLocationsToUrl(
+    { lat: fromLat, lon: fromLon, name: fromName },
+    [{ lat: toLat, lon: toLon, name: toName }]
+  );
 }
 
 /**
- * Parse location coordinates from URL search params
+ * Parsed location parameters for multiple destinations
+ */
+export interface ParsedMultipleLocationParams {
+  fromLat?: string;
+  fromLon?: string;
+  fromName?: string;
+  toLocations: Array<{ lat: string; lon: string; name?: string }>;
+}
+
+/**
+ * Parse location parameters from URL search params
+ * Supports multiple destinations and all legacy formats
+ */
+export function parseMultipleLocationParams(
+  searchParams: URLSearchParams
+): ParsedMultipleLocationParams {
+  let fromLat: string | undefined;
+  let fromLon: string | undefined;
+  let fromName: string | undefined;
+  const toLocations: Array<{ lat: string; lon: string; name?: string }> = [];
+
+  const fromParam = searchParams.get("from");
+  const scaleParam = searchParams.get("s");
+
+  // Parse from location (compact format)
+  if (fromParam && scaleParam) {
+    const scale = parseInt(scaleParam, 10);
+    const scaleFactor = Math.pow(10, scale);
+    const parsed = parseCompactCoordinate(fromParam, scaleFactor);
+    if (parsed) {
+      fromLat = parsed.lat;
+      fromLon = parsed.lon;
+      fromName = parsed.name || searchParams.get("fromName") || undefined;
+    }
+  } else {
+    // Legacy expanded format
+    fromLat = searchParams.get("fromLat") || undefined;
+    fromLon = searchParams.get("fromLon") || undefined;
+    fromName = searchParams.get("fromName") || undefined;
+  }
+
+  // Parse to locations
+  if (scaleParam) {
+    const scale = parseInt(scaleParam, 10);
+    const scaleFactor = Math.pow(10, scale);
+
+    // Find all to[n] parameters
+    const toIndices = new Set<number>();
+    for (const key of searchParams.keys()) {
+      const match = key.match(/^to\[(\d+)\]/);
+      if (match) {
+        toIndices.add(parseInt(match[1]));
+      }
+    }
+
+    // Parse indexed to locations (compact format)
+    if (toIndices.size > 0) {
+      Array.from(toIndices).sort((a, b) => a - b).forEach(index => {
+        const coordParam = searchParams.get(`to[${index}]`);
+        if (coordParam) {
+          const parsed = parseCompactCoordinate(coordParam, scaleFactor);
+          if (parsed) {
+            toLocations.push(parsed);
+          }
+        }
+      });
+    } else {
+      // Legacy single destination format (to=lat~lon~name)
+      const toParam = searchParams.get("to");
+      if (toParam) {
+        const parsed = parseCompactCoordinate(toParam, scaleFactor);
+        if (parsed) {
+          // Override name with separate param if exists
+          parsed.name = parsed.name || searchParams.get("toName") || undefined;
+          toLocations.push(parsed);
+        }
+      }
+    }
+  } else {
+    // Legacy expanded format (toLat/toLon)
+    const toLat = searchParams.get("toLat");
+    const toLon = searchParams.get("toLon");
+    if (toLat && toLon) {
+      toLocations.push({
+        lat: toLat,
+        lon: toLon,
+        name: searchParams.get("toName") || undefined,
+      });
+    }
+  }
+
+  return { fromLat, fromLon, fromName, toLocations };
+}
+
+/**
+ * Parse location coordinates from URL search params (legacy single destination)
  * Supports multiple formats:
- * - New (preferred): from=lat~lng&to=lat~lng&s=5
+ * - New (preferred): from=lat~lng~name&to=lat~lng~name&s=5
+ * - New (legacy): from=lat~lng&to=lat~lng&s=5&fromName=name&toName=name
  * - New (legacy): from=lat,lng&to=lat,lng&s=5
  * - Legacy: fromLat=x&fromLon=y&toLat=x&toLon=y
  */
@@ -70,40 +221,14 @@ export interface ParsedLocationParams {
 }
 
 export function parseLocationParams(searchParams: URLSearchParams): ParsedLocationParams {
-  // Try new format first
-  const fromParam = searchParams.get("from");
-  const toParam = searchParams.get("to");
-  const scaleParam = searchParams.get("s");
+  const parsed = parseMultipleLocationParams(searchParams);
 
-  if (fromParam && toParam && scaleParam) {
-    // New compact format - support both ~ and , separators
-    const scale = parseInt(scaleParam, 10);
-    const scaleFactor = Math.pow(10, scale);
-
-    // Split by ~ first (preferred), fall back to , for backward compatibility
-    const fromSeparator = fromParam.includes("~") ? "~" : ",";
-    const toSeparator = toParam.includes("~") ? "~" : ",";
-
-    const [fromLatQ, fromLonQ] = fromParam.split(fromSeparator).map(n => parseInt(n, 10));
-    const [toLatQ, toLonQ] = toParam.split(toSeparator).map(n => parseInt(n, 10));
-
-    return {
-      fromLat: (fromLatQ / scaleFactor).toFixed(6),
-      fromLon: (fromLonQ / scaleFactor).toFixed(6),
-      toLat: (toLatQ / scaleFactor).toFixed(6),
-      toLon: (toLonQ / scaleFactor).toFixed(6),
-      fromName: searchParams.get("fromName") || undefined,
-      toName: searchParams.get("toName") || undefined,
-    };
-  }
-
-  // Fall back to legacy format
   return {
-    fromLat: searchParams.get("fromLat") || undefined,
-    fromLon: searchParams.get("fromLon") || undefined,
-    toLat: searchParams.get("toLat") || undefined,
-    toLon: searchParams.get("toLon") || undefined,
-    fromName: searchParams.get("fromName") || undefined,
-    toName: searchParams.get("toName") || undefined,
+    fromLat: parsed.fromLat,
+    fromLon: parsed.fromLon,
+    fromName: parsed.fromName,
+    toLat: parsed.toLocations[0]?.lat,
+    toLon: parsed.toLocations[0]?.lon,
+    toName: parsed.toLocations[0]?.name,
   };
 }

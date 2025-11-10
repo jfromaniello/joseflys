@@ -1,21 +1,11 @@
 import { Suspense } from "react";
 import { DistanceCalculatorClient } from "./DistanceCalculatorClient";
-import { parseLocationParams } from "@/lib/coordinateUrlParams";
+import { parseMultipleLocationParams } from "@/lib/coordinateUrlParams";
 
 export { generateMetadata } from "./metadata";
 
 interface DistancePageProps {
-  searchParams: Promise<{
-    fromLat?: string;
-    fromLon?: string;
-    fromName?: string;
-    toLat?: string;
-    toLon?: string;
-    toName?: string;
-    from?: string;
-    to?: string;
-    s?: string;
-  }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 export default async function DistancePage({
@@ -26,11 +16,18 @@ export default async function DistancePage({
   // Convert to URLSearchParams for parsing
   const urlParams = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
-    if (value) urlParams.set(key, value);
+    if (typeof value === 'string') {
+      urlParams.set(key, value);
+    }
   });
 
-  // Parse using utility (supports both old and new formats)
-  const { fromLat, fromLon, fromName, toLat, toLon, toName } = parseLocationParams(urlParams);
+  // Parse all location parameters using centralized function
+  const { fromLat, fromLon, fromName, toLocations } = parseMultipleLocationParams(urlParams);
+
+  // For backward compatibility with legacy single destination props
+  const toLat = toLocations[0]?.lat;
+  const toLon = toLocations[0]?.lon;
+  const toName = toLocations[0]?.name;
 
   return (
     <Suspense
@@ -44,6 +41,7 @@ export default async function DistancePage({
         initialFromLat={fromLat}
         initialFromLon={fromLon}
         initialFromName={fromName}
+        initialToLocations={toLocations.length > 0 ? toLocations : undefined}
         initialToLat={toLat}
         initialToLon={toLon}
         initialToName={toName}

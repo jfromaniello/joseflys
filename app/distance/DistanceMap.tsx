@@ -4,31 +4,37 @@ import { useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 
+interface ToLocationMap {
+  name: string;
+  lat: number;
+  lon: number;
+}
+
 interface DistanceMapProps {
   fromLat: number;
   fromLon: number;
-  toLat: number;
-  toLon: number;
+  toLocations: ToLocationMap[];
   fromName?: string;
-  toName?: string;
 }
 
 // Component to fit bounds when coordinates change
-function MapBounds({ fromLat, fromLon, toLat, toLon }: {
+function MapBounds({ fromLat, fromLon, toLocations }: {
   fromLat: number;
   fromLon: number;
-  toLat: number;
-  toLon: number;
+  toLocations: ToLocationMap[];
 }) {
   const map = useMap();
 
   useEffect(() => {
-    const bounds = L.latLngBounds(
-      [fromLat, fromLon],
-      [toLat, toLon]
-    );
+    if (toLocations.length === 0) return;
+
+    const bounds = L.latLngBounds([[fromLat, fromLon]]);
+    toLocations.forEach(loc => {
+      bounds.extend([loc.lat, loc.lon]);
+    });
+
     map.fitBounds(bounds, { padding: [50, 50] });
-  }, [map, fromLat, fromLon, toLat, toLon]);
+  }, [map, fromLat, fromLon, toLocations]);
 
   return null;
 }
@@ -57,22 +63,26 @@ const toIcon = createCustomIcon('#8b5cf6'); // purple-500
 export function DistanceMap({
   fromLat,
   fromLon,
-  toLat,
-  toLon,
+  toLocations,
   fromName,
-  toName,
 }: DistanceMapProps) {
   const fromPosition: [number, number] = [fromLat, fromLon];
-  const toPosition: [number, number] = [toLat, toLon];
-  const linePositions: [number, number][] = [fromPosition, toPosition];
+
+  // Calculate center point from all locations
+  const centerLat = toLocations.length > 0
+    ? (fromLat + toLocations.reduce((sum, loc) => sum + loc.lat, 0) / toLocations.length) / 2
+    : fromLat;
+  const centerLon = toLocations.length > 0
+    ? (fromLon + toLocations.reduce((sum, loc) => sum + loc.lon, 0) / toLocations.length) / 2
+    : fromLon;
+
+  // Generate colors for different destinations
+  const colors = ['#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6'];
 
   return (
     <div className="w-full h-96 rounded-xl overflow-hidden border-2 border-gray-700 print:h-[320px] print:border print:border-gray-400">
       <MapContainer
-        center={[
-          (fromLat + toLat) / 2,
-          (fromLon + toLon) / 2,
-        ]}
+        center={[centerLat, centerLon]}
         zoom={6}
         className="w-full h-full"
         scrollWheelZoom={true}
@@ -85,22 +95,34 @@ export function DistanceMap({
         {/* From marker */}
         <Marker position={fromPosition} icon={fromIcon} />
 
-        {/* To marker */}
-        <Marker position={toPosition} icon={toIcon} />
+        {/* To markers and lines for each destination */}
+        {toLocations.map((toLocation, index) => {
+          const toPosition: [number, number] = [toLocation.lat, toLocation.lon];
+          const linePositions: [number, number][] = [fromPosition, toPosition];
+          const color = colors[index % colors.length];
+          const toIconColored = createCustomIcon(color);
 
-        {/* Great circle line (simplified as straight line on map) */}
-        <Polyline
-          positions={linePositions}
-          pathOptions={{
-            color: '#0ea5e9',
-            weight: 3,
-            opacity: 0.8,
-            dashArray: '10, 10',
-          }}
-        />
+          return (
+            <div key={index}>
+              {/* To marker */}
+              <Marker position={toPosition} icon={toIconColored} />
+
+              {/* Great circle line (simplified as straight line on map) */}
+              <Polyline
+                positions={linePositions}
+                pathOptions={{
+                  color: color,
+                  weight: 3,
+                  opacity: 0.8,
+                  dashArray: '10, 10',
+                }}
+              />
+            </div>
+          );
+        })}
 
         {/* Auto-fit bounds */}
-        <MapBounds fromLat={fromLat} fromLon={fromLon} toLat={toLat} toLon={toLon} />
+        <MapBounds fromLat={fromLat} fromLon={fromLon} toLocations={toLocations} />
       </MapContainer>
     </div>
   );
