@@ -66,20 +66,21 @@ export function FlightPlanDetailClient({
   // Calculate totals
   const totals = useMemo(() => {
     if (!flightPlan || flightPlan.legs.length === 0) {
-      return { distance: 0, time: 0, fuel: 0 };
+      return { distance: 0, time: 0, fuel: 0, eta: null };
     }
 
     const lastLeg = flightPlan.legs[flightPlan.legs.length - 1];
     const lastResult = legResults.get(lastLeg.id);
 
     if (!lastResult) {
-      return { distance: 0, time: 0, fuel: 0 };
+      return { distance: 0, time: 0, fuel: 0, eta: null };
     }
 
     return {
       distance: lastResult.totalDistance,
       time: lastResult.totalTime,
       fuel: lastResult.totalFuel,
+      eta: lastResult.arrivalTime,
     };
   }, [flightPlan, legResults]);
 
@@ -346,7 +347,7 @@ export function FlightPlanDetailClient({
                     </svg>
                     Flight Plan Summary
                   </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="text-center p-3 bg-slate-900/40 rounded-xl border border-amber-500/20">
                       <div className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: "oklch(0.7 0.1 60)" }}>
                         Total Distance
@@ -360,17 +361,6 @@ export function FlightPlanDetailClient({
                     </div>
                     <div className="text-center p-3 bg-slate-900/40 rounded-xl border border-amber-500/20">
                       <div className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: "oklch(0.7 0.1 60)" }}>
-                        Total Time
-                      </div>
-                      <div className="text-2xl font-bold" style={{ color: "oklch(0.9 0.18 60)" }}>
-                        {formatHoursToTime(totals.time)}
-                      </div>
-                      <div className="text-xs" style={{ color: "oklch(0.65 0.08 60)" }}>
-                        Flight Duration
-                      </div>
-                    </div>
-                    <div className="text-center p-3 bg-slate-900/40 rounded-xl border border-amber-500/20">
-                      <div className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: "oklch(0.7 0.1 60)" }}>
                         Total Fuel
                       </div>
                       <div className="text-2xl font-bold" style={{ color: "oklch(0.9 0.18 60)" }}>
@@ -380,6 +370,30 @@ export function FlightPlanDetailClient({
                         {flightPlan.legs[0]?.fuelUnit.toUpperCase()}
                       </div>
                     </div>
+                    <div className="text-center p-3 bg-slate-900/40 rounded-xl border border-amber-500/20">
+                      <div className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: "oklch(0.7 0.1 60)" }}>
+                        Total Time
+                      </div>
+                      <div className="text-2xl font-bold" style={{ color: "oklch(0.9 0.18 60)" }}>
+                        {formatHoursToTime(totals.time)}
+                      </div>
+                      <div className="text-xs" style={{ color: "oklch(0.65 0.08 60)" }}>
+                        Flight Duration
+                      </div>
+                    </div>
+                    {totals.eta && (
+                      <div className="text-center p-3 bg-slate-900/40 rounded-xl border border-amber-500/20">
+                        <div className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: "oklch(0.7 0.1 60)" }}>
+                          ETA
+                        </div>
+                        <div className="text-2xl font-bold" style={{ color: "oklch(0.9 0.18 60)" }}>
+                          {formatTimeHHMM(totals.eta)}
+                        </div>
+                        <div className="text-xs" style={{ color: "oklch(0.65 0.08 60)" }}>
+                          Arrival Time
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
