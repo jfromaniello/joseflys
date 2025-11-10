@@ -910,8 +910,10 @@ export function LegPlannerClient({
                           <BookmarkIcon className="w-5 h-5" />
                         )}
                         <span className="text-sm font-medium">
-                          {flightPlanId && currentFlightPlan
+                          {flightPlanId && legId && currentFlightPlan
                             ? `Update Leg ${(currentFlightPlan.legs.find(l => l.id === legId)?.index ?? 0) + 1}`
+                            : flightPlanId && currentFlightPlan
+                            ? `Add Leg to ${currentFlightPlan.name}`
                             : "Save to Flight Plan"}
                         </span>
                       </button>
