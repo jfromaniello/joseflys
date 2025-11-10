@@ -25,6 +25,25 @@ const DistanceMap = dynamic(() => import("./DistanceMap").then((mod) => mod.Dist
   ),
 });
 
+// Helper function to parse coordinate string (e.g., "-30.7505058,-62.8236677")
+function parseCoordinates(text: string): { lat: number; lon: number } | null {
+  // Match pattern: lat,lon (with optional spaces and signs)
+  const coordPattern = /^([-+]?\d+\.?\d*)\s*,\s*([-+]?\d+\.?\d*)$/;
+  const match = text.trim().match(coordPattern);
+
+  if (!match) return null;
+
+  const lat = parseFloat(match[1]);
+  const lon = parseFloat(match[2]);
+
+  // Validate coordinates are within valid ranges
+  if (isNaN(lat) || isNaN(lon) || !validateCoordinates(lat, lon)) {
+    return null;
+  }
+
+  return { lat, lon };
+}
+
 type InputMode = "search" | "coordinates";
 
 interface Location {
@@ -521,13 +540,33 @@ export function DistanceCalculatorClient({
                       <input
                         type="text"
                         value={fromSearchQuery}
-                        onChange={(e) => setFromSearchQuery(e.target.value)}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          const coords = parseCoordinates(value);
+
+                          if (coords) {
+                            // Coordinates detected - set location directly
+                            setFromLocation({
+                              name: `${coords.lat.toFixed(4)}, ${coords.lon.toFixed(4)}`,
+                              lat: coords.lat,
+                              lon: coords.lon,
+                            });
+                            setFromLat(coords.lat.toFixed(6));
+                            setFromLon(coords.lon.toFixed(6));
+                            setFromSearchQuery("");
+                            setFromSearchResults([]);
+                            setFromShowDropdown(false);
+                          } else {
+                            // Normal search behavior
+                            setFromSearchQuery(value);
+                          }
+                        }}
                         onFocus={() => {
                           if (fromSearchResults.length > 0) {
                             setFromShowDropdown(true);
                           }
                         }}
-                        placeholder="Search city or airport..."
+                        placeholder="Search city, airport or paste coordinates..."
                         className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white"
                       />
                       {fromSearching && fromShowDropdown && (
@@ -625,7 +664,30 @@ export function DistanceCalculatorClient({
                             <input
                               type="text"
                               value={toLocation.searchQuery}
-                              onChange={(e) => handleUpdateToSearchQuery(index, e.target.value)}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                const coords = parseCoordinates(value);
+
+                                if (coords) {
+                                  // Coordinates detected - set location directly
+                                  setToLocations(prev => prev.map((loc, i) =>
+                                    i === index ? {
+                                      ...loc,
+                                      name: `${coords.lat.toFixed(4)}, ${coords.lon.toFixed(4)}`,
+                                      lat: coords.lat,
+                                      lon: coords.lon,
+                                      lat_str: coords.lat.toFixed(6),
+                                      lon_str: coords.lon.toFixed(6),
+                                      searchQuery: "",
+                                      searchResults: [],
+                                      showDropdown: false,
+                                    } : loc
+                                  ));
+                                } else {
+                                  // Normal search behavior
+                                  handleUpdateToSearchQuery(index, value);
+                                }
+                              }}
                               onFocus={() => {
                                 if (toLocation.searchResults.length > 0) {
                                   setToLocations(prev => prev.map((loc, i) =>
@@ -633,7 +695,7 @@ export function DistanceCalculatorClient({
                                   ));
                                 }
                               }}
-                              placeholder="Search city or airport..."
+                              placeholder="Search city, airport or paste coordinates..."
                               className="flex-1 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white"
                             />
                             {toLocations.length > 1 && (
