@@ -766,23 +766,38 @@ export function LegPlannerClient({
               )}
 
               {/* New Leg Button - only show if we have distance (completed leg) */}
-              {results.eta !== undefined && (
-                <div className="pt-4 print:hidden">
-                  <NewLegButton
-                    magDev={magDev}
-                    departureTime={departureTime}
-                    deviationTable={initialDevTable}
-                    fuelFlow={fuelFlow}
-                    tas={tas}
-                    speedUnit={speedUnit}
-                    fuelUnit={fuelUnit}
-                    elapsedMinutes={(elapsedMins || 0) + Math.round((results.eta || 0) * 60)}
-                    windDir={windDir}
-                    windSpeed={windSpeed}
-                    fuelUsed={results.fuelUsed}
-                  />
-                </div>
-              )}
+              {results.eta !== undefined && (() => {
+                // Serialize plane data for next leg
+                let serializedPlane: string | undefined = undefined;
+                if (aircraft) {
+                  const updatedAircraft = {
+                    ...aircraft,
+                    deviationTable: deviationTable.length > 0 ? deviationTable : aircraft.deviationTable,
+                  };
+                  serializedPlane = serializeAircraft(updatedAircraft, {
+                    includeDeviationTable: true,
+                  });
+                }
+
+                return (
+                  <div className="pt-4 print:hidden">
+                    <NewLegButton
+                      magDev={magDev}
+                      departureTime={departureTime}
+                      deviationTable={initialDevTable}
+                      plane={serializedPlane}
+                      fuelFlow={fuelFlow}
+                      tas={tas}
+                      speedUnit={speedUnit}
+                      fuelUnit={fuelUnit}
+                      elapsedMinutes={(elapsedMins || 0) + Math.round((results.eta || 0) * 60)}
+                      windDir={windDir}
+                      windSpeed={windSpeed}
+                      fuelUsed={results.fuelUsed}
+                    />
+                  </div>
+                );
+              })()}
 
               {/* Share Button - after all results */}
               <div className="pt-2 print:hidden">

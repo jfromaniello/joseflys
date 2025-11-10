@@ -11,6 +11,8 @@ interface NewLegButtonProps {
   departureTime: string;
   /** Compressed deviation table data to be carried over to the new leg */
   deviationTable: string;
+  /** Serialized aircraft data to be carried over to the new leg */
+  plane?: string;
   /** Fuel flow rate (e.g., "8" for 8 GPH/LPH/PPH/KGH) */
   fuelFlow: string;
   /** True airspeed (e.g., "120" for 120 KT) */
@@ -33,6 +35,7 @@ export function NewLegButton({
   magDev,
   departureTime,
   deviationTable,
+  plane,
   fuelFlow,
   tas,
   speedUnit,
@@ -49,7 +52,14 @@ export function NewLegButton({
     // Carry over these values
     if (magDev) params.set("md", magDev);
     if (departureTime) params.set("depTime", departureTime);
-    if (deviationTable) params.set("devTable", deviationTable);
+
+    // Prioritize plane (includes deviation table) over legacy devTable param
+    if (plane) {
+      params.set("plane", plane);
+    } else if (deviationTable) {
+      params.set("devTable", deviationTable);
+    }
+
     if (fuelFlow) params.set("ff", fuelFlow);
     if (tas) params.set("tas", tas);
     if (speedUnit && speedUnit !== 'kt') params.set("unit", speedUnit);
@@ -68,7 +78,7 @@ export function NewLegButton({
     }
 
     // Open new tab with carried-over parameters
-    const newUrl = `/course?${params.toString()}`;
+    const newUrl = `/leg?${params.toString()}`;
     window.open(newUrl, '_blank');
   };
 
