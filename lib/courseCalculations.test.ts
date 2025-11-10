@@ -488,7 +488,11 @@ describe("courseCalculations", () => {
           climbPhase
         );
 
-        expect(results).toHaveLength(1);
+        // Should have WP1 + "Cruise Altitude Reached" (WP1 is before cruise altitude)
+        expect(results).toHaveLength(2);
+        expect(results[0].name).toBe("WP1");
+        expect(results[1].name).toBe("Cruise Altitude Reached");
+        expect(results[1].distance).toBe(10);
 
         // WP1 at 5 NM, entirely in climb phase
         // Time: 5 NM / 80 kt = 0.0625 hr = 3.75 min (rounds to 4)
@@ -512,17 +516,20 @@ describe("courseCalculations", () => {
           climbPhase
         );
 
-        expect(results).toHaveLength(1);
+        // Should have "Cruise Altitude Reached" + WP1 (WP1 is after cruise altitude)
+        expect(results).toHaveLength(2);
+        expect(results[0].name).toBe("Cruise Altitude Reached");
+        expect(results[1].name).toBe("WP1");
 
         // WP1 at 30 NM: 10 NM climb + 20 NM cruise
-        // Climb time: 10 / 80 = 0.125 hr = 7.5 min
+        // timeSinceLast from Cruise Altitude Reached to WP1: 20 NM cruise
         // Cruise time: 20 / 120 = 0.1667 hr = 10 min
-        // Total: 17.5 min (rounds to 18)
-        expect(results[0].timeSinceLast).toBe(18);
-        expect(results[0].cumulativeTime).toBe(18);
+        expect(results[1].timeSinceLast).toBe(10);
+        // Total cumulative time: 7.5 (climb) + 10 (cruise) = 17.5 -> 18
+        expect(results[1].cumulativeTime).toBe(18);
 
         // Fuel: 2 gal (climb) + (10 GPH * 0.1667 hr) = 2 + 1.667 = 3.667 (rounds to 4)
-        expect(results[0].fuelUsed).toBe(4);
+        expect(results[1].fuelUsed).toBe(4);
       });
 
       it("should calculate multiple waypoints spanning climb and cruise", () => {
@@ -541,7 +548,12 @@ describe("courseCalculations", () => {
           climbPhase
         );
 
-        expect(results).toHaveLength(3);
+        // Should have WP1 + "Cruise Altitude Reached" + WP2 + WP3
+        expect(results).toHaveLength(4);
+        expect(results[0].name).toBe("WP1");
+        expect(results[1].name).toBe("Cruise Altitude Reached");
+        expect(results[2].name).toBe("WP2");
+        expect(results[3].name).toBe("WP3");
 
         // WP1: 5 NM in climb
         expect(results[0].distance).toBe(5);
@@ -549,24 +561,24 @@ describe("courseCalculations", () => {
         expect(results[0].fuelUsed).toBe(1); // 5 * 0.2 = 1
 
         // WP2: 10 NM climb + 5 NM cruise
-        expect(results[1].distance).toBe(15);
-        // Time from WP1 to WP2: 5 NM climb + 5 NM cruise
-        // (5/80 + 5/120) * 60 = (0.0625 + 0.0417) * 60 = 6.25 -> 6 min
-        expect(results[1].timeSinceLast).toBe(6);
+        expect(results[2].distance).toBe(15);
+        // Time from Cruise Altitude Reached to WP2: 5 NM cruise
+        // 5/120 * 60 = 2.5 -> 3 min
+        expect(results[2].timeSinceLast).toBe(3);
         // Total time from start: 7.5 (climb) + 2.5 (cruise) = 10 min
-        expect(results[1].cumulativeTime).toBe(10);
+        expect(results[2].cumulativeTime).toBe(10);
         // Fuel: 2 (all climb) + 10 * (5/120) = 2 + 0.417 = 2.417 -> 2
-        expect(results[1].fuelUsed).toBe(2);
+        expect(results[2].fuelUsed).toBe(2);
 
         // WP3: 10 NM climb + 25 NM cruise
-        expect(results[2].distance).toBe(35);
+        expect(results[3].distance).toBe(35);
         // Time from WP2 to WP3: 20 NM cruise
         // 20/120 * 60 = 10 min
-        expect(results[2].timeSinceLast).toBe(10);
+        expect(results[3].timeSinceLast).toBe(10);
         // Total time: 7.5 (climb) + 12.5 (cruise) = 20 min
-        expect(results[2].cumulativeTime).toBe(20);
+        expect(results[3].cumulativeTime).toBe(20);
         // Fuel: 2 (climb) + 10 * (25/120) = 2 + 2.083 = 4.083 -> 4
-        expect(results[2].fuelUsed).toBe(4);
+        expect(results[3].fuelUsed).toBe(4);
       });
 
       it("should handle waypoints with previous fuel used during climb", () => {
@@ -588,13 +600,17 @@ describe("courseCalculations", () => {
           climbPhase
         );
 
-        expect(results).toHaveLength(2);
+        // Should have WP1 + "Cruise Altitude Reached" + WP2
+        expect(results).toHaveLength(3);
+        expect(results[0].name).toBe("WP1");
+        expect(results[1].name).toBe("Cruise Altitude Reached");
+        expect(results[2].name).toBe("WP2");
 
         // WP1: 10 (previous) + 1 (climb fuel) = 11
         expect(results[0].fuelUsed).toBe(11);
 
         // WP2: 10 (previous) + 2 (all climb) + 0.833 (cruise) = 12.833 -> 13
-        expect(results[1].fuelUsed).toBe(13);
+        expect(results[2].fuelUsed).toBe(13);
       });
 
       it("should calculate ETAs correctly with climb phase", () => {
@@ -616,13 +632,17 @@ describe("courseCalculations", () => {
           climbPhase
         );
 
-        expect(results).toHaveLength(2);
+        // Should have In Climb + "Cruise Altitude Reached" + After Climb
+        expect(results).toHaveLength(3);
+        expect(results[0].name).toBe("In Climb");
+        expect(results[1].name).toBe("Cruise Altitude Reached");
+        expect(results[2].name).toBe("After Climb");
 
-        // WP1 at 5 NM: 4 min from departure = 14:04
+        // In Climb at 5 NM: 4 min from departure = 14:04
         expect(results[0].eta).toBe("1404");
 
-        // WP2 at 20 NM: climb (7.5 min) + cruise (5 min) = 12.5 min -> 13 min = 14:13
-        expect(results[1].eta).toBe("1413");
+        // After Climb at 20 NM: climb (7.5 min) + cruise (5 min) = 12.5 min -> 13 min = 14:13
+        expect(results[2].eta).toBe("1413");
       });
 
       it("should handle edge case where waypoint is exactly at climb distance", () => {
@@ -637,13 +657,21 @@ describe("courseCalculations", () => {
           climbPhase
         );
 
-        expect(results).toHaveLength(1);
+        // Should have Top of Climb + "Cruise Altitude Reached" (both at same distance)
+        expect(results).toHaveLength(2);
+        expect(results[0].name).toBe("Top of Climb");
+        expect(results[1].name).toBe("Cruise Altitude Reached");
 
         // At exactly climb distance, should use climb calculations
         // 10 NM / 80 kt = 0.125 hr = 7.5 min -> 8
         expect(results[0].timeSinceLast).toBe(8);
         // Fuel: all climb fuel = 2 gal
         expect(results[0].fuelUsed).toBe(2);
+
+        // Cruise Altitude Reached is at same distance, so timeSinceLast is 0
+        expect(results[1].timeSinceLast).toBe(0);
+        expect(results[1].cumulativeTime).toBe(8);
+        expect(results[1].fuelUsed).toBe(2);
       });
 
       it("should handle arrival waypoint with climb phase", () => {
@@ -660,16 +688,19 @@ describe("courseCalculations", () => {
           climbPhase
         );
 
-        expect(results).toHaveLength(2);
-        expect(results[1].name).toBe("Arrival");
-        expect(results[1].distance).toBe(50);
+        // Should have WP1 + "Cruise Altitude Reached" + Arrival
+        expect(results).toHaveLength(3);
+        expect(results[0].name).toBe("WP1");
+        expect(results[1].name).toBe("Cruise Altitude Reached");
+        expect(results[2].name).toBe("Arrival");
+        expect(results[2].distance).toBe(50);
 
         // Arrival at 50 NM: 10 climb + 40 cruise
         // Time: 7.5 (climb) + 20 (cruise) = 27.5 -> 28 min
-        expect(results[1].cumulativeTime).toBe(28);
+        expect(results[2].cumulativeTime).toBe(28);
 
         // Fuel: 2 (climb) + 10 * (40/120) = 2 + 3.333 = 5.333 -> 5
-        expect(results[1].fuelUsed).toBe(5);
+        expect(results[2].fuelUsed).toBe(5);
       });
 
       it("should use different cruise fuel flow if provided", () => {
@@ -686,11 +717,13 @@ describe("courseCalculations", () => {
           12 // Different cruise fuel flow
         );
 
-        expect(results).toHaveLength(1);
+        // Should have "Cruise Altitude Reached" + WP1
+        expect(results).toHaveLength(2);
+        expect(results[0].name).toBe("Cruise Altitude Reached");
 
         // WP1: 10 climb + 20 cruise
         // Fuel: 2 (climb) + 12 * (20/120) = 2 + 2 = 4
-        expect(results[0].fuelUsed).toBe(4);
+        expect(results[1].fuelUsed).toBe(4);
       });
 
       it("should handle no fuel flow with climb phase (time only)", () => {
@@ -716,20 +749,22 @@ describe("courseCalculations", () => {
           climbPhaseNoFuel
         );
 
-        expect(results).toHaveLength(2);
+        // Should have WP1 + "Cruise Altitude Reached" + WP2
+        expect(results).toHaveLength(3);
+        expect(results[0].name).toBe("WP1");
+        expect(results[1].name).toBe("Cruise Altitude Reached");
+        expect(results[2].name).toBe("WP2");
 
         // Should calculate times correctly
         // WP1: 5 NM / 80 kt = 3.75 min -> 4
         expect(results[0].timeSinceLast).toBe(4);
-        // WP2: From WP1 to WP2 = 15 NM
-        // Remaining climb: 5 NM @ 80 kt = 3.75 min
+        // WP2: From Cruise Altitude Reached to WP2 = 10 NM cruise
         // Cruise: 10 NM @ 120 kt = 5 min
-        // Total: 8.75 -> 9 min
-        expect(results[1].timeSinceLast).toBe(9);
+        expect(results[2].timeSinceLast).toBe(5);
 
         // But no fuel calculations (no fuel flow and no climb fuel)
         expect(results[0].fuelUsed).toBeUndefined();
-        expect(results[1].fuelUsed).toBeUndefined();
+        expect(results[2].fuelUsed).toBeUndefined();
       });
     });
   });

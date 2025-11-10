@@ -290,11 +290,20 @@ export function calculateWaypoints(
 
   // Add "Cruise Altitude Reached" checkpoint if there's climb data
   if (climbPhase && climbPhase.distance > 0) {
-    // Insert the cruise altitude checkpoint at the correct position
-    sortedWaypoints.unshift({
+    // Find the correct position to insert based on distance
+    const insertIndex = sortedWaypoints.findIndex(wp => wp.distance > climbPhase.distance);
+    const cruiseAltitudeCheckpoint = {
       name: "Cruise Altitude Reached",
       distance: climbPhase.distance
-    });
+    };
+
+    if (insertIndex === -1) {
+      // All waypoints are before climb distance, add at end
+      sortedWaypoints.push(cruiseAltitudeCheckpoint);
+    } else {
+      // Insert at the correct position
+      sortedWaypoints.splice(insertIndex, 0, cruiseAltitudeCheckpoint);
+    }
   }
 
   // If we have a total distance and it's greater than the last waypoint, add "Arrival" waypoint
