@@ -6,7 +6,7 @@ import { Tooltip } from "../components/Tooltip";
 import { PageLayout } from "../components/PageLayout";
 import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
 import { Footer } from "../components/Footer";
-import { ShareButton } from "../components/ShareButton";
+import { ShareButtonSimple } from "../components/ShareButtonSimple";
 import {
   calculateHaversineDistance,
   calculateInitialBearing,
@@ -912,41 +912,64 @@ export function DistanceCalculatorClient({
                 />
               </div>
 
-              {/* Copy Waypoints Button */}
+              {/* Action Buttons - Two Column Layout on Desktop */}
               {results.filter(r => r.validCoordinates && r.distance !== null).length > 0 && (
-                <button
-                  onClick={handleCopyWaypoints}
-                  className="w-full mt-6 flex items-center justify-center gap-2 px-6 py-4 rounded-xl border-2 border-emerald-500/50 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all font-medium cursor-pointer print:hidden"
-                  style={{ color: "oklch(0.7 0.15 150)" }}
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                <div className="mt-6 print:hidden grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-4">
+                  {/* Copy Waypoints Button */}
+                  <button
+                    onClick={handleCopyWaypoints}
+                    className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl border-2 border-emerald-500/50 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all font-medium cursor-pointer"
+                    style={{ color: "oklch(0.7 0.15 150)" }}
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                    />
-                  </svg>
-                  {showCopiedWaypoints ? "✓ Copied!" : "Copy Waypoints for Leg Planner"}
-                </button>
-              )}
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                      />
+                    </svg>
+                    {showCopiedWaypoints ? "✓ Copied!" : "Copy Waypoints for Leg Planner"}
+                  </button>
 
-              {/* Share Button */}
-              <div className="mt-6">
-                <ShareButton
-                  shareData={{
-                    title: "José's Distance Calculator",
-                    text: results.length === 1 && results[0].distance !== null && results[0].bearing !== null
-                      ? `Distance: ${Math.round(results[0].distance)} NM, Bearing: ${Math.round(results[0].bearing).toString().padStart(3, '0')}°T`
-                      : `${results.filter(r => r.validCoordinates).length} destinations calculated`,
-                  }}
-                />
-              </div>
+                  {/* Share & Print Buttons (stacked) */}
+                  <div className="flex flex-col gap-2">
+                    <ShareButtonSimple
+                      shareData={{
+                        title: "José's Distance Calculator",
+                        text: results.length === 1 && results[0].distance !== null && results[0].bearing !== null
+                          ? `Distance: ${Math.round(results[0].distance)} NM, Bearing: ${Math.round(results[0].bearing).toString().padStart(3, '0')}°T`
+                          : `${results.filter(r => r.validCoordinates).length} destinations calculated`,
+                      }}
+                    />
+                    <button
+                      onClick={() => window.print()}
+                      className="w-full px-6 py-3 rounded-xl border-2 border-gray-600 hover:border-gray-500 hover:bg-slate-700/50 transition-all text-center flex items-center justify-center gap-2 cursor-pointer"
+                      style={{ color: "oklch(0.7 0.02 240)" }}
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+                        />
+                      </svg>
+                      <span className="text-sm font-medium">Print</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </>
           )}
 

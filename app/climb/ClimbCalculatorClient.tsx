@@ -5,7 +5,7 @@ import { Tooltip } from "../components/Tooltip";
 import { PageLayout } from "../components/PageLayout";
 import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
 import { Footer } from "../components/Footer";
-import { ShareButton } from "../components/ShareButton";
+import { ShareButtonSimple } from "../components/ShareButtonSimple";
 import { AircraftPerformanceModal } from "../components/AircraftPerformanceModal";
 import { DensityAltitudeModal } from "../components/DensityAltitudeModal";
 import { AircraftPerformance, PRESET_AIRCRAFT } from "@/lib/aircraftPerformance";
@@ -453,50 +453,73 @@ export function ClimbCalculatorClient({
                   </div>
                 )}
 
-                {/* Copy Climb Data Button */}
-                <button
-                  onClick={() => {
-                    const climbData = {
-                      climbTas: Math.round(results.averageTAS),
-                      climbDistance: parseFloat(results.totalDistance.toFixed(1)),
-                      climbFuel: parseFloat(results.totalFuel.toFixed(1)),
-                    };
-                    navigator.clipboard.writeText(JSON.stringify(climbData));
-                    // Optional: Show success feedback
-                    const btn = document.activeElement as HTMLElement;
-                    const originalText = btn.textContent;
-                    btn.textContent = '✓ Copied!';
-                    setTimeout(() => {
-                      btn.textContent = originalText;
-                    }, 2000);
-                  }}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-xl border-2 border-emerald-500/50 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all font-medium cursor-pointer print:hidden"
-                  style={{ color: "oklch(0.7 0.15 150)" }}
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                    />
-                  </svg>
-                  Copy Climb Data for Leg Planner
-                </button>
-
-                {/* Share Button */}
-                <div className="mt-4">
-                  <ShareButton
-                    shareData={{
-                      title: "José's Climb Calculator",
-                      text: `${aircraft.name}: Climb from ${currentAlt} to ${targetAlt} ft → Time: ${results.totalTime.toFixed(1)} min, Distance: ${results.totalDistance.toFixed(1)} NM, Fuel: ${results.totalFuel.toFixed(1)} gal`,
+                {/* Action Buttons - Two Column Layout on Desktop */}
+                <div className="print:hidden grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-4">
+                  {/* Copy Climb Data Button */}
+                  <button
+                    onClick={() => {
+                      const climbData = {
+                        climbTas: Math.round(results.averageTAS),
+                        climbDistance: parseFloat(results.totalDistance.toFixed(1)),
+                        climbFuel: parseFloat(results.totalFuel.toFixed(1)),
+                      };
+                      navigator.clipboard.writeText(JSON.stringify(climbData));
+                      // Optional: Show success feedback
+                      const btn = document.activeElement as HTMLElement;
+                      const originalText = btn.textContent;
+                      btn.textContent = '✓ Copied!';
+                      setTimeout(() => {
+                        btn.textContent = originalText;
+                      }, 2000);
                     }}
-                  />
+                    className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl border-2 border-emerald-500/50 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all font-medium cursor-pointer"
+                    style={{ color: "oklch(0.7 0.15 150)" }}
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                      />
+                    </svg>
+                    Copy Climb Data for Leg Planner
+                  </button>
+
+                  {/* Share & Print Buttons (stacked) */}
+                  <div className="flex flex-col gap-2">
+                    <ShareButtonSimple
+                      shareData={{
+                        title: "José's Climb Calculator",
+                        text: `${aircraft.name}: Climb from ${currentAlt} to ${targetAlt} ft → Time: ${results.totalTime.toFixed(1)} min, Distance: ${results.totalDistance.toFixed(1)} NM, Fuel: ${results.totalFuel.toFixed(1)} gal`,
+                      }}
+                    />
+                    <button
+                      onClick={() => window.print()}
+                      className="w-full px-6 py-3 rounded-xl border-2 border-gray-600 hover:border-gray-500 hover:bg-slate-700/50 transition-all text-center flex items-center justify-center gap-2 cursor-pointer"
+                      style={{ color: "oklch(0.7 0.02 240)" }}
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+                        />
+                      </svg>
+                      <span className="text-sm font-medium">Print</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </>

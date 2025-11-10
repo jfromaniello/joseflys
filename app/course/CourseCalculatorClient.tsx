@@ -16,7 +16,7 @@ import { AircraftPerformance } from "@/lib/aircraftPerformance";
 import { CourseSpeedInputs, SpeedUnit } from "./components/CourseSpeedInputs";
 import { WindInputs } from "./components/WindInputs";
 import { CorrectionsInputs } from "./components/CorrectionsInputs";
-import { ShareButton } from "../components/ShareButton";
+import { ShareButtonSimple } from "../components/ShareButtonSimple";
 import { toKnots } from "@/lib/speedConversion";
 import { Tooltip } from "@/app/components/Tooltip";
 
@@ -599,11 +599,12 @@ export function CourseCalculatorClient({
                 </div>
               </div>
 
-              {/* Start Leg Planning Button */}
-              <div className="pt-4 print:hidden">
+              {/* Action Buttons - Two Column Layout on Desktop */}
+              <div className="pt-4 print:hidden grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-4">
+                {/* Start Leg Planning Button */}
                 <a
                   href={`/leg?th=${trueHeading}&tas=${tas}&wd=${windDir}&ws=${windSpeed}&md=${magDev}${description ? `&desc=${encodeURIComponent(description)}` : ''}${speedUnit !== 'kt' ? `&unit=${speedUnit}` : ''}${deviationTable.length > 0 ? `&devTable=${compressForUrl(deviationTable)}` : ''}`}
-                  className="block w-full px-6 py-4 rounded-xl bg-linear-to-br from-emerald-500/10 to-green-500/10 border-2 border-emerald-500/30 hover:border-emerald-500/50 hover:bg-emerald-500/20 transition-all text-center group"
+                  className="block px-6 py-4 rounded-xl bg-linear-to-br from-emerald-500/10 to-green-500/10 border-2 border-emerald-500/30 hover:border-emerald-500/50 hover:bg-emerald-500/20 transition-all text-center group"
                 >
                   <div className="flex items-center justify-center gap-3">
                     <svg
@@ -640,16 +641,36 @@ export function CourseCalculatorClient({
                     Continue with distance, fuel consumption, waypoints, and time estimates
                   </p>
                 </a>
-              </div>
 
-              {/* Share Button - after all results */}
-              <div className="pt-2 print:hidden">
-                <ShareButton
-                  shareData={{
-                    title: "José's Course Calculator",
-                    text: `Wind: ${windDir}° at ${windSpeed} kt, Heading: ${trueHeading}° → GS: ${results?.groundSpeed.toFixed(1)} kt`,
-                  }}
-                />
+                {/* Share & Print Buttons (stacked) */}
+                <div className="flex flex-col gap-2">
+                  <ShareButtonSimple
+                    shareData={{
+                      title: "José's Course Calculator",
+                      text: `Wind: ${windDir}° at ${windSpeed} kt, Heading: ${trueHeading}° → GS: ${results?.groundSpeed.toFixed(1)} kt`,
+                    }}
+                  />
+                  <button
+                    onClick={() => window.print()}
+                    className="w-full px-6 py-3 rounded-xl border-2 border-gray-600 hover:border-gray-500 hover:bg-slate-700/50 transition-all text-center flex items-center justify-center gap-2 cursor-pointer"
+                    style={{ color: "oklch(0.7 0.02 240)" }}
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+                      />
+                    </svg>
+                    <span className="text-sm font-medium">Print</span>
+                  </button>
+                </div>
               </div>
             </div>
           )}

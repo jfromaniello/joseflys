@@ -48,7 +48,11 @@ export default function MyPlanesClient() {
 
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-2xl p-6 md:p-8">
-          <h1 className="text-3xl font-bold text-white mb-6">My Planes</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">My Planes</h1>
+
+          <p className="text-slate-400 text-sm mb-6">
+            All data is stored locally on your device only
+          </p>
 
           {aircraft.length === 0 ? (
             <div className="text-center py-12">

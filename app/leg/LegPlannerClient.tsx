@@ -23,7 +23,7 @@ import { ClimbDataInputs } from "../course/components/ClimbDataInputs";
 import { IntermediateResults } from "../course/components/IntermediateResults";
 import { PrimaryResults } from "../course/components/PrimaryResults";
 import { WaypointsResults } from "../course/components/WaypointsResults";
-import { ShareButton } from "../components/ShareButton";
+import { ShareButtonSimple } from "../components/ShareButtonSimple";
 import { NewLegButton } from "../components/NewLegButton";
 import { Tooltip } from "../components/Tooltip";
 import { toKnots } from "@/lib/speedConversion";
@@ -765,7 +765,7 @@ export function LegPlannerClient({
                 />
               )}
 
-              {/* New Leg Button - only show if we have distance (completed leg) */}
+              {/* Action Buttons - Two Column Layout on Desktop */}
               {results.eta !== undefined && (() => {
                 // Serialize plane data for next leg
                 let serializedPlane: string | undefined = undefined;
@@ -780,7 +780,8 @@ export function LegPlannerClient({
                 }
 
                 return (
-                  <div className="pt-4 print:hidden">
+                  <div className="pt-4 print:hidden grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-4">
+                    {/* New Leg Button */}
                     <NewLegButton
                       magDev={magDev}
                       departureTime={departureTime}
@@ -795,19 +796,39 @@ export function LegPlannerClient({
                       windSpeed={windSpeed}
                       fuelUsed={results.fuelUsed}
                     />
+
+                    {/* Share & Print Buttons (stacked) */}
+                    <div className="flex flex-col gap-2">
+                      <ShareButtonSimple
+                        shareData={{
+                          title: "José's Leg Planner",
+                          text: `Wind: ${windDir}° at ${windSpeed} kt, Heading: ${trueHeading}° → GS: ${results?.groundSpeed.toFixed(1)} kt`,
+                        }}
+                      />
+                      <button
+                        onClick={() => window.print()}
+                        className="w-full px-6 py-3 rounded-xl border-2 border-gray-600 hover:border-gray-500 hover:bg-slate-700/50 transition-all text-center flex items-center justify-center gap-2 cursor-pointer"
+                        style={{ color: "oklch(0.7 0.02 240)" }}
+                      >
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+                          />
+                        </svg>
+                        <span className="text-sm font-medium">Print</span>
+                      </button>
+                    </div>
                   </div>
                 );
               })()}
-
-              {/* Share Button - after all results */}
-              <div className="pt-2 print:hidden">
-                <ShareButton
-                  shareData={{
-                    title: "José's Leg Planner",
-                    text: `Wind: ${windDir}° at ${windSpeed} kt, Heading: ${trueHeading}° → GS: ${results?.groundSpeed.toFixed(1)} kt`,
-                  }}
-                />
-              </div>
             </div>
           )}
 

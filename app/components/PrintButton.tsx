@@ -10,13 +10,8 @@ export function PrintButton() {
   return (
     <button
       onClick={handlePrint}
-      className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 rounded-xl text-sm font-semibold transition-all hover:brightness-110 active:scale-95 cursor-pointer shadow-lg backdrop-blur-sm border-2"
-      style={{
-        background:
-          "linear-gradient(to bottom right, oklch(0.65 0.15 230), oklch(0.55 0.15 230))",
-        borderColor: "oklch(0.7 0.15 230)",
-        color: "white",
-      }}
+      className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 rounded-xl border-2 border-gray-600 hover:border-gray-500 hover:bg-slate-700/50 transition-all cursor-pointer"
+      style={{ color: "oklch(0.7 0.02 240)" }}
     >
       <svg
         className="w-5 h-5"
@@ -31,8 +26,7 @@ export function PrintButton() {
           d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
         />
       </svg>
-      <span className="hidden sm:inline">Print</span>
-      <span className="sm:hidden">Print</span>
+      <span className="text-sm font-medium">Print</span>
     </button>
   );
 }
