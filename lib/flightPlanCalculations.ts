@@ -291,3 +291,109 @@ export function formatFuel(fuel: number, fuelFlowUnit: string): string {
   const consumptionUnit = getFuelResultUnit(fuelFlowUnit as FuelUnit);
   return `${fuel.toFixed(1)} ${consumptionUnit}`;
 }
+
+/**
+ * Check if a leg has descent data
+ */
+export function hasDescentData(leg: FlightPlanLeg): boolean {
+  return !!(
+    leg.descentTas &&
+    leg.descentDist &&
+    leg.descentFuel &&
+    parseFloat(leg.descentTas) > 0 &&
+    parseFloat(leg.descentDist) > 0 &&
+    parseFloat(leg.descentFuel) >= 0
+  );
+}
+
+/**
+ * Detect alternative legs in a flight plan
+ * The FIRST leg with descent data is the main destination
+ * Any legs AFTER the first leg with descent data that also have descent data are alternatives
+ */
+export function detectAlternativeLegs(legs: FlightPlanLeg[]): Set<string> {
+  const alternativeIds = new Set<string>();
+
+  // Find the index of the first leg with descent data
+  let firstDescentIndex = -1;
+  for (let i = 0; i < legs.length; i++) {
+    if (hasDescentData(legs[i])) {
+      firstDescentIndex = i;
+      break;
+    }
+  }
+
+  // If no legs have descent data, there are no alternatives
+  if (firstDescentIndex === -1) {
+    return alternativeIds;
+  }
+
+  // Mark all legs AFTER the first descent leg that also have descent data as alternatives
+  for (let i = firstDescentIndex + 1; i < legs.length; i++) {
+    if (hasDescentData(legs[i])) {
+      alternativeIds.add(legs[i].id);
+    }
+  }
+
+  return alternativeIds;
+}
+
+/**
+ * Calculate totals for the main route (excluding alternative legs)
+ */
+export function calculateMainRouteTotals(
+  legs: FlightPlanLeg[],
+  legResults: Map<string, LegCalculatedResults>,
+  alternativeIds: Set<string>
+): {
+  distance: number;
+  time: number;
+  fuel: number;
+  eta: string | null;
+} {
+  if (legs.length === 0) {
+    return { distance: 0, time: 0, fuel: 0, eta: null };
+  }
+
+  // Find the last non-alternative leg
+  let lastMainLeg: FlightPlanLeg | null = null;
+  for (let i = legs.length - 1; i >= 0; i--) {
+    if (!alternativeIds.has(legs[i].id)) {
+      lastMainLeg = legs[i];
+      break;
+    }
+  }
+
+  if (!lastMainLeg) {
+    return { distance: 0, time: 0, fuel: 0, eta: null };
+  }
+
+  const lastResult = legResults.get(lastMainLeg.id);
+  if (!lastResult) {
+    return { distance: 0, time: 0, fuel: 0, eta: null };
+  }
+
+  return {
+    distance: lastResult.totalDistance,
+    time: lastResult.totalTime,
+    fuel: lastResult.totalFuel,
+    eta: lastResult.arrivalTime,
+  };
+}
+
+/**
+ * Calculate totals including alternative legs (for fuel calculation)
+ */
+export function calculateTotalFuelWithAlternatives(
+  legs: FlightPlanLeg[],
+  legResults: Map<string, LegCalculatedResults>
+): number {
+  if (legs.length === 0) return 0;
+
+  const lastLeg = legs[legs.length - 1];
+  const lastResult = legResults.get(lastLeg.id);
+
+  if (!lastResult) return 0;
+
+  return lastResult.totalFuel;
+}

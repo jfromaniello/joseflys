@@ -17,10 +17,14 @@ import {
   formatHoursToTime,
   formatTimeHHMM,
   formatFuel,
+  detectAlternativeLegs,
+  calculateMainRouteTotals,
+  calculateTotalFuelWithAlternatives,
   type LegCalculatedResults,
 } from "@/lib/flightPlanCalculations";
 import { getFuelResultUnit } from "@/lib/fuelConversion";
 import { generateShareUrl } from "@/lib/flightPlanSharing";
+import { Tooltip } from "@/app/components/Tooltip";
 import {
   ArrowLeftIcon,
   TrashIcon,
@@ -64,26 +68,32 @@ export function FlightPlanDetailClient({
     return results;
   }, [flightPlan]);
 
-  // Calculate totals
-  const totals = useMemo(() => {
+  // Detect alternative legs
+  const alternativeLegs = useMemo(() => {
+    if (!flightPlan) return new Set<string>();
+    return detectAlternativeLegs(flightPlan.legs);
+  }, [flightPlan]);
+
+  // Calculate totals for main route (excluding alternatives)
+  const mainRouteTotals = useMemo(() => {
     if (!flightPlan || flightPlan.legs.length === 0) {
       return { distance: 0, time: 0, fuel: 0, eta: null };
     }
 
-    const lastLeg = flightPlan.legs[flightPlan.legs.length - 1];
-    const lastResult = legResults.get(lastLeg.id);
+    return calculateMainRouteTotals(flightPlan.legs, legResults, alternativeLegs);
+  }, [flightPlan, legResults, alternativeLegs]);
 
-    if (!lastResult) {
-      return { distance: 0, time: 0, fuel: 0, eta: null };
+  // Calculate total fuel including alternatives
+  const totalFuel = useMemo(() => {
+    if (!flightPlan || flightPlan.legs.length === 0) {
+      return 0;
     }
 
-    return {
-      distance: lastResult.totalDistance,
-      time: lastResult.totalTime,
-      fuel: lastResult.totalFuel,
-      eta: lastResult.arrivalTime,
-    };
+    return calculateTotalFuelWithAlternatives(flightPlan.legs, legResults);
   }, [flightPlan, legResults]);
+
+  // Check if there are any alternative legs
+  const hasAlternatives = alternativeLegs.size > 0;
 
   const handleDeleteLeg = (leg: FlightPlanLeg) => {
     if (!flightPlan) return;
@@ -344,7 +354,7 @@ export function FlightPlanDetailClient({
           ) : (
             <div className="space-y-4">
               {/* Flight Plan Totals */}
-              {totals.distance > 0 && (
+              {mainRouteTotals.distance > 0 && (
                 <div className="bg-gradient-to-r from-amber-900/40 via-orange-900/30 to-amber-900/40 border-2 border-amber-500/40 rounded-2xl p-5 shadow-lg">
                   <h3
                     className="text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2"
@@ -357,45 +367,57 @@ export function FlightPlanDetailClient({
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="text-center p-3 bg-slate-900/40 rounded-xl border border-amber-500/20">
-                      <div className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: "oklch(0.7 0.1 60)" }}>
+                      <div className="text-xs font-semibold uppercase tracking-wide mb-1 flex items-center justify-center" style={{ color: "oklch(0.7 0.1 60)" }}>
                         Total Distance
+                        <span className="print:hidden">
+                          <Tooltip content={`Total distance for ${hasAlternatives ? 'the main route' : 'all legs'} in nautical miles`} />
+                        </span>
                       </div>
                       <div className="text-2xl font-bold" style={{ color: "oklch(0.9 0.18 60)" }}>
-                        {totals.distance.toFixed(1)}
+                        {mainRouteTotals.distance.toFixed(1)}
                       </div>
                       <div className="text-xs" style={{ color: "oklch(0.65 0.08 60)" }}>
                         Nautical Miles
                       </div>
                     </div>
                     <div className="text-center p-3 bg-slate-900/40 rounded-xl border border-amber-500/20">
-                      <div className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: "oklch(0.7 0.1 60)" }}>
+                      <div className="text-xs font-semibold uppercase tracking-wide mb-1 flex items-center justify-center" style={{ color: "oklch(0.7 0.1 60)" }}>
                         Total Fuel
+                        <span className="print:hidden">
+                          <Tooltip content="Total fuel consumption for all legs, including alternative routes" />
+                        </span>
                       </div>
                       <div className="text-2xl font-bold" style={{ color: "oklch(0.9 0.18 60)" }}>
-                        {totals.fuel.toFixed(1)}
+                        {totalFuel.toFixed(1)}
                       </div>
                       <div className="text-xs" style={{ color: "oklch(0.65 0.08 60)" }}>
                         {getFuelResultUnit(flightPlan.legs[0]?.fuelUnit as any || 'gph')}
                       </div>
                     </div>
                     <div className="text-center p-3 bg-slate-900/40 rounded-xl border border-amber-500/20">
-                      <div className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: "oklch(0.7 0.1 60)" }}>
+                      <div className="text-xs font-semibold uppercase tracking-wide mb-1 flex items-center justify-center" style={{ color: "oklch(0.7 0.1 60)" }}>
                         Total Time
+                        <span className="print:hidden">
+                          <Tooltip content={`Total flight time for ${hasAlternatives ? 'the main route' : 'all legs'}, excluding alternative routes`} />
+                        </span>
                       </div>
                       <div className="text-2xl font-bold" style={{ color: "oklch(0.9 0.18 60)" }}>
-                        {formatHoursToTime(totals.time)}
+                        {formatHoursToTime(mainRouteTotals.time)}
                       </div>
                       <div className="text-xs" style={{ color: "oklch(0.65 0.08 60)" }}>
                         Flight Duration
                       </div>
                     </div>
-                    {totals.eta && (
+                    {mainRouteTotals.eta && (
                       <div className="text-center p-3 bg-slate-900/40 rounded-xl border border-amber-500/20">
-                        <div className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: "oklch(0.7 0.1 60)" }}>
-                          ETA
+                        <div className="text-xs font-semibold uppercase tracking-wide mb-1 flex items-center justify-center" style={{ color: "oklch(0.7 0.1 60)" }}>
+                          {hasAlternatives ? "ETA to Main" : "ETA"}
+                          <span className="print:hidden">
+                            <Tooltip content={`Estimated time of arrival ${hasAlternatives ? 'to the main destination' : 'for the flight'}. Alternative routes have separate ETAs`} />
+                          </span>
                         </div>
                         <div className="text-2xl font-bold" style={{ color: "oklch(0.9 0.18 60)" }}>
-                          {formatTimeHHMM(totals.eta)}
+                          {formatTimeHHMM(mainRouteTotals.eta)}
                         </div>
                         <div className="text-xs" style={{ color: "oklch(0.65 0.08 60)" }}>
                           Arrival Time
@@ -415,20 +437,41 @@ export function FlightPlanDetailClient({
               {flightPlan.legs.map((leg, index) => {
                 const result = legResults.get(leg.id);
                 const waypointResults = result ? calculateLegWaypoints(leg, result) : [];
+                const isAlternative = alternativeLegs.has(leg.id);
                 return (
                   <div
                     key={leg.id}
-                    className="bg-gradient-to-br from-slate-900/80 to-slate-800/60 border-2 border-sky-500/30 rounded-2xl p-3 sm:p-5 hover:border-sky-400/50 hover:shadow-lg hover:shadow-sky-500/10 transition-all"
+                    className={`bg-gradient-to-br from-slate-900/80 to-slate-800/60 border-2 rounded-2xl p-3 sm:p-5 hover:shadow-lg transition-all ${
+                      isAlternative
+                        ? "border-orange-500/40 hover:border-orange-400/60 hover:shadow-orange-500/10"
+                        : "border-sky-500/30 hover:border-sky-400/50 hover:shadow-sky-500/10"
+                    }`}
                   >
                     {/* Header with Actions */}
                     <div className="flex items-center justify-between gap-3 mb-4">
                       <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 font-bold text-lg text-white shadow-lg flex-shrink-0">
+                        <div className={`flex items-center justify-center w-10 h-10 rounded-xl font-bold text-lg text-white shadow-lg flex-shrink-0 ${
+                          isAlternative
+                            ? "bg-gradient-to-br from-orange-500 to-amber-600"
+                            : "bg-gradient-to-br from-sky-500 to-blue-600"
+                        }`}>
                           {index + 1}
                         </div>
                         {leg.desc && (
                           <span className="text-lg font-semibold text-white truncate">
                             {leg.desc}
+                          </span>
+                        )}
+                        {isAlternative && (
+                          <span
+                            className="px-2.5 py-1 text-xs font-bold uppercase tracking-wider rounded-lg border-2 flex-shrink-0 print:hidden"
+                            style={{
+                              backgroundColor: "oklch(0.45 0.15 60 / 0.3)",
+                              borderColor: "oklch(0.7 0.18 60)",
+                              color: "oklch(0.85 0.18 60)"
+                            }}
+                          >
+                            Alternative
                           </span>
                         )}
                       </div>
@@ -586,7 +629,9 @@ export function FlightPlanDetailClient({
                                 </div>
                                 {result.arrivalTime && (
                                   <div className="flex justify-between items-center pt-2 border-t border-emerald-500/30">
-                                    <span className="text-sm font-semibold" style={{ color: "oklch(0.75 0.1 160)" }}>ETA</span>
+                                    <span className="text-sm font-semibold" style={{ color: "oklch(0.75 0.1 160)" }}>
+                                      {isAlternative ? "ETA to Alt" : "ETA"}
+                                    </span>
                                     <span className="text-lg font-bold" style={{ color: "oklch(0.9 0.18 160)" }}>
                                       {formatTimeHHMM(result.arrivalTime)}
                                     </span>
