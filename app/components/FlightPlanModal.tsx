@@ -149,7 +149,7 @@ export function FlightPlanModal({
                   </div>
                   <button
                     onClick={onClose}
-                    className="text-gray-400 hover:text-white transition-colors"
+                    className="text-gray-400 hover:text-white transition-colors cursor-pointer"
                   >
                     <XMarkIcon className="h-6 w-6" />
                   </button>
@@ -159,7 +159,7 @@ export function FlightPlanModal({
                 <div className="flex gap-2 mb-4">
                   <button
                     onClick={handleNewPlanClick}
-                    className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
                       isCreatingNew
                         ? "bg-blue-600 text-white"
                         : "bg-slate-700 text-gray-300 hover:bg-slate-600"
@@ -170,7 +170,7 @@ export function FlightPlanModal({
                   </button>
                   <button
                     onClick={handleExistingPlanClick}
-                    className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
                       !isCreatingNew
                         ? "bg-blue-600 text-white"
                         : "bg-slate-700 text-gray-300 hover:bg-slate-600"
@@ -232,7 +232,7 @@ export function FlightPlanModal({
                           </p>
                           <button
                             onClick={handleNewPlanClick}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors cursor-pointer"
                           >
                             <PlusIcon className="h-4 w-4 inline mr-1" />
                             Create New Plan
@@ -248,7 +248,7 @@ export function FlightPlanModal({
                               <button
                                 key={plan.id}
                                 onClick={() => setSelectedPlanId(plan.id)}
-                                className={`w-full text-left px-4 py-3 rounded-lg border transition-colors ${
+                                className={`w-full text-left px-4 py-3 rounded-lg border transition-colors cursor-pointer ${
                                   selectedPlanId === plan.id
                                     ? "bg-blue-600/20 border-blue-500 text-white"
                                     : "bg-slate-900 border-gray-600 text-gray-300 hover:bg-slate-700"
@@ -297,7 +297,7 @@ export function FlightPlanModal({
                 <div className="flex gap-3 justify-end">
                   <button
                     onClick={handleCancel}
-                    className="px-4 py-2 bg-slate-700 text-white rounded-lg text-sm font-medium hover:bg-slate-600 transition-colors"
+                    className="px-4 py-2 bg-slate-700 text-white rounded-lg text-sm font-medium hover:bg-slate-600 transition-colors cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -308,7 +308,7 @@ export function FlightPlanModal({
                         ? !newPlanName.trim()
                         : !selectedPlanId && flightPlans.length > 0
                     }
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     {currentFlightPlanId ? "Update" : "Save"}
                   </button>

@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect, Fragment } from "react";
-import { Menu, MenuButton, MenuItems, MenuItem, Transition, TransitionChild } from "@headlessui/react";
+import Link from "next/link";
+import { Menu, MenuButton, MenuItems, MenuItem, Transition } from "@headlessui/react";
 import { PageLayout } from "../components/PageLayout";
 import { Footer } from "../components/Footer";
 import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
-import { calculateCourse, calculateWaypoints, Waypoint, FlightParameters, WaypointResult, addMinutesToTime } from "@/lib/courseCalculations";
+import { calculateCourse, calculateWaypoints, Waypoint, FlightParameters } from "@/lib/courseCalculations";
 import { DeviationEntry } from "../components/CompassDeviationModal";
 import { WaypointsModal } from "../components/WaypointsModal";
 import { DistanceCalculatorModal } from "../components/DistanceCalculatorModal";
@@ -17,7 +18,7 @@ import { AircraftPerformance } from "@/lib/aircraftPerformance";
 import { CourseSpeedInputs, SpeedUnit } from "../course/components/CourseSpeedInputs";
 import { WindInputs } from "../course/components/WindInputs";
 import { CorrectionsInputs } from "../course/components/CorrectionsInputs";
-import { RangeFuelInputs, FuelUnit } from "../course/components/RangeFuelInputs";
+import { FuelUnit } from "../course/components/RangeFuelInputs";
 import { FlightParametersInputs } from "../course/components/FlightParametersInputs";
 import { ClimbDataInputs } from "../course/components/ClimbDataInputs";
 import { DescentDataInputs } from "../course/components/DescentDataInputs";
@@ -607,7 +608,7 @@ export function LegPlannerClient({
                             onClick={() => setIsDistanceModalOpen(true)}
                             className={`${
                               active ? 'bg-slate-700' : ''
-                            } group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-sky-400`}
+                            } group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-sky-400 cursor-pointer`}
                           >
                             <svg
                               className="w-5 h-5"
@@ -632,7 +633,7 @@ export function LegPlannerClient({
                             onClick={() => setIsTASModalOpen(true)}
                             className={`${
                               active ? 'bg-slate-700' : ''
-                            } group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm`}
+                            } group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm cursor-pointer`}
                             style={{ color: "oklch(0.7 0.15 150)" }}
                           >
                             <svg
@@ -658,7 +659,7 @@ export function LegPlannerClient({
                             onClick={loadExample}
                             className={`${
                               active ? 'bg-slate-700' : ''
-                            } group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm`}
+                            } group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm cursor-pointer`}
                             style={{ color: "oklch(0.75 0.15 300)" }}
                           >
                             <svg
@@ -928,7 +929,7 @@ export function LegPlannerClient({
                 />
               )}
 
-              {/* Action Buttons - Two Column Layout on Desktop */}
+              {/* Action Buttons - Organized by Priority */}
               {results.eta !== undefined && (() => {
                 // Serialize plane data for next leg
                 let serializedPlane: string | undefined = undefined;
@@ -942,52 +943,95 @@ export function LegPlannerClient({
                   });
                 }
 
+                // Check if current leg is the last leg in the plan
+                const currentLegIndex = legId && currentFlightPlan
+                  ? currentFlightPlan.legs.find(l => l.id === legId)?.index
+                  : undefined;
+                const isLastLeg = currentLegIndex !== undefined && currentFlightPlan
+                  ? currentLegIndex === currentFlightPlan.legs.length - 1
+                  : false;
+
+                // Calculate number of primary buttons to show
+                const primaryButtonCount = (flightPlanId ? 1 : 0) + (isLastLeg ? 1 : 0) + (flightPlanId ? 1 : 0);
+                const gridColsClass = primaryButtonCount === 3 ? 'md:grid-cols-3'
+                  : primaryButtonCount === 2 ? 'md:grid-cols-2'
+                  : 'md:grid-cols-1';
+
                 return (
-                  <div className="pt-4 print:hidden grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-4">
-                    {/* New Leg Button */}
-                    <NewLegButton
-                      magDev={magDev}
-                      departureTime={departureTime}
-                      deviationTable={initialDevTable}
-                      plane={serializedPlane}
-                      fuelFlow={fuelFlow}
-                      tas={tas}
-                      speedUnit={speedUnit}
-                      fuelUnit={fuelUnit}
-                      elapsedMinutes={(elapsedMins || 0) + Math.round((results.eta || 0) * 60)}
-                      windDir={windDir}
-                      windSpeed={windSpeed}
-                      fuelUsed={results.fuelUsed}
-                      flightPlanId={flightPlanId}
-                      flightPlanName={currentFlightPlan?.name}
-                    />
+                  <div className="pt-4 print:hidden space-y-3">
+                    {/* Primary Actions - Flight Plan Management */}
+                    {flightPlanId && (
+                      <div className={`grid grid-cols-1 gap-3 ${gridColsClass} md:max-w-lg md:mx-auto`}>
+                        {/* Update/Save Flight Plan Button - Always first */}
+                        <button
+                          onClick={() => setIsFlightPlanModalOpen(true)}
+                          className={`w-full px-6 py-3 rounded-xl border-2 transition-all text-center flex items-center justify-center gap-2 cursor-pointer ${
+                            flightPlanId
+                              ? "border-blue-500 bg-blue-600/20 hover:bg-blue-600/30"
+                              : "border-gray-600 hover:border-gray-500 hover:bg-slate-700/50"
+                          }`}
+                          style={{ color: flightPlanId ? "oklch(0.8 0.15 230)" : "oklch(0.7 0.02 240)" }}
+                        >
+                          {flightPlanId ? (
+                            <BookmarkSolidIcon className="w-5 h-5" />
+                          ) : (
+                            <BookmarkIcon className="w-5 h-5" />
+                          )}
+                          <span className="text-sm font-medium">
+                            {flightPlanId && legId && currentFlightPlan
+                              ? `Update Leg ${(currentFlightPlan.legs.find(l => l.id === legId)?.index ?? 0) + 1}`
+                              : flightPlanId && currentFlightPlan
+                              ? `Add Leg to ${currentFlightPlan.name}`
+                              : "Save to Flight Plan"}
+                          </span>
+                        </button>
 
-                    {/* Share, Print & Flight Plan Buttons (stacked) */}
-                    <div className="flex flex-col gap-2">
-                      {/* Flight Plan Button */}
-                      <button
-                        onClick={() => setIsFlightPlanModalOpen(true)}
-                        className={`w-full px-6 py-3 rounded-xl border-2 transition-all text-center flex items-center justify-center gap-2 cursor-pointer ${
-                          flightPlanId
-                            ? "border-blue-500 bg-blue-600/20 hover:bg-blue-600/30"
-                            : "border-gray-600 hover:border-gray-500 hover:bg-slate-700/50"
-                        }`}
-                        style={{ color: flightPlanId ? "oklch(0.8 0.15 230)" : "oklch(0.7 0.02 240)" }}
-                      >
-                        {flightPlanId ? (
-                          <BookmarkSolidIcon className="w-5 h-5" />
-                        ) : (
-                          <BookmarkIcon className="w-5 h-5" />
+                        {/* Add New Leg Button - Second, only if current leg is last leg */}
+                        {isLastLeg && (
+                          <NewLegButton
+                            magDev={magDev}
+                            departureTime={departureTime}
+                            deviationTable={initialDevTable}
+                            plane={serializedPlane}
+                            fuelFlow={fuelFlow}
+                            tas={tas}
+                            speedUnit={speedUnit}
+                            fuelUnit={fuelUnit}
+                            elapsedMinutes={(elapsedMins || 0) + Math.round((results.eta || 0) * 60)}
+                            windDir={windDir}
+                            windSpeed={windSpeed}
+                            fuelUsed={results.fuelUsed}
+                            flightPlanId={flightPlanId}
+                            flightPlanName={currentFlightPlan?.name}
+                          />
                         )}
-                        <span className="text-sm font-medium">
-                          {flightPlanId && legId && currentFlightPlan
-                            ? `Update Leg ${(currentFlightPlan.legs.find(l => l.id === legId)?.index ?? 0) + 1}`
-                            : flightPlanId && currentFlightPlan
-                            ? `Add Leg to ${currentFlightPlan.name}`
-                            : "Save to Flight Plan"}
-                        </span>
-                      </button>
 
+                        {/* Open Plan Button - Third, always show if there's a flight plan */}
+                        <Link
+                          href={`/flight-plans/${flightPlanId}`}
+                          className="w-full px-6 py-3 rounded-xl border-2 border-gray-600 hover:border-gray-500 hover:bg-slate-700/50 transition-all text-center flex items-center justify-center gap-2 cursor-pointer"
+                          style={{ color: "oklch(0.7 0.02 240)" }}
+                        >
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                            />
+                          </svg>
+                          <span className="text-sm font-medium">Open Plan</span>
+                        </Link>
+                      </div>
+                    )}
+
+                    {/* Secondary Actions - Share & Print */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:max-w-lg md:mx-auto">
                       <ShareButtonSimple
                         shareData={{
                           title: "José's Leg Planner",

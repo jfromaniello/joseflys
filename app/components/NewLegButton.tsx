@@ -78,8 +78,8 @@ export function NewLegButton({
   return (
     <button
       onClick={handleNewLeg}
-      className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-xl border-2 border-sky-500/50 bg-sky-500/10 hover:bg-sky-500/20 transition-all font-medium cursor-pointer"
-      style={{ color: "oklch(0.8 0.15 230)" }}
+      className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl border-2 border-gray-600 hover:border-gray-500 hover:bg-slate-700/50 transition-all cursor-pointer"
+      style={{ color: "oklch(0.7 0.02 240)" }}
     >
       <svg
         className="w-5 h-5"
@@ -94,16 +94,7 @@ export function NewLegButton({
           d="M12 4v16m8-8H4"
         />
       </svg>
-      {flightPlanId && flightPlanName ? (
-        <>
-          Add Next Leg to <span className="font-bold ml-1">"{flightPlanName}"</span>
-        </>
-      ) : (
-        <>
-          Create Next Leg
-          <span className="text-xs opacity-75">(opens in new tab)</span>
-        </>
-      )}
+      <span className="text-sm font-medium">Add New Leg</span>
     </button>
   );
 }
