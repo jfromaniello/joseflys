@@ -1,4 +1,5 @@
 import { calculateLegResults } from "./flightPlanCalculations";
+import { SpeedUnit } from "./speedConversion";
 
 /**
  * Flight Plan Storage
@@ -204,7 +205,7 @@ export interface FlightPlanLeg {
    * Speed display unit
    * @example "kt" (knots), "kmh" (kilometers per hour), "mph" (miles per hour)
    */
-  unit: string;
+  unit: SpeedUnit;
 }
 
 export interface FlightPlan {

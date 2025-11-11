@@ -3,7 +3,7 @@
  * Recalculate leg results for display purposes
  */
 
-import { calculateCourse, calculateWaypoints, type Waypoint } from "./courseCalculations";
+import { calculateCourse, calculateWaypoints, WaypointResult } from "./courseCalculations";
 import { calculateCompassCourse } from "./compassDeviation";
 import { toKnots } from "./speedConversion";
 import { loadAircraftFromUrl } from "./aircraftStorage";
@@ -60,17 +60,17 @@ export function calculateLegResults(leg: FlightPlanLeg): LegCalculatedResults | 
     const ff = parseFloat(leg.ff);
 
     // Convert TAS to knots
-    const tasInKnots = toKnots(tasVal, leg.unit as any);
+    const tasInKnots = toKnots(tasVal, leg.unit);
 
     // Parse climb data if exists
     const climbTasVal = leg.climbTas ? parseFloat(leg.climbTas) : undefined;
-    const climbTasInKnots = climbTasVal ? toKnots(climbTasVal, leg.unit as any) : undefined;
+    const climbTasInKnots = climbTasVal ? toKnots(climbTasVal, leg.unit) : undefined;
     const climbDist = leg.climbDist ? parseFloat(leg.climbDist) : undefined;
     const climbFuel = leg.climbFuel ? parseFloat(leg.climbFuel) : undefined;
 
     // Parse descent data if exists
     const descentTasVal = leg.descentTas ? parseFloat(leg.descentTas) : undefined;
-    const descentTasInKnots = descentTasVal ? toKnots(descentTasVal, leg.unit as any) : undefined;
+    const descentTasInKnots = descentTasVal ? toKnots(descentTasVal, leg.unit) : undefined;
     const descentDist = leg.descentDist ? parseFloat(leg.descentDist) : undefined;
     const descentFuel = leg.descentFuel ? parseFloat(leg.descentFuel) : undefined;
 
@@ -183,7 +183,7 @@ export function calculateLegResults(leg: FlightPlanLeg): LegCalculatedResults | 
 export function calculateLegWaypoints(
   leg: FlightPlanLeg,
   legResults: LegCalculatedResults
-): any[] {
+): WaypointResult[] {
   if (!leg.waypoints || leg.waypoints.length === 0) return [];
 
   try {
@@ -204,7 +204,7 @@ export function calculateLegWaypoints(
     const ws = leg.ws ? parseFloat(leg.ws) : 0;
     const md = parseFloat(leg.md) || 0;
 
-    const tasInKnots = toKnots(tasVal, leg.unit as any);
+    const tasInKnots = toKnots(tasVal, leg.unit);
 
     const climbTasVal = leg.climbTas ? parseFloat(leg.climbTas) : undefined;
     const climbTasInKnots = climbTasVal ? toKnots(climbTasVal, leg.unit as any) : undefined;
@@ -227,7 +227,6 @@ export function calculateLegWaypoints(
     const elapsedMins = leg.elapsedMin ? parseInt(leg.elapsedMin) : undefined;
     const prevFuel = leg.prevFuel ? parseFloat(leg.prevFuel) : undefined;
 
-    const { calculateCourse } = require("./courseCalculations");
     const results = calculateCourse(
       wd,
       ws,

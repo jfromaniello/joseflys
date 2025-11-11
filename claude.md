@@ -523,3 +523,527 @@ const label = 'kt';
 const label = 'KT';
 <option value="kt">KT</option>
 ```
+
+---
+
+## Adding Parameters to Flight Plan Legs
+
+### Overview
+
+When adding a new parameter to `FlightPlanLeg`, you must update multiple files to ensure the parameter flows correctly through:
+- Interface definition
+- Storage and serialization
+- URL parameters (leg planner page)
+- Flight plan integration
+- Display and calculations
+
+**CRITICAL:** Missing any of these steps will break the parameter flow and cause data loss or inconsistencies.
+
+---
+
+### Complete Checklist
+
+When adding a new parameter `myParam` to `FlightPlanLeg`, follow these steps in order:
+
+#### 1. Define the Interface
+
+**File:** `lib/flightPlanStorage.ts`
+**Location:** Lines 36-208
+
+Add your property to the `FlightPlanLeg` interface with JSDoc documentation:
+
+```typescript
+export interface FlightPlanLeg {
+  id: string;
+  index: number;
+  // ... existing properties ...
+
+  /**
+   * Description of myParam
+   * @example "example value"
+   */
+  myParam?: string;
+}
+```
+
+**Notes:**
+- Make it optional (`?`) unless it's required for all legs
+- Add JSDoc comments for clarity
+- Use appropriate type (string, number, boolean, etc.)
+
+---
+
+#### 2. Update Serialization (for sharing/export)
+
+**File:** `lib/flightPlanSharing.ts`
+
+**⚠️ CRITICAL:** Serialization and deserialization array positions MUST match exactly!
+
+##### 2a. Serialization (Lines 19-50)
+
+Add your parameter to the compacted array in `serializeFlightPlan()`:
+
+```typescript
+const compactLegs = legs.map((leg) => [
+  leg.id,
+  leg.index,
+  // ... existing properties ...
+  leg.myParam || "",  // Add here at position N
+]);
+```
+
+Update the comment documenting the array structure to include the new position.
+
+##### 2b. Deserialization (Lines 102-128)
+
+Add your parameter to the destructuring array in `deserializeFlightPlan()` at the **SAME position**:
+
+```typescript
+const [
+  id,
+  index,
+  // ... existing properties ...
+  myParam,  // Position N (same as serialization!)
+] = compactLeg;
+```
+
+##### 2c. Reconstruction (Lines 138-164)
+
+Add your parameter to the reconstructed leg object:
+
+```typescript
+const leg: FlightPlanLeg = {
+  id,
+  index,
+  // ... existing properties ...
+  myParam: myParam || undefined,
+};
+```
+
+**Important:** Update the comment at lines 91-97 that documents the complete array structure.
+
+---
+
+#### 3. Add URL Parameter to Leg Page
+
+**File:** `app/leg/page.tsx`
+**Location:** Lines 6-67
+
+##### 3a. Add to searchParams interface (Lines 6-35)
+
+```typescript
+interface SearchParams {
+  // ... existing properties ...
+  myParamKey?: string;  // Use a short URL key
+}
+```
+
+##### 3b. Extract from params (Lines 40-67)
+
+```typescript
+const myParam = params.myParamKey || "";
+```
+
+##### 3c. Pass to ClientWrapper (Lines 70-99)
+
+```typescript
+<ClientWrapper
+  // ... existing props ...
+  initialMyParam={myParam}
+/>
+```
+
+**URL Key Convention:** Use short abbreviations (2-4 chars) like `th`, `tas`, `wd`, `ff`, `md`, `dist`, etc.
+
+---
+
+#### 4. Update Client Wrapper
+
+**File:** `app/leg/ClientWrapper.tsx`
+**Location:** Lines 14-43
+
+Add to the props interface:
+
+```typescript
+interface ClientWrapperProps {
+  // ... existing properties ...
+  initialMyParam: string;
+}
+```
+
+Then pass it through to `LegPlannerClient` (line 46+).
+
+---
+
+#### 5. Update Leg Planner Client (State & URL Sync)
+
+**File:** `app/leg/LegPlannerClient.tsx`
+
+##### 5a. Add to Props Interface (Lines 45-74)
+
+```typescript
+interface LegPlannerClientProps {
+  // ... existing properties ...
+  initialMyParam: string;
+}
+```
+
+##### 5b. Add State Hook (Lines 106-132)
+
+```typescript
+const [myParam, setMyParam] = useState<string>(initialMyParam);
+```
+
+##### 5c. Update URL Sync Effect (Lines 238-300)
+
+Add your parameter to the URL update logic:
+
+```typescript
+useEffect(() => {
+  // ... existing code ...
+
+  if (myParam) {
+    params.set("myParamKey", myParam);
+  }
+
+  // ... existing code ...
+}, [
+  // ... existing dependencies ...
+  myParam,  // Add to dependency array
+]);
+```
+
+##### 5d. Save to Flight Plan (Lines 377-405)
+
+Add to the `legData` object in `handleFlightPlanSelect()`:
+
+```typescript
+const legData: Omit<FlightPlanLeg, "id" | "index"> = {
+  // ... existing properties ...
+  myParam: myParam,
+};
+```
+
+---
+
+#### 6. Build Leg URL from Flight Plan
+
+**File:** `app/flight-plans/[id]/FlightPlanDetailClient.tsx`
+**Location:** Lines 140-176
+
+Add to the `buildLegUrl()` function:
+
+```typescript
+function buildLegUrl(leg: FlightPlanLeg): string {
+  const params = new URLSearchParams();
+
+  // ... existing parameters ...
+
+  if (leg.myParam) {
+    params.set("myParamKey", leg.myParam);
+  }
+
+  return `/leg?${params.toString()}`;
+}
+```
+
+This ensures clicking "Edit" on a leg in the flight plan loads all parameters correctly.
+
+---
+
+#### 7. Update Calculations (if needed)
+
+**File:** `lib/flightPlanCalculations.ts`
+
+If your parameter affects calculations:
+
+##### 7a. Parse in calculateLegResults() (Lines 52-178)
+
+```typescript
+export function calculateLegResults(leg: FlightPlanLeg): LegResult {
+  // ... existing code ...
+
+  const myParam = leg.myParam ? parseFloat(leg.myParam) : undefined;
+
+  // Use in calculations...
+}
+```
+
+##### 7b. Update calculateLegWaypoints() (Lines 183-267)
+
+If waypoint calculations need your parameter:
+
+```typescript
+export function calculateLegWaypoints(leg: FlightPlanLeg): WaypointInfo[] {
+  // Extract and use myParam...
+}
+```
+
+##### 7c. Update Detection Functions (if applicable)
+
+- `hasDescentData()` (Lines 298-307) - If parameter affects alternative leg detection
+- `detectAlternativeLegs()` (Lines 314-339) - If parameter affects grouping logic
+
+---
+
+#### 8. Update Next Leg Parameters (if parameter carries over)
+
+**File:** `lib/nextLegParams.ts`
+
+If your parameter should be carried to the next leg:
+
+##### 8a. Add to Interface (Lines 9-23)
+
+```typescript
+export interface NextLegParams {
+  // ... existing properties ...
+  myParam?: string;
+}
+```
+
+##### 8b. Include in buildNextLegUrl() (Lines 31-68)
+
+```typescript
+export function buildNextLegUrl(params: NextLegParams): string {
+  // ... existing code ...
+
+  if (params.myParam) {
+    urlParams.set("myParamKey", params.myParam);
+  }
+
+  return `/leg?${urlParams.toString()}`;
+}
+```
+
+##### 8c. Extract in extractNextLegParams() (Lines 77-96)
+
+```typescript
+export function extractNextLegParams(leg: FlightPlanLeg): NextLegParams {
+  return {
+    // ... existing properties ...
+    myParam: leg.myParam || "",
+  };
+}
+```
+
+---
+
+#### 9. Update New Leg Button (if parameter carries over)
+
+**File:** `app/components/NewLegButton.tsx`
+
+If your parameter should be available when creating new legs:
+
+##### 9a. Add to Props (Lines 7-36)
+
+```typescript
+interface NewLegButtonProps {
+  // ... existing properties ...
+  myParam?: string;
+}
+```
+
+##### 9b. Pass to buildNextLegUrl() (Lines 54-72)
+
+```typescript
+const handleNewLeg = () => {
+  const url = buildNextLegUrl({
+    // ... existing params ...
+    myParam: myParam,
+  });
+  router.push(url);
+};
+```
+
+---
+
+#### 10. Update Display (if parameter needs to be shown)
+
+**File:** `app/flight-plans/[id]/FlightPlanDetailClient.tsx`
+
+Add display logic for your parameter in the leg list:
+
+```tsx
+{/* Existing leg display code */}
+{leg.myParam && (
+  <span className="text-xs text-slate-400">
+    My Param: {leg.myParam}
+  </span>
+)}
+```
+
+**Optional:** Also update `app/flight-plans/FlightPlansClient.tsx` (Lines 175-193) if the parameter should appear in the flight plans list view.
+
+---
+
+#### 11. Sync Common Parameters (if applicable)
+
+**File:** `lib/flightPlanStorage.ts`
+**Location:** Lines 368-377
+
+If your parameter should sync across all legs when one is updated (like `unit`, `fuelUnit`, `depTime`):
+
+```typescript
+function syncCommonParameters(legs: FlightPlanLeg[]): FlightPlanLeg[] {
+  const firstLeg = legs[0];
+  return legs.map((leg) => ({
+    ...leg,
+    // ... existing synced properties ...
+    myParam: firstLeg.myParam,  // Add here
+  }));
+}
+```
+
+**Note:** Only add here if the parameter should be consistent across ALL legs.
+
+---
+
+### URL Parameter Naming Conventions
+
+Use short, memorable abbreviations for URL keys:
+
+- ✅ Good: `th` (true heading), `tas` (true airspeed), `wd` (wind direction)
+- ❌ Bad: `trueHeading`, `true_heading`, `TH`
+
+Keep keys lowercase and 2-4 characters when possible.
+
+---
+
+### Common Mistakes to Avoid
+
+#### ❌ Wrong: Array positions don't match
+
+```typescript
+// Serialization
+const compactLegs = legs.map((leg) => [
+  leg.id,
+  leg.myParam,  // Position 1
+  leg.index,    // Position 2
+]);
+
+// Deserialization
+const [id, index, myParam] = compactLeg;  // Wrong order!
+```
+
+#### ✅ Correct: Matching positions
+
+```typescript
+// Serialization
+const compactLegs = legs.map((leg) => [
+  leg.id,
+  leg.index,
+  leg.myParam,  // Position 2
+]);
+
+// Deserialization
+const [id, index, myParam] = compactLeg;  // Same order!
+```
+
+---
+
+#### ❌ Wrong: Forgetting URL sync
+
+```typescript
+// State updated but URL not synced
+const [myParam, setMyParam] = useState(initialMyParam);
+// Missing: URL update in useEffect
+```
+
+#### ✅ Correct: Always sync URL
+
+```typescript
+useEffect(() => {
+  if (myParam) params.set("myParamKey", myParam);
+  // ... update URL
+}, [myParam]);
+```
+
+---
+
+#### ❌ Wrong: Not including in legData
+
+```typescript
+const legData: Omit<FlightPlanLeg, "id" | "index"> = {
+  trueCourse,
+  trueAirspeed,
+  // Missing: myParam
+};
+```
+
+#### ✅ Correct: Include all parameters
+
+```typescript
+const legData: Omit<FlightPlanLeg, "id" | "index"> = {
+  trueCourse,
+  trueAirspeed,
+  myParam,  // Include here
+};
+```
+
+---
+
+#### ❌ Wrong: Not building leg URL correctly
+
+```typescript
+// Flight plan detail page
+function buildLegUrl(leg: FlightPlanLeg): string {
+  return `/leg?th=${leg.trueCourse}`;  // Missing myParam!
+}
+```
+
+#### ✅ Correct: Include all parameters
+
+```typescript
+function buildLegUrl(leg: FlightPlanLeg): string {
+  const params = new URLSearchParams();
+  if (leg.trueCourse) params.set("th", leg.trueCourse);
+  if (leg.myParam) params.set("myParamKey", leg.myParam);
+  return `/leg?${params.toString()}`;
+}
+```
+
+---
+
+### Testing Checklist
+
+After adding a new parameter, test ALL of these scenarios:
+
+1. **Direct URL:** Navigate to `/leg?myParamKey=value` - parameter should load
+2. **State Management:** Change value in UI - URL should update
+3. **Save to Plan:** Add leg to flight plan - parameter should be saved
+4. **Load from Plan:** Click "Edit" on saved leg - parameter should load
+5. **Share Plan:** Export and import - parameter should survive serialization
+6. **Next Leg:** Create next leg - parameter should carry over (if applicable)
+7. **Print View:** Print leg - parameter should display correctly (if shown)
+8. **Calculations:** Verify calculations use the parameter correctly (if applicable)
+
+---
+
+### Reference Files for Examples
+
+Study these files to see complete parameter implementations:
+
+- **trueCourse** - Good example of a required parameter
+- **windDir/windSpeed** - Good example of optional parameters
+- **fuelFlow/fuelUnit** - Good example of parameters that carry over to next leg
+- **climbTas/descentTas** - Good example of optional calculation parameters
+
+Search for any of these in the files listed above to see complete implementation patterns.
+
+---
+
+### Summary: 11-Step Process
+
+1. **Define interface** in `lib/flightPlanStorage.ts`
+2. **Update serialization** in `lib/flightPlanSharing.ts` (critical: match array positions!)
+3. **Add URL parameter** in `app/leg/page.tsx`
+4. **Update ClientWrapper** in `app/leg/ClientWrapper.tsx`
+5. **Add state & URL sync** in `app/leg/LegPlannerClient.tsx`
+6. **Build leg URL** in `app/flight-plans/[id]/FlightPlanDetailClient.tsx`
+7. **Update calculations** in `lib/flightPlanCalculations.ts` (if needed)
+8. **Update next leg params** in `lib/nextLegParams.ts` (if carries over)
+9. **Update NewLegButton** in `app/components/NewLegButton.tsx` (if carries over)
+10. **Update display** in flight plan detail/list (if shown)
+11. **Test thoroughly** using the checklist above
+
+**Remember:** Every step is required for the parameter to work correctly across all features!
