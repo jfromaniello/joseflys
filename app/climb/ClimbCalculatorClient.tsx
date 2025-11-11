@@ -118,7 +118,7 @@ export function ClimbCalculatorClient({
 
   // Calculate ground speed using wind correction
   const windCalc = !isNaN(thVal) && avgTAS > 0
-    ? calculateCourse(wdVal, wsVal, thVal, avgTAS, 0) // magDev = 0 (we only need GS)
+    ? calculateCourse({ th: thVal, tas: avgTAS, md: 0, wd: wdVal, ws: wsVal }) // magDev = 0 (we only need GS)
     : null;
 
   const groundSpeedVal = windCalc ? windCalc.groundSpeed : avgTAS;

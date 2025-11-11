@@ -51,67 +51,23 @@ function addMinutesToTime(timeHHMM: string, minutes: number): string {
  */
 export function calculateLegResults(leg: FlightPlanLeg): LegCalculatedResults | null {
   try {
-    const th = leg.th;
-    const tasVal = leg.tas;
-    const wd = leg.wd ?? 0;
-    const ws = leg.ws ?? 0;
-    const md = leg.md || 0;
-    const dist = leg.dist;
-    const ff = leg.ff;
+    // Convert TAS values to knots
+    const tasInKnots = toKnots(leg.tas, leg.unit);
+    const climbTasInKnots = leg.climbTas ? toKnots(leg.climbTas, leg.unit) : undefined;
+    const descentTasInKnots = leg.descentTas ? toKnots(leg.descentTas, leg.unit) : undefined;
 
-    // Convert TAS to knots
-    const tasInKnots = toKnots(tasVal, leg.unit);
-
-    // Get climb data if exists
-    const climbTasVal = leg.climbTas;
-    const climbTasInKnots = climbTasVal ? toKnots(climbTasVal, leg.unit) : undefined;
-    const climbDist = leg.climbDist;
-    const climbFuel = leg.climbFuel;
-
-    // Get descent data if exists
-    const descentTasVal = leg.descentTas;
-    const descentTasInKnots = descentTasVal ? toKnots(descentTasVal, leg.unit) : undefined;
-    const descentDist = leg.descentDist;
-    const descentFuel = leg.descentFuel;
-
-    // Get climb wind if exists
-    const climbWindDir = leg.climbWd;
-    const climbWindSpeed = leg.climbWs;
-
-    // Get descent wind if exists
-    const descentWindDir = leg.descentWd;
-    const descentWindSpeed = leg.descentWs;
-
-    // Get previous values
-    const elapsedMins = leg.elapsedMin;
-    const prevFuel = leg.prevFuel;
-
-    if (isNaN(th) || isNaN(tasInKnots) || tasInKnots <= 0 || isNaN(dist) || isNaN(ff)) {
+    // Validate required fields
+    if (isNaN(leg.th) || isNaN(tasInKnots) || tasInKnots <= 0 || isNaN(leg.dist) || isNaN(leg.ff)) {
       return null;
     }
 
-    // Calculate course
-    const results = calculateCourse(
-      wd,
-      ws,
-      th,
-      tasInKnots,
-      md,
-      dist,
-      ff,
-      elapsedMins,
-      prevFuel,
-      climbTasInKnots,
-      climbDist,
-      climbFuel,
-      descentTasInKnots,
-      descentDist,
-      descentFuel,
-      climbWindDir,
-      climbWindSpeed,
-      descentWindDir,
-      descentWindSpeed
-    );
+    // Calculate course - pass leg data with converted TAS values
+    const results = calculateCourse({
+      ...leg,
+      tas: tasInKnots,
+      climbTas: climbTasInKnots,
+      descentTas: descentTasInKnots,
+    });
 
     if (!results) return null;
 
@@ -137,7 +93,7 @@ export function calculateLegResults(leg: FlightPlanLeg): LegCalculatedResults | 
     // Calculate start time (depTime + elapsed)
     let startTime: string | null = null;
     if (leg.depTime && leg.depTime.length === 4) {
-      startTime = addMinutesToTime(leg.depTime, elapsedMins || 0);
+      startTime = addMinutesToTime(leg.depTime, leg.elapsedMin || 0);
     }
 
     // Calculate arrival time (startTime + legDuration)
@@ -147,12 +103,12 @@ export function calculateLegResults(leg: FlightPlanLeg): LegCalculatedResults | 
       arrivalTime = addMinutesToTime(startTime, legDurationMinutes);
     }
 
-    // results.fuelUsed from calculateCourse already includes prevFuel if it was provided
+    // results.fuelUsed from calculateCourse already includes prevFuel and additionalFuel
     // So totalFuel should just be results.fuelUsed
     const totalFuelAccumulated = results.fuelUsed || 0;
 
     // Fuel used in just this leg (excluding previous fuel)
-    const legFuelOnly = totalFuelAccumulated - (prevFuel || 0);
+    const legFuelOnly = totalFuelAccumulated - (leg.prevFuel || 0);
 
     return {
       groundSpeed: results.groundSpeed,
@@ -165,8 +121,8 @@ export function calculateLegResults(leg: FlightPlanLeg): LegCalculatedResults | 
       climbFuelUsed,
       cruiseFuelUsed,
       descentFuelUsed,
-      totalDistance: dist,
-      totalTime: ((elapsedMins || 0) / 60) + legDuration,
+      totalDistance: leg.dist,
+      totalTime: ((leg.elapsedMin || 0) / 60) + legDuration,
       totalFuel: totalFuelAccumulated,
       startTime,
       arrivalTime,
@@ -198,56 +154,16 @@ export function calculateLegWaypoints(
 
     // Get climb phase from leg results
     // We need to recalculate to get the full results including climbPhase
-    const th = leg.th;
-    const tasVal = leg.tas;
-    const wd = leg.wd ?? 0;
-    const ws = leg.ws ?? 0;
-    const md = leg.md || 0;
+    const tasInKnots = toKnots(leg.tas, leg.unit);
+    const climbTasInKnots = leg.climbTas ? toKnots(leg.climbTas, leg.unit) : undefined;
+    const descentTasInKnots = leg.descentTas ? toKnots(leg.descentTas, leg.unit) : undefined;
 
-    const tasInKnots = toKnots(tasVal, leg.unit);
-
-    const climbTasVal = leg.climbTas;
-    const climbTasInKnots = climbTasVal ? toKnots(climbTasVal, leg.unit) : undefined;
-    const climbDist = leg.climbDist;
-    const climbFuel = leg.climbFuel;
-
-    const descentTasVal = leg.descentTas;
-    const descentTasInKnots = descentTasVal ? toKnots(descentTasVal, leg.unit) : undefined;
-    const descentDist = leg.descentDist;
-    const descentFuel = leg.descentFuel;
-
-    // Get climb wind if exists
-    const climbWindDir = leg.climbWd;
-    const climbWindSpeed = leg.climbWs;
-
-    // Get descent wind if exists
-    const descentWindDir = leg.descentWd;
-    const descentWindSpeed = leg.descentWs;
-
-    const elapsedMins = leg.elapsedMin;
-    const prevFuel = leg.prevFuel;
-
-    const results = calculateCourse(
-      wd,
-      ws,
-      th,
-      tasInKnots,
-      md,
-      dist,
-      ff,
-      elapsedMins,
-      prevFuel,
-      climbTasInKnots,
-      climbDist,
-      climbFuel,
-      descentTasInKnots,
-      descentDist,
-      descentFuel,
-      climbWindDir,
-      climbWindSpeed,
-      descentWindDir,
-      descentWindSpeed
-    );
+    const results = calculateCourse({
+      ...leg,
+      tas: tasInKnots,
+      climbTas: climbTasInKnots,
+      descentTas: descentTasInKnots,
+    });
 
     return calculateWaypoints(
       leg.waypoints,

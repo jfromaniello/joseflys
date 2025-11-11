@@ -11,7 +11,7 @@ describe("courseCalculations", () => {
     describe("wind components", () => {
       it("should calculate direct headwind correctly", () => {
         // Wind from 360° (North), heading 360° (North), 20 knots
-        const result = calculateCourse(360, 20, 360, 100, 0);
+        const result = calculateCourse({ wd: 360, ws: 20, th: 360, tas: 100, md: 0 });
 
         expect(result.crosswind).toBeCloseTo(0, 1);
         expect(result.headwind).toBeCloseTo(-20, 1); // Formula uses -cos, so headwind is negative
@@ -20,7 +20,7 @@ describe("courseCalculations", () => {
 
       it("should calculate direct tailwind correctly", () => {
         // Wind from 180° (South), heading 360° (North), 20 knots
-        const result = calculateCourse(180, 20, 360, 100, 0);
+        const result = calculateCourse({ wd: 180, ws: 20, th: 360, tas: 100, md: 0 });
 
         expect(result.crosswind).toBeCloseTo(0, 1);
         expect(result.headwind).toBeCloseTo(20, 1); // Formula uses -cos, so tailwind is positive
@@ -29,7 +29,7 @@ describe("courseCalculations", () => {
 
       it("should calculate pure crosswind from right", () => {
         // Wind from 090° (East), heading 360° (North), 20 knots
-        const result = calculateCourse(90, 20, 360, 100, 0);
+        const result = calculateCourse({ wd: 90, ws: 20, th: 360, tas: 100, md: 0 });
 
         expect(result.crosswind).toBeCloseTo(20, 1); // Positive = from right
         expect(result.headwind).toBeCloseTo(0, 1);
@@ -37,7 +37,7 @@ describe("courseCalculations", () => {
 
       it("should calculate pure crosswind from left", () => {
         // Wind from 270° (West), heading 360° (North), 20 knots
-        const result = calculateCourse(270, 20, 360, 100, 0);
+        const result = calculateCourse({ wd: 270, ws: 20, th: 360, tas: 100, md: 0 });
 
         expect(result.crosswind).toBeCloseTo(-20, 1); // Negative = from left
         expect(result.headwind).toBeCloseTo(0, 1);
@@ -45,7 +45,7 @@ describe("courseCalculations", () => {
 
       it("should calculate quartering headwind from right", () => {
         // Wind from 045° (NE), heading 360° (North), 20 knots
-        const result = calculateCourse(45, 20, 360, 100, 0);
+        const result = calculateCourse({ wd: 45, ws: 20, th: 360, tas: 100, md: 0 });
 
         expect(result.crosswind).toBeCloseTo(14.14, 1); // From right
         expect(result.headwind).toBeCloseTo(-14.14, 1); // Headwind component (negative per formula)
@@ -55,27 +55,27 @@ describe("courseCalculations", () => {
     describe("wind correction angle (WCA)", () => {
       it("should calculate positive WCA for crosswind from right", () => {
         // Wind from 090°, heading 360°, TAS 100kt, WS 20kt
-        const result = calculateCourse(90, 20, 360, 100, 0);
+        const result = calculateCourse({ wd: 90, ws: 20, th: 360, tas: 100, md: 0 });
 
         // Should correct to the left (negative WCA in some conventions, positive in ours)
         expect(Math.abs(result.windCorrectionAngle)).toBeGreaterThan(0);
       });
 
       it("should have zero WCA for direct headwind", () => {
-        const result = calculateCourse(360, 20, 360, 100, 0);
+        const result = calculateCourse({ wd: 360, ws: 20, th: 360, tas: 100, md: 0 });
 
         expect(result.windCorrectionAngle).toBeCloseTo(0, 1);
       });
 
       it("should have zero WCA for direct tailwind", () => {
-        const result = calculateCourse(180, 20, 360, 100, 0);
+        const result = calculateCourse({ wd: 180, ws: 20, th: 360, tas: 100, md: 0 });
 
         expect(result.windCorrectionAngle).toBeCloseTo(0, 1);
       });
 
       it("should calculate reasonable WCA for typical crosswind", () => {
         // 30kt crosswind, 120kt TAS
-        const result = calculateCourse(90, 30, 360, 120, 0);
+        const result = calculateCourse({ wd: 90, ws: 30, th: 360, tas: 120, md: 0 });
 
         // WCA should be around 14-15 degrees
         expect(Math.abs(result.windCorrectionAngle)).toBeGreaterThan(13);
@@ -86,21 +86,21 @@ describe("courseCalculations", () => {
     describe("ground speed", () => {
       it("should calculate reduced GS with headwind", () => {
         // 20kt headwind, 100kt TAS
-        const result = calculateCourse(360, 20, 360, 100, 0);
+        const result = calculateCourse({ wd: 360, ws: 20, th: 360, tas: 100, md: 0 });
 
         expect(result.groundSpeed).toBeCloseTo(80, 1); // 100 - 20 = 80
       });
 
       it("should calculate increased GS with tailwind", () => {
         // 20kt tailwind, 100kt TAS
-        const result = calculateCourse(180, 20, 360, 100, 0);
+        const result = calculateCourse({ wd: 180, ws: 20, th: 360, tas: 100, md: 0 });
 
         expect(result.groundSpeed).toBeCloseTo(120, 1); // 100 + 20 = 120
       });
 
       it("should maintain GS close to TAS with pure crosswind", () => {
         // Pure crosswind, GS should be close to TAS
-        const result = calculateCourse(90, 20, 360, 100, 0);
+        const result = calculateCourse({ wd: 90, ws: 20, th: 360, tas: 100, md: 0 });
 
         // With small crosswind, GS should be very close to TAS
         expect(result.groundSpeed).toBeGreaterThan(95);
@@ -109,7 +109,7 @@ describe("courseCalculations", () => {
 
       it("should handle strong headwind", () => {
         // 50kt headwind, 100kt TAS
-        const result = calculateCourse(360, 50, 360, 100, 0);
+        const result = calculateCourse({ wd: 360, ws: 50, th: 360, tas: 100, md: 0 });
 
         expect(result.groundSpeed).toBeCloseTo(50, 1);
       });
@@ -118,7 +118,7 @@ describe("courseCalculations", () => {
     describe("compass heading", () => {
       it("should apply magnetic deviation correctly (East)", () => {
         // No wind, true heading 360°, -5° East deviation
-        const result = calculateCourse(0, 0, 360, 100, -5);
+        const result = calculateCourse({ wd: 0, ws: 0, th: 360, tas: 100, md: -5 });
 
         // Compass heading = TH + WCA + MagDev = 360 + 0 + (-5) = 355
         expect(result.compassHeading).toBeCloseTo(355, 0);
@@ -126,7 +126,7 @@ describe("courseCalculations", () => {
 
       it("should apply magnetic deviation correctly (West)", () => {
         // No wind, true heading 360°, +10° West deviation
-        const result = calculateCourse(0, 0, 360, 100, 10);
+        const result = calculateCourse({ wd: 0, ws: 0, th: 360, tas: 100, md: 10 });
 
         // Compass heading = TH + WCA + MagDev = 360 + 0 + 10 = 10
         expect(result.compassHeading).toBeCloseTo(10, 0);
@@ -134,7 +134,7 @@ describe("courseCalculations", () => {
 
       it("should combine WCA and magnetic deviation", () => {
         // Crosswind requiring WCA, plus magnetic deviation
-        const result = calculateCourse(90, 20, 360, 100, -5);
+        const result = calculateCourse({ wd: 90, ws: 20, th: 360, tas: 100, md: -5 });
 
         // Compass heading should include both WCA and magnetic deviation
         expect(result.compassHeading).not.toBeCloseTo(360, 0);
@@ -142,7 +142,7 @@ describe("courseCalculations", () => {
 
       it("should normalize compass heading to 0-360 range", () => {
         // Test that heading wraps around correctly
-        const result = calculateCourse(0, 0, 5, 100, -10);
+        const result = calculateCourse({ wd: 0, ws: 0, th: 5, tas: 100, md: -10 });
 
         // 5 + 0 + (-10) = -5, should normalize to 355
         expect(result.compassHeading).toBeGreaterThanOrEqual(0);
@@ -154,21 +154,21 @@ describe("courseCalculations", () => {
     describe("ETAS (Effective True Airspeed)", () => {
       it("should not calculate ETAS when WCA <= 10°", () => {
         // Small crosswind resulting in small WCA
-        const result = calculateCourse(90, 10, 360, 100, 0);
+        const result = calculateCourse({ wd: 90, ws: 10, th: 360, tas: 100, md: 0 });
 
         expect(result.etas).toBeUndefined();
       });
 
       it("should calculate ETAS when WCA > 10°", () => {
         // Larger crosswind resulting in WCA > 10°
-        const result = calculateCourse(90, 30, 360, 120, 0);
+        const result = calculateCourse({ wd: 90, ws: 30, th: 360, tas: 120, md: 0 });
 
         expect(result.etas).toBeDefined();
         expect(result.etas).toBeLessThan(120); // ETAS should be less than TAS
       });
 
       it("should use ETAS in ground speed calculation when WCA > 10°", () => {
-        const result = calculateCourse(90, 30, 360, 120, 0);
+        const result = calculateCourse({ wd: 90, ws: 30, th: 360, tas: 120, md: 0 });
 
         // When ETAS is used, effective speed is reduced
         if (result.etas) {
@@ -182,7 +182,7 @@ describe("courseCalculations", () => {
     describe("ETA and fuel calculations", () => {
       it("should calculate ETA when distance is provided", () => {
         // 100 NM with tailwind: GS will be 120kt, so ETA = 100/120 = 0.833 hours
-        const result = calculateCourse(180, 20, 360, 100, 0, 100);
+        const result = calculateCourse({ wd: 180, ws: 20, th: 360, tas: 100, md: 0, dist: 100 });
 
         expect(result.eta).toBeDefined();
         expect(result.groundSpeed).toBeCloseTo(120, 1); // TAS 100 + tailwind 20
@@ -191,7 +191,7 @@ describe("courseCalculations", () => {
 
       it("should calculate fuel used when distance and fuel flow provided", () => {
         // 100 NM at 120 kt GS (with tailwind), 10 GPH
-        const result = calculateCourse(180, 20, 360, 100, 0, 100, 10);
+        const result = calculateCourse({ wd: 180, ws: 20, th: 360, tas: 100, md: 0, dist: 100, ff: 10 });
 
         expect(result.fuelUsed).toBeDefined();
         expect(result.fuelUsed).toBeCloseTo(8.33, 1); // ~0.833 hours × 10 GPH
@@ -200,7 +200,7 @@ describe("courseCalculations", () => {
       it("should add to previous fuel used when provided", () => {
         // This leg: 100 NM at 120 kt (~0.833 hour), 10 GPH = ~8.33 gallons
         // Previous fuel used: 15 gallons
-        const result = calculateCourse(180, 20, 360, 100, 0, 100, 10, 0, 15);
+        const result = calculateCourse({ wd: 180, ws: 20, th: 360, tas: 100, md: 0, dist: 100, ff: 10, elapsedMin: 0, prevFuel: 15 });
 
         expect(result.fuelUsed).toBeCloseTo(23.33, 1); // 15 + 8.33 = 23.33
       });
@@ -209,19 +209,19 @@ describe("courseCalculations", () => {
         // This leg: 100 NM at 120 kt (~0.833 hour)
         // Elapsed time: 60 minutes (1 hour)
         // Total time: ~1.833 hours × 10 GPH = ~18.33 gallons
-        const result = calculateCourse(180, 20, 360, 100, 0, 100, 10, 60);
+        const result = calculateCourse({ wd: 180, ws: 20, th: 360, tas: 100, md: 0, dist: 100, ff: 10, elapsedMin: 60 });
 
         expect(result.fuelUsed).toBeCloseTo(18.33, 1);
       });
 
       it("should not calculate fuel without fuel flow", () => {
-        const result = calculateCourse(180, 20, 360, 100, 0, 100);
+        const result = calculateCourse({ wd: 180, ws: 20, th: 360, tas: 100, md: 0, dist: 100 });
 
         expect(result.fuelUsed).toBeUndefined();
       });
 
       it("should not calculate ETA without distance", () => {
-        const result = calculateCourse(180, 20, 360, 100, 0);
+        const result = calculateCourse({ wd: 180, ws: 20, th: 360, tas: 100, md: 0 });
 
         expect(result.eta).toBeUndefined();
       });
@@ -229,7 +229,7 @@ describe("courseCalculations", () => {
 
     describe("edge cases", () => {
       it("should handle zero wind", () => {
-        const result = calculateCourse(0, 0, 360, 100, 0);
+        const result = calculateCourse({ wd: 0, ws: 0, th: 360, tas: 100, md: 0 });
 
         expect(Math.abs(result.crosswind)).toBeCloseTo(0, 1);
         expect(Math.abs(result.headwind)).toBeCloseTo(0, 1);
@@ -238,20 +238,20 @@ describe("courseCalculations", () => {
       });
 
       it("should handle angle normalization (wind > 360°)", () => {
-        const result = calculateCourse(720, 20, 360, 100, 0); // 720° = 360°
+        const result = calculateCourse({ wd: 720, ws: 20, th: 360, tas: 100, md: 0 }); // 720° = 360°
 
         expect(result.headwind).toBeCloseTo(-20, 1); // Headwind (negative per formula)
       });
 
       it("should handle angle normalization (heading > 360°)", () => {
-        const result = calculateCourse(360, 20, 720, 100, 0); // 720° = 360°
+        const result = calculateCourse({ wd: 360, ws: 20, th: 720, tas: 100, md: 0 }); // 720° = 360°
 
         expect(result.headwind).toBeCloseTo(-20, 1); // Headwind (negative per formula)
       });
 
       it("should handle very high wind speeds", () => {
         // 80kt headwind, 100kt TAS
-        const result = calculateCourse(360, 80, 360, 100, 0);
+        const result = calculateCourse({ wd: 360, ws: 80, th: 360, tas: 100, md: 0 });
 
         expect(result.groundSpeed).toBeCloseTo(20, 1);
         expect(result.groundSpeed).toBeGreaterThan(0);
@@ -261,7 +261,7 @@ describe("courseCalculations", () => {
     describe("realistic flight scenarios", () => {
       it("should calculate typical VFR scenario", () => {
         // Wind: 270° at 15kt, Heading: 360°, TAS: 110kt, MagDev: -5° (5°E)
-        const result = calculateCourse(270, 15, 360, 110, -5);
+        const result = calculateCourse({ wd: 270, ws: 15, th: 360, tas: 110, md: -5 });
 
         expect(result.crosswind).toBeCloseTo(-15, 1); // From left
         expect(result.headwind).toBeCloseTo(0, 1);
@@ -271,7 +271,7 @@ describe("courseCalculations", () => {
 
       it("should calculate typical IFR scenario with distance", () => {
         // Wind: 320° at 25kt, Heading: 090° (East), TAS: 150kt, Distance: 75 NM
-        const result = calculateCourse(320, 25, 90, 150, 0, 75, 12);
+        const result = calculateCourse({ wd: 320, ws: 25, th: 90, tas: 150, md: 0, dist: 75, ff: 12 });
 
         expect(result.eta).toBeDefined();
         expect(result.fuelUsed).toBeDefined();

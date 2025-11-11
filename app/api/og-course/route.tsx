@@ -22,15 +22,15 @@ export async function GET(request: NextRequest) {
     const description = searchParams.get('desc') || '';
 
     // Calculate wind corrections
-    const windDir = parseFloat(wd);
-    const windSpeed = parseFloat(ws);
-    const trueHeading = parseFloat(th);
-    const tasVal = parseFloat(tas);
-    const magDev = parseFloat(md);
-    const distance = dist ? parseFloat(dist) : undefined;
-    const fuelFlow = ff ? parseFloat(ff) : undefined;
-
-    const results = calculateCourse(windDir, windSpeed, trueHeading, tasVal, magDev, distance, fuelFlow);
+    const results = calculateCourse({
+      wd: parseFloat(wd),
+      ws: parseFloat(ws),
+      th: parseFloat(th),
+      tas: parseFloat(tas),
+      md: parseFloat(md),
+      dist: dist ? parseFloat(dist) : undefined,
+      ff: ff ? parseFloat(ff) : undefined,
+    });
 
     // Try to calculate Compass Course if deviation table is provided
     let compassCourse: number | null = null;

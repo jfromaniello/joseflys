@@ -167,7 +167,7 @@ export function CourseCalculatorClient({
     !isNaN(th) &&
     !isNaN(tasInKnots) &&
     tasInKnots > 0
-      ? calculateCourse(wd, ws, th, tasInKnots, md)
+      ? calculateCourse({ th, tas: tasInKnots, md, wd, ws })
       : null;
 
   // Calculate compass course when deviation table is available and results exist

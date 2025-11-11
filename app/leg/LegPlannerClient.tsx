@@ -23,6 +23,7 @@ import { FuelUnit } from "../course/components/RangeFuelInputs";
 import { FlightParametersInputs } from "../course/components/FlightParametersInputs";
 import { ClimbDataInputs } from "../course/components/ClimbDataInputs";
 import { DescentDataInputs } from "../course/components/DescentDataInputs";
+import { AdditionalFuelInput } from "../course/components/AdditionalFuelInput";
 import { IntermediateResults } from "../course/components/IntermediateResults";
 import { PrimaryResults } from "../course/components/PrimaryResults";
 import { WaypointsResults } from "../course/components/WaypointsResults";
@@ -69,6 +70,7 @@ interface LegPlannerClientProps {
   initialDescentFuel: string;
   initialDescentWd: string;
   initialDescentWs: string;
+  initialAdditionalFuel: string;
   initialFlightPlanId: string;
   initialLegId: string;
 }
@@ -100,6 +102,7 @@ export function LegPlannerClient({
   initialDescentFuel,
   initialDescentWd,
   initialDescentWs,
+  initialAdditionalFuel,
   initialFlightPlanId,
   initialLegId,
 }: LegPlannerClientProps) {
@@ -124,6 +127,7 @@ export function LegPlannerClient({
   const [descentFuelUsed, setDescentFuelUsed] = useState<string>(initialDescentFuel);
   const [descentWindDir, setDescentWindDir] = useState<string>(initialDescentWd);
   const [descentWindSpeed, setDescentWindSpeed] = useState<string>(initialDescentWs);
+  const [additionalFuel, setAdditionalFuel] = useState<string>(initialAdditionalFuel);
   const [speedUnit, setSpeedUnit] = useState<SpeedUnit>(
     (initialSpeedUnit as SpeedUnit) || 'kt'
   );
@@ -259,6 +263,7 @@ export function LegPlannerClient({
     if (descentFuelUsed) params.set("descentFuel", descentFuelUsed);
     if (descentWindDir) params.set("dwd", descentWindDir);
     if (descentWindSpeed) params.set("dws", descentWindSpeed);
+    if (additionalFuel) params.set("af", additionalFuel);
     if (speedUnit !== 'kt') params.set("unit", speedUnit);
     if (fuelUnit !== 'gph') params.set("funit", fuelUnit);
 
@@ -297,7 +302,7 @@ export function LegPlannerClient({
     // Use window.history.replaceState instead of router.replace to avoid server requests
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState(null, '', newUrl);
-  }, [trueHeading, tas, windDir, windSpeed, magDev, distance, fuelFlow, description, departureTime, elapsedMinutes, previousFuelUsed, climbTas, climbDistance, climbFuelUsed, climbWindDir, climbWindSpeed, descentTas, descentDistance, descentFuelUsed, descentWindDir, descentWindSpeed, deviationTable, waypoints, speedUnit, fuelUnit, aircraft, flightPlanId, legId]);
+  }, [trueHeading, tas, windDir, windSpeed, magDev, distance, fuelFlow, description, departureTime, elapsedMinutes, previousFuelUsed, climbTas, climbDistance, climbFuelUsed, climbWindDir, climbWindSpeed, descentTas, descentDistance, descentFuelUsed, descentWindDir, descentWindSpeed, additionalFuel, deviationTable, waypoints, speedUnit, fuelUnit, aircraft, flightPlanId, legId]);
 
   // Calculate results during render (not in useEffect to avoid cascading renders)
   const th = parseFloat(trueHeading);
@@ -332,6 +337,9 @@ export function LegPlannerClient({
   // Parse descent wind
   const descentWd = descentWindDir ? parseFloat(descentWindDir) : undefined;
   const descentWs = descentWindSpeed ? parseFloat(descentWindSpeed) : undefined;
+
+  // Parse additional fuel (in minutes)
+  const additionalFuelMins = additionalFuel ? parseFloat(additionalFuel) : undefined;
 
   // Load example data
   const loadExample = () => {
@@ -413,6 +421,7 @@ export function LegPlannerClient({
       descentFuel: toOptionalNumber(descentFuelUsed),
       descentWd: toOptionalNumber(descentWindDir),
       descentWs: toOptionalNumber(descentWindSpeed),
+      additionalFuel: toOptionalNumber(additionalFuel),
       desc: description,
       unit: speedUnit,
     };
@@ -431,7 +440,28 @@ export function LegPlannerClient({
     !isNaN(th) &&
     !isNaN(tasInKnots) &&
     tasInKnots > 0
-      ? calculateCourse(wd, ws, th, tasInKnots, md, dist, ff, elapsedMins, prevFuel, climbTasInKnots, climbDist, climbFuel, descentTasInKnots, descentDist, descentFuel, climbWd, climbWs, descentWd, descentWs)
+      ? calculateCourse({
+          th,
+          tas: tasInKnots,
+          md,
+          wd,
+          ws,
+          dist,
+          ff,
+          elapsedMin: elapsedMins,
+          prevFuel,
+          climbTas: climbTasInKnots,
+          climbDist,
+          climbFuel,
+          climbWd,
+          climbWs,
+          descentTas: descentTasInKnots,
+          descentDist,
+          descentFuel,
+          descentWd,
+          descentWs,
+          additionalFuel: additionalFuelMins,
+        })
       : null;
 
   // Calculate compass course when deviation table is available and results exist
@@ -885,6 +915,12 @@ export function LegPlannerClient({
               setDescentWindSpeed={setDescentWindSpeed}
               speedUnit={speedUnit}
               fuelUnit={fuelUnit}
+            />
+
+            {/* Additional Fuel */}
+            <AdditionalFuelInput
+              additionalFuel={additionalFuel}
+              setAdditionalFuel={setAdditionalFuel}
             />
           </div>
 

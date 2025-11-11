@@ -1,3 +1,20 @@
+import type { FlightPlanLeg } from "./flightPlanStorage";
+
+/**
+ * Input parameters for course calculations
+ * Uses same field names as FlightPlanLeg for easy mapping
+ *
+ * IMPORTANT: All speeds (tas, climbTas, descentTas) must be in KNOTS (already converted)
+ */
+export type CourseCalculationInput =
+  & Required<Pick<FlightPlanLeg, 'th' | 'tas' | 'md'>>
+  & Partial<Pick<FlightPlanLeg,
+      'wd' | 'ws' | 'dist' | 'ff' | 'elapsedMin' | 'prevFuel' |
+      'climbTas' | 'climbDist' | 'climbFuel' | 'climbWd' | 'climbWs' |
+      'descentTas' | 'descentDist' | 'descentFuel' | 'descentWd' | 'descentWs' |
+      'additionalFuel'
+    >>;
+
 /**
  * Result of course calculations including wind correction and fuel consumption
  */
@@ -94,48 +111,36 @@ export interface FlightParameters {
 /**
  * Calculate course parameters including wind correction, ground speed, and fuel consumption
  *
- * @param windDir - Wind direction in degrees (direction wind is coming FROM, 0-360) - used for cruise
- * @param windSpeed - Wind speed in knots - used for cruise
- * @param trueHeading - Desired true heading in degrees (0-360)
- * @param tas - True airspeed in knots (at cruise)
- * @param magDev - Magnetic deviation in degrees (negative for East, positive for West)
- * @param distance - Distance to travel in nautical miles (optional, required for ETA and fuel calculations)
- * @param fuelFlow - Fuel flow rate in GPH/LPH/PPH/KGH (optional, required for fuel calculations)
- * @param elapsedMinutes - Minutes already flown before this leg (optional, for multi-leg flights)
- * @param previousFuelUsed - Fuel already consumed in previous legs (optional, overrides elapsedMinutes calculation if provided)
- * @param climbTas - True airspeed during climb in knots (optional)
- * @param climbDistance - Horizontal distance covered during climb in nautical miles (optional)
- * @param climbFuelUsed - Fuel consumed during climb phase (optional)
- * @param descentTas - True airspeed during descent in knots (optional)
- * @param descentDistance - Horizontal distance covered during descent in nautical miles (optional)
- * @param descentFuelUsed - Fuel consumed during descent phase (optional)
- * @param climbWindDir - Wind direction during climb in degrees (optional, uses windDir if not specified)
- * @param climbWindSpeed - Wind speed during climb in knots (optional, uses windSpeed if not specified)
- * @param descentWindDir - Wind direction during descent in degrees (optional, uses windDir if not specified)
- * @param descentWindSpeed - Wind speed during descent in knots (optional, uses windDir if not specified)
+ * @param input - Course calculation parameters
  * @returns CourseCalculations object with wind correction angle, ground speed, compass heading, and fuel used
  */
-export function calculateCourse(
-  windDir: number,
-  windSpeed: number,
-  trueHeading: number,
-  tas: number,
-  magDev: number,
-  distance?: number,
-  fuelFlow?: number,
-  elapsedMinutes?: number,
-  previousFuelUsed?: number,
-  climbTas?: number,
-  climbDistance?: number,
-  climbFuelUsed?: number,
-  descentTas?: number,
-  descentDistance?: number,
-  descentFuelUsed?: number,
-  climbWindDir?: number,
-  climbWindSpeed?: number,
-  descentWindDir?: number,
-  descentWindSpeed?: number
-): CourseCalculations {
+export function calculateCourse(input: CourseCalculationInput): CourseCalculations {
+  // Destructure input parameters
+  let {
+    wd: windDir = 0,
+    ws: windSpeed = 0,
+    th: trueHeading,
+  } = input;
+
+  const {
+    tas,
+    md: magDev,
+    dist: distance,
+    ff: fuelFlow,
+    elapsedMin: elapsedMinutes,
+    prevFuel: previousFuelUsed,
+    climbTas,
+    climbDist: climbDistance,
+    climbFuel: climbFuelUsed,
+    climbWd: climbWindDir,
+    climbWs: climbWindSpeed,
+    descentTas,
+    descentDist: descentDistance,
+    descentFuel: descentFuelUsed,
+    descentWd: descentWindDir,
+    descentWs: descentWindSpeed,
+    additionalFuel,
+  } = input;
   // Convert to radians
   const toRad = (deg: number) => (deg * Math.PI) / 180;
   const toDeg = (rad: number) => (rad * 180) / Math.PI;
@@ -330,6 +335,11 @@ export function calculateCourse(
         }
       }
     }
+  }
+
+  // Add additional fuel if specified (minutes × fuel flow)
+  if (fuelUsed !== undefined && additionalFuel !== undefined && additionalFuel > 0 && fuelFlow !== undefined && fuelFlow > 0) {
+    fuelUsed = fuelUsed + (additionalFuel / 60) * fuelFlow;
   }
 
   return {

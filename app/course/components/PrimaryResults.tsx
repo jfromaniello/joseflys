@@ -170,9 +170,9 @@ export function PrimaryResults({
                 className="text-xs sm:text-sm font-semibold uppercase tracking-wider"
                 style={{ color: totalFuel !== undefined ? "oklch(0.7 0.15 150)" : "oklch(0.45 0.02 240)" }}
               >
-                Total Fuel Used
+                Total Fuel
               </p>
-              <Tooltip content="Total cumulative fuel consumption including this leg and any previous legs (based on elapsed time). Units match your fuel flow input. Always add reserves as required by regulations! Requires Distance and Fuel Flow inputs." />
+              <Tooltip content="Total cumulative fuel consumption including this leg and any previous legs. Units match your fuel flow input. Always add reserves as required by regulations! Requires Distance and Fuel Flow inputs." />
             </div>
             <p
               className="text-3xl sm:text-4xl font-bold"

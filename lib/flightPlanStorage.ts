@@ -187,6 +187,15 @@ export interface FlightPlanLeg {
    */
   descentWs?: number;
 
+  // Additional fuel
+  /**
+   * Additional regulatory fuel in minutes (e.g., for reserves, 30 min holding, etc.)
+   * Optional - typically used for alternative legs to add required fuel reserves
+   * Calculated as: additionalFuel (minutes) × fuelFlow
+   * @example 30 for 30 minutes of reserve fuel
+   */
+  additionalFuel?: number;
+
   // Display
   /**
    * User-provided description or name for this leg

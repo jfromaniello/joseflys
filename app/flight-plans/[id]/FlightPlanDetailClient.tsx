@@ -163,6 +163,7 @@ export function FlightPlanDetailClient({
     if (leg.descentFuel !== undefined) params.set("descentFuel", leg.descentFuel.toString());
     if (leg.descentWd !== undefined) params.set("dwd", leg.descentWd.toString());
     if (leg.descentWs !== undefined) params.set("dws", leg.descentWs.toString());
+    if (leg.additionalFuel !== undefined) params.set("af", leg.additionalFuel.toString());
     if (leg.waypoints && leg.waypoints.length > 0) {
       // Compress waypoints if needed
       const compressed = compressForUrl(leg.waypoints);
@@ -552,11 +553,19 @@ export function FlightPlanDetailClient({
                                   {leg.ff} {leg.fuelUnit.toUpperCase()}
                                 </span>
                               </div>
-                              {leg.wd && leg.ws && (
+                              {typeof leg.wd !== 'undefined' && typeof leg.ws !== 'undefined' ? (
                                 <div className="flex justify-between items-center">
                                   <span className="text-sm" style={{ color: "oklch(0.65 0.05 240)" }}>Wind</span>
                                   <span className="text-base font-bold" style={{ color: "oklch(0.85 0.15 230)" }}>
-                                    {leg.wd}° @ {leg.ws} KT
+                                    {leg.wd.toString().padStart(3, '0')}° @ {leg.ws} KT
+                                  </span>
+                                </div>
+                              ) : <></>}
+                              {leg.additionalFuel !== undefined && leg.additionalFuel > 0 && (
+                                <div className="flex justify-between items-center">
+                                  <span className="text-sm" style={{ color: "oklch(0.65 0.05 240)" }}>Reserve Time</span>
+                                  <span className="text-base font-bold" style={{ color: "oklch(0.85 0.15 230)" }}>
+                                    {leg.additionalFuel} min
                                   </span>
                                 </div>
                               )}
@@ -611,6 +620,14 @@ export function FlightPlanDetailClient({
                                     <span className="text-sm" style={{ color: "oklch(0.7 0.08 160)" }}>Descend Time</span>
                                     <span className="text-base font-bold" style={{ color: "oklch(0.85 0.15 160)" }}>
                                       {formatHoursToTime(result.descentTime)}
+                                    </span>
+                                  </div>
+                                )}
+                                {leg.additionalFuel !== undefined && leg.additionalFuel > 0 && leg.ff && (
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-sm" style={{ color: "oklch(0.7 0.08 160)" }}>Reserve Fuel</span>
+                                    <span className="text-base font-bold" style={{ color: "oklch(0.85 0.15 160)" }}>
+                                      {formatFuel((leg.additionalFuel / 60) * leg.ff, leg.fuelUnit)}
                                     </span>
                                   </div>
                                 )}
