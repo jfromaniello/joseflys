@@ -145,6 +145,13 @@ export function FlightPlanDetailClient({
     if (leg.climbTas) params.set("climbTas", leg.climbTas);
     if (leg.climbDist) params.set("climbDist", leg.climbDist);
     if (leg.climbFuel) params.set("climbFuel", leg.climbFuel);
+    if (leg.climbWd) params.set("cwd", leg.climbWd);
+    if (leg.climbWs) params.set("cws", leg.climbWs);
+    if (leg.descentTas) params.set("descentTas", leg.descentTas);
+    if (leg.descentDist) params.set("descentDist", leg.descentDist);
+    if (leg.descentFuel) params.set("descentFuel", leg.descentFuel);
+    if (leg.descentWd) params.set("dwd", leg.descentWd);
+    if (leg.descentWs) params.set("dws", leg.descentWs);
     if (leg.waypoints && leg.waypoints.length > 0) {
       // Compress waypoints if needed
       const { compressForUrl } = require("@/lib/urlCompression");
