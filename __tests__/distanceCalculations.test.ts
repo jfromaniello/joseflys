@@ -5,7 +5,7 @@ import {
   validateCoordinates,
   isDistanceWithinRecommendedRange,
   MAX_RECOMMENDED_DISTANCE_NM,
-} from "./distanceCalculations";
+} from "../lib/distanceCalculations";
 
 describe("distanceCalculations", () => {
   describe("calculateHaversineDistance", () => {

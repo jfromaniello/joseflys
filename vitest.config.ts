@@ -5,12 +5,12 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "node",
-    include: ["**/*.test.ts", "**/*.spec.ts"],
+    include: ["__tests__/**/*.test.ts", "__tests__/**/*.spec.ts"],
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],
       include: ["lib/**/*.ts"],
-      exclude: ["**/*.test.ts", "**/*.spec.ts"],
+      exclude: ["__tests__/**/*"],
     },
   },
   resolve: {

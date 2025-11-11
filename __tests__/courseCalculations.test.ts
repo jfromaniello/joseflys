@@ -4,7 +4,7 @@ import {
   calculateWaypoints,
   type Waypoint,
   type FlightParameters,
-} from "./courseCalculations";
+} from "../lib/courseCalculations";
 
 describe("courseCalculations", () => {
   describe("calculateCourse", () => {

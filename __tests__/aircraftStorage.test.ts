@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { serializeAircraft, deserializeAircraft, saveAircraft, loadCustomAircraft } from '../aircraftStorage';
-import { AircraftPerformance } from '../aircraftPerformance';
+import { serializeAircraft, deserializeAircraft, saveAircraft, loadCustomAircraft } from '../lib/aircraftStorage';
+import { AircraftPerformance } from '../lib/aircraftPerformance';
 
 describe('Aircraft Serialization (CBOR)', () => {
   describe('serializeAircraft', () => {
