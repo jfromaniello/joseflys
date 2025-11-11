@@ -990,7 +990,7 @@ export function LegPlannerClient({
                   <div className="pt-4 print:hidden space-y-3">
                     {/* Primary Actions - Flight Plan Management */}
                     {flightPlanId && (
-                      <div className={`grid grid-cols-1 gap-3 ${gridColsClass} md:max-w-lg md:mx-auto`}>
+                      <div className={`grid grid-cols-1 gap-2 ${gridColsClass} md:max-w-lg md:mx-auto`}>
                         {/* Update/Save Flight Plan Button - Always first */}
                         <button
                           onClick={() => setIsFlightPlanModalOpen(true)}
