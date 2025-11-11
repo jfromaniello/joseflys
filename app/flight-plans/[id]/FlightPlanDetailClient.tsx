@@ -556,6 +556,14 @@ export function FlightPlanDetailClient({
                                     </span>
                                   </div>
                                 )}
+                                {result.descentTime !== null && result.descentTime > 0 && (
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-sm" style={{ color: "oklch(0.7 0.08 160)" }}>Descend Time</span>
+                                    <span className="text-base font-bold" style={{ color: "oklch(0.85 0.15 160)" }}>
+                                      {formatHoursToTime(result.descentTime)}
+                                    </span>
+                                  </div>
+                                )}
                                 <div className="h-px bg-emerald-500/30 my-2"></div>
                                 <div className="flex justify-between items-center">
                                   <span className="text-sm font-semibold" style={{ color: "oklch(0.75 0.1 160)" }}>Total Time</span>
