@@ -118,6 +118,7 @@ export function calculateCourse(input: CourseCalculationInput): CourseCalculatio
   // Destructure input parameters
   let {
     wd: windDir = 0,
+    // eslint-disable-next-line prefer-const
     ws: windSpeed = 0,
     th: trueHeading,
   } = input;
@@ -487,7 +488,7 @@ export function calculateWaypoints(
 
       // Calculate time since last waypoint using similar logic
       let timeSinceLastCalc = 0;
-      const distanceSinceLast = waypoint.distance - previousDistance;
+      // const distanceSinceLast = waypoint.distance - previousDistance;
 
       // Determine which phases the segment spans
       const segmentStart = previousDistance;

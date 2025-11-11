@@ -1,7 +1,6 @@
 import { Tooltip } from "@/app/components/Tooltip";
 import { CourseCalculations } from "@/lib/courseCalculations";
 import { DeviationEntry } from "@/app/components/CompassDeviationModal";
-import { ShareButton } from "@/app/components/ShareButton";
 import { SpeedUnit } from "./CourseSpeedInputs";
 import { FuelUnit } from "./RangeFuelInputs";
 import { getSpeedUnitLabel } from "@/lib/speedConversion";
@@ -24,9 +23,6 @@ export function PrimaryResults({
   results,
   compassCourse,
   deviationTable,
-  windDir,
-  windSpeed,
-  trueHeading,
   speedUnit,
   fuelUnit,
   departureTime,
