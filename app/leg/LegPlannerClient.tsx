@@ -30,7 +30,6 @@ import { WaypointsResults } from "../course/components/WaypointsResults";
 import { ShareButtonSimple } from "../components/ShareButtonSimple";
 import { NewLegButton } from "../components/NewLegButton";
 import { Tooltip } from "../components/Tooltip";
-import { toKnots } from "@/lib/speedConversion";
 import { FlightPlanModal } from "../components/FlightPlanModal";
 import {
   addOrUpdateLeg,
@@ -71,6 +70,7 @@ interface LegPlannerClientProps {
   initialDescentWd: string;
   initialDescentWs: string;
   initialAdditionalFuel: string;
+  initialApproachLandingFuel: string;
   initialFlightPlanId: string;
   initialLegId: string;
 }
@@ -103,6 +103,7 @@ export function LegPlannerClient({
   initialDescentWd,
   initialDescentWs,
   initialAdditionalFuel,
+  initialApproachLandingFuel,
   initialFlightPlanId,
   initialLegId,
 }: LegPlannerClientProps) {
@@ -128,6 +129,7 @@ export function LegPlannerClient({
   const [descentWindDir, setDescentWindDir] = useState<string>(initialDescentWd);
   const [descentWindSpeed, setDescentWindSpeed] = useState<string>(initialDescentWs);
   const [additionalFuel, setAdditionalFuel] = useState<string>(initialAdditionalFuel);
+  const [approachLandingFuel, setApproachLandingFuel] = useState<string>(initialApproachLandingFuel);
   const [speedUnit, setSpeedUnit] = useState<SpeedUnit>(
     (initialSpeedUnit as SpeedUnit) || 'kt'
   );
@@ -264,6 +266,7 @@ export function LegPlannerClient({
     if (descentWindDir) params.set("dwd", descentWindDir);
     if (descentWindSpeed) params.set("dws", descentWindSpeed);
     if (additionalFuel) params.set("af", additionalFuel);
+    if (approachLandingFuel) params.set("alf", approachLandingFuel);
     if (speedUnit !== 'kt') params.set("unit", speedUnit);
     if (fuelUnit !== 'gph') params.set("funit", fuelUnit);
 
@@ -302,44 +305,16 @@ export function LegPlannerClient({
     // Use window.history.replaceState instead of router.replace to avoid server requests
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState(null, '', newUrl);
-  }, [trueHeading, tas, windDir, windSpeed, magDev, distance, fuelFlow, description, departureTime, elapsedMinutes, previousFuelUsed, climbTas, climbDistance, climbFuelUsed, climbWindDir, climbWindSpeed, descentTas, descentDistance, descentFuelUsed, descentWindDir, descentWindSpeed, additionalFuel, deviationTable, waypoints, speedUnit, fuelUnit, aircraft, flightPlanId, legId]);
+  }, [trueHeading, tas, windDir, windSpeed, magDev, distance, fuelFlow, description, departureTime, elapsedMinutes, previousFuelUsed, climbTas, climbDistance, climbFuelUsed, climbWindDir, climbWindSpeed, descentTas, descentDistance, descentFuelUsed, descentWindDir, descentWindSpeed, additionalFuel, approachLandingFuel, deviationTable, waypoints, speedUnit, fuelUnit, aircraft, flightPlanId, legId]);
 
   // Calculate results during render (not in useEffect to avoid cascading renders)
-  const th = parseFloat(trueHeading);
-  const tasVal = parseFloat(tas);
-  // Convert TAS to knots for calculations
-  const tasInKnots = !isNaN(tasVal) ? toKnots(tasVal, speedUnit) : NaN;
-  const wd = windDir ? parseFloat(windDir) : 0; // Default to 0 if empty
-  const ws = windSpeed ? parseFloat(windSpeed) : 0; // Default to 0 if empty
-  const md = parseFloat(magDev) || 0; // Default to 0 if empty
-  const dist = distance ? parseFloat(distance) : undefined;
-  const ff = fuelFlow ? parseFloat(fuelFlow) : undefined;
-
+  // Parse basic values needed for validation and other components
   const elapsedMins = elapsedMinutes ? parseInt(elapsedMinutes) : undefined;
   const prevFuel = previousFuelUsed ? parseFloat(previousFuelUsed) : undefined;
-
-  // Parse climb data
-  const climbTasVal = climbTas ? parseFloat(climbTas) : undefined;
-  const climbTasInKnots = climbTasVal && !isNaN(climbTasVal) ? toKnots(climbTasVal, speedUnit) : undefined;
-  const climbDist = climbDistance ? parseFloat(climbDistance) : undefined;
-  const climbFuel = climbFuelUsed ? parseFloat(climbFuelUsed) : undefined;
-
-  // Parse descent data
-  const descentTasVal = descentTas ? parseFloat(descentTas) : undefined;
-  const descentTasInKnots = descentTasVal && !isNaN(descentTasVal) ? toKnots(descentTasVal, speedUnit) : undefined;
-  const descentDist = descentDistance ? parseFloat(descentDistance) : undefined;
-  const descentFuel = descentFuelUsed ? parseFloat(descentFuelUsed) : undefined;
-
-  // Parse climb wind
-  const climbWd = climbWindDir ? parseFloat(climbWindDir) : undefined;
-  const climbWs = climbWindSpeed ? parseFloat(climbWindSpeed) : undefined;
-
-  // Parse descent wind
-  const descentWd = descentWindDir ? parseFloat(descentWindDir) : undefined;
-  const descentWs = descentWindSpeed ? parseFloat(descentWindSpeed) : undefined;
-
-  // Parse additional fuel (in minutes)
-  const additionalFuelMins = additionalFuel ? parseFloat(additionalFuel) : undefined;
+  const tasVal = parseFloat(tas);
+  const thVal = parseFloat(trueHeading);
+  const dist = distance ? parseFloat(distance) : undefined;
+  const ff = fuelFlow ? parseFloat(fuelFlow) : undefined;
 
   // Load example data
   const loadExample = () => {
@@ -382,22 +357,25 @@ export function LegPlannerClient({
     setSpeedUnit(data.speedUnit);
   };
 
-  const handleFlightPlanSelect = (flightPlan: FlightPlan) => {
-    // Helper to convert string to number (required fields)
-    const toNumber = (value: string): number => {
-      const num = parseFloat(value);
-      return isNaN(num) ? 0 : num;
-    };
+  // Helper to convert string to number (required fields)
+  const toNumber = (value: string): number => {
+    const num = parseFloat(value);
+    return isNaN(num) ? 0 : num;
+  };
 
-    // Helper to convert string to optional number
-    const toOptionalNumber = (value: string): number | undefined => {
-      if (!value || value.trim() === "") return undefined;
-      const num = parseFloat(value);
-      return isNaN(num) ? undefined : num;
-    };
+  // Helper to convert string to optional number
+  const toOptionalNumber = (value: string): number | undefined => {
+    if (!value || value.trim() === "") return undefined;
+    const num = parseFloat(value);
+    return isNaN(num) ? undefined : num;
+  };
 
-    // Collect all current leg data
-    const legData: Omit<FlightPlanLeg, "id" | "index"> = {
+  /**
+   * Build leg data from current state
+   * Single source of truth for mapping view state to FlightPlanLeg
+   */
+  const buildLegDataFromState = (): Omit<FlightPlanLeg, "id" | "index"> => {
+    return {
       th: toNumber(trueHeading),
       tas: toNumber(tas),
       wd: toOptionalNumber(windDir),
@@ -422,9 +400,15 @@ export function LegPlannerClient({
       descentWd: toOptionalNumber(descentWindDir),
       descentWs: toOptionalNumber(descentWindSpeed),
       additionalFuel: toOptionalNumber(additionalFuel),
+      approachLandingFuel: toOptionalNumber(approachLandingFuel),
       desc: description,
       unit: speedUnit,
     };
+  };
+
+  const handleFlightPlanSelect = (flightPlan: FlightPlan) => {
+    // Use the helper to build leg data
+    const legData = buildLegDataFromState();
 
     // Save or update the leg
     const result = addOrUpdateLeg(flightPlan.id, legData, legId || undefined);
@@ -436,32 +420,13 @@ export function LegPlannerClient({
     }
   };
 
+  // Calculate course using leg data from state
+  // Validation: need valid heading and TAS
   const results =
-    !isNaN(th) &&
-    !isNaN(tasInKnots) &&
-    tasInKnots > 0
-      ? calculateCourse({
-          th,
-          tas: tasInKnots,
-          md,
-          wd,
-          ws,
-          dist,
-          ff,
-          elapsedMin: elapsedMins,
-          prevFuel,
-          climbTas: climbTasInKnots,
-          climbDist,
-          climbFuel,
-          climbWd,
-          climbWs,
-          descentTas: descentTasInKnots,
-          descentDist,
-          descentFuel,
-          descentWd,
-          descentWs,
-          additionalFuel: additionalFuelMins,
-        })
+    !isNaN(thVal) &&
+    !isNaN(tasVal) &&
+    tasVal > 0
+      ? calculateCourse(buildLegDataFromState())
       : null;
 
   // Calculate compass course when deviation table is available and results exist
@@ -921,6 +886,9 @@ export function LegPlannerClient({
             <AdditionalFuelInput
               additionalFuel={additionalFuel}
               setAdditionalFuel={setAdditionalFuel}
+              approachLandingFuel={approachLandingFuel}
+              setApproachLandingFuel={setApproachLandingFuel}
+              hasDescentData={!!(descentTas || descentDistance || descentFuelUsed)}
             />
           </div>
 

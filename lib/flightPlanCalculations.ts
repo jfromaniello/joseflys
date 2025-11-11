@@ -5,7 +5,6 @@
 
 import { calculateCourse, calculateWaypoints, WaypointResult } from "./courseCalculations";
 import { calculateCompassCourse } from "./compassDeviation";
-import { toKnots } from "./speedConversion";
 import { loadAircraftFromUrl } from "./aircraftStorage";
 import { getFuelResultUnit, type FuelUnit } from "./fuelConversion";
 import type { FlightPlanLeg } from "./flightPlanStorage";
@@ -51,23 +50,13 @@ function addMinutesToTime(timeHHMM: string, minutes: number): string {
  */
 export function calculateLegResults(leg: FlightPlanLeg): LegCalculatedResults | null {
   try {
-    // Convert TAS values to knots
-    const tasInKnots = toKnots(leg.tas, leg.unit);
-    const climbTasInKnots = leg.climbTas ? toKnots(leg.climbTas, leg.unit) : undefined;
-    const descentTasInKnots = leg.descentTas ? toKnots(leg.descentTas, leg.unit) : undefined;
-
     // Validate required fields
-    if (isNaN(leg.th) || isNaN(tasInKnots) || tasInKnots <= 0 || isNaN(leg.dist) || isNaN(leg.ff)) {
+    if (isNaN(leg.th) || isNaN(leg.tas) || leg.tas <= 0 || isNaN(leg.dist) || isNaN(leg.ff)) {
       return null;
     }
 
-    // Calculate course - pass leg data with converted TAS values
-    const results = calculateCourse({
-      ...leg,
-      tas: tasInKnots,
-      climbTas: climbTasInKnots,
-      descentTas: descentTasInKnots,
-    });
+    // Calculate course - unit conversions are done internally
+    const results = calculateCourse(leg);
 
     if (!results) return null;
 
@@ -103,12 +92,11 @@ export function calculateLegResults(leg: FlightPlanLeg): LegCalculatedResults | 
       arrivalTime = addMinutesToTime(startTime, legDurationMinutes);
     }
 
-    // results.fuelUsed from calculateCourse already includes prevFuel and additionalFuel
-    // So totalFuel should just be results.fuelUsed
+    // Use pre-calculated values from calculateCourse
+    // results.fuelUsed = cumulative (prevFuel + legFuel)
+    // results.legFuelUsed = fuel for THIS leg only (includes additional & approach/landing)
     const totalFuelAccumulated = results.fuelUsed || 0;
-
-    // Fuel used in just this leg (excluding previous fuel)
-    const legFuelOnly = totalFuelAccumulated - (leg.prevFuel || 0);
+    const legFuelOnly = results.legFuelUsed || 0;
 
     return {
       groundSpeed: results.groundSpeed,
@@ -154,16 +142,7 @@ export function calculateLegWaypoints(
 
     // Get climb phase from leg results
     // We need to recalculate to get the full results including climbPhase
-    const tasInKnots = toKnots(leg.tas, leg.unit);
-    const climbTasInKnots = leg.climbTas ? toKnots(leg.climbTas, leg.unit) : undefined;
-    const descentTasInKnots = leg.descentTas ? toKnots(leg.descentTas, leg.unit) : undefined;
-
-    const results = calculateCourse({
-      ...leg,
-      tas: tasInKnots,
-      climbTas: climbTasInKnots,
-      descentTas: descentTasInKnots,
-    });
+    const results = calculateCourse(leg);
 
     return calculateWaypoints(
       leg.waypoints,

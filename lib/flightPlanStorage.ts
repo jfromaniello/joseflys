@@ -196,6 +196,14 @@ export interface FlightPlanLeg {
    */
   additionalFuel?: number;
 
+  /**
+   * Approach and landing fuel in gallons
+   * Optional - only for final legs (legs with descent data)
+   * This represents the fuel consumed during approach and landing phases
+   * @example 5 for 5 gallons of approach/landing fuel
+   */
+  approachLandingFuel?: number;
+
   // Display
   /**
    * User-provided description or name for this leg

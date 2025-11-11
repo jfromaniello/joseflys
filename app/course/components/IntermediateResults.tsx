@@ -11,10 +11,8 @@ interface IntermediateResultsProps {
 export function IntermediateResults({ results, fuelUnit, fuelFlow }: IntermediateResultsProps) {
   // Calculate leg-specific values (just for THIS leg, not including elapsed time)
   const legTimeMinutes = results.eta ? Math.round(results.eta * 60) : undefined;
-  // Leg fuel is just fuelFlow * leg time (not total)
-  const legFuel = fuelFlow !== undefined && results.eta !== undefined
-    ? fuelFlow * results.eta
-    : undefined;
+  // Use the pre-calculated leg fuel from results (includes all leg fuel components)
+  const legFuel = results.legFuelUsed;
 
   const hasPhaseData = results.climbPhase !== undefined || results.descentPhase !== undefined;
   const hasClimbData = results.climbPhase !== undefined;

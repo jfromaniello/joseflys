@@ -1,10 +1,13 @@
 import type { FlightPlanLeg } from "./flightPlanStorage";
+import { toKnots } from "./speedConversion";
 
 /**
  * Input parameters for course calculations
  * Uses same field names as FlightPlanLeg for easy mapping
  *
- * IMPORTANT: All speeds (tas, climbTas, descentTas) must be in KNOTS (already converted)
+ * All speeds (tas, climbTas, descentTas) are in the unit specified by 'unit' parameter
+ * Conversions to knots are done internally by calculateCourse
+ * If unit is not provided, defaults to 'kt' (knots)
  */
 export type CourseCalculationInput =
   & Required<Pick<FlightPlanLeg, 'th' | 'tas' | 'md'>>
@@ -12,11 +15,18 @@ export type CourseCalculationInput =
       'wd' | 'ws' | 'dist' | 'ff' | 'elapsedMin' | 'prevFuel' |
       'climbTas' | 'climbDist' | 'climbFuel' | 'climbWd' | 'climbWs' |
       'descentTas' | 'descentDist' | 'descentFuel' | 'descentWd' | 'descentWs' |
-      'additionalFuel'
+      'additionalFuel' | 'approachLandingFuel' | 'unit'
     >>;
 
 /**
  * Result of course calculations including wind correction and fuel consumption
+ *
+ * Fuel calculation breakdown:
+ * - baseFuel = fuel from climb + cruise + descent phases (fuelFlow × time)
+ * - additionalFuelAmount = (additionalFuel minutes / 60) × fuelFlow
+ * - approachLandingFuelAmount = direct gallon amount
+ * - legFuelUsed = baseFuel + additionalFuelAmount + approachLandingFuelAmount
+ * - fuelUsed = prevFuel + legFuelUsed (total cumulative)
  */
 export interface CourseCalculations {
   /** Crosswind component in knots (positive = wind from right, negative = wind from left) */
@@ -31,10 +41,41 @@ export interface CourseCalculations {
   groundSpeed: number;
   /** Effective True Air Speed in knots (used when WCA > 10°) */
   etas?: number;
-  /** Estimated time of arrival in hours (time for this leg only) */
+  /**
+   * Estimated time of arrival in hours (time for this leg only)
+   * Does NOT include elapsedMin - this is just the flight time for this leg
+   */
   eta?: number;
-  /** Total fuel used in same units as fuel flow (cumulative if previousFuelUsed provided) */
+
+  // ===== Fuel Calculations =====
+  /**
+   * Total cumulative fuel used (includes prevFuel if provided)
+   * Formula: prevFuel + legFuelUsed
+   * Units: same as fuelFlow input
+   */
   fuelUsed?: number;
+
+  /**
+   * Fuel used ONLY in this leg (excludes prevFuel, includes all leg fuel)
+   * Formula: baseFuel + additionalFuelAmount + approachLandingFuelAmount
+   * Units: same as fuelFlow input
+   */
+  legFuelUsed?: number;
+
+  /**
+   * Additional fuel from additionalFuel parameter (converted from minutes)
+   * Formula: (additionalFuel / 60) × fuelFlow
+   * Units: same as fuelFlow input
+   */
+  additionalFuelAmount?: number;
+
+  /**
+   * Approach and landing fuel (direct amount, not time-based)
+   * This is the approachLandingFuel input value as-is
+   * Units: gallons (GAL)
+   */
+  approachLandingFuelAmount?: number;
+
   /** Climb phase calculations (if climb data provided) */
   climbPhase?: {
     /** Distance covered during climb in nautical miles */
@@ -141,7 +182,15 @@ export function calculateCourse(input: CourseCalculationInput): CourseCalculatio
     descentWd: descentWindDir,
     descentWs: descentWindSpeed,
     additionalFuel,
+    approachLandingFuel,
+    unit = 'kt', // Default to knots if not specified
   } = input;
+
+  // Convert all speeds to knots for internal calculations
+  const tasInKnots = toKnots(tas, unit);
+  const climbTasInKnots = climbTas !== undefined ? toKnots(climbTas, unit) : undefined;
+  const descentTasInKnots = descentTas !== undefined ? toKnots(descentTas, unit) : undefined;
+
   // Convert to radians
   const toRad = (deg: number) => (deg * Math.PI) / 180;
   const toDeg = (rad: number) => (rad * 180) / Math.PI;
@@ -162,14 +211,14 @@ export function calculateCourse(input: CourseCalculationInput): CourseCalculatio
   const headwind = -windSpeed * Math.cos(relativeWind);
 
   // Wind correction angle using arcsin formula
-  const wcaRad = Math.asin((windSpeed * Math.sin(relativeWind)) / tas);
+  const wcaRad = Math.asin((windSpeed * Math.sin(relativeWind)) / tasInKnots);
   const windCorrectionAngle = toDeg(wcaRad);
 
   // ETAS (Effective True Air Speed) - used when WCA > 10°
   let etas: number | undefined;
-  let effectiveSpeed = tas;
+  let effectiveSpeed = tasInKnots;
   if (Math.abs(windCorrectionAngle) > 10) {
-    etas = tas * Math.cos(wcaRad);
+    etas = tasInKnots * Math.cos(wcaRad);
     effectiveSpeed = etas; // Use ETAS for GS calculation when WCA > 10°
   }
 
@@ -194,8 +243,8 @@ export function calculateCourse(input: CourseCalculationInput): CourseCalculatio
 
   // Check if we have complete climb data
   const hasClimbData =
-    climbTas !== undefined &&
-    climbTas > 0 &&
+    climbTasInKnots !== undefined &&
+    climbTasInKnots > 0 &&
     climbDistance !== undefined &&
     climbDistance > 0 &&
     climbFuelUsed !== undefined &&
@@ -203,8 +252,8 @@ export function calculateCourse(input: CourseCalculationInput): CourseCalculatio
 
   // Check if we have complete descent data
   const hasDescentData =
-    descentTas !== undefined &&
-    descentTas > 0 &&
+    descentTasInKnots !== undefined &&
+    descentTasInKnots > 0 &&
     descentDistance !== undefined &&
     descentDistance > 0 &&
     descentFuelUsed !== undefined &&
@@ -228,12 +277,12 @@ export function calculateCourse(input: CourseCalculationInput): CourseCalculatio
         // Calculate relative wind for climb phase
         const climbRelativeWind = toRad(effectiveClimbWindDir - trueHeading);
 
-        const climbWcaRad = Math.asin((effectiveClimbWindSpeed * Math.sin(climbRelativeWind)) / climbTas!);
+        const climbWcaRad = Math.asin((effectiveClimbWindSpeed * Math.sin(climbRelativeWind)) / climbTasInKnots!);
         const climbWca = toDeg(climbWcaRad);
 
-        let climbEffectiveSpeed = climbTas!;
+        let climbEffectiveSpeed = climbTasInKnots!;
         if (Math.abs(climbWca) > 10) {
-          climbEffectiveSpeed = climbTas! * Math.cos(climbWcaRad);
+          climbEffectiveSpeed = climbTasInKnots! * Math.cos(climbWcaRad);
         }
 
         const climbGsSquared =
@@ -262,12 +311,12 @@ export function calculateCourse(input: CourseCalculationInput): CourseCalculatio
         // Calculate relative wind for descent phase
         const descentRelativeWind = toRad(effectiveDescentWindDir - trueHeading);
 
-        const descentWcaRad = Math.asin((effectiveDescentWindSpeed * Math.sin(descentRelativeWind)) / descentTas!);
+        const descentWcaRad = Math.asin((effectiveDescentWindSpeed * Math.sin(descentRelativeWind)) / descentTasInKnots!);
         const descentWca = toDeg(descentWcaRad);
 
-        let descentEffectiveSpeed = descentTas!;
+        let descentEffectiveSpeed = descentTasInKnots!;
         if (Math.abs(descentWca) > 10) {
-          descentEffectiveSpeed = descentTas! * Math.cos(descentWcaRad);
+          descentEffectiveSpeed = descentTasInKnots! * Math.cos(descentWcaRad);
         }
 
         const descentGsSquared =
@@ -338,9 +387,33 @@ export function calculateCourse(input: CourseCalculationInput): CourseCalculatio
     }
   }
 
-  // Add additional fuel if specified (minutes × fuel flow)
-  if (fuelUsed !== undefined && additionalFuel !== undefined && additionalFuel > 0 && fuelFlow !== undefined && fuelFlow > 0) {
-    fuelUsed = fuelUsed + (additionalFuel / 60) * fuelFlow;
+  // Calculate additional fuel components
+  let additionalFuelAmount: number | undefined;
+  let approachLandingFuelAmount: number | undefined;
+  let legFuelUsed: number | undefined;
+
+  // Additional fuel (time-based): minutes × fuel flow
+  if (additionalFuel !== undefined && additionalFuel > 0 && fuelFlow !== undefined && fuelFlow > 0) {
+    additionalFuelAmount = (additionalFuel / 60) * fuelFlow;
+  }
+
+  // Approach & landing fuel (direct amount in gallons)
+  if (approachLandingFuel !== undefined && approachLandingFuel > 0) {
+    approachLandingFuelAmount = approachLandingFuel;
+  }
+
+  // Calculate leg fuel (fuel for THIS leg only, without prevFuel)
+  if (fuelUsed !== undefined) {
+    // Base fuel is current fuelUsed minus prevFuel (if it was added)
+    const baseFuel = previousFuelUsed !== undefined
+      ? fuelUsed - previousFuelUsed
+      : fuelUsed;
+
+    // Leg fuel = base + additional + approach/landing
+    legFuelUsed = baseFuel + (additionalFuelAmount || 0) + (approachLandingFuelAmount || 0);
+
+    // Total cumulative fuel = prevFuel + legFuel
+    fuelUsed = (previousFuelUsed || 0) + legFuelUsed;
   }
 
   return {
@@ -352,6 +425,9 @@ export function calculateCourse(input: CourseCalculationInput): CourseCalculatio
     etas,
     eta,
     fuelUsed,
+    legFuelUsed,
+    additionalFuelAmount,
+    approachLandingFuelAmount,
     climbPhase,
     cruisePhase,
     descentPhase,
@@ -539,7 +615,7 @@ export function calculateWaypoints(
       // Cruise fuel
       const cruiseDistCovered = Math.max(0, Math.min(waypoint.distance, descentStart) - climbDist);
       if (cruiseDistCovered > 0 && effectiveCruiseFuelFlow > 0) {
-        const cruiseTime = (cruiseDistCovered / groundSpeed) / 60; // in hours
+        const cruiseTime = cruiseDistCovered / groundSpeed; // in hours (NM / knots = hours)
         waypointFuelFromLegStart += effectiveCruiseFuelFlow * cruiseTime;
       }
 

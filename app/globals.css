@@ -385,6 +385,11 @@ html {
     padding-right: 2.5rem !important;
   }
 
+  /* Add more right padding to Approach & Landing Fuel input for better spacing with GAL unit */
+  .additional-fuel div.relative input[class*="pr-14"] {
+    padding-right: 2.5rem !important;
+  }
+
   /* Reduce right padding for inputs with degree symbol (°) - closer spacing */
   /* True Heading in course-speed-inputs */
   .course-speed-inputs .grid > div.relative:first-of-type input {

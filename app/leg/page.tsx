@@ -31,6 +31,7 @@ interface LegPageProps {
     dwd?: string; // Descent wind direction
     dws?: string; // Descent wind speed
     af?: string; // Additional fuel (minutes)
+    alf?: string; // Approach & landing fuel (gallons)
     fp?: string; // Flight plan ID
     lid?: string; // Leg ID
   }>;
@@ -65,6 +66,7 @@ export default async function LegPage({ searchParams }: LegPageProps) {
   const descentWd = params.dwd || "";
   const descentWs = params.dws || "";
   const additionalFuel = params.af || "";
+  const approachLandingFuel = params.alf || "";
   const fp = params.fp || "";
   const lid = params.lid || "";
 
@@ -97,6 +99,7 @@ export default async function LegPage({ searchParams }: LegPageProps) {
       initialDescentWd={descentWd}
       initialDescentWs={descentWs}
       initialAdditionalFuel={additionalFuel}
+      initialApproachLandingFuel={approachLandingFuel}
       initialFlightPlanId={fp}
       initialLegId={lid}
     />

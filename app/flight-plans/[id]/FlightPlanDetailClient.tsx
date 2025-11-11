@@ -164,6 +164,7 @@ export function FlightPlanDetailClient({
     if (leg.descentWd !== undefined) params.set("dwd", leg.descentWd.toString());
     if (leg.descentWs !== undefined) params.set("dws", leg.descentWs.toString());
     if (leg.additionalFuel !== undefined) params.set("af", leg.additionalFuel.toString());
+    if (leg.approachLandingFuel !== undefined) params.set("alf", leg.approachLandingFuel.toString());
     if (leg.waypoints && leg.waypoints.length > 0) {
       // Compress waypoints if needed
       const compressed = compressForUrl(leg.waypoints);
@@ -633,19 +634,20 @@ export function FlightPlanDetailClient({
                                 )}
                                 <div className="h-px bg-emerald-500/30 my-2"></div>
                                 <div className="flex justify-between items-center">
-                                  <span className="text-sm font-semibold" style={{ color: "oklch(0.75 0.1 160)" }}>Total Time</span>
+                                  <span className="text-sm font-semibold" style={{ color: "oklch(0.75 0.1 160)" }}>Leg Time</span>
                                   <span className="text-lg font-bold" style={{ color: "oklch(0.9 0.18 160)" }}>
                                     {formatHoursToTime(result.legDuration)}
                                   </span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                  <span className="text-sm font-semibold" style={{ color: "oklch(0.75 0.1 160)" }}>Total Fuel</span>
+                                  <span className="text-sm font-semibold" style={{ color: "oklch(0.75 0.1 160)" }}>Leg Fuel</span>
                                   <span className="text-lg font-bold" style={{ color: "oklch(0.9 0.18 160)" }}>
                                     {formatFuel(result.fuelUsed, leg.fuelUnit)}
                                   </span>
                                 </div>
+                                <div className="h-px bg-emerald-500/30 my-2"></div>
                                 {result.arrivalTime && (
-                                  <div className="flex justify-between items-center pt-2 border-t border-emerald-500/30">
+                                  <div className="flex justify-between items-center">
                                     <span className="text-sm font-semibold" style={{ color: "oklch(0.75 0.1 160)" }}>
                                       {isAlternative ? "ETA to Alt" : "ETA"}
                                     </span>
@@ -654,6 +656,12 @@ export function FlightPlanDetailClient({
                                     </span>
                                   </div>
                                 )}
+                                <div className="flex justify-between items-center">
+                                  <span className="text-sm font-semibold" style={{ color: "oklch(0.75 0.1 160)" }}>Total to Here</span>
+                                  <span className="text-lg font-bold" style={{ color: "oklch(0.9 0.18 160)" }}>
+                                    {formatFuel(result.totalFuel, leg.fuelUnit)}
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           )}

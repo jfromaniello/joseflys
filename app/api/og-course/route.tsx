@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
       md: parseFloat(md),
       dist: dist ? parseFloat(dist) : undefined,
       ff: ff ? parseFloat(ff) : undefined,
+      unit: 'kt', // OG images always use knots
     });
 
     // Try to calculate Compass Course if deviation table is provided

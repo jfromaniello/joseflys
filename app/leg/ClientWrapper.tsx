@@ -39,6 +39,7 @@ interface ClientWrapperProps {
   initialDescentWd: string;
   initialDescentWs: string;
   initialAdditionalFuel: string;
+  initialApproachLandingFuel: string;
   initialFlightPlanId: string;
   initialLegId: string;
 }
