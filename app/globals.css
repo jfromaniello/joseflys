@@ -119,7 +119,8 @@ html {
   .corrections-inputs > h3,
   .range-fuel-inputs > h3,
   .flight-params-inputs > h3,
-  .climb-data > h3 {
+  .climb-data > h3,
+  .descent-data > h3 {
     margin-bottom: 0.5rem !important;
   }
 
@@ -129,6 +130,7 @@ html {
   .corrections-inputs > .grid,
   .flight-params-inputs > .grid,
   .climb-data > .grid,
+  .descent-data > .grid,
   .leg-distance-waypoints > .grid,
   .fuel-consumption > .grid {
     display: grid !important;
@@ -143,6 +145,7 @@ html {
   .corrections-inputs .grid > div.hidden,
   .flight-params-inputs .grid > div.hidden,
   .climb-data .grid > div.hidden,
+  .descent-data .grid > div.hidden,
   .range-fuel-inputs .grid > div.hidden,
   .leg-distance-waypoints .grid > div.hidden,
   .fuel-consumption .grid > div.hidden {
@@ -154,8 +157,6 @@ html {
   .wind-inputs .grid .grid,
   .corrections-inputs .grid .grid,
   .flight-params-inputs .grid .grid,
-  .climb-data .grid .grid,
-  .leg-distance-waypoints .grid .grid,
   .fuel-consumption .grid .grid {
     display: flex !important;
     gap: 0.5rem !important;
@@ -163,11 +164,38 @@ html {
     width: 9.6rem !important; /* 4.6rem input + 0.5rem gap + 4.5rem select */
   }
 
+  /* Climb and descent wind inputs - compact horizontal layout */
+  .climb-data > .grid > div.grid,
+  .descent-data > .grid > div.grid {
+    display: flex !important;
+    gap: 0.5rem !important;
+    align-items: center !important;
+  }
+
+  /* Relative containers for climb/descent wind inputs */
+  .climb-data > .grid > div.grid > div.relative,
+  .descent-data > .grid > div.grid > div.relative {
+    flex-shrink: 0 !important;
+  }
+
+  /* First input (direction) - 4rem for print */
+  .climb-data > .grid > div.grid > div.relative:first-child,
+  .descent-data > .grid > div.grid > div.relative:first-child {
+    width: 4rem !important;
+  }
+
+  /* Second input (speed) - 5.5rem for print (4rem + 0.5rem gap + 5.5rem = 10rem total) */
+  .climb-data > .grid > div.grid > div.relative:last-child,
+  .descent-data > .grid > div.grid > div.relative:last-child {
+    width: 5.5rem !important;
+  }
+
   .course-speed-inputs .grid .grid > *,
   .wind-inputs .grid .grid > *,
   .corrections-inputs .grid .grid > *,
   .flight-params-inputs .grid .grid > *,
   .climb-data .grid .grid > *,
+  .descent-data .grid .grid > *,
   .leg-distance-waypoints .grid .grid > *,
   .fuel-consumption .grid .grid > * {
     margin: 0 !important;
@@ -184,12 +212,43 @@ html {
     width: 4.5rem !important;
   }
 
+  /* Inputs inside relative containers for climb/descent winds - full width of container */
+  .climb-data > .grid > div.grid > div.relative input,
+  .descent-data > .grid > div.grid > div.relative input {
+    width: 100% !important;
+  }
+
+  /* Padding on wind direction input (has ° symbol with right-4) - pr-6 = 1.5rem */
+  .climb-data > .grid > div.grid > div.relative:first-child input,
+  .descent-data > .grid > div.grid > div.relative:first-child input {
+    padding-right: 1.5rem !important;
+  }
+
+  /* Normal padding on wind speed input (has KT) */
+  .climb-data > .grid > div.grid > div.relative:last-child input,
+  .descent-data > .grid > div.grid > div.relative:last-child input {
+    padding-right: 2rem !important;
+  }
+
+  /* Position degree symbol at right-4 (1rem) */
+  .climb-data > .grid > div.grid > div.relative:first-child .absolute,
+  .descent-data > .grid > div.grid > div.relative:first-child .absolute {
+    right: 1rem !important;
+  }
+
+  /* Position KT at right-4 (1rem) */
+  .climb-data > .grid > div.grid > div.relative:last-child .absolute,
+  .descent-data > .grid > div.grid > div.relative:last-child .absolute {
+    right: 1rem !important;
+  }
+
   /* Labels should take first column - all same width */
   .course-speed-inputs .grid > label,
   .wind-inputs .grid > label,
   .corrections-inputs .grid > label,
   .flight-params-inputs .grid > label,
   .climb-data .grid > label,
+  .descent-data .grid > label,
   .leg-distance-waypoints .grid > label,
   .fuel-consumption .grid > label {
     display: flex !important;
@@ -204,6 +263,7 @@ html {
   .corrections-inputs .grid > div.relative,
   .flight-params-inputs .grid > div.relative,
   .climb-data .grid > div.relative,
+  .descent-data .grid > div.relative,
   .leg-distance-waypoints .grid > div.relative {
     width: 9.6rem !important;
     margin: 0 !important;
@@ -215,6 +275,7 @@ html {
   .corrections-inputs .grid > div.relative input,
   .flight-params-inputs .grid > div.relative input,
   .climb-data .grid > div.relative input,
+  .descent-data .grid > div.relative input,
   .leg-distance-waypoints .grid > div.relative input {
     width: 100% !important;
   }
@@ -225,6 +286,7 @@ html {
   .corrections-inputs .grid > div:not(.hidden):not(.relative):not([class*="grid-cols"]),
   .flight-params-inputs .grid > div:not(.hidden):not(.relative):not([class*="grid-cols"]),
   .climb-data .grid > div:not(.hidden):not(.relative):not([class*="grid-cols"]),
+  .descent-data .grid > div:not(.hidden):not(.relative):not([class*="grid-cols"]),
   .leg-distance-waypoints .grid > div:not(.hidden):not(.relative):not([class*="grid-cols"]) {
     display: block !important;
     width: 9.6rem !important;
@@ -237,6 +299,7 @@ html {
   .corrections-inputs .grid > input,
   .flight-params-inputs .grid > input,
   .climb-data .grid > input,
+  .descent-data .grid > input,
   .leg-distance-waypoints .grid > input {
     display: block !important;
     width: 9.6rem !important;
@@ -258,6 +321,7 @@ html {
   .corrections-inputs .grid .grid select,
   .flight-params-inputs .grid .grid select,
   .climb-data .grid .grid select,
+  .descent-data .grid .grid select,
   .fuel-consumption .grid .grid select {
     width: 4.5rem !important;
   }
@@ -301,6 +365,17 @@ html {
 
   /* Backup selector for all climb-data relative inputs that aren't the first two */
   .climb-data .grid > div.relative ~ div.relative ~ div.relative input {
+    padding-right: 2.5rem !important;
+  }
+
+  /* Add more right padding to Descent Fuel Used input for better spacing with unit */
+  /* Target by looking for inputs with pr-14 class inside descent-data relative containers */
+  .descent-data div.relative input[class*="pr-14"] {
+    padding-right: 2.5rem !important;
+  }
+
+  /* Backup selector for all descent-data relative inputs that aren't the first two */
+  .descent-data .grid > div.relative ~ div.relative ~ div.relative input {
     padding-right: 2.5rem !important;
   }
 
@@ -556,6 +631,12 @@ html {
 
   /* Page break before climb data if it has content */
   .climb-data:not(.print\:hidden) {
+    page-break-before: always !important;
+    break-before: page !important;
+  }
+
+  /* Page break before descent data if it has content */
+  .descent-data:not(.print\:hidden) {
     page-break-before: always !important;
     break-before: page !important;
   }

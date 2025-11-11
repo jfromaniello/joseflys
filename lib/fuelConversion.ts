@@ -34,6 +34,7 @@ export function getFuelUnitName(unit: FuelUnit): string {
 
 /**
  * Get the result unit (without "per hour") for fuel used display
+ * Uses aviation standard notation: GAL, L, lb, kg
  */
 export function getFuelResultUnit(unit: FuelUnit): string {
   switch (unit) {
@@ -42,8 +43,8 @@ export function getFuelResultUnit(unit: FuelUnit): string {
     case 'lph':
       return 'L';
     case 'pph':
-      return 'LB';
+      return 'lb'; // Aviation standard: lowercase
     case 'kgh':
-      return 'KG';
+      return 'kg'; // Aviation standard: lowercase
   }
 }

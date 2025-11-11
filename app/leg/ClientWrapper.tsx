@@ -31,6 +31,13 @@ interface ClientWrapperProps {
   initialClimbTas: string;
   initialClimbDist: string;
   initialClimbFuel: string;
+  initialClimbWd: string;
+  initialClimbWs: string;
+  initialDescentTas: string;
+  initialDescentDist: string;
+  initialDescentFuel: string;
+  initialDescentWd: string;
+  initialDescentWs: string;
   initialFlightPlanId: string;
   initialLegId: string;
 }

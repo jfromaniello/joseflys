@@ -39,6 +39,15 @@ export interface FlightPlanLeg {
   climbTas?: string;
   climbDist?: string;
   climbFuel?: string;
+  climbWd?: string; // Climb wind direction
+  climbWs?: string; // Climb wind speed
+
+  // Descent data
+  descentTas?: string;
+  descentDist?: string;
+  descentFuel?: string;
+  descentWd?: string; // Descent wind direction
+  descentWs?: string; // Descent wind speed
 
   // Display
   desc?: string; // Description/leg name

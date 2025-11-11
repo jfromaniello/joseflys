@@ -38,6 +38,17 @@ export interface CourseCalculations {
     /** Fuel used during cruise */
     fuelUsed: number;
   };
+  /** Descent phase calculations (if descent data provided) */
+  descentPhase?: {
+    /** Distance covered during descent in nautical miles */
+    distance: number;
+    /** Ground speed during descent in knots */
+    groundSpeed: number;
+    /** Time spent descending in hours */
+    time: number;
+    /** Fuel used during descent (as provided by user) */
+    fuelUsed: number;
+  };
 }
 
 /**
@@ -83,8 +94,8 @@ export interface FlightParameters {
 /**
  * Calculate course parameters including wind correction, ground speed, and fuel consumption
  *
- * @param windDir - Wind direction in degrees (direction wind is coming FROM, 0-360)
- * @param windSpeed - Wind speed in knots
+ * @param windDir - Wind direction in degrees (direction wind is coming FROM, 0-360) - used for cruise
+ * @param windSpeed - Wind speed in knots - used for cruise
  * @param trueHeading - Desired true heading in degrees (0-360)
  * @param tas - True airspeed in knots (at cruise)
  * @param magDev - Magnetic deviation in degrees (negative for East, positive for West)
@@ -95,6 +106,13 @@ export interface FlightParameters {
  * @param climbTas - True airspeed during climb in knots (optional)
  * @param climbDistance - Horizontal distance covered during climb in nautical miles (optional)
  * @param climbFuelUsed - Fuel consumed during climb phase (optional)
+ * @param descentTas - True airspeed during descent in knots (optional)
+ * @param descentDistance - Horizontal distance covered during descent in nautical miles (optional)
+ * @param descentFuelUsed - Fuel consumed during descent phase (optional)
+ * @param climbWindDir - Wind direction during climb in degrees (optional, uses windDir if not specified)
+ * @param climbWindSpeed - Wind speed during climb in knots (optional, uses windSpeed if not specified)
+ * @param descentWindDir - Wind direction during descent in degrees (optional, uses windDir if not specified)
+ * @param descentWindSpeed - Wind speed during descent in knots (optional, uses windDir if not specified)
  * @returns CourseCalculations object with wind correction angle, ground speed, compass heading, and fuel used
  */
 export function calculateCourse(
@@ -109,7 +127,14 @@ export function calculateCourse(
   previousFuelUsed?: number,
   climbTas?: number,
   climbDistance?: number,
-  climbFuelUsed?: number
+  climbFuelUsed?: number,
+  descentTas?: number,
+  descentDistance?: number,
+  descentFuelUsed?: number,
+  climbWindDir?: number,
+  climbWindSpeed?: number,
+  descentWindDir?: number,
+  descentWindSpeed?: number
 ): CourseCalculations {
   // Convert to radians
   const toRad = (deg: number) => (deg * Math.PI) / 180;
@@ -159,6 +184,7 @@ export function calculateCourse(
   let fuelUsed: number | undefined;
   let climbPhase: CourseCalculations['climbPhase'];
   let cruisePhase: CourseCalculations['cruisePhase'];
+  let descentPhase: CourseCalculations['descentPhase'];
 
   // Check if we have complete climb data
   const hasClimbData =
@@ -169,33 +195,98 @@ export function calculateCourse(
     climbFuelUsed !== undefined &&
     climbFuelUsed >= 0;
 
-  if (distance !== undefined && distance > 0) {
-    if (hasClimbData) {
-      // Calculate climb phase ground speed
-      // Use same wind correction logic for climb TAS
-      const climbWcaRad = Math.asin((windSpeed * Math.sin(relativeWind)) / climbTas!);
-      const climbWca = toDeg(climbWcaRad);
+  // Check if we have complete descent data
+  const hasDescentData =
+    descentTas !== undefined &&
+    descentTas > 0 &&
+    descentDistance !== undefined &&
+    descentDistance > 0 &&
+    descentFuelUsed !== undefined &&
+    descentFuelUsed >= 0;
 
-      let climbEffectiveSpeed = climbTas!;
-      if (Math.abs(climbWca) > 10) {
-        climbEffectiveSpeed = climbTas! * Math.cos(climbWcaRad);
+  if (distance !== undefined && distance > 0) {
+    if (hasClimbData || hasDescentData) {
+      let climbGroundSpeed = 0;
+      let climbTime = 0;
+      let descentGroundSpeed = 0;
+      let descentTime = 0;
+      let actualClimbDist = 0;
+      let actualDescentDist = 0;
+
+      // Calculate climb phase if data provided
+      if (hasClimbData) {
+        // Use climb-specific wind if provided, otherwise use general wind
+        const effectiveClimbWindDir = climbWindDir !== undefined ? climbWindDir : windDir;
+        const effectiveClimbWindSpeed = climbWindSpeed !== undefined ? climbWindSpeed : windSpeed;
+
+        // Calculate relative wind for climb phase
+        const climbRelativeWind = toRad(effectiveClimbWindDir - trueHeading);
+
+        const climbWcaRad = Math.asin((effectiveClimbWindSpeed * Math.sin(climbRelativeWind)) / climbTas!);
+        const climbWca = toDeg(climbWcaRad);
+
+        let climbEffectiveSpeed = climbTas!;
+        if (Math.abs(climbWca) > 10) {
+          climbEffectiveSpeed = climbTas! * Math.cos(climbWcaRad);
+        }
+
+        const climbGsSquared =
+          climbEffectiveSpeed * climbEffectiveSpeed +
+          effectiveClimbWindSpeed * effectiveClimbWindSpeed -
+          2 * climbEffectiveSpeed * effectiveClimbWindSpeed * Math.cos(climbRelativeWind);
+        climbGroundSpeed = Math.sqrt(Math.max(0, climbGsSquared));
+
+        actualClimbDist = climbDistance!;
+        climbTime = actualClimbDist / climbGroundSpeed;
+
+        climbPhase = {
+          distance: actualClimbDist,
+          groundSpeed: climbGroundSpeed,
+          time: climbTime,
+          fuelUsed: climbFuelUsed!,
+        };
       }
 
-      const climbGsSquared =
-        climbEffectiveSpeed * climbEffectiveSpeed +
-        windSpeed * windSpeed -
-        2 * climbEffectiveSpeed * windSpeed * Math.cos(relativeWind);
-      const climbGroundSpeed = Math.sqrt(Math.max(0, climbGsSquared));
+      // Calculate descent phase if data provided
+      if (hasDescentData) {
+        // Use descent-specific wind if provided, otherwise use general wind
+        const effectiveDescentWindDir = descentWindDir !== undefined ? descentWindDir : windDir;
+        const effectiveDescentWindSpeed = descentWindSpeed !== undefined ? descentWindSpeed : windSpeed;
 
-      // Climb time in hours
-      const climbTime = climbDistance! / climbGroundSpeed;
+        // Calculate relative wind for descent phase
+        const descentRelativeWind = toRad(effectiveDescentWindDir - trueHeading);
 
-      // Cruise distance and time
-      const cruiseDistance = Math.max(0, distance - climbDistance!);
+        const descentWcaRad = Math.asin((effectiveDescentWindSpeed * Math.sin(descentRelativeWind)) / descentTas!);
+        const descentWca = toDeg(descentWcaRad);
+
+        let descentEffectiveSpeed = descentTas!;
+        if (Math.abs(descentWca) > 10) {
+          descentEffectiveSpeed = descentTas! * Math.cos(descentWcaRad);
+        }
+
+        const descentGsSquared =
+          descentEffectiveSpeed * descentEffectiveSpeed +
+          effectiveDescentWindSpeed * effectiveDescentWindSpeed -
+          2 * descentEffectiveSpeed * effectiveDescentWindSpeed * Math.cos(descentRelativeWind);
+        descentGroundSpeed = Math.sqrt(Math.max(0, descentGsSquared));
+
+        actualDescentDist = descentDistance!;
+        descentTime = actualDescentDist / descentGroundSpeed;
+
+        descentPhase = {
+          distance: actualDescentDist,
+          groundSpeed: descentGroundSpeed,
+          time: descentTime,
+          fuelUsed: descentFuelUsed!,
+        };
+      }
+
+      // Calculate cruise distance and time
+      const cruiseDistance = Math.max(0, distance - actualClimbDist - actualDescentDist);
       const cruiseTime = cruiseDistance / groundSpeed;
 
-      // Total ETA is climb time + cruise time
-      eta = climbTime + cruiseTime;
+      // Total ETA is sum of all phases
+      eta = climbTime + cruiseTime + descentTime;
 
       // Calculate fuel for cruise phase
       let cruiseFuelUsed = 0;
@@ -203,31 +294,26 @@ export function calculateCourse(
         cruiseFuelUsed = fuelFlow * cruiseTime;
       }
 
-      // Total fuel used - always include climb fuel if provided
+      // Total fuel used
       const baseFuel = previousFuelUsed !== undefined
         ? previousFuelUsed
         : (fuelFlow !== undefined && fuelFlow > 0)
           ? fuelFlow * ((elapsedMinutes || 0) / 60)
           : 0;
 
-      // Always sum climb fuel and cruise fuel to the base
-      fuelUsed = baseFuel + climbFuelUsed! + cruiseFuelUsed;
+      // Sum all phase fuels to the base
+      const climbFuelToAdd = hasClimbData ? climbFuelUsed! : 0;
+      const descentFuelToAdd = hasDescentData ? descentFuelUsed! : 0;
+      fuelUsed = baseFuel + climbFuelToAdd + cruiseFuelUsed + descentFuelToAdd;
 
-      // Store climb and cruise phase details
-      climbPhase = {
-        distance: climbDistance!,
-        groundSpeed: climbGroundSpeed,
-        time: climbTime,
-        fuelUsed: climbFuelUsed!,
-      };
-
+      // Store cruise phase details
       cruisePhase = {
         distance: cruiseDistance,
         time: cruiseTime,
         fuelUsed: cruiseFuelUsed,
       };
     } else {
-      // Original calculation without climb data
+      // Original calculation without climb or descent data
       // ETA = Distance / Ground Speed (in hours) - this is just for THIS leg
       eta = distance / groundSpeed;
 
@@ -257,6 +343,7 @@ export function calculateCourse(
     fuelUsed,
     climbPhase,
     cruisePhase,
+    descentPhase,
   };
 }
 
@@ -267,9 +354,10 @@ export function calculateCourse(
  * @param groundSpeed - Ground speed in knots (at cruise)
  * @param fuelFlow - Fuel flow rate in GPH/LPH/PPH/KGH (optional, required for fuel calculations)
  * @param flightParams - Flight parameters including departure time, elapsed time, and previous fuel used
- * @param totalDistance - Total distance of the leg in nautical miles (optional, adds "Arrival" waypoint if greater than last waypoint)
+ * @param totalDistance - Total distance of the leg in nautical miles (optional, adds "Arrival" or "Landed" waypoint if greater than last waypoint)
  * @param climbPhase - Optional climb phase data (if provided, waypoints will account for climb speed)
  * @param cruiseFuelFlow - Fuel flow during cruise (optional, if different from climb)
+ * @param descentPhase - Optional descent phase data (if provided, waypoints will account for descent speed)
  * @returns Array of WaypointResult with calculated times, ETAs, and fuel usage for each waypoint
  */
 export function calculateWaypoints(
@@ -279,7 +367,8 @@ export function calculateWaypoints(
   flightParams?: FlightParameters,
   totalDistance?: number,
   climbPhase?: CourseCalculations['climbPhase'],
-  cruiseFuelFlow?: number
+  cruiseFuelFlow?: number,
+  descentPhase?: CourseCalculations['descentPhase']
 ): WaypointResult[] {
   if (groundSpeed <= 0) {
     return [];
@@ -287,6 +376,11 @@ export function calculateWaypoints(
 
   // Sort waypoints by distance
   const sortedWaypoints = [...waypoints].sort((a, b) => a.distance - b.distance);
+
+  // Calculate descent start distance (distance from start of leg where descent begins)
+  const descentStartDist = totalDistance && descentPhase && descentPhase.distance > 0
+    ? totalDistance - descentPhase.distance
+    : undefined;
 
   // Add "Cruise Altitude Reached" checkpoint if there's climb data
   if (climbPhase && climbPhase.distance > 0) {
@@ -306,7 +400,24 @@ export function calculateWaypoints(
     }
   }
 
-  // If we have a total distance and it's greater than the last waypoint, add "Arrival" waypoint
+  // Add "Descent Started" checkpoint if there's descent data
+  if (descentStartDist !== undefined && descentStartDist > 0) {
+    const insertIndex = sortedWaypoints.findIndex(wp => wp.distance > descentStartDist);
+    const descentStartCheckpoint = {
+      name: "Descent Started",
+      distance: descentStartDist
+    };
+
+    if (insertIndex === -1) {
+      // All waypoints are before descent start, add at end
+      sortedWaypoints.push(descentStartCheckpoint);
+    } else {
+      // Insert at the correct position
+      sortedWaypoints.splice(insertIndex, 0, descentStartCheckpoint);
+    }
+  }
+
+  // If we have a total distance and it's greater than the last waypoint, add "Arrival" or "Landed" waypoint
   if (totalDistance !== undefined && totalDistance > 0) {
     const lastWaypointDistance = sortedWaypoints.length > 0
       ? sortedWaypoints[sortedWaypoints.length - 1].distance
@@ -314,7 +425,8 @@ export function calculateWaypoints(
 
     if (totalDistance > lastWaypointDistance) {
       sortedWaypoints.push({
-        name: "Arrival",
+        // Use "Landed" if there's descent data, otherwise "Arrival"
+        name: descentPhase && descentPhase.distance > 0 ? "Landed" : "Arrival",
         distance: totalDistance
       });
     }
@@ -328,61 +440,106 @@ export function calculateWaypoints(
     let timeSinceLast: number;
     let waypointFuelFromLegStart: number = 0;
 
-    if (climbPhase) {
-      // Calculate time considering climb and cruise phases
-      if (waypoint.distance <= climbPhase.distance) {
-        // Waypoint is entirely within climb phase
-        timeFromLegStart = (waypoint.distance / climbPhase.groundSpeed) * 60;
+    const climbDist = climbPhase?.distance ?? 0;
+    const descentStart = descentStartDist ?? Infinity;
 
-        // Time since last waypoint
-        const distanceSinceLast = waypoint.distance - previousDistance;
-        if (previousDistance < climbPhase.distance) {
-          // Previous waypoint was also in climb phase
-          timeSinceLast = (distanceSinceLast / climbPhase.groundSpeed) * 60;
-        } else {
-          // This shouldn't happen as waypoints are sorted
-          timeSinceLast = (distanceSinceLast / climbPhase.groundSpeed) * 60;
+    // Determine which phase this waypoint is in and calculate time accordingly
+    if (climbPhase || descentPhase) {
+      // We have at least one special phase (climb or descent)
+      let cumulativeTime = 0;
+
+      // Phase 1: Climb (if applicable and waypoint is past climb start)
+      if (climbPhase && waypoint.distance > 0) {
+        const climbDistCovered = Math.min(waypoint.distance, climbDist);
+        const climbTimeCovered = (climbDistCovered / climbPhase.groundSpeed) * 60;
+        cumulativeTime += climbTimeCovered;
+      }
+
+      // Phase 2: Cruise (if waypoint is past climb and before descent)
+      const cruiseStart = climbDist;
+      const cruiseEnd = descentStart;
+      if (waypoint.distance > cruiseStart) {
+        const cruiseDistCovered = Math.min(waypoint.distance, cruiseEnd) - cruiseStart;
+        if (cruiseDistCovered > 0) {
+          const cruiseTimeCovered = (cruiseDistCovered / groundSpeed) * 60;
+          cumulativeTime += cruiseTimeCovered;
         }
+      }
 
-        // Fuel calculation for waypoint in climb phase
-        // Proportional fuel based on distance covered in climb
-        const climbFuelRate = climbPhase.fuelUsed / climbPhase.distance; // fuel per NM during climb
-        waypointFuelFromLegStart = waypoint.distance * climbFuelRate;
-      } else {
-        // Waypoint is past climb phase - split calculation
-        const climbTime = (climbPhase.distance / climbPhase.groundSpeed) * 60;
-        const cruiseDistToWaypoint = waypoint.distance - climbPhase.distance;
-        const cruiseTime = (cruiseDistToWaypoint / groundSpeed) * 60;
-        timeFromLegStart = climbTime + cruiseTime;
+      // Phase 3: Descent (if applicable and waypoint is past descent start)
+      if (descentPhase && waypoint.distance > descentStart) {
+        const descentDistCovered = waypoint.distance - descentStart;
+        const descentTimeCovered = (descentDistCovered / descentPhase.groundSpeed) * 60;
+        cumulativeTime += descentTimeCovered;
+      }
 
-        // Time since last waypoint
-        const distanceSinceLast = waypoint.distance - previousDistance;
-        if (previousDistance >= climbPhase.distance) {
-          // Previous waypoint was in cruise, this segment is all cruise
-          timeSinceLast = (distanceSinceLast / groundSpeed) * 60;
-        } else if (previousDistance < climbPhase.distance) {
-          // Previous waypoint was in climb, this segment spans climb and cruise
-          const remainingClimbDist = climbPhase.distance - previousDistance;
-          const cruiseDist = distanceSinceLast - remainingClimbDist;
-          const climbSegmentTime = (remainingClimbDist / climbPhase.groundSpeed) * 60;
-          const cruiseSegmentTime = (cruiseDist / groundSpeed) * 60;
-          timeSinceLast = climbSegmentTime + cruiseSegmentTime;
-        } else {
-          timeSinceLast = (distanceSinceLast / groundSpeed) * 60;
+      timeFromLegStart = cumulativeTime;
+
+      // Calculate time since last waypoint using similar logic
+      let timeSinceLastCalc = 0;
+      const distanceSinceLast = waypoint.distance - previousDistance;
+
+      // Determine which phases the segment spans
+      const segmentStart = previousDistance;
+      const segmentEnd = waypoint.distance;
+
+      // Climb portion of segment
+      if (climbPhase && segmentStart < climbDist && segmentEnd > 0) {
+        const climbSegmentStart = Math.max(0, segmentStart);
+        const climbSegmentEnd = Math.min(segmentEnd, climbDist);
+        const climbSegmentDist = climbSegmentEnd - climbSegmentStart;
+        if (climbSegmentDist > 0) {
+          timeSinceLastCalc += (climbSegmentDist / climbPhase.groundSpeed) * 60;
         }
+      }
 
-        // Fuel calculation: climb fuel + cruise fuel to this waypoint
+      // Cruise portion of segment
+      if (segmentStart < descentStart && segmentEnd > cruiseStart) {
+        const cruiseSegmentStart = Math.max(cruiseStart, segmentStart);
+        const cruiseSegmentEnd = Math.min(segmentEnd, descentStart);
+        const cruiseSegmentDist = cruiseSegmentEnd - cruiseSegmentStart;
+        if (cruiseSegmentDist > 0) {
+          timeSinceLastCalc += (cruiseSegmentDist / groundSpeed) * 60;
+        }
+      }
+
+      // Descent portion of segment
+      if (descentPhase && segmentStart < segmentEnd && segmentEnd > descentStart) {
+        const descentSegmentStart = Math.max(descentStart, segmentStart);
+        const descentSegmentEnd = segmentEnd;
+        const descentSegmentDist = descentSegmentEnd - descentSegmentStart;
+        if (descentSegmentDist > 0) {
+          timeSinceLastCalc += (descentSegmentDist / descentPhase.groundSpeed) * 60;
+        }
+      }
+
+      timeSinceLast = timeSinceLastCalc;
+
+      // Fuel calculation considering all phases
+      const effectiveCruiseFuelFlow = cruiseFuelFlow ?? fuelFlow ?? 0;
+
+      // Climb fuel (proportional to distance covered in climb)
+      if (climbPhase) {
+        const climbDistCovered = Math.min(waypoint.distance, climbDist);
         const climbFuelRate = climbPhase.fuelUsed / climbPhase.distance;
-        const totalClimbFuel = climbPhase.distance * climbFuelRate;
+        waypointFuelFromLegStart += climbDistCovered * climbFuelRate;
+      }
 
-        // Cruise fuel (use cruiseFuelFlow if provided, otherwise fuelFlow)
-        const effectiveCruiseFuelFlow = cruiseFuelFlow ?? fuelFlow ?? 0;
-        const cruiseFuelForSegment = effectiveCruiseFuelFlow * (cruiseTime / 60);
+      // Cruise fuel
+      const cruiseDistCovered = Math.max(0, Math.min(waypoint.distance, descentStart) - climbDist);
+      if (cruiseDistCovered > 0 && effectiveCruiseFuelFlow > 0) {
+        const cruiseTime = (cruiseDistCovered / groundSpeed) / 60; // in hours
+        waypointFuelFromLegStart += effectiveCruiseFuelFlow * cruiseTime;
+      }
 
-        waypointFuelFromLegStart = totalClimbFuel + cruiseFuelForSegment;
+      // Descent fuel (proportional to distance covered in descent)
+      if (descentPhase && waypoint.distance > descentStart) {
+        const descentDistCovered = waypoint.distance - descentStart;
+        const descentFuelRate = descentPhase.fuelUsed / descentPhase.distance;
+        waypointFuelFromLegStart += descentDistCovered * descentFuelRate;
       }
     } else {
-      // No climb data - use original calculation
+      // No climb or descent data - use original calculation
       const distanceSinceLast = waypoint.distance - previousDistance;
       timeSinceLast = (distanceSinceLast / groundSpeed) * 60;
       timeFromLegStart = (waypoint.distance / groundSpeed) * 60;

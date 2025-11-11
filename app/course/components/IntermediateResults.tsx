@@ -16,7 +16,14 @@ export function IntermediateResults({ results, fuelUnit, fuelFlow }: Intermediat
     ? fuelFlow * results.eta
     : undefined;
 
-  const hasClimbData = results.climbPhase !== undefined && results.cruisePhase !== undefined;
+  const hasPhaseData = results.climbPhase !== undefined || results.descentPhase !== undefined;
+  const hasClimbData = results.climbPhase !== undefined;
+  const hasDescentData = results.descentPhase !== undefined;
+  const hasCruiseData = results.cruisePhase !== undefined;
+
+  // Determine grid columns based on phases present
+  const phaseCount = (hasClimbData ? 1 : 0) + (hasCruiseData ? 1 : 0) + (hasDescentData ? 1 : 0);
+  const gridCols = phaseCount === 3 ? 'grid-cols-3' : 'grid-cols-2';
 
   return (
     <div className="print-page-break-before">
@@ -24,78 +31,117 @@ export function IntermediateResults({ results, fuelUnit, fuelFlow }: Intermediat
         Intermediate Values
       </h3>
 
-      {/* Climb and Cruise Phase Breakdown (if climb data provided) */}
-      {hasClimbData && (
+      {/* Flight Phase Breakdown (if climb or descent data provided) */}
+      {hasPhaseData && (
         <div className="mb-4 p-4 rounded-lg bg-green-900/20 border border-green-500/30">
           <h4 className="text-xs font-semibold mb-3 uppercase tracking-wide text-center" style={{ color: "oklch(0.7 0.15 150)" }}>
             Flight Phase Breakdown
           </h4>
-          <div className="grid grid-cols-2 gap-3">
+          <div className={`grid ${gridCols} gap-3`}>
             {/* Climb Phase */}
-            <div className="p-3 rounded-lg bg-slate-900/40 border border-gray-700">
-              <p className="text-xs font-semibold mb-2 text-center" style={{ color: "oklch(0.7 0.15 150)" }}>
-                CLIMB PHASE
-              </p>
-              <div className="space-y-1.5">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs" style={{ color: "oklch(0.65 0.02 240)" }}>Distance:</span>
-                  <span className="text-sm font-bold" style={{ color: "white" }}>
-                    {results.climbPhase!.distance.toFixed(1)} NM
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs" style={{ color: "oklch(0.65 0.02 240)" }}>GS:</span>
-                  <span className="text-sm font-bold" style={{ color: "white" }}>
-                    {Math.round(results.climbPhase!.groundSpeed)} KT
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs" style={{ color: "oklch(0.65 0.02 240)" }}>Time:</span>
-                  <span className="text-sm font-bold" style={{ color: "white" }}>
-                    {Math.round(results.climbPhase!.time * 60)} min
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs" style={{ color: "oklch(0.65 0.02 240)" }}>Fuel:</span>
-                  <span className="text-sm font-bold" style={{ color: "white" }}>
-                    {results.climbPhase!.fuelUsed.toFixed(1)} {getFuelResultUnit(fuelUnit)}
-                  </span>
+            {hasClimbData && (
+              <div className="p-3 rounded-lg bg-slate-900/40 border border-gray-700">
+                <p className="text-xs font-semibold mb-2 text-center" style={{ color: "oklch(0.7 0.15 150)" }}>
+                  CLIMB PHASE
+                </p>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs" style={{ color: "oklch(0.65 0.02 240)" }}>Distance:</span>
+                    <span className="text-sm font-bold" style={{ color: "white" }}>
+                      {results.climbPhase!.distance.toFixed(1)} NM
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs" style={{ color: "oklch(0.65 0.02 240)" }}>GS:</span>
+                    <span className="text-sm font-bold" style={{ color: "white" }}>
+                      {Math.round(results.climbPhase!.groundSpeed)} KT
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs" style={{ color: "oklch(0.65 0.02 240)" }}>Time:</span>
+                    <span className="text-sm font-bold" style={{ color: "white" }}>
+                      {Math.round(results.climbPhase!.time * 60)} min
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs" style={{ color: "oklch(0.65 0.02 240)" }}>Fuel:</span>
+                    <span className="text-sm font-bold" style={{ color: "white" }}>
+                      {results.climbPhase!.fuelUsed.toFixed(1)} {getFuelResultUnit(fuelUnit)}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Cruise Phase */}
-            <div className="p-3 rounded-lg bg-slate-900/40 border border-gray-700">
-              <p className="text-xs font-semibold mb-2 text-center" style={{ color: "oklch(0.65 0.15 230)" }}>
-                CRUISE PHASE
-              </p>
-              <div className="space-y-1.5">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs" style={{ color: "oklch(0.65 0.02 240)" }}>Distance:</span>
-                  <span className="text-sm font-bold" style={{ color: "white" }}>
-                    {results.cruisePhase!.distance.toFixed(1)} NM
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs" style={{ color: "oklch(0.65 0.02 240)" }}>GS:</span>
-                  <span className="text-sm font-bold" style={{ color: "white" }}>
-                    {Math.round(results.groundSpeed)} KT
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs" style={{ color: "oklch(0.65 0.02 240)" }}>Time:</span>
-                  <span className="text-sm font-bold" style={{ color: "white" }}>
-                    {Math.round(results.cruisePhase!.time * 60)} min
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs" style={{ color: "oklch(0.65 0.02 240)" }}>Fuel:</span>
-                  <span className="text-sm font-bold" style={{ color: "white" }}>
-                    {results.cruisePhase!.fuelUsed.toFixed(1)} {getFuelResultUnit(fuelUnit)}
-                  </span>
+            {hasCruiseData && (
+              <div className="p-3 rounded-lg bg-slate-900/40 border border-gray-700">
+                <p className="text-xs font-semibold mb-2 text-center" style={{ color: "oklch(0.65 0.15 230)" }}>
+                  CRUISE PHASE
+                </p>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs" style={{ color: "oklch(0.65 0.02 240)" }}>Distance:</span>
+                    <span className="text-sm font-bold" style={{ color: "white" }}>
+                      {results.cruisePhase!.distance.toFixed(1)} NM
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs" style={{ color: "oklch(0.65 0.02 240)" }}>GS:</span>
+                    <span className="text-sm font-bold" style={{ color: "white" }}>
+                      {Math.round(results.groundSpeed)} KT
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs" style={{ color: "oklch(0.65 0.02 240)" }}>Time:</span>
+                    <span className="text-sm font-bold" style={{ color: "white" }}>
+                      {Math.round(results.cruisePhase!.time * 60)} min
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs" style={{ color: "oklch(0.65 0.02 240)" }}>Fuel:</span>
+                    <span className="text-sm font-bold" style={{ color: "white" }}>
+                      {results.cruisePhase!.fuelUsed.toFixed(1)} {getFuelResultUnit(fuelUnit)}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
+
+            {/* Descent Phase */}
+            {hasDescentData && (
+              <div className="p-3 rounded-lg bg-slate-900/40 border border-gray-700">
+                <p className="text-xs font-semibold mb-2 text-center" style={{ color: "oklch(0.7 0.15 30)" }}>
+                  DESCENT PHASE
+                </p>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs" style={{ color: "oklch(0.65 0.02 240)" }}>Distance:</span>
+                    <span className="text-sm font-bold" style={{ color: "white" }}>
+                      {results.descentPhase!.distance.toFixed(1)} NM
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs" style={{ color: "oklch(0.65 0.02 240)" }}>GS:</span>
+                    <span className="text-sm font-bold" style={{ color: "white" }}>
+                      {Math.round(results.descentPhase!.groundSpeed)} KT
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs" style={{ color: "oklch(0.65 0.02 240)" }}>Time:</span>
+                    <span className="text-sm font-bold" style={{ color: "white" }}>
+                      {Math.round(results.descentPhase!.time * 60)} min
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs" style={{ color: "oklch(0.65 0.02 240)" }}>Fuel:</span>
+                    <span className="text-sm font-bold" style={{ color: "white" }}>
+                      {results.descentPhase!.fuelUsed.toFixed(1)} {getFuelResultUnit(fuelUnit)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

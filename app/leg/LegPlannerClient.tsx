@@ -20,6 +20,7 @@ import { CorrectionsInputs } from "../course/components/CorrectionsInputs";
 import { RangeFuelInputs, FuelUnit } from "../course/components/RangeFuelInputs";
 import { FlightParametersInputs } from "../course/components/FlightParametersInputs";
 import { ClimbDataInputs } from "../course/components/ClimbDataInputs";
+import { DescentDataInputs } from "../course/components/DescentDataInputs";
 import { IntermediateResults } from "../course/components/IntermediateResults";
 import { PrimaryResults } from "../course/components/PrimaryResults";
 import { WaypointsResults } from "../course/components/WaypointsResults";
@@ -57,6 +58,13 @@ interface LegPlannerClientProps {
   initialClimbTas: string;
   initialClimbDist: string;
   initialClimbFuel: string;
+  initialClimbWd: string;
+  initialClimbWs: string;
+  initialDescentTas: string;
+  initialDescentDist: string;
+  initialDescentFuel: string;
+  initialDescentWd: string;
+  initialDescentWs: string;
   initialFlightPlanId: string;
   initialLegId: string;
 }
@@ -81,6 +89,13 @@ export function LegPlannerClient({
   initialClimbTas,
   initialClimbDist,
   initialClimbFuel,
+  initialClimbWd,
+  initialClimbWs,
+  initialDescentTas,
+  initialDescentDist,
+  initialDescentFuel,
+  initialDescentWd,
+  initialDescentWs,
   initialFlightPlanId,
   initialLegId,
 }: LegPlannerClientProps) {
@@ -98,6 +113,13 @@ export function LegPlannerClient({
   const [climbTas, setClimbTas] = useState<string>(initialClimbTas);
   const [climbDistance, setClimbDistance] = useState<string>(initialClimbDist);
   const [climbFuelUsed, setClimbFuelUsed] = useState<string>(initialClimbFuel);
+  const [climbWindDir, setClimbWindDir] = useState<string>(initialClimbWd);
+  const [climbWindSpeed, setClimbWindSpeed] = useState<string>(initialClimbWs);
+  const [descentTas, setDescentTas] = useState<string>(initialDescentTas);
+  const [descentDistance, setDescentDistance] = useState<string>(initialDescentDist);
+  const [descentFuelUsed, setDescentFuelUsed] = useState<string>(initialDescentFuel);
+  const [descentWindDir, setDescentWindDir] = useState<string>(initialDescentWd);
+  const [descentWindSpeed, setDescentWindSpeed] = useState<string>(initialDescentWs);
   const [speedUnit, setSpeedUnit] = useState<SpeedUnit>(
     (initialSpeedUnit as SpeedUnit) || 'kt'
   );
@@ -228,6 +250,13 @@ export function LegPlannerClient({
     if (climbTas) params.set("climbTas", climbTas);
     if (climbDistance) params.set("climbDist", climbDistance);
     if (climbFuelUsed) params.set("climbFuel", climbFuelUsed);
+    if (climbWindDir) params.set("cwd", climbWindDir);
+    if (climbWindSpeed) params.set("cws", climbWindSpeed);
+    if (descentTas) params.set("descentTas", descentTas);
+    if (descentDistance) params.set("descentDist", descentDistance);
+    if (descentFuelUsed) params.set("descentFuel", descentFuelUsed);
+    if (descentWindDir) params.set("dwd", descentWindDir);
+    if (descentWindSpeed) params.set("dws", descentWindSpeed);
     if (speedUnit !== 'kt') params.set("unit", speedUnit);
     if (fuelUnit !== 'gph') params.set("funit", fuelUnit);
 
@@ -266,7 +295,7 @@ export function LegPlannerClient({
     // Use window.history.replaceState instead of router.replace to avoid server requests
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState(null, '', newUrl);
-  }, [trueHeading, tas, windDir, windSpeed, magDev, distance, fuelFlow, description, departureTime, elapsedMinutes, previousFuelUsed, climbTas, climbDistance, climbFuelUsed, deviationTable, waypoints, speedUnit, fuelUnit, aircraft, flightPlanId, legId]);
+  }, [trueHeading, tas, windDir, windSpeed, magDev, distance, fuelFlow, description, departureTime, elapsedMinutes, previousFuelUsed, climbTas, climbDistance, climbFuelUsed, climbWindDir, climbWindSpeed, descentTas, descentDistance, descentFuelUsed, descentWindDir, descentWindSpeed, deviationTable, waypoints, speedUnit, fuelUnit, aircraft, flightPlanId, legId]);
 
   // Calculate results during render (not in useEffect to avoid cascading renders)
   const th = parseFloat(trueHeading);
@@ -287,6 +316,20 @@ export function LegPlannerClient({
   const climbTasInKnots = climbTasVal && !isNaN(climbTasVal) ? toKnots(climbTasVal, speedUnit) : undefined;
   const climbDist = climbDistance ? parseFloat(climbDistance) : undefined;
   const climbFuel = climbFuelUsed ? parseFloat(climbFuelUsed) : undefined;
+
+  // Parse descent data
+  const descentTasVal = descentTas ? parseFloat(descentTas) : undefined;
+  const descentTasInKnots = descentTasVal && !isNaN(descentTasVal) ? toKnots(descentTasVal, speedUnit) : undefined;
+  const descentDist = descentDistance ? parseFloat(descentDistance) : undefined;
+  const descentFuel = descentFuelUsed ? parseFloat(descentFuelUsed) : undefined;
+
+  // Parse climb wind
+  const climbWd = climbWindDir ? parseFloat(climbWindDir) : undefined;
+  const climbWs = climbWindSpeed ? parseFloat(climbWindSpeed) : undefined;
+
+  // Parse descent wind
+  const descentWd = descentWindDir ? parseFloat(descentWindDir) : undefined;
+  const descentWs = descentWindSpeed ? parseFloat(descentWindSpeed) : undefined;
 
   // Load example data
   const loadExample = () => {
@@ -348,6 +391,13 @@ export function LegPlannerClient({
       climbTas,
       climbDist: climbDistance,
       climbFuel: climbFuelUsed,
+      climbWd: climbWindDir,
+      climbWs: climbWindSpeed,
+      descentTas,
+      descentDist: descentDistance,
+      descentFuel: descentFuelUsed,
+      descentWd: descentWindDir,
+      descentWs: descentWindSpeed,
       desc: description,
       unit: speedUnit,
     };
@@ -366,7 +416,7 @@ export function LegPlannerClient({
     !isNaN(th) &&
     !isNaN(tasInKnots) &&
     tasInKnots > 0
-      ? calculateCourse(wd, ws, th, tasInKnots, md, dist, ff, elapsedMins, prevFuel, climbTasInKnots, climbDist, climbFuel)
+      ? calculateCourse(wd, ws, th, tasInKnots, md, dist, ff, elapsedMins, prevFuel, climbTasInKnots, climbDist, climbFuel, descentTasInKnots, descentDist, descentFuel, climbWd, climbWs, descentWd, descentWs)
       : null;
 
   // Calculate compass course when deviation table is available and results exist
@@ -382,10 +432,10 @@ export function LegPlannerClient({
     previousFuelUsed: prevFuel,
   };
 
-  // Calculate waypoints (includes "Cruise Altitude Reached" automatically if climb phase exists)
+  // Calculate waypoints (includes "Cruise Altitude Reached" and "Descent Started" automatically if phase data exists)
   const waypointResults =
     results && dist !== undefined
-      ? calculateWaypoints(waypoints, results.groundSpeed, ff, flightParams, dist, results.climbPhase, ff)
+      ? calculateWaypoints(waypoints, results.groundSpeed, ff, flightParams, dist, results.climbPhase, ff, results.descentPhase)
       : [];
 
 
@@ -819,6 +869,26 @@ export function LegPlannerClient({
               setClimbDistance={setClimbDistance}
               climbFuelUsed={climbFuelUsed}
               setClimbFuelUsed={setClimbFuelUsed}
+              climbWindDir={climbWindDir}
+              setClimbWindDir={setClimbWindDir}
+              climbWindSpeed={climbWindSpeed}
+              setClimbWindSpeed={setClimbWindSpeed}
+              speedUnit={speedUnit}
+              fuelUnit={fuelUnit}
+            />
+
+            {/* Descent Data */}
+            <DescentDataInputs
+              descentTas={descentTas}
+              setDescentTas={setDescentTas}
+              descentDistance={descentDistance}
+              setDescentDistance={setDescentDistance}
+              descentFuelUsed={descentFuelUsed}
+              setDescentFuelUsed={setDescentFuelUsed}
+              descentWindDir={descentWindDir}
+              setDescentWindDir={setDescentWindDir}
+              descentWindSpeed={descentWindSpeed}
+              setDescentWindSpeed={setDescentWindSpeed}
               speedUnit={speedUnit}
               fuelUnit={fuelUnit}
             />

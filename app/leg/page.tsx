@@ -23,6 +23,13 @@ interface LegPageProps {
     climbTas?: string; // Climb TAS
     climbDist?: string; // Climb distance
     climbFuel?: string; // Climb fuel used
+    cwd?: string; // Climb wind direction
+    cws?: string; // Climb wind speed
+    descentTas?: string; // Descent TAS
+    descentDist?: string; // Descent distance
+    descentFuel?: string; // Descent fuel used
+    dwd?: string; // Descent wind direction
+    dws?: string; // Descent wind speed
     fp?: string; // Flight plan ID
     lid?: string; // Leg ID
   }>;
@@ -49,6 +56,13 @@ export default async function LegPage({ searchParams }: LegPageProps) {
   const climbTas = params.climbTas || "";
   const climbDist = params.climbDist || "";
   const climbFuel = params.climbFuel || "";
+  const climbWd = params.cwd || "";
+  const climbWs = params.cws || "";
+  const descentTas = params.descentTas || "";
+  const descentDist = params.descentDist || "";
+  const descentFuel = params.descentFuel || "";
+  const descentWd = params.dwd || "";
+  const descentWs = params.dws || "";
   const fp = params.fp || "";
   const lid = params.lid || "";
 
@@ -73,6 +87,13 @@ export default async function LegPage({ searchParams }: LegPageProps) {
       initialClimbTas={climbTas}
       initialClimbDist={climbDist}
       initialClimbFuel={climbFuel}
+      initialClimbWd={climbWd}
+      initialClimbWs={climbWs}
+      initialDescentTas={descentTas}
+      initialDescentDist={descentDist}
+      initialDescentFuel={descentFuel}
+      initialDescentWd={descentWd}
+      initialDescentWs={descentWs}
       initialFlightPlanId={fp}
       initialLegId={lid}
     />

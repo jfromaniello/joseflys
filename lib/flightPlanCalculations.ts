@@ -16,9 +16,11 @@ export interface LegCalculatedResults {
   legDuration: number; // hours (just this leg, without elapsed)
   climbTime: number | null; // hours (time in climb phase)
   cruiseTime: number | null; // hours (time in cruise phase)
+  descentTime: number | null; // hours (time in descent phase)
   fuelUsed: number; // based on fuel unit (just this leg)
   climbFuelUsed: number | null; // fuel used in climb
   cruiseFuelUsed: number | null; // fuel used in cruise
+  descentFuelUsed: number | null; // fuel used in descent
   totalDistance: number; // NM (cumulative)
   totalTime: number; // hours (including elapsed)
   totalFuel: number; // cumulative fuel used
@@ -66,6 +68,20 @@ export function calculateLegResults(leg: FlightPlanLeg): LegCalculatedResults | 
     const climbDist = leg.climbDist ? parseFloat(leg.climbDist) : undefined;
     const climbFuel = leg.climbFuel ? parseFloat(leg.climbFuel) : undefined;
 
+    // Parse descent data if exists
+    const descentTasVal = leg.descentTas ? parseFloat(leg.descentTas) : undefined;
+    const descentTasInKnots = descentTasVal ? toKnots(descentTasVal, leg.unit as any) : undefined;
+    const descentDist = leg.descentDist ? parseFloat(leg.descentDist) : undefined;
+    const descentFuel = leg.descentFuel ? parseFloat(leg.descentFuel) : undefined;
+
+    // Parse climb wind if exists
+    const climbWindDir = leg.climbWd ? parseFloat(leg.climbWd) : undefined;
+    const climbWindSpeed = leg.climbWs ? parseFloat(leg.climbWs) : undefined;
+
+    // Parse descent wind if exists
+    const descentWindDir = leg.descentWd ? parseFloat(leg.descentWd) : undefined;
+    const descentWindSpeed = leg.descentWs ? parseFloat(leg.descentWs) : undefined;
+
     // Parse previous values
     const elapsedMins = leg.elapsedMin ? parseInt(leg.elapsedMin) : undefined;
     const prevFuel = leg.prevFuel ? parseFloat(leg.prevFuel) : undefined;
@@ -87,7 +103,14 @@ export function calculateLegResults(leg: FlightPlanLeg): LegCalculatedResults | 
       prevFuel,
       climbTasInKnots,
       climbDist,
-      climbFuel
+      climbFuel,
+      descentTasInKnots,
+      descentDist,
+      descentFuel,
+      climbWindDir,
+      climbWindSpeed,
+      descentWindDir,
+      descentWindSpeed
     );
 
     if (!results) return null;
@@ -101,11 +124,13 @@ export function calculateLegResults(leg: FlightPlanLeg): LegCalculatedResults | 
       }
     }
 
-    // Extract climb and cruise times
+    // Extract climb, cruise, and descent times
     const climbTime = results.climbPhase ? results.climbPhase.time : null;
     const cruiseTime = results.cruisePhase ? results.cruisePhase.time : null;
+    const descentTime = results.descentPhase ? results.descentPhase.time : null;
     const climbFuelUsed = results.climbPhase ? results.climbPhase.fuelUsed : null;
     const cruiseFuelUsed = results.cruisePhase ? results.cruisePhase.fuelUsed : null;
+    const descentFuelUsed = results.descentPhase ? results.descentPhase.fuelUsed : null;
 
     const legDuration = results.eta || 0;
 
@@ -135,9 +160,11 @@ export function calculateLegResults(leg: FlightPlanLeg): LegCalculatedResults | 
       legDuration,
       climbTime,
       cruiseTime,
+      descentTime,
       fuelUsed: legFuelOnly,
       climbFuelUsed,
       cruiseFuelUsed,
+      descentFuelUsed,
       totalDistance: dist,
       totalTime: ((elapsedMins || 0) / 60) + legDuration,
       totalFuel: totalFuelAccumulated,
@@ -184,6 +211,19 @@ export function calculateLegWaypoints(
     const climbDist = leg.climbDist ? parseFloat(leg.climbDist) : undefined;
     const climbFuel = leg.climbFuel ? parseFloat(leg.climbFuel) : undefined;
 
+    const descentTasVal = leg.descentTas ? parseFloat(leg.descentTas) : undefined;
+    const descentTasInKnots = descentTasVal ? toKnots(descentTasVal, leg.unit as any) : undefined;
+    const descentDist = leg.descentDist ? parseFloat(leg.descentDist) : undefined;
+    const descentFuel = leg.descentFuel ? parseFloat(leg.descentFuel) : undefined;
+
+    // Parse climb wind if exists
+    const climbWindDir = leg.climbWd ? parseFloat(leg.climbWd) : undefined;
+    const climbWindSpeed = leg.climbWs ? parseFloat(leg.climbWs) : undefined;
+
+    // Parse descent wind if exists
+    const descentWindDir = leg.descentWd ? parseFloat(leg.descentWd) : undefined;
+    const descentWindSpeed = leg.descentWs ? parseFloat(leg.descentWs) : undefined;
+
     const elapsedMins = leg.elapsedMin ? parseInt(leg.elapsedMin) : undefined;
     const prevFuel = leg.prevFuel ? parseFloat(leg.prevFuel) : undefined;
 
@@ -200,7 +240,14 @@ export function calculateLegWaypoints(
       prevFuel,
       climbTasInKnots,
       climbDist,
-      climbFuel
+      climbFuel,
+      descentTasInKnots,
+      descentDist,
+      descentFuel,
+      climbWindDir,
+      climbWindSpeed,
+      descentWindDir,
+      descentWindSpeed
     );
 
     return calculateWaypoints(
@@ -210,7 +257,8 @@ export function calculateLegWaypoints(
       flightParams,
       dist,
       results?.climbPhase,
-      ff
+      ff,
+      results?.descentPhase
     );
   } catch (error) {
     console.error("Error calculating waypoints:", error);
