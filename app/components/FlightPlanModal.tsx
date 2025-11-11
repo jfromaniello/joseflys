@@ -33,6 +33,7 @@ export function FlightPlanModal({
   useEffect(() => {
     if (isOpen) {
       const plans = loadFlightPlans();
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFlightPlans(plans);
 
       // Pre-select current flight plan if editing
@@ -269,7 +270,7 @@ export function FlightPlanModal({
                                     </div>
                                   </div>
                                   {selectedPlanId === plan.id && (
-                                    <div className="ml-2 flex-shrink-0">
+                                    <div className="ml-2 shrink-0">
                                       <svg
                                         className="h-5 w-5 text-blue-500"
                                         fill="currentColor"

@@ -16,7 +16,7 @@ export function serializeFlightPlan(flightPlan: FlightPlan): string {
     const plane = flightPlan.legs.length > 0 ? flightPlan.legs[0].plane : "";
 
     // Compact leg format - omit plane for all legs except first
-    const compactLegs = flightPlan.legs.map((leg, index) => {
+    const compactLegs = flightPlan.legs.map((leg) => {
       // Convert waypoints to compact array format [name, distance][]
       const waypoints = leg.waypoints
         ? leg.waypoints.map((w) => [w.name, w.distance])
@@ -92,6 +92,7 @@ export function deserializeFlightPlan(serialized: string): Omit<FlightPlan, "id"
       string, // name
       string, // date
       string, // plane
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       any[][] // legs
     ];
 

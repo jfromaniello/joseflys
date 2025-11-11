@@ -58,13 +58,11 @@ const createCustomIcon = (color: string) => {
 };
 
 const fromIcon = createCustomIcon('#0ea5e9'); // sky-500
-const toIcon = createCustomIcon('#8b5cf6'); // purple-500
 
 export function DistanceMap({
   fromLat,
   fromLon,
   toLocations,
-  fromName,
 }: DistanceMapProps) {
   const fromPosition: [number, number] = [fromLat, fromLon];
 
@@ -80,7 +78,7 @@ export function DistanceMap({
   const colors = ['#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6'];
 
   return (
-    <div className="w-full h-96 rounded-xl overflow-hidden border-2 border-gray-700 print:h-[320px] print:border print:border-gray-400">
+    <div className="w-full h-96 rounded-xl overflow-hidden border-2 border-gray-700 print:h-80 print:border print:border-gray-400">
       <MapContainer
         center={[centerLat, centerLon]}
         zoom={6}

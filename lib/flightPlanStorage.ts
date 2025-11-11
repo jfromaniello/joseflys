@@ -1,57 +1,210 @@
+import { calculateLegResults } from "./flightPlanCalculations";
+
 /**
  * Flight Plan Storage
  * Manages persistence of flight plans with multiple legs in localStorage
  */
 
+/**
+ * Represents an intermediate waypoint along a flight plan leg
+ *
+ * Waypoints allow pilots to track progress along a leg by marking specific
+ * geographic points and their distances from the leg's starting point.
+ */
 export interface Waypoint {
+  /**
+   * Name or identifier of the waypoint
+   * @example "VOR ABC", "FIXES", "Mountain Pass"
+   */
   name: string;
-  distance: number; // Cumulative distance from leg start
+
+  /**
+   * Cumulative distance from the start of the leg in nautical miles (NM)
+   * This represents how far along the leg this waypoint is located
+   * @example 15.5 for a waypoint 15.5 NM from the leg start
+   */
+  distance: number;
 }
 
+/**
+ * Represents a single leg in a flight plan
+ *
+ * A leg contains all flight navigation data, fuel calculations, and aircraft information
+ * for one segment of a multi-leg flight plan. Legs are ordered sequentially and can include
+ * climb and descent phases with their respective performance data.
+ */
 export interface FlightPlanLeg {
-  id: string; // 5-character short ID (unique leg identifier)
-  index: number; // Position in flight plan (0, 1, 2, etc.)
+  /**
+   * Unique 5-character alphanumeric identifier for this leg
+   */
+  id: string;
+
+  /**
+   * Zero-based position of this leg in the flight plan sequence
+   * @example 0 for first leg, 1 for second leg, etc.
+   */
+  index: number;
 
   // Flight navigation & wind
-  th: string; // True heading (0-359°)
-  tas: string; // True airspeed
-  wd?: string; // Wind direction
-  ws?: string; // Wind speed
-  md: string; // Magnetic deviation
+  /**
+   * True heading in degrees (0-359°)
+   * String format to preserve user input precision
+   */
+  th: string;
+
+  /**
+   * True airspeed
+   * String format to preserve user input precision
+   */
+  tas: string;
+
+  /**
+   * Wind direction in degrees (0-359°)
+   * Optional - only present when wind is specified
+   */
+  wd?: string;
+
+  /**
+   * Wind speed
+   * Optional - only present when wind is specified
+   */
+  ws?: string;
+
+  /**
+   * Magnetic deviation in degrees
+   * Used to calculate magnetic heading from true heading
+   */
+  md: string;
 
   // Distance & waypoints
-  dist: string; // Leg distance in NM
-  waypoints?: Waypoint[]; // Array of waypoints
+  /**
+   * Leg distance in nautical miles (NM)
+   * String format to preserve user input precision
+   */
+  dist: string;
+
+  /**
+   * Array of intermediate waypoints along this leg
+   * Each waypoint includes name and cumulative distance from leg start
+   */
+  waypoints?: Waypoint[];
 
   // Fuel
-  ff: string; // Fuel flow rate
-  fuelUnit: string; // gph, lph, pph, or kgh
-  prevFuel?: string; // Previous fuel used (cumulative)
+  /**
+   * Fuel flow rate
+   * String format to preserve user input precision
+   */
+  ff: string;
+
+  /**
+   * Fuel consumption unit
+   * @example "gph" (gallons per hour), "lph" (liters per hour), "pph" (pounds per hour), "kgh" (kilograms per hour)
+   */
+  fuelUnit: string;
+
+  /**
+   * Cumulative fuel used from all previous legs
+   * String format to preserve calculation precision
+   * Optional - only present for legs after the first
+   */
+  prevFuel?: string;
 
   // Aircraft
-  plane: string; // Serialized aircraft data (CBOR base64url)
+  /**
+   * Serialized aircraft performance data encoded in CBOR format and base64url
+   * Contains aircraft-specific performance characteristics
+   */
+  plane: string;
 
   // Flight tracking
-  depTime?: string; // Departure time (HHMM format)
-  elapsedMin?: string; // Elapsed minutes (cumulative)
+  /**
+   * Departure time in 24-hour format (HHMM)
+   * Optional - only present when flight timing is specified
+   * @example "1430" for 2:30 PM
+   */
+  depTime?: string;
+
+  /**
+   * Cumulative elapsed time in minutes from flight start to end of this leg
+   * String format to preserve calculation precision
+   */
+  elapsedMin?: string;
 
   // Climb data
+  /**
+   * True airspeed during climb phase
+   * Optional - only present when climb performance is specified
+   */
   climbTas?: string;
+
+  /**
+   * Distance covered during climb phase in nautical miles
+   * Optional - only present when climb performance is specified
+   */
   climbDist?: string;
+
+  /**
+   * Fuel consumed during climb phase
+   * Optional - only present when climb performance is specified
+   */
   climbFuel?: string;
-  climbWd?: string; // Climb wind direction
-  climbWs?: string; // Climb wind speed
+
+  /**
+   * Wind direction during climb in degrees (0-359°)
+   * Optional - only present when climb wind conditions differ from cruise
+   */
+  climbWd?: string;
+
+  /**
+   * Wind speed during climb
+   * Optional - only present when climb wind conditions differ from cruise
+   */
+  climbWs?: string;
 
   // Descent data
+  /**
+   * True airspeed during descent phase
+   * Optional - only present when descent performance is specified
+   */
   descentTas?: string;
+
+  /**
+   * Distance covered during descent phase in nautical miles
+   * Optional - only present when descent performance is specified
+   */
   descentDist?: string;
+
+  /**
+   * Fuel consumed during descent phase
+   * Optional - only present when descent performance is specified
+   */
   descentFuel?: string;
-  descentWd?: string; // Descent wind direction
-  descentWs?: string; // Descent wind speed
+
+  /**
+   * Wind direction during descent in degrees (0-359°)
+   * Optional - only present when descent wind conditions differ from cruise
+   */
+  descentWd?: string;
+
+  /**
+   * Wind speed during descent
+   * Optional - only present when descent wind conditions differ from cruise
+   */
+  descentWs?: string;
 
   // Display
-  desc?: string; // Description/leg name
-  unit: string; // Speed unit (kt, kmh, mph)
+  /**
+   * User-provided description or name for this leg
+   * Optional - typically contains departure/arrival airports or waypoint names
+   * @example "KJFK to KBOS"
+   */
+  desc?: string;
+
+  /**
+   * Speed display unit
+   * @example "kt" (knots), "kmh" (kilometers per hour), "mph" (miles per hour)
+   */
+  unit: string;
 }
 
 export interface FlightPlan {
@@ -192,7 +345,6 @@ export function deleteFlightPlan(id: string): boolean {
 function recalculateSubsequentLegs(plan: FlightPlan, fromIndex: number): void {
   if (fromIndex >= plan.legs.length - 1) return; // No subsequent legs
 
-  const { calculateLegResults } = require("./flightPlanCalculations");
 
   // Recalculate each leg starting from the next one
   for (let i = fromIndex + 1; i < plan.legs.length; i++) {

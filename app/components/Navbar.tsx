@@ -2,7 +2,7 @@
 
 import { useState, Fragment } from "react";
 import Link from "next/link";
-import { Dialog, Transition, TransitionChild, DialogPanel, DialogTitle, Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/react";
+import { Dialog, Transition, TransitionChild, DialogPanel, Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/react";
 
 type Page = "home" | "tas" | "course" | "leg" | "conversions" | "planning" | "distance" | "isa" | "climb" | "my-planes" | "flight-plans";
 
@@ -229,7 +229,7 @@ export function Navbar({ currentPage }: NavbarProps) {
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-14">
             {/* Logo / Brand */}
-            <Link href="/" className="flex items-center gap-2.5 group flex-shrink-0 cursor-pointer">
+            <Link href="/" className="flex items-center gap-2.5 group shrink-0 cursor-pointer">
               <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-sky-500/20 border border-sky-500/30 group-hover:bg-sky-500/30 transition-colors">
                 <svg
                   className="w-5 h-5 text-sky-400"

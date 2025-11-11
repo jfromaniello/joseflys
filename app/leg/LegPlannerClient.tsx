@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useState, useEffect, Fragment } from "react";
@@ -38,6 +39,8 @@ import {
 } from "@/lib/flightPlanStorage";
 import { BookmarkIcon } from "@heroicons/react/24/outline";
 import { BookmarkIcon as BookmarkSolidIcon } from "@heroicons/react/24/solid";
+import { calculateLegResults } from "@/lib/flightPlanCalculations";
+import { extractNextLegParams } from "@/lib/nextLegParams";
 
 interface LegPlannerClientProps {
   initialTh: string;
@@ -192,8 +195,6 @@ export function LegPlannerClient({
     const hasNoOtherParams = !initialTh && !initialTas && !initialMd && !initialDist && !initialFf;
 
     if (initialFlightPlanId && hasNoOtherParams) {
-      const { calculateLegResults } = require("@/lib/flightPlanCalculations");
-      const { extractNextLegParams } = require("@/lib/nextLegParams");
 
       const plan = getFlightPlanById(initialFlightPlanId);
       if (plan && plan.legs.length > 0) {
@@ -232,7 +233,7 @@ export function LegPlannerClient({
         }
       }
     }
-  }, []); // Run only once on mount
+  }, [initialDist, initialFf, initialFlightPlanId, initialMd, initialTas, initialTh]); // Run only once on mount
 
   // Update URL when parameters change (client-side only, no page reload)
   useEffect(() => {
@@ -373,7 +374,7 @@ export function LegPlannerClient({
     setSpeedUnit(data.speedUnit);
   };
 
-  const handleFlightPlanSelect = (flightPlan: FlightPlan, isNew: boolean) => {
+  const handleFlightPlanSelect = (flightPlan: FlightPlan) => {
     // Collect all current leg data
     const legData: Omit<FlightPlanLeg, "id" | "index"> = {
       th: trueHeading,
@@ -439,27 +440,6 @@ export function LegPlannerClient({
       ? calculateWaypoints(waypoints, results.groundSpeed, ff, flightParams, dist, results.climbPhase, ff, results.descentPhase)
       : [];
 
-
-  // Build OG image URL for download
-  const hasParams = windDir || windSpeed || trueHeading || tas;
-  const ogImageUrl = hasParams
-    ? (() => {
-        const params = new URLSearchParams();
-        params.set('wd', windDir);
-        params.set('ws', windSpeed);
-        params.set('th', trueHeading);
-        params.set('tas', tas);
-        params.set('md', magDev);
-        if (distance) params.set('dist', distance);
-        if (fuelFlow) params.set('ff', fuelFlow);
-        if (description) params.set('desc', description);
-        if (deviationTable.length > 0) {
-          const compressed = compressForUrl(deviationTable);
-          if (compressed) params.set('devTable', compressed);
-        }
-        return `/api/og-course?${params.toString()}`;
-      })()
-    : undefined;
 
   return (
     <PageLayout currentPage="leg">
@@ -837,7 +817,7 @@ export function LegPlannerClient({
                   <select
                     value={fuelUnit}
                     onChange={(e) => setFuelUnit(e.target.value as FuelUnit)}
-                    className="w-[5.5rem] lg:w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white cursor-pointer appearance-none"
+                    className="w-22 lg:w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white cursor-pointer appearance-none"
                     style={{
                       backgroundImage: 'none',
                     }}

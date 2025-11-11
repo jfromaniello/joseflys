@@ -43,7 +43,7 @@ export default function MyPlanesClient() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900">
+    <div className="min-h-screen bg-linear-to-br from-slate-900 via-blue-950 to-slate-900">
       <Navbar currentPage="my-planes" />
 
       <div className="container mx-auto px-4 py-8 max-w-6xl">

@@ -22,7 +22,7 @@ import {
   calculateTotalFuelWithAlternatives,
   type LegCalculatedResults,
 } from "@/lib/flightPlanCalculations";
-import { getFuelResultUnit } from "@/lib/fuelConversion";
+import { FuelUnit, getFuelResultUnit } from "@/lib/fuelConversion";
 import { generateShareUrl } from "@/lib/flightPlanSharing";
 import { Tooltip } from "@/app/components/Tooltip";
 import {
@@ -35,6 +35,7 @@ import {
   ShareIcon,
   CheckIcon,
 } from "@heroicons/react/24/outline";
+import { compressForUrl } from "@/lib/urlCompression";
 
 interface FlightPlanDetailClientProps {
   flightPlanId: string;
@@ -164,7 +165,6 @@ export function FlightPlanDetailClient({
     if (leg.descentWs) params.set("dws", leg.descentWs);
     if (leg.waypoints && leg.waypoints.length > 0) {
       // Compress waypoints if needed
-      const { compressForUrl } = require("@/lib/urlCompression");
       const compressed = compressForUrl(leg.waypoints);
       if (compressed) params.set("waypoints", compressed);
     }
@@ -220,7 +220,7 @@ export function FlightPlanDetailClient({
         <main className="w-full max-w-4xl">
           <div className="rounded-2xl p-6 sm:p-8 shadow-2xl bg-slate-800/50 backdrop-blur-sm border border-gray-700 text-center">
             <p className="text-lg mb-4" style={{ color: "oklch(0.7 0.02 240)" }}>
-              This flight plan may have been deleted or doesn't exist.
+              This flight plan may have been deleted or doesn&apos;t exist.
             </p>
             <Link
               href="/flight-plans"
@@ -348,14 +348,14 @@ export function FlightPlanDetailClient({
                 className="text-sm mb-6"
                 style={{ color: "oklch(0.6 0.02 240)" }}
               >
-                Click "Add Leg" above to create your first leg
+                Click &quot;Add Leg&quot; above to create your first leg
               </p>
             </div>
           ) : (
             <div className="space-y-4">
               {/* Flight Plan Totals */}
               {mainRouteTotals.distance > 0 && (
-                <div className="bg-gradient-to-r from-amber-900/40 via-orange-900/30 to-amber-900/40 border-2 border-amber-500/40 rounded-2xl p-5 shadow-lg">
+                <div className="bg-linear-to-r from-amber-900/40 via-orange-900/30 to-amber-900/40 border-2 border-amber-500/40 rounded-2xl p-5 shadow-lg">
                   <h3
                     className="text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2"
                     style={{ color: "oklch(0.8 0.15 60)" }}
@@ -391,7 +391,7 @@ export function FlightPlanDetailClient({
                         {totalFuel.toFixed(1)}
                       </div>
                       <div className="text-xs" style={{ color: "oklch(0.65 0.08 60)" }}>
-                        {getFuelResultUnit(flightPlan.legs[0]?.fuelUnit as any || 'gph')}
+                        {getFuelResultUnit(flightPlan.legs[0]?.fuelUnit as FuelUnit || 'gph')}
                       </div>
                     </div>
                     <div className="text-center p-3 bg-slate-900/40 rounded-xl border border-amber-500/20">
@@ -441,7 +441,7 @@ export function FlightPlanDetailClient({
                 return (
                   <div
                     key={leg.id}
-                    className={`bg-gradient-to-br from-slate-900/80 to-slate-800/60 border-2 rounded-2xl p-3 sm:p-5 hover:shadow-lg transition-all ${
+                    className={`bg-linear-to-br from-slate-900/80 to-slate-800/60 border-2 rounded-2xl p-3 sm:p-5 hover:shadow-lg transition-all ${
                       isAlternative
                         ? "border-orange-500/40 hover:border-orange-400/60 hover:shadow-orange-500/10"
                         : "border-sky-500/30 hover:border-sky-400/50 hover:shadow-sky-500/10"
@@ -450,10 +450,10 @@ export function FlightPlanDetailClient({
                     {/* Header with Actions */}
                     <div className="flex items-center justify-between gap-3 mb-4">
                       <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className={`flex items-center justify-center w-10 h-10 rounded-xl font-bold text-lg text-white shadow-lg flex-shrink-0 ${
+                        <div className={`flex items-center justify-center w-10 h-10 rounded-xl font-bold text-lg text-white shadow-lg shrink-0 ${
                           isAlternative
-                            ? "bg-gradient-to-br from-orange-500 to-amber-600"
-                            : "bg-gradient-to-br from-sky-500 to-blue-600"
+                            ? "bg-linear-to-br from-orange-500 to-amber-600"
+                            : "bg-linear-to-br from-sky-500 to-blue-600"
                         }`}>
                           {index + 1}
                         </div>
@@ -464,7 +464,7 @@ export function FlightPlanDetailClient({
                         )}
                         {isAlternative && (
                           <span
-                            className="px-2.5 py-1 text-xs font-bold uppercase tracking-wider rounded-lg border-2 flex-shrink-0 print:hidden"
+                            className="px-2.5 py-1 text-xs font-bold uppercase tracking-wider rounded-lg border-2 shrink-0 print:hidden"
                             style={{
                               backgroundColor: "oklch(0.45 0.15 60 / 0.3)",
                               borderColor: "oklch(0.7 0.18 60)",
@@ -477,7 +477,7 @@ export function FlightPlanDetailClient({
                       </div>
 
                       {/* Actions */}
-                      <div className="flex gap-2 flex-shrink-0">
+                      <div className="flex gap-2 shrink-0">
                         <Link
                           href={buildLegUrl(leg)}
                           className="p-2.5 bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 hover:text-blue-200 rounded-xl transition-all hover:shadow-lg hover:shadow-blue-500/20 border border-blue-500/30"
@@ -565,7 +565,7 @@ export function FlightPlanDetailClient({
 
                           {/* Calculated Results */}
                           {result && (
-                            <div className="bg-gradient-to-br from-emerald-900/30 to-emerald-800/20 rounded-xl p-3 sm:p-4 border border-emerald-500/30">
+                            <div className="bg-linear-to-br from-emerald-900/30 to-emerald-800/20 rounded-xl p-3 sm:p-4 border border-emerald-500/30">
                               <div
                                 className="text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2"
                                 style={{ color: "oklch(0.75 0.15 160)" }}
@@ -664,10 +664,10 @@ export function FlightPlanDetailClient({
                                   <span className="font-semibold text-xs sm:text-sm truncate flex-1 min-w-0" style={{ color: "oklch(0.8 0.12 270)" }}>
                                     {wp.name}
                                   </span>
-                                  <div className="flex gap-1.5 sm:gap-3 text-xs font-medium flex-shrink-0" style={{ color: "oklch(0.7 0.05 240)" }}>
-                                    <span className="min-w-[3rem] sm:min-w-[4rem] text-right">{wp.distance.toFixed(1)} NM</span>
-                                    <span className="min-w-[2.5rem] sm:min-w-[3.5rem] text-right">{wp.eta ? formatETA(wp.eta) : "N/A"}</span>
-                                    <span className="min-w-[3rem] sm:min-w-[4rem] text-right">
+                                  <div className="flex gap-1.5 sm:gap-3 text-xs font-medium shrink-0" style={{ color: "oklch(0.7 0.05 240)" }}>
+                                    <span className="min-w-12 sm:min-w-16 text-right">{wp.distance.toFixed(1)} NM</span>
+                                    <span className="min-w-10 sm:min-w-14 text-right">{wp.eta ? formatETA(wp.eta) : "N/A"}</span>
+                                    <span className="min-w-12 sm:min-w-16 text-right">
                                       {wp.fuelUsed !== undefined ? formatFuel(wp.fuelUsed, leg.fuelUnit) : "N/A"}
                                     </span>
                                   </div>
