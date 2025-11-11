@@ -226,7 +226,7 @@ export function IntermediateResults({ results, fuelUnit, fuelFlow }: Intermediat
             <p className="text-xs font-medium" style={{ color: legFuel !== undefined ? "white" : "oklch(0.4 0.02 240)" }}>
               Leg Fuel
             </p>
-            <Tooltip content="Fuel consumption for this leg only (not including previous legs). Based on fuel flow and leg time." />
+            <Tooltip content="Fuel consumption for this leg only. Based on fuel flow and leg time. It does not include previous legs and reserve fuel." />
           </div>
           <p className="text-xl font-bold text-center" style={{ color: legFuel !== undefined ? "white" : "oklch(0.35 0.02 240)" }}>
             {legFuel !== undefined ? `${legFuel.toFixed(1)} ${getFuelResultUnit(fuelUnit)}` : '—'}
