@@ -49,40 +49,37 @@ export interface FlightPlanLeg {
   // Flight navigation & wind
   /**
    * True heading in degrees (0-359°)
-   * String format to preserve user input precision
    */
-  th: string;
+  th: number;
 
   /**
    * True airspeed
-   * String format to preserve user input precision
    */
-  tas: string;
+  tas: number;
 
   /**
    * Wind direction in degrees (0-359°)
    * Optional - only present when wind is specified
    */
-  wd?: string;
+  wd?: number;
 
   /**
    * Wind speed
    * Optional - only present when wind is specified
    */
-  ws?: string;
+  ws?: number;
 
   /**
    * Magnetic deviation in degrees
    * Used to calculate magnetic heading from true heading
    */
-  md: string;
+  md: number;
 
   // Distance & waypoints
   /**
    * Leg distance in nautical miles (NM)
-   * String format to preserve user input precision
    */
-  dist: string;
+  dist: number;
 
   /**
    * Array of intermediate waypoints along this leg
@@ -93,9 +90,8 @@ export interface FlightPlanLeg {
   // Fuel
   /**
    * Fuel flow rate
-   * String format to preserve user input precision
    */
-  ff: string;
+  ff: number;
 
   /**
    * Fuel consumption unit
@@ -105,10 +101,9 @@ export interface FlightPlanLeg {
 
   /**
    * Cumulative fuel used from all previous legs
-   * String format to preserve calculation precision
    * Optional - only present for legs after the first
    */
-  prevFuel?: string;
+  prevFuel?: number;
 
   // Aircraft
   /**
@@ -127,71 +122,70 @@ export interface FlightPlanLeg {
 
   /**
    * Cumulative elapsed time in minutes from flight start to end of this leg
-   * String format to preserve calculation precision
    */
-  elapsedMin?: string;
+  elapsedMin?: number;
 
   // Climb data
   /**
    * True airspeed during climb phase
    * Optional - only present when climb performance is specified
    */
-  climbTas?: string;
+  climbTas?: number;
 
   /**
    * Distance covered during climb phase in nautical miles
    * Optional - only present when climb performance is specified
    */
-  climbDist?: string;
+  climbDist?: number;
 
   /**
    * Fuel consumed during climb phase
    * Optional - only present when climb performance is specified
    */
-  climbFuel?: string;
+  climbFuel?: number;
 
   /**
    * Wind direction during climb in degrees (0-359°)
    * Optional - only present when climb wind conditions differ from cruise
    */
-  climbWd?: string;
+  climbWd?: number;
 
   /**
    * Wind speed during climb
    * Optional - only present when climb wind conditions differ from cruise
    */
-  climbWs?: string;
+  climbWs?: number;
 
   // Descent data
   /**
    * True airspeed during descent phase
    * Optional - only present when descent performance is specified
    */
-  descentTas?: string;
+  descentTas?: number;
 
   /**
    * Distance covered during descent phase in nautical miles
    * Optional - only present when descent performance is specified
    */
-  descentDist?: string;
+  descentDist?: number;
 
   /**
    * Fuel consumed during descent phase
    * Optional - only present when descent performance is specified
    */
-  descentFuel?: string;
+  descentFuel?: number;
 
   /**
    * Wind direction during descent in degrees (0-359°)
    * Optional - only present when descent wind conditions differ from cruise
    */
-  descentWd?: string;
+  descentWd?: number;
 
   /**
    * Wind speed during descent
    * Optional - only present when descent wind conditions differ from cruise
    */
-  descentWs?: string;
+  descentWs?: number;
 
   // Display
   /**
@@ -218,6 +212,60 @@ export interface FlightPlan {
 }
 
 const STORAGE_KEY = "flight_plans";
+
+/**
+ * Helper to parse numeric values that might be strings (from old data)
+ * Supports backwards compatibility when loading from localStorage
+ */
+function parseNumericValue(value: unknown): number | undefined {
+  if (value === null || value === undefined || value === "") {
+    return undefined;
+  }
+  if (typeof value === "number") {
+    return value;
+  }
+  if (typeof value === "string") {
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? undefined : parsed;
+  }
+  return undefined;
+}
+
+/**
+ * Migrate old leg data (with strings) to new format (with numbers)
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function migrateLegData(leg: any): FlightPlanLeg {
+  const parsedTh = parseNumericValue(leg.th);
+  const parsedTas = parseNumericValue(leg.tas);
+  const parsedMd = parseNumericValue(leg.md);
+  const parsedDist = parseNumericValue(leg.dist);
+  const parsedFf = parseNumericValue(leg.ff);
+
+  // If required fields are missing, use defaults (should not happen in valid data)
+  return {
+    ...leg,
+    th: parsedTh ?? 0,
+    tas: parsedTas ?? 0,
+    wd: parseNumericValue(leg.wd),
+    ws: parseNumericValue(leg.ws),
+    md: parsedMd ?? 0,
+    dist: parsedDist ?? 0,
+    ff: parsedFf ?? 0,
+    prevFuel: parseNumericValue(leg.prevFuel),
+    elapsedMin: parseNumericValue(leg.elapsedMin),
+    climbTas: parseNumericValue(leg.climbTas),
+    climbDist: parseNumericValue(leg.climbDist),
+    climbFuel: parseNumericValue(leg.climbFuel),
+    climbWd: parseNumericValue(leg.climbWd),
+    climbWs: parseNumericValue(leg.climbWs),
+    descentTas: parseNumericValue(leg.descentTas),
+    descentDist: parseNumericValue(leg.descentDist),
+    descentFuel: parseNumericValue(leg.descentFuel),
+    descentWd: parseNumericValue(leg.descentWd),
+    descentWs: parseNumericValue(leg.descentWs),
+  };
+}
 
 /**
  * Generate a 5-character alphanumeric short ID
@@ -250,8 +298,15 @@ export function loadFlightPlans(): FlightPlan[] {
     if (!stored) return [];
 
     const plans = JSON.parse(stored) as FlightPlan[];
+
+    // Migrate old data (strings) to new format (numbers)
+    const migratedPlans = plans.map((plan) => ({
+      ...plan,
+      legs: plan.legs.map((leg) => migrateLegData(leg)),
+    }));
+
     // Sort by updated_at descending (most recent first)
-    return plans.sort((a, b) => b.updated_at - a.updated_at);
+    return migratedPlans.sort((a, b) => b.updated_at - a.updated_at);
   } catch (error) {
     console.error("Failed to load flight plans:", error);
     return [];
@@ -357,8 +412,8 @@ function recalculateSubsequentLegs(plan: FlightPlan, fromIndex: number): void {
 
     if (prevResults) {
       // Update current leg with new cumulative values
-      currentLeg.elapsedMin = Math.round(prevResults.totalTime * 60).toString();
-      currentLeg.prevFuel = prevResults.totalFuel.toFixed(1);
+      currentLeg.elapsedMin = Math.round(prevResults.totalTime * 60);
+      currentLeg.prevFuel = parseFloat(prevResults.totalFuel.toFixed(1));
     }
   }
 }

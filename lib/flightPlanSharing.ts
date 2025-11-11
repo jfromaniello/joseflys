@@ -7,6 +7,24 @@ import { encode as cborEncode, decode as cborDecode } from "cbor-x";
 import type { FlightPlan, FlightPlanLeg } from "./flightPlanStorage";
 
 /**
+ * Helper to parse numeric values that might be strings (from old data)
+ * Supports backwards compatibility when deserializing
+ */
+function parseNumericValue(value: unknown): number | undefined {
+  if (value === null || value === undefined || value === "") {
+    return undefined;
+  }
+  if (typeof value === "number") {
+    return value;
+  }
+  if (typeof value === "string") {
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? undefined : parsed;
+  }
+  return undefined;
+}
+
+/**
  * Serialize a flight plan to a compact CBOR format
  * Only includes the plane serialization once (from first leg)
  */
@@ -25,25 +43,25 @@ export function serializeFlightPlan(flightPlan: FlightPlan): string {
       return [
         leg.th,
         leg.tas,
-        leg.wd || "",
-        leg.ws || "",
+        leg.wd ?? null,
+        leg.ws ?? null,
         leg.md,
         leg.dist,
         leg.ff,
         leg.fuelUnit,
-        leg.prevFuel || "",
+        leg.prevFuel ?? null,
         leg.depTime || "",
-        leg.elapsedMin || "",
-        leg.climbTas || "",
-        leg.climbDist || "",
-        leg.climbFuel || "",
-        leg.climbWd || "",
-        leg.climbWs || "",
-        leg.descentTas || "",
-        leg.descentDist || "",
-        leg.descentFuel || "",
-        leg.descentWd || "",
-        leg.descentWs || "",
+        leg.elapsedMin ?? null,
+        leg.climbTas ?? null,
+        leg.climbDist ?? null,
+        leg.climbFuel ?? null,
+        leg.climbWd ?? null,
+        leg.climbWs ?? null,
+        leg.descentTas ?? null,
+        leg.descentDist ?? null,
+        leg.descentFuel ?? null,
+        leg.descentWd ?? null,
+        leg.descentWs ?? null,
         leg.desc || "",
         leg.unit,
         waypoints,
@@ -135,29 +153,41 @@ export function deserializeFlightPlan(serialized: string): Omit<FlightPlan, "id"
           }))
         : undefined;
 
+      // Parse numeric values with backwards compatibility for strings
+      const parsedTh = parseNumericValue(th);
+      const parsedTas = parseNumericValue(tas);
+      const parsedMd = parseNumericValue(md);
+      const parsedDist = parseNumericValue(dist);
+      const parsedFf = parseNumericValue(ff);
+
+      // Validate required fields
+      if (parsedTh === undefined || parsedTas === undefined || parsedMd === undefined || parsedDist === undefined || parsedFf === undefined) {
+        throw new Error("Invalid leg data: missing required numeric fields");
+      }
+
       return {
-        th,
-        tas,
-        wd: wd || undefined,
-        ws: ws || undefined,
-        md,
-        dist,
-        ff,
+        th: parsedTh,
+        tas: parsedTas,
+        wd: parseNumericValue(wd),
+        ws: parseNumericValue(ws),
+        md: parsedMd,
+        dist: parsedDist,
+        ff: parsedFf,
         fuelUnit,
-        prevFuel: prevFuel || undefined,
+        prevFuel: parseNumericValue(prevFuel),
         plane, // Use the shared plane serialization
         depTime: depTime || undefined,
-        elapsedMin: elapsedMin || undefined,
-        climbTas: climbTas || undefined,
-        climbDist: climbDist || undefined,
-        climbFuel: climbFuel || undefined,
-        climbWd: climbWd || undefined,
-        climbWs: climbWs || undefined,
-        descentTas: descentTas || undefined,
-        descentDist: descentDist || undefined,
-        descentFuel: descentFuel || undefined,
-        descentWd: descentWd || undefined,
-        descentWs: descentWs || undefined,
+        elapsedMin: parseNumericValue(elapsedMin),
+        climbTas: parseNumericValue(climbTas),
+        climbDist: parseNumericValue(climbDist),
+        climbFuel: parseNumericValue(climbFuel),
+        climbWd: parseNumericValue(climbWd),
+        climbWs: parseNumericValue(climbWs),
+        descentTas: parseNumericValue(descentTas),
+        descentDist: parseNumericValue(descentDist),
+        descentFuel: parseNumericValue(descentFuel),
+        descentWd: parseNumericValue(descentWd),
+        descentWs: parseNumericValue(descentWs),
         desc: desc || undefined,
         unit,
         waypoints: reconstructedWaypoints,

@@ -139,30 +139,30 @@ export function FlightPlanDetailClient({
 
   const buildLegUrl = (leg: FlightPlanLeg) => {
     const params = new URLSearchParams();
-    params.set("th", leg.th);
-    params.set("tas", leg.tas);
-    if (leg.wd) params.set("wd", leg.wd);
-    if (leg.ws) params.set("ws", leg.ws);
-    params.set("md", leg.md);
-    params.set("dist", leg.dist);
-    params.set("ff", leg.ff);
+    params.set("th", leg.th.toString());
+    params.set("tas", leg.tas.toString());
+    if (leg.wd !== undefined) params.set("wd", leg.wd.toString());
+    if (leg.ws !== undefined) params.set("ws", leg.ws.toString());
+    params.set("md", leg.md.toString());
+    params.set("dist", leg.dist.toString());
+    params.set("ff", leg.ff.toString());
     params.set("funit", leg.fuelUnit);
     params.set("unit", leg.unit);
     if (leg.plane) params.set("plane", leg.plane);
     if (leg.desc) params.set("desc", leg.desc);
     if (leg.depTime) params.set("depTime", leg.depTime);
-    if (leg.elapsedMin) params.set("elapsedMin", leg.elapsedMin);
-    if (leg.prevFuel) params.set("prevFuel", leg.prevFuel);
-    if (leg.climbTas) params.set("climbTas", leg.climbTas);
-    if (leg.climbDist) params.set("climbDist", leg.climbDist);
-    if (leg.climbFuel) params.set("climbFuel", leg.climbFuel);
-    if (leg.climbWd) params.set("cwd", leg.climbWd);
-    if (leg.climbWs) params.set("cws", leg.climbWs);
-    if (leg.descentTas) params.set("descentTas", leg.descentTas);
-    if (leg.descentDist) params.set("descentDist", leg.descentDist);
-    if (leg.descentFuel) params.set("descentFuel", leg.descentFuel);
-    if (leg.descentWd) params.set("dwd", leg.descentWd);
-    if (leg.descentWs) params.set("dws", leg.descentWs);
+    if (leg.elapsedMin !== undefined) params.set("elapsedMin", leg.elapsedMin.toString());
+    if (leg.prevFuel !== undefined) params.set("prevFuel", leg.prevFuel.toString());
+    if (leg.climbTas !== undefined) params.set("climbTas", leg.climbTas.toString());
+    if (leg.climbDist !== undefined) params.set("climbDist", leg.climbDist.toString());
+    if (leg.climbFuel !== undefined) params.set("climbFuel", leg.climbFuel.toString());
+    if (leg.climbWd !== undefined) params.set("cwd", leg.climbWd.toString());
+    if (leg.climbWs !== undefined) params.set("cws", leg.climbWs.toString());
+    if (leg.descentTas !== undefined) params.set("descentTas", leg.descentTas.toString());
+    if (leg.descentDist !== undefined) params.set("descentDist", leg.descentDist.toString());
+    if (leg.descentFuel !== undefined) params.set("descentFuel", leg.descentFuel.toString());
+    if (leg.descentWd !== undefined) params.set("dwd", leg.descentWd.toString());
+    if (leg.descentWs !== undefined) params.set("dws", leg.descentWs.toString());
     if (leg.waypoints && leg.waypoints.length > 0) {
       // Compress waypoints if needed
       const compressed = compressForUrl(leg.waypoints);
@@ -520,11 +520,11 @@ export function FlightPlanDetailClient({
                                   </span>
                                 </div>
                               )}
-                              {leg.prevFuel && parseFloat(leg.prevFuel) > 0 && (
+                              {leg.prevFuel !== undefined && leg.prevFuel > 0 && (
                                 <div className="flex justify-between items-center">
                                   <span className="text-sm" style={{ color: "oklch(0.65 0.05 240)" }}>Fuel Used Before</span>
                                   <span className="text-base font-bold" style={{ color: "oklch(0.85 0.15 230)" }}>
-                                    {formatFuel(parseFloat(leg.prevFuel), leg.fuelUnit)}
+                                    {formatFuel(leg.prevFuel, leg.fuelUnit)}
                                   </span>
                                 </div>
                               )}

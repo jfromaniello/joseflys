@@ -80,15 +80,15 @@ export function extractNextLegParams(
   flightPlanId?: string
 ): NextLegParams {
   return {
-    magDev: leg.md,
+    magDev: leg.md.toString(),
     departureTime: leg.depTime || "",
     plane: leg.plane,
-    fuelFlow: leg.ff,
-    tas: leg.tas,
+    fuelFlow: leg.ff.toString(),
+    tas: leg.tas.toString(),
     speedUnit: leg.unit,
     fuelUnit: leg.fuelUnit,
-    windDir: leg.wd || "",
-    windSpeed: leg.ws || "",
+    windDir: leg.wd !== undefined ? leg.wd.toString() : "",
+    windSpeed: leg.ws !== undefined ? leg.ws.toString() : "",
     elapsedMinutes: legResults?.totalTime ? Math.round(legResults.totalTime * 60) : 0,
     fuelUsed: legResults?.totalFuel,
     flightPlanId,

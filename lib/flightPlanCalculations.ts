@@ -51,40 +51,40 @@ function addMinutesToTime(timeHHMM: string, minutes: number): string {
  */
 export function calculateLegResults(leg: FlightPlanLeg): LegCalculatedResults | null {
   try {
-    const th = parseFloat(leg.th);
-    const tasVal = parseFloat(leg.tas);
-    const wd = leg.wd ? parseFloat(leg.wd) : 0;
-    const ws = leg.ws ? parseFloat(leg.ws) : 0;
-    const md = parseFloat(leg.md) || 0;
-    const dist = parseFloat(leg.dist);
-    const ff = parseFloat(leg.ff);
+    const th = leg.th;
+    const tasVal = leg.tas;
+    const wd = leg.wd ?? 0;
+    const ws = leg.ws ?? 0;
+    const md = leg.md || 0;
+    const dist = leg.dist;
+    const ff = leg.ff;
 
     // Convert TAS to knots
     const tasInKnots = toKnots(tasVal, leg.unit);
 
-    // Parse climb data if exists
-    const climbTasVal = leg.climbTas ? parseFloat(leg.climbTas) : undefined;
+    // Get climb data if exists
+    const climbTasVal = leg.climbTas;
     const climbTasInKnots = climbTasVal ? toKnots(climbTasVal, leg.unit) : undefined;
-    const climbDist = leg.climbDist ? parseFloat(leg.climbDist) : undefined;
-    const climbFuel = leg.climbFuel ? parseFloat(leg.climbFuel) : undefined;
+    const climbDist = leg.climbDist;
+    const climbFuel = leg.climbFuel;
 
-    // Parse descent data if exists
-    const descentTasVal = leg.descentTas ? parseFloat(leg.descentTas) : undefined;
+    // Get descent data if exists
+    const descentTasVal = leg.descentTas;
     const descentTasInKnots = descentTasVal ? toKnots(descentTasVal, leg.unit) : undefined;
-    const descentDist = leg.descentDist ? parseFloat(leg.descentDist) : undefined;
-    const descentFuel = leg.descentFuel ? parseFloat(leg.descentFuel) : undefined;
+    const descentDist = leg.descentDist;
+    const descentFuel = leg.descentFuel;
 
-    // Parse climb wind if exists
-    const climbWindDir = leg.climbWd ? parseFloat(leg.climbWd) : undefined;
-    const climbWindSpeed = leg.climbWs ? parseFloat(leg.climbWs) : undefined;
+    // Get climb wind if exists
+    const climbWindDir = leg.climbWd;
+    const climbWindSpeed = leg.climbWs;
 
-    // Parse descent wind if exists
-    const descentWindDir = leg.descentWd ? parseFloat(leg.descentWd) : undefined;
-    const descentWindSpeed = leg.descentWs ? parseFloat(leg.descentWs) : undefined;
+    // Get descent wind if exists
+    const descentWindDir = leg.descentWd;
+    const descentWindSpeed = leg.descentWs;
 
-    // Parse previous values
-    const elapsedMins = leg.elapsedMin ? parseInt(leg.elapsedMin) : undefined;
-    const prevFuel = leg.prevFuel ? parseFloat(leg.prevFuel) : undefined;
+    // Get previous values
+    const elapsedMins = leg.elapsedMin;
+    const prevFuel = leg.prevFuel;
 
     if (isNaN(th) || isNaN(tasInKnots) || tasInKnots <= 0 || isNaN(dist) || isNaN(ff)) {
       return null;
@@ -187,45 +187,45 @@ export function calculateLegWaypoints(
   if (!leg.waypoints || leg.waypoints.length === 0) return [];
 
   try {
-    const ff = parseFloat(leg.ff);
-    const dist = parseFloat(leg.dist);
+    const ff = leg.ff;
+    const dist = leg.dist;
 
     const flightParams = {
       departureTime: leg.depTime,
-      elapsedMinutes: leg.elapsedMin ? parseInt(leg.elapsedMin) : undefined,
-      previousFuelUsed: leg.prevFuel ? parseFloat(leg.prevFuel) : undefined,
+      elapsedMinutes: leg.elapsedMin,
+      previousFuelUsed: leg.prevFuel,
     };
 
     // Get climb phase from leg results
     // We need to recalculate to get the full results including climbPhase
-    const th = parseFloat(leg.th);
-    const tasVal = parseFloat(leg.tas);
-    const wd = leg.wd ? parseFloat(leg.wd) : 0;
-    const ws = leg.ws ? parseFloat(leg.ws) : 0;
-    const md = parseFloat(leg.md) || 0;
+    const th = leg.th;
+    const tasVal = leg.tas;
+    const wd = leg.wd ?? 0;
+    const ws = leg.ws ?? 0;
+    const md = leg.md || 0;
 
     const tasInKnots = toKnots(tasVal, leg.unit);
 
-    const climbTasVal = leg.climbTas ? parseFloat(leg.climbTas) : undefined;
-    const climbTasInKnots = climbTasVal ? toKnots(climbTasVal, leg.unit as any) : undefined;
-    const climbDist = leg.climbDist ? parseFloat(leg.climbDist) : undefined;
-    const climbFuel = leg.climbFuel ? parseFloat(leg.climbFuel) : undefined;
+    const climbTasVal = leg.climbTas;
+    const climbTasInKnots = climbTasVal ? toKnots(climbTasVal, leg.unit) : undefined;
+    const climbDist = leg.climbDist;
+    const climbFuel = leg.climbFuel;
 
-    const descentTasVal = leg.descentTas ? parseFloat(leg.descentTas) : undefined;
-    const descentTasInKnots = descentTasVal ? toKnots(descentTasVal, leg.unit as any) : undefined;
-    const descentDist = leg.descentDist ? parseFloat(leg.descentDist) : undefined;
-    const descentFuel = leg.descentFuel ? parseFloat(leg.descentFuel) : undefined;
+    const descentTasVal = leg.descentTas;
+    const descentTasInKnots = descentTasVal ? toKnots(descentTasVal, leg.unit) : undefined;
+    const descentDist = leg.descentDist;
+    const descentFuel = leg.descentFuel;
 
-    // Parse climb wind if exists
-    const climbWindDir = leg.climbWd ? parseFloat(leg.climbWd) : undefined;
-    const climbWindSpeed = leg.climbWs ? parseFloat(leg.climbWs) : undefined;
+    // Get climb wind if exists
+    const climbWindDir = leg.climbWd;
+    const climbWindSpeed = leg.climbWs;
 
-    // Parse descent wind if exists
-    const descentWindDir = leg.descentWd ? parseFloat(leg.descentWd) : undefined;
-    const descentWindSpeed = leg.descentWs ? parseFloat(leg.descentWs) : undefined;
+    // Get descent wind if exists
+    const descentWindDir = leg.descentWd;
+    const descentWindSpeed = leg.descentWs;
 
-    const elapsedMins = leg.elapsedMin ? parseInt(leg.elapsedMin) : undefined;
-    const prevFuel = leg.prevFuel ? parseFloat(leg.prevFuel) : undefined;
+    const elapsedMins = leg.elapsedMin;
+    const prevFuel = leg.prevFuel;
 
     const results = calculateCourse(
       wd,
@@ -298,10 +298,10 @@ export function hasDescentData(leg: FlightPlanLeg): boolean {
   return !!(
     leg.descentTas &&
     leg.descentDist &&
-    leg.descentFuel &&
-    parseFloat(leg.descentTas) > 0 &&
-    parseFloat(leg.descentDist) > 0 &&
-    parseFloat(leg.descentFuel) >= 0
+    leg.descentFuel !== undefined &&
+    leg.descentTas > 0 &&
+    leg.descentDist > 0 &&
+    leg.descentFuel >= 0
   );
 }
 

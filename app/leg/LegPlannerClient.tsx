@@ -375,31 +375,44 @@ export function LegPlannerClient({
   };
 
   const handleFlightPlanSelect = (flightPlan: FlightPlan) => {
+    // Helper to convert string to number (required fields)
+    const toNumber = (value: string): number => {
+      const num = parseFloat(value);
+      return isNaN(num) ? 0 : num;
+    };
+
+    // Helper to convert string to optional number
+    const toOptionalNumber = (value: string): number | undefined => {
+      if (!value || value.trim() === "") return undefined;
+      const num = parseFloat(value);
+      return isNaN(num) ? undefined : num;
+    };
+
     // Collect all current leg data
     const legData: Omit<FlightPlanLeg, "id" | "index"> = {
-      th: trueHeading,
-      tas,
-      wd: windDir,
-      ws: windSpeed,
-      md: magDev,
-      dist: distance,
+      th: toNumber(trueHeading),
+      tas: toNumber(tas),
+      wd: toOptionalNumber(windDir),
+      ws: toOptionalNumber(windSpeed),
+      md: toNumber(magDev),
+      dist: toNumber(distance),
       waypoints: waypoints.length > 0 ? waypoints : undefined,
-      ff: fuelFlow,
+      ff: toNumber(fuelFlow),
       fuelUnit,
-      prevFuel: previousFuelUsed,
+      prevFuel: toOptionalNumber(previousFuelUsed),
       plane: aircraft ? serializeAircraft(aircraft, { includeDeviationTable: true }) : "",
       depTime: departureTime,
-      elapsedMin: elapsedMinutes,
-      climbTas,
-      climbDist: climbDistance,
-      climbFuel: climbFuelUsed,
-      climbWd: climbWindDir,
-      climbWs: climbWindSpeed,
-      descentTas,
-      descentDist: descentDistance,
-      descentFuel: descentFuelUsed,
-      descentWd: descentWindDir,
-      descentWs: descentWindSpeed,
+      elapsedMin: toOptionalNumber(elapsedMinutes),
+      climbTas: toOptionalNumber(climbTas),
+      climbDist: toOptionalNumber(climbDistance),
+      climbFuel: toOptionalNumber(climbFuelUsed),
+      climbWd: toOptionalNumber(climbWindDir),
+      climbWs: toOptionalNumber(climbWindSpeed),
+      descentTas: toOptionalNumber(descentTas),
+      descentDist: toOptionalNumber(descentDistance),
+      descentFuel: toOptionalNumber(descentFuelUsed),
+      descentWd: toOptionalNumber(descentWindDir),
+      descentWs: toOptionalNumber(descentWindSpeed),
       desc: description,
       unit: speedUnit,
     };

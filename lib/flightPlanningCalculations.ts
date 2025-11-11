@@ -1,6 +1,7 @@
 // Flight Planning Calculations
 // Time-Speed-Distance and Fuel Consumption calculations
 // Based on classic E6B / CR-3 calculator functions
+// This is used in /planning to solve common Time-Speed-Distance/Fuel problems.
 
 export interface TimeSpeedDistanceResult {
   groundSpeed?: number; // knots
