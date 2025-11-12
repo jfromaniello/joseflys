@@ -25,6 +25,7 @@ import {
 import { FuelUnit, getFuelResultUnit } from "@/lib/fuelConversion";
 import { generateShareUrl } from "@/lib/flightPlanSharing";
 import { Tooltip } from "@/app/components/Tooltip";
+import { WaypointsCompact } from "@/app/course/components/WaypointsCompact";
 import {
   ArrowLeftIcon,
   TrashIcon,
@@ -672,33 +673,20 @@ export function FlightPlanDetailClient({
                           <div className="bg-slate-800/40 rounded-xl p-3 sm:p-4 border border-slate-700/40">
                             <div
                               className="text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2"
-                              style={{ color: "oklch(0.75 0.15 270)" }}
+                              style={{ color: "oklch(0.65 0.15 230)" }}
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                               </svg>
                               Checkpoints ({waypointResults.length})
+                              <Tooltip content="'Leg → Total' shows segment values from previous waypoint and accumulated totals from departure." />
                             </div>
-                            <div className="space-y-1.5">
-                              {waypointResults.map((wp, wpIndex) => (
-                                <div
-                                  key={wpIndex}
-                                  className="flex items-center justify-between py-1.5 px-1 sm:px-2 rounded-lg hover:bg-slate-700/30 transition-colors gap-2"
-                                >
-                                  <span className="font-semibold text-xs sm:text-sm truncate flex-1 min-w-0" style={{ color: "oklch(0.8 0.12 270)" }}>
-                                    {wp.name}
-                                  </span>
-                                  <div className="flex gap-1.5 sm:gap-3 text-xs font-medium shrink-0" style={{ color: "oklch(0.7 0.05 240)" }}>
-                                    <span className="min-w-12 sm:min-w-16 text-right">{wp.distance.toFixed(1)} NM</span>
-                                    <span className="min-w-10 sm:min-w-14 text-right">{wp.eta ? formatETA(wp.eta) : "N/A"}</span>
-                                    <span className="min-w-12 sm:min-w-16 text-right">
-                                      {wp.fuelUsed !== undefined ? formatFuel(wp.fuelUsed, leg.fuelUnit) : "N/A"}
-                                    </span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
+                            <WaypointsCompact
+                              waypointResults={waypointResults}
+                              fuelUnit={(leg.fuelUnit || "gal") as FuelUnit}
+                              showFuel={waypointResults.some(wp => wp.fuelUsed !== undefined)}
+                            />
                           </div>
                         )}
                     </div>
