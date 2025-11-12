@@ -43,6 +43,8 @@ interface ClientWrapperProps {
   initialApproachLandingFuel: string;
   initialFlightPlanId: string;
   initialLegId: string;
+  initialFromCity: string;
+  initialToCity: string;
 }
 
 export function ClientWrapper(props: ClientWrapperProps) {

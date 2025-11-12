@@ -73,6 +73,8 @@ interface LegPlannerClientProps {
   initialApproachLandingFuel: string;
   initialFlightPlanId: string;
   initialLegId: string;
+  initialFromCity: string;
+  initialToCity: string;
 }
 
 export function LegPlannerClient({
@@ -107,6 +109,8 @@ export function LegPlannerClient({
   initialApproachLandingFuel,
   initialFlightPlanId,
   initialLegId,
+  initialFromCity,
+  initialToCity,
 }: LegPlannerClientProps) {
   const [trueHeading, setTrueHeading] = useState<string>(initialTh);
   const [tas, setTas] = useState<string>(initialTas);
@@ -132,6 +136,8 @@ export function LegPlannerClient({
   const [descentWindSpeed, setDescentWindSpeed] = useState<string>(initialDescentWs);
   const [additionalFuel, setAdditionalFuel] = useState<string>(initialAdditionalFuel);
   const [approachLandingFuel, setApproachLandingFuel] = useState<string>(initialApproachLandingFuel);
+  const [fromCity, setFromCity] = useState<string>(initialFromCity);
+  const [toCity, setToCity] = useState<string>(initialToCity);
   const [speedUnit, setSpeedUnit] = useState<SpeedUnit>(
     (initialSpeedUnit as SpeedUnit) || 'kt'
   );
@@ -270,6 +276,8 @@ export function LegPlannerClient({
     if (descentWindSpeed) params.set("dws", descentWindSpeed);
     if (additionalFuel) params.set("af", additionalFuel);
     if (approachLandingFuel) params.set("alf", approachLandingFuel);
+    if (fromCity) params.set("fc", fromCity);
+    if (toCity) params.set("tc", toCity);
     if (speedUnit !== 'kt') params.set("unit", speedUnit);
     if (fuelUnit !== 'gph') params.set("funit", fuelUnit);
 
@@ -308,7 +316,7 @@ export function LegPlannerClient({
     // Use window.history.replaceState instead of router.replace to avoid server requests
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState(null, '', newUrl);
-  }, [trueHeading, tas, windDir, windSpeed, magDev, distance, fuelFlow, description, departureTime, elapsedMinutes, elapsedDistance, previousFuelUsed, climbTas, climbDistance, climbFuelUsed, climbWindDir, climbWindSpeed, descentTas, descentDistance, descentFuelUsed, descentWindDir, descentWindSpeed, additionalFuel, approachLandingFuel, deviationTable, waypoints, speedUnit, fuelUnit, aircraft, flightPlanId, legId]);
+  }, [trueHeading, tas, windDir, windSpeed, magDev, distance, fuelFlow, description, departureTime, elapsedMinutes, elapsedDistance, previousFuelUsed, climbTas, climbDistance, climbFuelUsed, climbWindDir, climbWindSpeed, descentTas, descentDistance, descentFuelUsed, descentWindDir, descentWindSpeed, additionalFuel, approachLandingFuel, fromCity, toCity, deviationTable, waypoints, speedUnit, fuelUnit, aircraft, flightPlanId, legId]);
 
   // Calculate results during render (not in useEffect to avoid cascading renders)
   // Parse basic values needed for validation and other components
@@ -350,6 +358,8 @@ export function LegPlannerClient({
   }) => {
     setTrueHeading(data.bearing.toString().padStart(3, '0'));
     setDistance(data.distance.toString());
+    setFromCity(data.fromName);
+    setToCity(data.toName);
     if (!description) {
       setDescription(`${data.fromName} to ${data.toName}`);
     }
@@ -386,6 +396,8 @@ export function LegPlannerClient({
       md: toNumber(magDev),
       dist: toNumber(distance),
       waypoints: waypoints.length > 0 ? waypoints : undefined,
+      fromCity: fromCity || undefined,
+      toCity: toCity || undefined,
       ff: toNumber(fuelFlow),
       fuelUnit,
       prevFuel: toOptionalNumber(previousFuelUsed),

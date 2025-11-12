@@ -35,6 +35,8 @@ interface LegPageProps {
     alf?: string; // Approach & landing fuel (gallons)
     fp?: string; // Flight plan ID
     lid?: string; // Leg ID
+    fc?: string; // From city name (from route lookup)
+    tc?: string; // To city name (from route lookup)
   }>;
 }
 
@@ -71,6 +73,8 @@ export default async function LegPage({ searchParams }: LegPageProps) {
   const approachLandingFuel = params.alf || "";
   const fp = params.fp || "";
   const lid = params.lid || "";
+  const fromCity = params.fc || "";
+  const toCity = params.tc || "";
 
   return (
     <ClientWrapper
@@ -105,6 +109,8 @@ export default async function LegPage({ searchParams }: LegPageProps) {
       initialApproachLandingFuel={approachLandingFuel}
       initialFlightPlanId={fp}
       initialLegId={lid}
+      initialFromCity={fromCity}
+      initialToCity={toCity}
     />
   );
 }

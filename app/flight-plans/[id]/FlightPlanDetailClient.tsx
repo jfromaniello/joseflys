@@ -174,6 +174,8 @@ export function FlightPlanDetailClient({
       const compressed = compressForUrl(leg.waypoints);
       if (compressed) params.set("waypoints", compressed);
     }
+    if (leg.fromCity) params.set("fc", leg.fromCity);
+    if (leg.toCity) params.set("tc", leg.toCity);
     // Add flight plan context
     params.set("fp", flightPlan!.id);
     params.set("lid", leg.id);

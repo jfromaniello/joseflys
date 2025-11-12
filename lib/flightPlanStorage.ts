@@ -87,6 +87,20 @@ export interface FlightPlanLeg {
    */
   waypoints?: Waypoint[];
 
+  /**
+   * Name of the departure city (from route lookup)
+   * Optional - only present when route was looked up by city/airport search
+   * @example "Madrid", "KJFK"
+   */
+  fromCity?: string;
+
+  /**
+   * Name of the destination city (from route lookup)
+   * Optional - only present when route was looked up by city/airport search
+   * @example "Barcelona", "EGLL"
+   */
+  toCity?: string;
+
   // Fuel
   /**
    * Fuel flow rate

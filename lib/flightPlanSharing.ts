@@ -68,6 +68,8 @@ export function serializeFlightPlan(flightPlan: FlightPlan): string {
         leg.desc || "",
         leg.unit,
         waypoints,
+        leg.fromCity || "",
+        leg.toCity || "",
       ];
     });
 
@@ -149,6 +151,8 @@ export function deserializeFlightPlan(serialized: string): Omit<FlightPlan, "id"
         desc,
         unit,
         waypoints,
+        fromCity,
+        toCity,
       ] = compactLeg;
 
       // Reconstruct waypoints from compact format
@@ -200,6 +204,8 @@ export function deserializeFlightPlan(serialized: string): Omit<FlightPlan, "id"
         desc: desc || undefined,
         unit,
         waypoints: reconstructedWaypoints,
+        fromCity: fromCity || undefined,
+        toCity: toCity || undefined,
       };
     });
 
