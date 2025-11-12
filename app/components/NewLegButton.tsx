@@ -23,6 +23,8 @@ interface NewLegButtonProps {
   fuelUnit: string;
   /** Total elapsed minutes at the end of current leg (cumulative flight time) */
   elapsedMinutes: number;
+  /** Total elapsed distance at the end of current leg (cumulative distance in NM) */
+  elapsedDistance: number;
   /** Wind direction in degrees (e.g., "180" for wind from south) */
   windDir: string;
   /** Wind speed in knots (e.g., "25") */
@@ -45,6 +47,7 @@ export function NewLegButton({
   speedUnit,
   fuelUnit,
   elapsedMinutes,
+  elapsedDistance,
   windDir,
   windSpeed,
   fuelUsed,
@@ -65,6 +68,7 @@ export function NewLegButton({
       speedUnit,
       fuelUnit,
       elapsedMinutes,
+      elapsedDistance,
       windDir,
       windSpeed,
       fuelUsed,

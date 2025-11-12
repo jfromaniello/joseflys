@@ -6,6 +6,8 @@ interface FlightParametersInputsProps {
   setDepartureTime: (value: string) => void;
   elapsedMinutes: string;
   setElapsedMinutes: (value: string) => void;
+  elapsedDistance: string;
+  setElapsedDistance: (value: string) => void;
   previousFuelUsed: string;
   setPreviousFuelUsed: (value: string) => void;
   fuelUnit: FuelUnit;
@@ -16,6 +18,8 @@ export function FlightParametersInputs({
   setDepartureTime,
   elapsedMinutes,
   setElapsedMinutes,
+  elapsedDistance,
+  setElapsedDistance,
   previousFuelUsed,
   setPreviousFuelUsed,
   fuelUnit,
@@ -130,7 +134,7 @@ export function FlightParametersInputs({
           </span>
         </div>
 
-        {/* Row 2: Previous Fuel Used (aligned with Departure Time) */}
+        {/* Row 2: Previous Fuel Used and Elapsed Distance */}
 
         {/* Force line break before this field in print */}
         <div className="hidden print:block print:w-full print:h-0"></div>
@@ -160,6 +164,37 @@ export function FlightParametersInputs({
             style={{ color: "white" }}
           >
             {getFuelResultUnit(fuelUnit)}
+          </span>
+        </div>
+
+        {/* Gap */}
+        <div className="hidden lg:block print:hidden"></div>
+
+        {/* Elapsed Distance Label */}
+        <label
+          className="flex items-center text-sm font-medium mb-2 lg:mb-0 lg:col-span-1 col-span-1"
+          style={{ color: "oklch(0.72 0.015 240)" }}
+        >
+          Elapsed Distance
+          <Tooltip content="Nautical miles already traveled in previous legs. Use this for multi-leg flights to track cumulative distance from departure. This will be added to waypoint distances for accurate total distance tracking. Leave empty if this is your first leg." />
+        </label>
+
+        {/* Elapsed Distance Input */}
+        <div className="relative lg:col-span-1 col-span-1">
+          <input
+            type="number"
+            value={elapsedDistance}
+            onChange={(e) => setElapsedDistance(e.target.value)}
+            className="w-full px-4 pr-12 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
+            placeholder="0"
+            min="0"
+            step="any"
+          />
+          <span
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
+            style={{ color: "white" }}
+          >
+            NM
           </span>
         </div>
       </div>

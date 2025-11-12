@@ -125,6 +125,13 @@ export interface FlightPlanLeg {
    */
   elapsedMin?: number;
 
+  /**
+   * Cumulative distance in nautical miles traveled in all previous legs
+   * Optional - only present for legs after the first
+   * Used to calculate total distance from departure in waypoint displays
+   */
+  elapsedDist?: number;
+
   // Climb data
   /**
    * True airspeed during climb phase
@@ -430,6 +437,7 @@ function recalculateSubsequentLegs(plan: FlightPlan, fromIndex: number): void {
     if (prevResults) {
       // Update current leg with new cumulative values
       currentLeg.elapsedMin = Math.round(prevResults.totalTime * 60);
+      currentLeg.elapsedDist = parseFloat(((prevLeg.elapsedDist || 0) + prevLeg.dist).toFixed(1));
       currentLeg.prevFuel = parseFloat(prevResults.totalFuel.toFixed(1));
     }
   }

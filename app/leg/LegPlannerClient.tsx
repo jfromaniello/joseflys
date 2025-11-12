@@ -58,6 +58,7 @@ interface LegPlannerClientProps {
   initialWaypoints: string;
   initialDepTime: string;
   initialElapsedMin: string;
+  initialElapsedDist: string;
   initialPrevFuel: string;
   initialClimbTas: string;
   initialClimbDist: string;
@@ -91,6 +92,7 @@ export function LegPlannerClient({
   initialWaypoints,
   initialDepTime,
   initialElapsedMin,
+  initialElapsedDist,
   initialPrevFuel,
   initialClimbTas,
   initialClimbDist,
@@ -117,6 +119,7 @@ export function LegPlannerClient({
   const [description, setDescription] = useState<string>(initialDesc);
   const [departureTime, setDepartureTime] = useState<string>(initialDepTime);
   const [elapsedMinutes, setElapsedMinutes] = useState<string>(initialElapsedMin);
+  const [elapsedDistance, setElapsedDistance] = useState<string>(initialElapsedDist);
   const [previousFuelUsed, setPreviousFuelUsed] = useState<string>(initialPrevFuel);
   const [climbTas, setClimbTas] = useState<string>(initialClimbTas);
   const [climbDistance, setClimbDistance] = useState<string>(initialClimbDist);
@@ -254,6 +257,7 @@ export function LegPlannerClient({
     if (description) params.set("desc", description);
     if (departureTime) params.set("depTime", departureTime);
     if (elapsedMinutes) params.set("elapsedMin", elapsedMinutes);
+    if (elapsedDistance) params.set("elapsedDist", elapsedDistance);
     if (previousFuelUsed) params.set("prevFuel", previousFuelUsed);
     if (climbTas) params.set("climbTas", climbTas);
     if (climbDistance) params.set("climbDist", climbDistance);
@@ -305,7 +309,7 @@ export function LegPlannerClient({
     // Use window.history.replaceState instead of router.replace to avoid server requests
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState(null, '', newUrl);
-  }, [trueHeading, tas, windDir, windSpeed, magDev, distance, fuelFlow, description, departureTime, elapsedMinutes, previousFuelUsed, climbTas, climbDistance, climbFuelUsed, climbWindDir, climbWindSpeed, descentTas, descentDistance, descentFuelUsed, descentWindDir, descentWindSpeed, additionalFuel, approachLandingFuel, deviationTable, waypoints, speedUnit, fuelUnit, aircraft, flightPlanId, legId]);
+  }, [trueHeading, tas, windDir, windSpeed, magDev, distance, fuelFlow, description, departureTime, elapsedMinutes, elapsedDistance, previousFuelUsed, climbTas, climbDistance, climbFuelUsed, climbWindDir, climbWindSpeed, descentTas, descentDistance, descentFuelUsed, descentWindDir, descentWindSpeed, additionalFuel, approachLandingFuel, deviationTable, waypoints, speedUnit, fuelUnit, aircraft, flightPlanId, legId]);
 
   // Calculate results during render (not in useEffect to avoid cascading renders)
   // Parse basic values needed for validation and other components
@@ -389,6 +393,7 @@ export function LegPlannerClient({
       plane: aircraft ? serializeAircraft(aircraft, { includeDeviationTable: true }) : "",
       depTime: departureTime,
       elapsedMin: toOptionalNumber(elapsedMinutes),
+      elapsedDist: toOptionalNumber(elapsedDistance),
       climbTas: toOptionalNumber(climbTas),
       climbDist: toOptionalNumber(climbDistance),
       climbFuel: toOptionalNumber(climbFuelUsed),
@@ -436,9 +441,11 @@ export function LegPlannerClient({
       : null;
 
   // Calculate waypoint results
+  const elapsedDist = elapsedDistance ? parseFloat(elapsedDistance) : undefined;
   const flightParams: FlightParameters = {
     departureTime: departureTime || undefined,
     elapsedMinutes: elapsedMinutes ? parseInt(elapsedMinutes) : undefined,
+    elapsedDistance: elapsedDist,
     previousFuelUsed: prevFuel,
   };
 
@@ -845,6 +852,8 @@ export function LegPlannerClient({
               setDepartureTime={setDepartureTime}
               elapsedMinutes={elapsedMinutes}
               setElapsedMinutes={setElapsedMinutes}
+              elapsedDistance={elapsedDistance}
+              setElapsedDistance={setElapsedDistance}
               previousFuelUsed={previousFuelUsed}
               setPreviousFuelUsed={setPreviousFuelUsed}
               fuelUnit={fuelUnit}
@@ -995,6 +1004,7 @@ export function LegPlannerClient({
                             speedUnit={speedUnit}
                             fuelUnit={fuelUnit}
                             elapsedMinutes={(elapsedMins || 0) + Math.round((results.eta || 0) * 60)}
+                            elapsedDistance={(elapsedDist || 0) + (dist || 0)}
                             windDir={windDir}
                             windSpeed={windSpeed}
                             fuelUsed={results.fuelUsed}

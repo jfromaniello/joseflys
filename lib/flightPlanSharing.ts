@@ -52,6 +52,7 @@ export function serializeFlightPlan(flightPlan: FlightPlan): string {
         leg.prevFuel ?? null,
         leg.depTime || "",
         leg.elapsedMin ?? null,
+        leg.elapsedDist ?? null,
         leg.climbTas ?? null,
         leg.climbDist ?? null,
         leg.climbFuel ?? null,
@@ -132,6 +133,7 @@ export function deserializeFlightPlan(serialized: string): Omit<FlightPlan, "id"
         prevFuel,
         depTime,
         elapsedMin,
+        elapsedDist,
         climbTas,
         climbDist,
         climbFuel,
@@ -182,6 +184,7 @@ export function deserializeFlightPlan(serialized: string): Omit<FlightPlan, "id"
         plane, // Use the shared plane serialization
         depTime: depTime || undefined,
         elapsedMin: parseNumericValue(elapsedMin),
+        elapsedDist: parseNumericValue(elapsedDist),
         climbTas: parseNumericValue(climbTas),
         climbDist: parseNumericValue(climbDist),
         climbFuel: parseNumericValue(climbFuel),

@@ -151,6 +151,8 @@ export interface FlightParameters {
   departureTime?: string;
   /** Minutes already flown before starting this leg (for multi-leg flights) */
   elapsedMinutes?: number;
+  /** Nautical miles already traveled in previous legs (for multi-leg flights) */
+  elapsedDistance?: number;
   /** Fuel already consumed in previous legs (if provided, used instead of calculating from elapsedMinutes) */
   previousFuelUsed?: number;
 }
@@ -686,9 +688,13 @@ export function calculateWaypoints(
     const distanceSinceLast = waypoint.distance - previousDistance;
     const fuelSinceLast = fuelUsed !== undefined ? fuelUsed - previousFuelUsed : undefined;
 
+    // Add elapsed distance from previous legs to get total distance from departure
+    const elapsedDist = flightParams?.elapsedDistance || 0;
+    const totalDistanceFromDeparture = waypoint.distance + elapsedDist;
+
     results.push({
       name: waypoint.name,
-      distance: waypoint.distance,
+      distance: totalDistanceFromDeparture,
       distanceSinceLast,
       timeSinceLast,
       cumulativeTime,

@@ -27,6 +27,7 @@ interface ClientWrapperProps {
   initialWaypoints: string;
   initialDepTime: string;
   initialElapsedMin: string;
+  initialElapsedDist: string;
   initialPrevFuel: string;
   initialClimbTas: string;
   initialClimbDist: string;

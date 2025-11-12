@@ -19,6 +19,7 @@ interface LegPageProps {
     waypoints?: string; // JSON encoded waypoints
     depTime?: string; // Departure time HHMM
     elapsedMin?: string; // Elapsed minutes
+    elapsedDist?: string; // Elapsed distance (NM from previous legs)
     prevFuel?: string; // Previous fuel used
     climbTas?: string; // Climb TAS
     climbDist?: string; // Climb distance
@@ -54,6 +55,7 @@ export default async function LegPage({ searchParams }: LegPageProps) {
   const waypoints = params.waypoints || "";
   const depTime = params.depTime || "";
   const elapsedMin = params.elapsedMin || "";
+  const elapsedDist = params.elapsedDist || "";
   const prevFuel = params.prevFuel || "";
   const climbTas = params.climbTas || "";
   const climbDist = params.climbDist || "";
@@ -87,6 +89,7 @@ export default async function LegPage({ searchParams }: LegPageProps) {
       initialWaypoints={waypoints}
       initialDepTime={depTime}
       initialElapsedMin={elapsedMin}
+      initialElapsedDist={elapsedDist}
       initialPrevFuel={prevFuel}
       initialClimbTas={climbTas}
       initialClimbDist={climbDist}

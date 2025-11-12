@@ -18,6 +18,7 @@ export interface NextLegParams {
   windDir: string;
   windSpeed: string;
   elapsedMinutes: number;
+  elapsedDistance: number;
   fuelUsed?: number;
   flightPlanId?: string;
 }
@@ -53,6 +54,11 @@ export function buildNextLegUrl(params: NextLegParams): string {
 
   // Set elapsed minutes
   urlParams.set("elapsedMin", params.elapsedMinutes.toString());
+
+  // Set elapsed distance (total distance traveled in previous legs) - rounded to 1 decimal
+  if (params.elapsedDistance > 0) {
+    urlParams.set("elapsedDist", params.elapsedDistance.toFixed(1));
+  }
 
   // Set previous fuel used (total fuel used from current leg) - rounded to 1 decimal
   if (params.fuelUsed !== undefined && params.fuelUsed > 0) {
@@ -90,6 +96,7 @@ export function extractNextLegParams(
     windDir: leg.wd !== undefined ? leg.wd.toString() : "",
     windSpeed: leg.ws !== undefined ? leg.ws.toString() : "",
     elapsedMinutes: legResults?.totalTime ? Math.round(legResults.totalTime * 60) : 0,
+    elapsedDistance: (leg.elapsedDist || 0) + leg.dist,
     fuelUsed: legResults?.totalFuel,
     flightPlanId,
   };

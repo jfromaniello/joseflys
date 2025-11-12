@@ -153,6 +153,7 @@ export function FlightPlanDetailClient({
     if (leg.desc) params.set("desc", leg.desc);
     if (leg.depTime) params.set("depTime", leg.depTime);
     if (leg.elapsedMin !== undefined) params.set("elapsedMin", leg.elapsedMin.toString());
+    if (leg.elapsedDist !== undefined) params.set("elapsedDist", leg.elapsedDist.toString());
     if (leg.prevFuel !== undefined) params.set("prevFuel", leg.prevFuel.toString());
     if (leg.climbTas !== undefined) params.set("climbTas", leg.climbTas.toString());
     if (leg.climbDist !== undefined) params.set("climbDist", leg.climbDist.toString());
