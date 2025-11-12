@@ -267,8 +267,16 @@ export function calculateMainRouteTotals(
     return { distance: 0, time: 0, fuel: 0, eta: null };
   }
 
+  // Calculate total distance by summing all non-alternative leg distances
+  let totalDistance = 0;
+  for (const leg of legs) {
+    if (!alternativeIds.has(leg.id)) {
+      totalDistance += leg.dist;
+    }
+  }
+
   return {
-    distance: lastResult.totalDistance,
+    distance: totalDistance,
     time: lastResult.totalTime,
     fuel: lastResult.totalFuel,
     eta: lastResult.arrivalTime,
