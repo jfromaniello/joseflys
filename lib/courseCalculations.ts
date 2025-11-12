@@ -1,5 +1,7 @@
 import type { FlightPlanLeg } from "./flightPlanStorage";
 import { toKnots } from "./speedConversion";
+import { calculateCompassCourse } from "./compassDeviation";
+import { loadAircraftFromUrl } from "./aircraftStorage";
 
 /**
  * Input parameters for course calculations
@@ -15,7 +17,7 @@ export type CourseCalculationInput =
       'wd' | 'ws' | 'dist' | 'ff' | 'elapsedMin' | 'prevFuel' |
       'climbTas' | 'climbDist' | 'climbFuel' | 'climbWd' | 'climbWs' |
       'descentTas' | 'descentDist' | 'descentFuel' | 'descentWd' | 'descentWs' |
-      'additionalFuel' | 'approachLandingFuel' | 'unit'
+      'additionalFuel' | 'approachLandingFuel' | 'unit' | 'plane'
     >>;
 
 /**
@@ -33,12 +35,16 @@ export interface CourseCalculations {
   crosswind: number;
   /** Headwind component in knots (positive = headwind, negative = tailwind) */
   headwind: number;
-  /** Magnetic course in degrees (true course + magnetic deviation, before wind correction) */
+  /** Magnetic course in degrees (true course + magnetic variation, before wind correction) */
   magneticCourse: number;
   /** Wind correction angle in degrees (angle to compensate for crosswind) */
   windCorrectionAngle: number;
-  /** Compass heading in degrees (true heading + WCA + magnetic deviation) */
-  compassHeading: number;
+  /** Magnetic heading in degrees (true course + magnetic variation + WCA) */
+  magneticHeading: number;
+  /** Compass course in degrees (magnetic heading + compass deviation from deviation table, equals magneticHeading if no table provided) */
+  compassCourse: number;
+  /** Whether a deviation table was used to calculate compassCourse */
+  hasDeviationTable: boolean;
   /** Ground speed in knots (TAS adjusted for wind) */
   groundSpeed: number;
   /** Effective True Air Speed in knots (used when WCA > 10°) */
@@ -192,6 +198,7 @@ export function calculateCourse(input: CourseCalculationInput): CourseCalculatio
     additionalFuel,
     approachLandingFuel,
     unit = 'kt', // Default to knots if not specified
+    plane,
   } = input;
 
   // Convert all speeds to knots for internal calculations
@@ -238,12 +245,27 @@ export function calculateCourse(input: CourseCalculationInput): CourseCalculatio
     2 * effectiveSpeed * windSpeed * Math.cos(relativeWind);
   const groundSpeed = Math.sqrt(Math.max(0, gsSquared));
 
-  // Magnetic course = True course + Magnetic deviation (before wind correction)
+  // Magnetic course (MC) = True course + Magnetic variation (before wind correction)
   const magneticCourse = normalize(trueHeading + magDev);
 
-  // Compass heading = True heading + WCA + Magnetic deviation
+  // Magnetic heading (MH) = True course + Magnetic variation + WCA
   // (East variation is negative, west is positive)
-  const compassHeading = normalize(trueHeading + windCorrectionAngle + magDev);
+  const magneticHeading = normalize(trueHeading + windCorrectionAngle + magDev);
+
+  // Compass course (CH) = Magnetic heading + Compass deviation (from deviation table)
+  // If no deviation table provided, compassCourse equals magneticHeading
+  let compassCourse: number = magneticHeading;
+  let hasDeviationTable = false;
+  if (plane) {
+    const aircraft = loadAircraftFromUrl(plane);
+    if (aircraft?.deviationTable && aircraft.deviationTable.length >= 2) {
+      const calculated = calculateCompassCourse(magneticHeading, aircraft.deviationTable);
+      if (calculated !== null) {
+        compassCourse = calculated;
+        hasDeviationTable = true;
+      }
+    }
+  }
 
   // Calculate ETA if distance is provided
   let eta: number | undefined;
@@ -432,7 +454,9 @@ export function calculateCourse(input: CourseCalculationInput): CourseCalculatio
     headwind,
     magneticCourse,
     windCorrectionAngle,
-    compassHeading,
+    magneticHeading,
+    compassCourse,
+    hasDeviationTable,
     groundSpeed,
     etas,
     eta,

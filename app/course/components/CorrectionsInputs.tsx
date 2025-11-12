@@ -45,16 +45,16 @@ export function CorrectionsInputs({
         Corrections
       </h3>
       <div className="grid grid-cols-1 lg:grid-cols-[10.5rem_12rem_2rem_10.5rem_12rem] gap-x-4 gap-y-4 lg:items-center print:grid-cols-[auto_1fr]">
-        {/* Magnetic Deviation Label */}
+        {/* Magnetic Variation Label */}
         <label
           className="flex items-center text-sm font-medium mb-2 lg:mb-0"
           style={{ color: "oklch(0.72 0.015 240)" }}
         >
-          Magnetic Deviation
+          Magnetic Variation
           <Tooltip content="Optional: Local magnetic variation (east or west) in degrees. Found on aviation charts. Negative for east, positive for west. Leave empty if unknown." />
         </label>
 
-        {/* Magnetic Deviation Input */}
+        {/* Magnetic Variation Input */}
         <div className="relative">
           <input
             type="number"

@@ -12,7 +12,6 @@ import { DeviationEntry } from "../components/CompassDeviationModal";
 import { WaypointsModal } from "../components/WaypointsModal";
 import { DistanceCalculatorModal } from "../components/DistanceCalculatorModal";
 import { TASCalculatorModal } from "../components/TASCalculatorModal";
-import { calculateCompassCourse } from "@/lib/compassDeviation";
 import { compressForUrl, decompressFromUrl } from "@/lib/urlCompression";
 import { loadAircraftFromUrl, serializeAircraft } from "@/lib/aircraftStorage";
 import { AircraftPerformance } from "@/lib/aircraftPerformance";
@@ -432,12 +431,6 @@ export function LegPlannerClient({
     !isNaN(tasVal) &&
     tasVal > 0
       ? calculateCourse(buildLegDataFromState())
-      : null;
-
-  // Calculate compass course when deviation table is available and results exist
-  const compassCourse =
-    results && deviationTable.length >= 2
-      ? calculateCompassCourse(results.compassHeading, deviationTable)
       : null;
 
   // Calculate waypoint results
@@ -914,8 +907,6 @@ export function LegPlannerClient({
               {/* Primary Results */}
               <PrimaryResults
                 results={results}
-                compassCourse={compassCourse}
-                deviationTable={deviationTable}
                 windDir={windDir}
                 windSpeed={windSpeed}
                 trueHeading={trueHeading}

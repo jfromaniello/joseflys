@@ -115,39 +115,39 @@ describe("courseCalculations", () => {
       });
     });
 
-    describe("compass heading", () => {
-      it("should apply magnetic deviation correctly (East)", () => {
-        // No wind, true heading 360°, -5° East deviation
+    describe("magnetic heading", () => {
+      it("should apply magnetic variation correctly (East)", () => {
+        // No wind, true heading 360°, -5° East variation
         const result = calculateCourse({ wd: 0, ws: 0, th: 360, tas: 100, md: -5 });
 
-        // Compass heading = TH + WCA + MagDev = 360 + 0 + (-5) = 355
-        expect(result.compassHeading).toBeCloseTo(355, 0);
+        // Magnetic heading = TH + WCA + Variation = 360 + 0 + (-5) = 355
+        expect(result.magneticHeading).toBeCloseTo(355, 0);
       });
 
-      it("should apply magnetic deviation correctly (West)", () => {
-        // No wind, true heading 360°, +10° West deviation
+      it("should apply magnetic variation correctly (West)", () => {
+        // No wind, true heading 360°, +10° West variation
         const result = calculateCourse({ wd: 0, ws: 0, th: 360, tas: 100, md: 10 });
 
-        // Compass heading = TH + WCA + MagDev = 360 + 0 + 10 = 10
-        expect(result.compassHeading).toBeCloseTo(10, 0);
+        // Magnetic heading = TH + WCA + Variation = 360 + 0 + 10 = 10
+        expect(result.magneticHeading).toBeCloseTo(10, 0);
       });
 
-      it("should combine WCA and magnetic deviation", () => {
-        // Crosswind requiring WCA, plus magnetic deviation
+      it("should combine WCA and magnetic variation", () => {
+        // Crosswind requiring WCA, plus magnetic variation
         const result = calculateCourse({ wd: 90, ws: 20, th: 360, tas: 100, md: -5 });
 
-        // Compass heading should include both WCA and magnetic deviation
-        expect(result.compassHeading).not.toBeCloseTo(360, 0);
+        // Magnetic heading should include both WCA and magnetic variation
+        expect(result.magneticHeading).not.toBeCloseTo(360, 0);
       });
 
-      it("should normalize compass heading to 0-360 range", () => {
+      it("should normalize magnetic heading to 0-360 range", () => {
         // Test that heading wraps around correctly
         const result = calculateCourse({ wd: 0, ws: 0, th: 5, tas: 100, md: -10 });
 
         // 5 + 0 + (-10) = -5, should normalize to 355
-        expect(result.compassHeading).toBeGreaterThanOrEqual(0);
-        expect(result.compassHeading).toBeLessThan(360);
-        expect(result.compassHeading).toBeCloseTo(355, 0);
+        expect(result.magneticHeading).toBeGreaterThanOrEqual(0);
+        expect(result.magneticHeading).toBeLessThan(360);
+        expect(result.magneticHeading).toBeCloseTo(355, 0);
       });
     });
 

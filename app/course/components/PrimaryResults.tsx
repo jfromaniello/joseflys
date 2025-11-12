@@ -1,6 +1,5 @@
 import { Tooltip } from "@/app/components/Tooltip";
 import { CourseCalculations } from "@/lib/courseCalculations";
-import { DeviationEntry } from "@/app/components/CompassDeviationModal";
 import { SpeedUnit } from "./CourseSpeedInputs";
 import { FuelUnit } from "./RangeFuelInputs";
 import { getSpeedUnitLabel } from "@/lib/speedConversion";
@@ -9,8 +8,6 @@ import { formatCourse } from "@/lib/formatters";
 
 interface PrimaryResultsProps {
   results: CourseCalculations;
-  compassCourse: number | null;
-  deviationTable: DeviationEntry[];
   windDir: string;
   windSpeed: string;
   trueHeading: string;
@@ -22,8 +19,6 @@ interface PrimaryResultsProps {
 
 export function PrimaryResults({
   results,
-  compassCourse,
-  deviationTable,
   speedUnit,
   fuelUnit,
   departureTime,
@@ -115,14 +110,14 @@ export function PrimaryResults({
               className="text-3xl sm:text-4xl font-bold"
               style={{ color: "white" }}
             >
-              {compassCourse !== null ? formatCourse(compassCourse) : "—"}
+              {formatCourse(results.compassCourse)}
             </p>
             <p
               className="text-sm mt-1"
               style={{ color: "oklch(0.6 0.02 240)" }}
               suppressHydrationWarning
             >
-              {compassCourse !== null && deviationTable.length > 0
+              {results.hasDeviationTable
                 ? "Calculated using your deviation table"
                 : "set deviation table"}
             </p>

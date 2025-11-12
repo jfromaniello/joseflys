@@ -67,9 +67,9 @@ export function calculateLegResults(leg: FlightPlanLeg): LegCalculatedResults | 
     if (leg.plane) {
       const aircraft = loadAircraftFromUrl(leg.plane);
       if (aircraft?.deviationTable && aircraft.deviationTable.length >= 2) {
-        compassCourse = calculateCompassCourse(results.compassHeading, aircraft.deviationTable);
+        compassCourse = calculateCompassCourse(results.magneticHeading, aircraft.deviationTable);
         if (compassCourse !== null) {
-          compassDeviation = calculateDeviation(results.compassHeading, compassCourse);
+          compassDeviation = calculateDeviation(results.magneticHeading, compassCourse);
         }
       }
     }

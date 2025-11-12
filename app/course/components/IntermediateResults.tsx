@@ -153,7 +153,7 @@ export function IntermediateResults({ results, fuelUnit }: IntermediateResultsPr
             <p className="text-xs font-medium" style={{ color: "white" }}>
               MC
             </p>
-            <Tooltip content="Magnetic Course: Your true course after applying magnetic deviation, but before wind correction. This is the direction you would fly in no-wind conditions using a magnetic compass." />
+            <Tooltip content="Magnetic Course: Your true course after applying magnetic variation, but before wind correction. This is the direction you would fly in no-wind conditions using a magnetic compass." />
           </div>
           <p className="text-xl font-bold text-center" style={{ color: "white" }}>
             {formatCourse(results.magneticCourse)}
@@ -179,10 +179,10 @@ export function IntermediateResults({ results, fuelUnit }: IntermediateResultsPr
             <p className="text-xs font-medium" style={{ color: "white" }}>
               MH
             </p>
-            <Tooltip content="Magnetic Heading: The heading after applying wind correction angle and magnetic deviation. This is used to calculate the final Compass Course." />
+            <Tooltip content="Magnetic Heading: The heading after applying wind correction angle and magnetic variation. This is used to calculate the final Compass Course." />
           </div>
           <p className="text-xl font-bold text-center" style={{ color: "white" }}>
-            {formatCourse(results.compassHeading)}
+            {formatCourse(results.magneticHeading)}
           </p>
         </div>
 

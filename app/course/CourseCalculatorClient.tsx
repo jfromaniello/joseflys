@@ -9,7 +9,6 @@ import { calculateCourse } from "@/lib/courseCalculations";
 import { DeviationEntry } from "../components/CompassDeviationModal";
 import { DistanceCalculatorModal } from "../components/DistanceCalculatorModal";
 import { TASCalculatorModal } from "../components/TASCalculatorModal";
-import { calculateCompassCourse } from "@/lib/compassDeviation";
 import { compressForUrl, decompressFromUrl } from "@/lib/urlCompression";
 import { loadAircraftFromUrl, serializeAircraft } from "@/lib/aircraftStorage";
 import { AircraftPerformance } from "@/lib/aircraftPerformance";
@@ -19,6 +18,7 @@ import { CorrectionsInputs } from "./components/CorrectionsInputs";
 import { ShareButtonSimple } from "../components/ShareButtonSimple";
 import { toKnots } from "@/lib/speedConversion";
 import { Tooltip } from "@/app/components/Tooltip";
+import { formatCourse } from "@/lib/formatters";
 
 interface CourseCalculatorClientProps {
   initialTh: string;
@@ -168,12 +168,6 @@ export function CourseCalculatorClient({
     !isNaN(tasInKnots) &&
     tasInKnots > 0
       ? calculateCourse({ th, tas: tasInKnots, md, wd, ws })
-      : null;
-
-  // Calculate compass course when deviation table is available and results exist
-  const compassCourse =
-    results && deviationTable.length >= 2
-      ? calculateCompassCourse(results.compassHeading, deviationTable)
       : null;
 
   return (
@@ -483,7 +477,7 @@ export function CourseCalculatorClient({
                       <Tooltip content="Magnetic Heading: The heading after applying wind correction angle and magnetic deviation. This is used to calculate the final Compass Course." />
                     </div>
                     <p className="text-xl font-bold text-center" style={{ color: "white" }}>
-                      {String(Math.round(results.compassHeading)).padStart(3, '0')}°
+                      {String(Math.round(results.magneticHeading)).padStart(3, '0')}°
                     </p>
                   </div>
 
@@ -583,14 +577,14 @@ export function CourseCalculatorClient({
                         className="text-3xl sm:text-4xl font-bold"
                         style={{ color: "white" }}
                       >
-                        {compassCourse !== null ? `${String(Math.round(compassCourse)).padStart(3, '0')}°` : `${String(Math.round(results.compassHeading)).padStart(3, '0')}°`}
+                        {formatCourse(results.compassCourse)}
                       </p>
                       <p
                         className="text-sm mt-1"
                         style={{ color: "oklch(0.6 0.02 240)" }}
                         suppressHydrationWarning
                       >
-                        {compassCourse !== null && deviationTable.length > 0
+                        {results.hasDeviationTable
                           ? "with deviation table"
                           : "= magnetic heading"}
                       </p>

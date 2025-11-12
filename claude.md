@@ -2,6 +2,132 @@
 
 This document contains important patterns and guidelines for maintaining consistency in the joseflys project.
 
+## Formatting Functions
+
+### Always Use Formatters from `/lib/formatters.ts`
+
+**IMPORTANT**: Never reimplement formatting logic inline. Always use the standardized formatters from `/lib/formatters.ts` to ensure consistency across the application.
+
+### Available Formatters
+
+#### `formatCourse(course: number): string`
+
+Formats a course/heading value to a 3-digit string with degree symbol.
+
+```tsx
+// ✅ Correct - Using formatCourse
+import { formatCourse } from "@/lib/formatters";
+
+<p>{formatCourse(results.magneticHeading)}</p>
+// Output: "090°", "270°", "005°"
+
+// ❌ Wrong - Manual formatting
+<p>{`${String(Math.round(results.magneticHeading)).padStart(3, '0')}°`}</p>
+```
+
+#### `formatWCA(wca: number): string`
+
+Formats Wind Correction Angle with sign and direction (E/W).
+
+```tsx
+import { formatWCA } from "@/lib/formatters";
+
+<p>{formatWCA(results.windCorrectionAngle)}</p>
+// Output: "5°E", "10°W", "0°"
+```
+
+#### `formatDeviation(deviation: number): string`
+
+Formats magnetic variation or compass deviation with sign and direction (E/W).
+
+```tsx
+import { formatDeviation } from "@/lib/formatters";
+
+<p>{formatDeviation(leg.md)}</p>
+// Output: "5°E", "10°W", "0°"
+```
+
+#### `formatWind(direction: number, speed: number, compact: boolean = true): string`
+
+Formats wind information.
+
+```tsx
+import { formatWind } from "@/lib/formatters";
+
+// Compact format (default)
+<p>{formatWind(270, 15)}</p>
+// Output: "270°/15"
+
+// Non-compact format
+<p>{formatWind(270, 15, false)}</p>
+// Output: "270° at 15 KT"
+```
+
+#### `formatFuel(fuel: number, unit: string): string`
+
+Formats fuel quantity with unit.
+
+```tsx
+import { formatFuel } from "@/lib/formatters";
+
+<p>{formatFuel(25.5, "GAL")}</p>
+// Output: "25.5 GAL"
+```
+
+#### `formatDistance(distance: number): string`
+
+Formats distance with one decimal place.
+
+```tsx
+import { formatDistance } from "@/lib/formatters";
+
+<p>{formatDistance(123.456)}</p>
+// Output: "123.5"
+```
+
+### Why Use Formatters?
+
+1. **Consistency**: All values display the same way across the application
+2. **Maintainability**: Changes to formatting logic only need to happen in one place
+3. **Testing**: Formatters are tested once, not in every component
+4. **Readability**: Clear function names make code self-documenting
+
+### Common Mistakes to Avoid
+
+❌ **Wrong**: Manual string padding
+```tsx
+`${String(Math.round(course)).padStart(3, '0')}°`
+```
+
+✅ **Correct**: Use formatCourse
+```tsx
+formatCourse(course)
+```
+
+---
+
+❌ **Wrong**: Manual wind formatting
+```tsx
+`${windDir}° at ${windSpeed} KT`
+```
+
+✅ **Correct**: Use formatWind
+```tsx
+formatWind(windDir, windSpeed, false)
+```
+
+---
+
+❌ **Wrong**: Manual deviation formatting
+```tsx
+`${Math.abs(deviation)}°${deviation < 0 ? 'E' : 'W'}`
+```
+
+✅ **Correct**: Use formatDeviation
+```tsx
+formatDeviation(deviation)
+```
+
 ## Button Cursor Styling
 
 ### Always Add cursor-pointer to Interactive Elements

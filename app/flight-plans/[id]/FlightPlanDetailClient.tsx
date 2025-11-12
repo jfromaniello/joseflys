@@ -38,7 +38,7 @@ import {
   CheckIcon,
 } from "@heroicons/react/24/outline";
 import { compressForUrl } from "@/lib/urlCompression";
-import { formatCourse, formatWind } from "@/lib/formatters";
+import { formatCourse, formatWind, formatDistance } from "@/lib/formatters";
 
 interface FlightPlanDetailClientProps {
   flightPlanId: string;
@@ -535,7 +535,7 @@ export function FlightPlanDetailClient({
                               <div className="flex justify-between items-center">
                                 <span className="text-sm" style={{ color: "oklch(0.65 0.05 240)" }}>True Heading</span>
                                 <span className="text-base font-bold" style={{ color: "oklch(0.85 0.15 230)" }}>
-                                  {leg.th}°
+                                  {formatCourse(leg.th)}
                                 </span>
                               </div>
                               <div className="flex justify-between items-center">
@@ -547,7 +547,7 @@ export function FlightPlanDetailClient({
                               <div className="flex justify-between items-center">
                                 <span className="text-sm" style={{ color: "oklch(0.65 0.05 240)" }}>Distance</span>
                                 <span className="text-base font-bold" style={{ color: "oklch(0.85 0.15 230)" }}>
-                                  {leg.dist} NM
+                                  {formatDistance(leg.dist)} NM
                                 </span>
                               </div>
                               <div className="flex justify-between items-center">

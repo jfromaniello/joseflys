@@ -70,8 +70,8 @@ export interface FlightPlanLeg {
   ws?: number;
 
   /**
-   * Magnetic deviation in degrees
-   * Used to calculate magnetic heading from true heading
+   * Magnetic variation in degrees
+   * Used to calculate magnetic course from true course
    */
   md: number;
 

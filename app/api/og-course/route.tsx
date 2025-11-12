@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       try {
         const deviationTable = decompressFromUrl(devTable);
         if (Array.isArray(deviationTable) && deviationTable.length >= 2) {
-          compassCourse = calculateCompassCourse(results.compassHeading, deviationTable);
+          compassCourse = calculateCompassCourse(results.magneticHeading, deviationTable);
         }
       } catch {
         // Invalid deviation table, ignore
@@ -163,7 +163,7 @@ export async function GET(request: NextRequest) {
                   {compassCourse !== null ? 'COMPASS COURSE' : 'COMPASS HDG'}
                 </div>
                 <div style={{ display: 'flex', fontSize: '52px', fontWeight: 'bold', color: 'white' }}>
-                  {compassCourse !== null ? compassCourse.toFixed(1) : results.compassHeading.toFixed(1)}°
+                  {compassCourse !== null ? compassCourse.toFixed(1) : results.magneticHeading.toFixed(1)}°
                 </div>
               </div>
             </div>

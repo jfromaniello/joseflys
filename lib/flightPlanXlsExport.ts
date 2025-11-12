@@ -115,7 +115,7 @@ export function generateFlightPlanXLS(flightPlan: FlightPlan): void {
     "Leg",
     "Alt",
     "TC",
-    "Decl.",
+    "Var.",
     "MC",
     "WCA",
     "MH",
@@ -146,8 +146,8 @@ export function generateFlightPlanXLS(flightPlan: FlightPlan): void {
     const compassCourse = legResult.compassCourse;
     const compassDeviation = legResult.compassDeviation;
 
-    const magneticHeading = leg.th + leg.md;
-    const normalizedMagHeading = ((magneticHeading % 360) + 360) % 360;
+    // MH (Magnetic Heading) = TH + WCA + Variation (this is magneticHeading from courseCalc)
+    const magneticHeading = courseCalc.magneticHeading;
 
     // Check if this is an alternative leg
     const isAlternative = alternativeLegs.has(leg.id);
@@ -178,7 +178,7 @@ export function generateFlightPlanXLS(flightPlan: FlightPlan): void {
         formatDeviation(leg.md),
         formatCourse(courseCalc.magneticCourse),
         formatWCA(courseCalc.windCorrectionAngle),
-        formatCourse(normalizedMagHeading),
+        formatCourse(magneticHeading),
         compassDeviation !== null ? formatDeviation(compassDeviation) : "-",
         compassCourse !== null ? formatCourse(compassCourse) : "-",
         `${Math.round(leg.tas)} ${speedUnitLabel}`,
@@ -245,7 +245,7 @@ export function generateFlightPlanXLS(flightPlan: FlightPlan): void {
           formatDeviation(leg.md),
           formatCourse(courseCalc.magneticCourse),
           formatWCA(courseCalc.windCorrectionAngle),
-          formatCourse(normalizedMagHeading),
+          formatCourse(magneticHeading),
           compassDeviation !== null ? formatDeviation(compassDeviation) : "-",
           compassCourse !== null ? formatCourse(compassCourse) : "-",
           `${Math.round(leg.tas)}`,
@@ -275,7 +275,7 @@ export function generateFlightPlanXLS(flightPlan: FlightPlan): void {
         formatDeviation(leg.md),
         formatCourse(courseCalc.magneticCourse),
         formatWCA(courseCalc.windCorrectionAngle),
-        formatCourse(normalizedMagHeading),
+        formatCourse(magneticHeading),
         compassDeviation !== null ? formatDeviation(compassDeviation) : "-",
         compassCourse !== null ? formatCourse(compassCourse) : "-",
         `${Math.round(leg.tas)} ${speedUnitLabel}`,
@@ -299,6 +299,7 @@ export function generateFlightPlanXLS(flightPlan: FlightPlan): void {
   data.push(["Abbreviations:"]);
   const abbreviations = [
     "TC: True Course",
+    "Var: Magnetic Variation",
     "MC: Magnetic Course",
     "WCA: Wind Correction Angle",
     "MH: Magnetic Heading",
@@ -322,7 +323,7 @@ export function generateFlightPlanXLS(flightPlan: FlightPlan): void {
     { wch: 25 }, // Leg
     { wch: 8 },  // Alt
     { wch: 8 },  // TC
-    { wch: 8 },  // Decl
+    { wch: 8 },  // Var
     { wch: 8 },  // MC
     { wch: 8 },  // WCA
     { wch: 8 },  // MH

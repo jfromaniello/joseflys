@@ -188,8 +188,8 @@ export function generateFlightPlanPDF(flightPlan: FlightPlan): void {
     const compassCourse = legResult.compassCourse;
     const compassDeviation = legResult.compassDeviation;
 
-    const magneticHeading = leg.th + leg.md;
-    const normalizedMagHeading = ((magneticHeading % 360) + 360) % 360;
+    // MH (Magnetic Heading) = TH + WCA + Variation (this is magneticHeading from courseCalc)
+    const magneticHeading = courseCalc.magneticHeading;
 
     // Check if this is an alternative leg
     const isAlternative = alternativeLegs.has(leg.id);
@@ -220,7 +220,7 @@ export function generateFlightPlanPDF(flightPlan: FlightPlan): void {
         declination: formatDeviation(leg.md),
         magneticCourse: formatCourse(courseCalc.magneticCourse),
         wca: formatWCA(courseCalc.windCorrectionAngle),
-        magneticHeading: formatCourse(normalizedMagHeading),
+        magneticHeading: formatCourse(magneticHeading),
         deviation: compassDeviation !== null ? formatDeviation(compassDeviation) : "-",
         compassHeading: compassCourse !== null ? formatCourse(compassCourse) : "-",
         tas: `${Math.round(leg.tas)} ${speedUnitLabel}`,
@@ -305,7 +305,7 @@ export function generateFlightPlanPDF(flightPlan: FlightPlan): void {
           declination: formatDeviation(leg.md),
           magneticCourse: formatCourse(courseCalc.magneticCourse),
           wca: formatWCA(courseCalc.windCorrectionAngle),
-          magneticHeading: formatCourse(normalizedMagHeading),
+          magneticHeading: formatCourse(magneticHeading),
           deviation: compassDeviation !== null ? formatDeviation(compassDeviation) : "-",
           compassHeading: compassCourse !== null ? formatCourse(compassCourse) : "-",
           tas: `${Math.round(leg.tas)}`,
@@ -335,7 +335,7 @@ export function generateFlightPlanPDF(flightPlan: FlightPlan): void {
         declination: formatDeviation(leg.md),
         magneticCourse: formatCourse(courseCalc.magneticCourse),
         wca: formatWCA(courseCalc.windCorrectionAngle),
-        magneticHeading: formatCourse(normalizedMagHeading),
+        magneticHeading: formatCourse(magneticHeading),
         deviation: compassDeviation !== null ? formatDeviation(compassDeviation) : "-",
         compassHeading: compassCourse !== null ? formatCourse(compassCourse) : "-",
         tas: `${Math.round(leg.tas)} ${speedUnitLabel}`,
@@ -360,7 +360,7 @@ export function generateFlightPlanPDF(flightPlan: FlightPlan): void {
         { content: "Leg", rowSpan: 2 },
         { content: "Alt/FL", rowSpan: 2 },
         { content: "TC", rowSpan: 2 },
-        { content: "Decl.", rowSpan: 2 },
+        { content: "Var.", rowSpan: 2 },
         { content: "MC", rowSpan: 2 },
         { content: "WCA", rowSpan: 2 },
         { content: "MH", rowSpan: 2 },
@@ -437,11 +437,11 @@ export function generateFlightPlanPDF(flightPlan: FlightPlan): void {
       0: { halign: "left", cellWidth: 30 }, // Leg name - más ancho para nombres largos
       1: { cellWidth: 12 }, // Altitude
       2: { cellWidth: 13 }, // TC
-      3: { cellWidth: 12 }, // Decl
+      3: { cellWidth: 12 }, // Var
       4: { cellWidth: 13 }, // MC
       5: { cellWidth: 11 }, // WCA
       6: { cellWidth: 13 }, // MH
-      7: { cellWidth: 10 }, // δ
+      7: { cellWidth: 10 }, // Dev
       8: { cellWidth: 13 }, // CH
       9: { cellWidth: 12 }, // TAS
       10: { cellWidth: 16 }, // Wind
@@ -469,6 +469,7 @@ export function generateFlightPlanPDF(flightPlan: FlightPlan): void {
 
   const legendItems = [
     "TC: True Course",
+    "Var: Magnetic Variation",
     "MC: Magnetic Course",
     "WCA: Wind Correction Angle",
     "MH: Magnetic Heading",
