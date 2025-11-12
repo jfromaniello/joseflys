@@ -73,6 +73,22 @@ describe("calculateWaypoints", () => {
       const results = calculateWaypoints([], 120);
       expect(results).toEqual([]);
     });
+
+    it("should calculate segment distance correctly (distanceSinceLast)", () => {
+      const results = calculateWaypoints(basicWaypoints, 120);
+
+      // WP1: First waypoint, distance from start = 20
+      expect(results[0].distanceSinceLast).toBe(20);
+      expect(results[0].distance).toBe(20);
+
+      // WP2: Distance from WP1 = 40 - 20 = 20
+      expect(results[1].distanceSinceLast).toBe(20);
+      expect(results[1].distance).toBe(40);
+
+      // WP3: Distance from WP2 = 60 - 40 = 20
+      expect(results[2].distanceSinceLast).toBe(20);
+      expect(results[2].distance).toBe(60);
+    });
   });
 
   // ===== Fuel Calculations (No Climb/Descent) =====
@@ -106,6 +122,18 @@ describe("calculateWaypoints", () => {
       expect(results[1].fuelUsed).toBeUndefined();
     });
 
+    it("should calculate segment fuel correctly (fuelSinceLast)", () => {
+      const results = calculateWaypoints(waypoints, 120, 12); // 12 GPH
+
+      // WP1: 30 NM @ 120 kt = 0.25 hr × 12 GPH = 3 gal (first waypoint)
+      expect(results[0].fuelSinceLast).toBe(3);
+      expect(results[0].fuelUsed).toBe(3);
+
+      // WP2: 60 NM @ 120 kt = 0.5 hr × 12 GPH = 6 gal total, 3 gal since WP1
+      expect(results[1].fuelSinceLast).toBe(3);
+      expect(results[1].fuelUsed).toBe(6);
+    });
+
     it("should add previous fuel used to each waypoint", () => {
       const flightParams: FlightParameters = {
         previousFuelUsed: 10,
@@ -118,6 +146,10 @@ describe("calculateWaypoints", () => {
 
       // WP2: 10 (previous) + 6 (this leg) = 16
       expect(results[1].fuelUsed).toBe(16);
+
+      // Segment fuel should be the same regardless of previous fuel
+      expect(results[0].fuelSinceLast).toBe(3);
+      expect(results[1].fuelSinceLast).toBe(3);
     });
 
     it("should account for elapsed minutes when no previous fuel provided", () => {

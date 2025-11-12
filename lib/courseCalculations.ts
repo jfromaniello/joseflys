@@ -127,8 +127,10 @@ export interface Waypoint {
 export interface WaypointResult {
   /** Name of the waypoint */
   name: string;
-  /** Distance from start of leg in nautical miles */
+  /** Distance from start of leg in nautical miles (accumulated) */
   distance: number;
+  /** Distance since last waypoint in nautical miles (segment/partial) */
+  distanceSinceLast: number;
   /** Time since last waypoint in minutes */
   timeSinceLast: number;
   /** Cumulative time from departure in minutes (includes elapsedMinutes if provided) */
@@ -137,6 +139,8 @@ export interface WaypointResult {
   eta?: string;
   /** Cumulative fuel used to this waypoint (includes previousFuelUsed if provided) */
   fuelUsed?: number;
+  /** Fuel used since last waypoint (segment/partial) */
+  fuelSinceLast?: number;
 }
 
 /**
@@ -527,6 +531,7 @@ export function calculateWaypoints(
 
   const results: WaypointResult[] = [];
   let previousDistance = 0;
+  let previousFuelUsed = flightParams?.previousFuelUsed || 0;
 
   sortedWaypoints.forEach((waypoint) => {
     let timeFromLegStart: number;
@@ -677,16 +682,23 @@ export function calculateWaypoints(
       }
     }
 
+    // Calculate segment values
+    const distanceSinceLast = waypoint.distance - previousDistance;
+    const fuelSinceLast = fuelUsed !== undefined ? fuelUsed - previousFuelUsed : undefined;
+
     results.push({
       name: waypoint.name,
       distance: waypoint.distance,
+      distanceSinceLast,
       timeSinceLast,
       cumulativeTime,
       eta,
       fuelUsed,
+      fuelSinceLast,
     });
 
     previousDistance = waypoint.distance;
+    previousFuelUsed = fuelUsed ?? 0;
   });
 
   return results;

@@ -784,15 +784,22 @@ html {
 
   /* Waypoints table - reduce font size to prevent wrapping */
   table {
-    font-size: 0.8rem !important;
+    font-size: 0.75rem !important;
   }
 
   table th,
   table td {
-    padding: 0.4rem 0.5rem !important;
+    padding: 0.3rem 0.4rem !important;
   }
 
   table th {
-    font-size: 0.7rem !important;
+    font-size: 0.65rem !important;
+  }
+
+  /* Ensure table borders are visible in print */
+  table,
+  table th,
+  table td {
+    border-color: #444 !important;
   }
 }

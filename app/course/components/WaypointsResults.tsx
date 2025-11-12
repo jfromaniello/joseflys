@@ -32,52 +32,89 @@ export function WaypointsResults({
         <h3 className="text-sm font-semibold uppercase tracking-wide" style={{ color: "oklch(0.65 0.15 230)" }}>
           Flight Checkpoints
         </h3>
-        <Tooltip content="Time and fuel calculations for each checkpoint along your route. Times are shown in whole minutes. ETA is displayed when departure time is set." />
+        <Tooltip content="Time and fuel calculations for each checkpoint along your route. 'Leg' shows segment values from previous waypoint. 'Total' shows accumulated values from departure." />
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full border-collapse">
           <thead>
+            {/* Main header row */}
             <tr className="border-b border-gray-700">
               <th
-                className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wide"
+                className="text-left py-2 px-4 text-xs font-semibold uppercase tracking-wide"
                 style={{ color: "oklch(0.65 0.15 230)" }}
+                rowSpan={2}
               >
                 Checkpoint
               </th>
               <th
-                className="text-right py-3 px-4 text-xs font-semibold uppercase tracking-wide"
+                className="text-center py-2 px-4 text-xs font-semibold uppercase tracking-wide border-l border-gray-700/50"
                 style={{ color: "oklch(0.65 0.15 230)" }}
+                colSpan={2}
               >
                 Distance
               </th>
               <th
-                className="text-right py-3 px-4 text-xs font-semibold uppercase tracking-wide"
-                style={{ color: "oklch(0.65 0.15 230)" }}
+                className="text-center py-2 px-4 text-xs font-semibold uppercase tracking-wide border-l border-gray-700/50"
+                style={{ color: "oklch(0.65 0.15 150)" }}
+                colSpan={2}
               >
-                Leg Time
+                Time
               </th>
-              <th
-                className="text-right py-3 px-4 text-xs font-semibold uppercase tracking-wide"
-                style={{ color: "oklch(0.65 0.15 230)" }}
-              >
-                Total Time
-              </th>
-              {showETA && (
-                <th
-                  className="text-right py-3 px-4 text-xs font-semibold uppercase tracking-wide"
-                  style={{ color: "oklch(0.65 0.15 230)" }}
-                >
-                  ETA
-                </th>
-              )}
               {showFuel && (
                 <th
-                  className="text-right py-3 px-4 text-xs font-semibold uppercase tracking-wide"
-                  style={{ color: "oklch(0.65 0.15 230)" }}
+                  className="text-center py-2 px-4 text-xs font-semibold uppercase tracking-wide border-l border-gray-700/50"
+                  style={{ color: "oklch(0.65 0.15 50)" }}
+                  colSpan={2}
                 >
-                  Fuel Used
+                  Fuel
                 </th>
+              )}
+            </tr>
+            {/* Sub-header row */}
+            <tr className="border-b border-gray-700">
+              {/* Distance sub-headers */}
+              <th
+                className="text-right py-2 px-4 text-xs font-medium uppercase tracking-wide border-l border-gray-700/50"
+                style={{ color: "oklch(0.55 0.15 230)" }}
+              >
+                Leg
+              </th>
+              <th
+                className="text-right py-2 px-4 text-xs font-medium uppercase tracking-wide"
+                style={{ color: "oklch(0.55 0.15 230)" }}
+              >
+                Total
+              </th>
+              {/* Time sub-headers */}
+              <th
+                className="text-right py-2 px-4 text-xs font-medium uppercase tracking-wide border-l border-gray-700/50"
+                style={{ color: "oklch(0.55 0.15 150)" }}
+              >
+                Leg
+              </th>
+              <th
+                className="text-right py-2 px-4 text-xs font-medium uppercase tracking-wide"
+                style={{ color: "oklch(0.55 0.15 150)" }}
+              >
+                Total
+              </th>
+              {/* Fuel sub-headers */}
+              {showFuel && (
+                <>
+                  <th
+                    className="text-right py-2 px-4 text-xs font-medium uppercase tracking-wide border-l border-gray-700/50"
+                    style={{ color: "oklch(0.55 0.15 50)" }}
+                  >
+                    Leg
+                  </th>
+                  <th
+                    className="text-right py-2 px-4 text-xs font-medium uppercase tracking-wide"
+                    style={{ color: "oklch(0.55 0.15 50)" }}
+                  >
+                    Total
+                  </th>
+                </>
               )}
             </tr>
           </thead>
@@ -87,47 +124,74 @@ export function WaypointsResults({
                 key={index}
                 className="border-b border-gray-700/50 hover:bg-slate-700/30 transition-colors"
               >
-                <td
-                  className="py-3 px-4 font-medium"
-                  style={{ color: "white" }}
-                >
-                  {waypoint.name}
+                {/* Checkpoint Name + ETA */}
+                <td className="py-3 px-4">
+                  <div className="flex flex-col">
+                    <span className="font-medium" style={{ color: "white" }}>
+                      {waypoint.name}
+                    </span>
+                    {showETA && waypoint.eta && (
+                      <span
+                        className="text-xs mt-0.5"
+                        style={{ color: "oklch(0.55 0.15 150)" }}
+                      >
+                        {formatETA(waypoint.eta)}
+                      </span>
+                    )}
+                  </div>
                 </td>
+
+                {/* Distance - Leg */}
                 <td
-                  className="py-3 px-4 text-right font-mono"
-                  style={{ color: "oklch(0.72 0.015 240)" }}
+                  className="py-3 px-4 text-right font-mono border-l border-gray-700/50"
+                  style={{ color: "oklch(0.7 0.12 230)" }}
+                >
+                  {waypoint.distanceSinceLast.toFixed(1)} NM
+                </td>
+                {/* Distance - Total */}
+                <td
+                  className="py-3 px-4 text-right font-mono font-semibold"
+                  style={{ color: "oklch(0.75 0.15 230)" }}
                 >
                   {waypoint.distance.toFixed(1)} NM
                 </td>
+
+                {/* Time - Leg */}
                 <td
-                  className="py-3 px-4 text-right font-mono"
-                  style={{ color: "oklch(0.72 0.015 240)" }}
+                  className="py-3 px-4 text-right font-mono border-l border-gray-700/50"
+                  style={{ color: "oklch(0.7 0.12 150)" }}
                 >
                   {waypoint.timeSinceLast} min
                 </td>
+                {/* Time - Total */}
                 <td
                   className="py-3 px-4 text-right font-mono font-semibold"
-                  style={{ color: "oklch(0.8 0.15 230)" }}
+                  style={{ color: "oklch(0.75 0.15 150)" }}
                 >
                   {waypoint.cumulativeTime} min
                 </td>
-                {showETA && (
-                  <td
-                    className="py-3 px-4 text-right font-mono font-semibold"
-                    style={{ color: "oklch(0.7 0.15 150)" }}
-                  >
-                    {formatETA(waypoint.eta)}
-                  </td>
-                )}
+
+                {/* Fuel - Leg */}
                 {showFuel && (
-                  <td
-                    className="py-3 px-4 text-right font-mono font-semibold"
-                    style={{ color: "oklch(0.7 0.15 150)" }}
-                  >
-                    {waypoint.fuelUsed !== undefined
-                      ? `${waypoint.fuelUsed.toFixed(1)} ${getFuelResultUnit(fuelUnit)}`
-                      : "—"}
-                  </td>
+                  <>
+                    <td
+                      className="py-3 px-4 text-right font-mono border-l border-gray-700/50"
+                      style={{ color: "oklch(0.7 0.12 50)" }}
+                    >
+                      {waypoint.fuelSinceLast !== undefined
+                        ? `${waypoint.fuelSinceLast.toFixed(1)} ${getFuelResultUnit(fuelUnit)}`
+                        : "—"}
+                    </td>
+                    {/* Fuel - Total */}
+                    <td
+                      className="py-3 px-4 text-right font-mono font-semibold"
+                      style={{ color: "oklch(0.75 0.15 50)" }}
+                    >
+                      {waypoint.fuelUsed !== undefined
+                        ? `${waypoint.fuelUsed.toFixed(1)} ${getFuelResultUnit(fuelUnit)}`
+                        : "—"}
+                    </td>
+                  </>
                 )}
               </tr>
             ))}
@@ -141,13 +205,8 @@ export function WaypointsResults({
           className="text-xs leading-relaxed"
           style={{ color: "oklch(0.6 0.02 240)" }}
         >
-          <span className="font-semibold">Leg Time:</span> Minutes from previous waypoint or start.{" "}
-          <span className="font-semibold">Total Time:</span> Cumulative minutes including elapsed time from previous legs.
-          {showFuel && (
-            <>
-              {" "}<span className="font-semibold">Fuel Used:</span> Cumulative fuel consumption to this waypoint.
-            </>
-          )}
+          <span className="font-semibold">Leg:</span> Distance, time, and fuel from the previous waypoint.{" "}
+          <span className="font-semibold">Total:</span> Accumulated values from departure including elapsed time and fuel from previous legs.
         </p>
       </div>
     </div>
