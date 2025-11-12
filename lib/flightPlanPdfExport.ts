@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Flight Plan PDF Export
  * Generates comprehensive PDF navigation logs matching sample.pdf format
@@ -5,7 +6,7 @@
 
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import type { FlightPlan, FlightPlanLeg, Waypoint } from "./flightPlanStorage";
+import type { FlightPlan } from "./flightPlanStorage";
 import {
   calculateLegResults,
   calculateLegWaypoints,
@@ -17,6 +18,15 @@ import {
 } from "./flightPlanCalculations";
 import { calculateCourse } from "./courseCalculations";
 import { getFuelResultUnit, type FuelUnit } from "./fuelConversion";
+import { getSpeedUnitLabel, type SpeedUnit } from "./speedConversion";
+import {
+  formatCourse,
+  formatWCA,
+  formatDeviation,
+  formatWind,
+  formatFuel,
+  formatDistance,
+} from "./formatters";
 
 interface PDFRowData {
   name: string;
@@ -40,41 +50,10 @@ interface PDFRowData {
   fuelRemaining: string;
 }
 
-/**
- * Format angle to degrees string
- */
-function formatDegrees(degrees: number | null | undefined): string {
-  if (degrees === null || degrees === undefined || isNaN(degrees)) return "-";
-  return `${Math.round(degrees).toString().padStart(3, "0")}°`;
-}
+// Note: All formatting functions now imported from ./formatters
 
 /**
- * Format magnetic deviation with E/W suffix
- */
-function formatDeviation(deviation: number): string {
-  const absDeviation = Math.abs(deviation);
-  const direction = deviation >= 0 ? "E" : "W";
-  return `${Math.round(absDeviation)}°${direction}`;
-}
-
-/**
- * Format wind correction angle with sign
- */
-function formatWCA(wca: number): string {
-  const sign = wca >= 0 ? "+" : "";
-  return `${sign}${Math.round(wca)}°`;
-}
-
-/**
- * Format wind as direction/speed
- */
-function formatWind(windDir?: number, windSpeed?: number): string {
-  if (windDir === undefined || windSpeed === undefined) return "-";
-  return `${windDir.toString().padStart(3, "0")}/${Math.round(windSpeed)}`;
-}
-
-/**
- * Format time as hours:minutes
+ * Format time as hours:minutes (specific to PDF export)
  */
 function formatTime(hours: number): string {
   const totalMinutes = Math.round(hours * 60);
@@ -84,17 +63,9 @@ function formatTime(hours: number): string {
 }
 
 /**
- * Format fuel with unit
- */
-function formatFuelValue(fuel: number, unit: string): string {
-  return `${fuel.toFixed(1)} ${unit}`;
-}
-
-/**
  * Generate PDF for a flight plan
  */
 export function generateFlightPlanPDF(flightPlan: FlightPlan): void {
-  // eslint-disable-next-line new-cap
   const doc = new jsPDF({
     orientation: "landscape",
     unit: "mm",
@@ -108,6 +79,14 @@ export function generateFlightPlanPDF(flightPlan: FlightPlan): void {
 
   // Get the display unit (like "GAL")
   const fuelDisplayUnit = getFuelResultUnit(fuelFlowUnit as FuelUnit);
+
+  // Get speed unit from first leg (like "kt", "mph", "kmh")
+  const speedUnit = flightPlan.legs.length > 0
+    ? (flightPlan.legs[0].unit || "kt")
+    : "kt";
+
+  // Get the display label (like "KT", "MPH", "km/h")
+  const speedUnitLabel = getSpeedUnitLabel(speedUnit as SpeedUnit);
 
   // Calculate total fuel capacity (use last leg's total fuel as maximum)
   let totalFuelCapacity = 0;
@@ -128,7 +107,7 @@ export function generateFlightPlanPDF(flightPlan: FlightPlan): void {
   doc.setFont("helvetica", "normal");
 
   // Fuel info header
-  doc.text(`Fuel: ${formatFuelValue(totalFuelCapacity, fuelDisplayUnit)}`, 15, 22);
+  doc.text(`Fuel: ${formatFuel(totalFuelCapacity, fuelDisplayUnit)}`, 15, 22);
 
   // Magnetic declination (from first leg)
   if (flightPlan.legs.length > 0) {
@@ -172,7 +151,7 @@ export function generateFlightPlanPDF(flightPlan: FlightPlan): void {
   // Box 1: Total Distance
   doc.text("Total Distance:", 15, summaryY);
   doc.setFont("helvetica", "bold");
-  doc.text(`${mainRouteTotals.distance.toFixed(1)} NM`, 15, summaryY + 4);
+  doc.text(`${formatDistance(mainRouteTotals.distance)} NM`, 15, summaryY + 4);
   doc.setFont("helvetica", "normal");
 
   // Box 2: Total Fuel
@@ -237,23 +216,23 @@ export function generateFlightPlanPDF(flightPlan: FlightPlan): void {
       tableData.push({
         name: legName,
         altitude: altitude,
-        trueCourse: formatDegrees(leg.th),
+        trueCourse: formatCourse(leg.th),
         declination: formatDeviation(leg.md),
-        magneticCourse: formatDegrees(courseCalc.magneticCourse),
+        magneticCourse: formatCourse(courseCalc.magneticCourse),
         wca: formatWCA(courseCalc.windCorrectionAngle),
-        magneticHeading: formatDegrees(normalizedMagHeading),
-        deviation: compassDeviation !== null ? formatWCA(compassDeviation) : "-",
-        compassHeading: compassCourse !== null ? formatDegrees(compassCourse) : "-",
-        tas: `${Math.round(leg.tas)}`,
-        wind: formatWind(leg.wd, leg.ws),
-        groundSpeed: `${Math.round(legResult.groundSpeed)}`,
-        distancePartial: "0.0",
-        distanceTotal: (leg.elapsedDist || 0).toFixed(1),
+        magneticHeading: formatCourse(normalizedMagHeading),
+        deviation: compassDeviation !== null ? formatDeviation(compassDeviation) : "-",
+        compassHeading: compassCourse !== null ? formatCourse(compassCourse) : "-",
+        tas: `${Math.round(leg.tas)} ${speedUnitLabel}`,
+        wind: formatWind(leg.wd, leg.ws, false),
+        groundSpeed: `${Math.round(legResult.groundSpeed)} ${speedUnitLabel}`,
+        distancePartial: formatDistance(0),
+        distanceTotal: formatDistance(leg.elapsedDist || 0),
         timePartial: formatTime(elapsedTime / 60),
         timeTotal: formatTime(elapsedTime / 60),
-        fuelPartial: formatFuelValue(previousFuel, fuelDisplayUnit),
-        fuelTotal: formatFuelValue(previousFuel, fuelDisplayUnit),
-        fuelRemaining: formatFuelValue(totalFuelCapacity - previousFuel, fuelDisplayUnit),
+        fuelPartial: formatFuel(previousFuel, fuelDisplayUnit),
+        fuelTotal: formatFuel(previousFuel, fuelDisplayUnit),
+        fuelRemaining: formatFuel(totalFuelCapacity - previousFuel, fuelDisplayUnit),
       });
     } else {
       // Subsequent legs - show values from previous leg
@@ -285,22 +264,22 @@ export function generateFlightPlanPDF(flightPlan: FlightPlan): void {
           const totalTime = (prevLeg.elapsedMin || 0) / 60 + prevTime;
           const totalFuel = prevLegResult.totalFuel;
 
-          distancePartial = prevDistance.toFixed(1);
-          distanceTotal = totalDist.toFixed(1);
+          distancePartial = formatDistance(prevDistance);
+          distanceTotal = formatDistance(totalDist);
           timePartial = formatTime(prevTime);
           timeTotal = formatTime(totalTime);
-          fuelPartial = formatFuelValue(prevFuel, fuelDisplayUnit);
-          fuelTotal = formatFuelValue(totalFuel, fuelDisplayUnit);
-          fuelRemaining = formatFuelValue(totalFuelCapacity - totalFuel, fuelDisplayUnit);
+          fuelPartial = formatFuel(prevFuel, fuelDisplayUnit);
+          fuelTotal = formatFuel(totalFuel, fuelDisplayUnit);
+          fuelRemaining = formatFuel(totalFuelCapacity - totalFuel, fuelDisplayUnit);
         } else if (lastWaypoint && !nextLegIsAlternative) {
           // Use last waypoint values (it will not be shown in the table)
-          distancePartial = lastWaypoint.distanceSinceLast.toFixed(1);
-          distanceTotal = lastWaypoint.distance.toFixed(1);
+          distancePartial = formatDistance(lastWaypoint.distanceSinceLast);
+          distanceTotal = formatDistance(lastWaypoint.distance);
           timePartial = formatTime(lastWaypoint.timeSinceLast / 60);
           timeTotal = formatTime(lastWaypoint.cumulativeTime / 60);
-          fuelPartial = formatFuelValue(lastWaypoint.fuelSinceLast || 0, fuelDisplayUnit);
-          fuelTotal = formatFuelValue(lastWaypoint.fuelUsed || 0, fuelDisplayUnit);
-          fuelRemaining = formatFuelValue(totalFuelCapacity - (lastWaypoint.fuelUsed || 0), fuelDisplayUnit);
+          fuelPartial = formatFuel(lastWaypoint.fuelSinceLast || 0, fuelDisplayUnit);
+          fuelTotal = formatFuel(lastWaypoint.fuelUsed || 0, fuelDisplayUnit);
+          fuelRemaining = formatFuel(totalFuelCapacity - (lastWaypoint.fuelUsed || 0), fuelDisplayUnit);
         } else {
           // No waypoints or next leg is alternative, use leg values
           const prevDistance = prevLeg.dist || 0;
@@ -310,27 +289,27 @@ export function generateFlightPlanPDF(flightPlan: FlightPlan): void {
           const totalTime = (prevLeg.elapsedMin || 0) / 60 + prevTime;
           const totalFuel = prevLegResult.totalFuel;
 
-          distancePartial = prevDistance.toFixed(1);
-          distanceTotal = totalDist.toFixed(1);
+          distancePartial = formatDistance(prevDistance);
+          distanceTotal = formatDistance(totalDist);
           timePartial = formatTime(prevTime);
           timeTotal = formatTime(totalTime);
-          fuelPartial = formatFuelValue(prevFuel, fuelDisplayUnit);
-          fuelTotal = formatFuelValue(totalFuel, fuelDisplayUnit);
-          fuelRemaining = formatFuelValue(totalFuelCapacity - totalFuel, fuelDisplayUnit);
+          fuelPartial = formatFuel(prevFuel, fuelDisplayUnit);
+          fuelTotal = formatFuel(totalFuel, fuelDisplayUnit);
+          fuelRemaining = formatFuel(totalFuelCapacity - totalFuel, fuelDisplayUnit);
         }
 
         tableData.push({
           name: legName,
           altitude: altitude,
-          trueCourse: formatDegrees(leg.th),
+          trueCourse: formatCourse(leg.th),
           declination: formatDeviation(leg.md),
-          magneticCourse: formatDegrees(courseCalc.magneticCourse),
+          magneticCourse: formatCourse(courseCalc.magneticCourse),
           wca: formatWCA(courseCalc.windCorrectionAngle),
-          magneticHeading: formatDegrees(normalizedMagHeading),
-          deviation: compassDeviation !== null ? formatWCA(compassDeviation) : "-",
-          compassHeading: compassCourse !== null ? formatDegrees(compassCourse) : "-",
+          magneticHeading: formatCourse(normalizedMagHeading),
+          deviation: compassDeviation !== null ? formatDeviation(compassDeviation) : "-",
+          compassHeading: compassCourse !== null ? formatCourse(compassCourse) : "-",
           tas: `${Math.round(leg.tas)}`,
-          wind: formatWind(leg.wd, leg.ws),
+          wind: formatWind(leg.wd, leg.ws, false),
           groundSpeed: `${Math.round(legResult.groundSpeed)}`,
           distancePartial,
           distanceTotal,
@@ -352,23 +331,23 @@ export function generateFlightPlanPDF(flightPlan: FlightPlan): void {
       tableData.push({
         name: `  ${waypoint.name}`, // Indent waypoint names
         altitude: altitude,
-        trueCourse: formatDegrees(leg.th),
+        trueCourse: formatCourse(leg.th),
         declination: formatDeviation(leg.md),
-        magneticCourse: formatDegrees(courseCalc.magneticCourse),
+        magneticCourse: formatCourse(courseCalc.magneticCourse),
         wca: formatWCA(courseCalc.windCorrectionAngle),
-        magneticHeading: formatDegrees(normalizedMagHeading),
-        deviation: compassDeviation !== null ? formatWCA(compassDeviation) : "-",
-        compassHeading: compassCourse !== null ? formatDegrees(compassCourse) : "-",
-        tas: `${Math.round(leg.tas)}`,
-        wind: formatWind(leg.wd, leg.ws),
-        groundSpeed: `${Math.round(legResult.groundSpeed)}`,
-        distancePartial: waypoint.distanceSinceLast.toFixed(1), // Partial
-        distanceTotal: waypoint.distance.toFixed(1), // Total (accumulated from leg start)
+        magneticHeading: formatCourse(normalizedMagHeading),
+        deviation: compassDeviation !== null ? formatDeviation(compassDeviation) : "-",
+        compassHeading: compassCourse !== null ? formatCourse(compassCourse) : "-",
+        tas: `${Math.round(leg.tas)} ${speedUnitLabel}`,
+        wind: formatWind(leg.wd, leg.ws, false),
+        groundSpeed: `${Math.round(legResult.groundSpeed)} ${speedUnitLabel}`,
+        distancePartial: formatDistance(waypoint.distanceSinceLast), // Partial
+        distanceTotal: formatDistance(waypoint.distance), // Total (accumulated from leg start)
         timePartial: formatTime(waypoint.timeSinceLast / 60), // Convert minutes to hours
         timeTotal: formatTime(waypoint.cumulativeTime / 60), // Convert minutes to hours
-        fuelPartial: formatFuelValue(waypoint.fuelSinceLast || 0, fuelDisplayUnit),
-        fuelTotal: formatFuelValue(waypoint.fuelUsed || 0, fuelDisplayUnit),
-        fuelRemaining: formatFuelValue(totalFuelCapacity - (waypoint.fuelUsed || 0), fuelDisplayUnit),
+        fuelPartial: formatFuel(waypoint.fuelSinceLast || 0, fuelDisplayUnit),
+        fuelTotal: formatFuel(waypoint.fuelUsed || 0, fuelDisplayUnit),
+        fuelRemaining: formatFuel(totalFuelCapacity - (waypoint.fuelUsed || 0), fuelDisplayUnit),
       });
     });
   });

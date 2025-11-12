@@ -1,6 +1,7 @@
 import { Tooltip } from "@/app/components/Tooltip";
 import { WaypointResult } from "@/lib/courseCalculations";
 import { FuelUnit, getFuelResultUnit } from "@/lib/fuelConversion";
+import { formatDistance, formatFuel } from "@/lib/formatters";
 
 interface WaypointsResultsProps {
   waypointResults: WaypointResult[];
@@ -146,14 +147,14 @@ export function WaypointsResults({
                   className="py-3 px-4 text-right font-mono border-l border-gray-700/50"
                   style={{ color: "oklch(0.7 0.12 230)" }}
                 >
-                  {waypoint.distanceSinceLast.toFixed(1)} NM
+                  {formatDistance(waypoint.distanceSinceLast)} NM
                 </td>
                 {/* Distance - Total */}
                 <td
                   className="py-3 px-4 text-right font-mono font-semibold"
                   style={{ color: "oklch(0.75 0.15 230)" }}
                 >
-                  {waypoint.distance.toFixed(1)} NM
+                  {formatDistance(waypoint.distance)} NM
                 </td>
 
                 {/* Time - Leg */}
@@ -179,7 +180,7 @@ export function WaypointsResults({
                       style={{ color: "oklch(0.7 0.12 50)" }}
                     >
                       {waypoint.fuelSinceLast !== undefined
-                        ? `${waypoint.fuelSinceLast.toFixed(1)} ${getFuelResultUnit(fuelUnit)}`
+                        ? formatFuel(waypoint.fuelSinceLast, getFuelResultUnit(fuelUnit))
                         : "—"}
                     </td>
                     {/* Fuel - Total */}
@@ -188,7 +189,7 @@ export function WaypointsResults({
                       style={{ color: "oklch(0.75 0.15 50)" }}
                     >
                       {waypoint.fuelUsed !== undefined
-                        ? `${waypoint.fuelUsed.toFixed(1)} ${getFuelResultUnit(fuelUnit)}`
+                        ? formatFuel(waypoint.fuelUsed, getFuelResultUnit(fuelUnit))
                         : "—"}
                     </td>
                   </>

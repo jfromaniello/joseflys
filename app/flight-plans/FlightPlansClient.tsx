@@ -5,7 +5,7 @@ import Link from "next/link";
 import { PageLayout } from "../components/PageLayout";
 import { Footer } from "../components/Footer";
 import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
-import { DownloadPdfButton } from "../components/DownloadPdfButton";
+import { DownloadDropdownButton } from "../components/DownloadDropdownButton";
 import {
   loadFlightPlans,
   deleteFlightPlan,
@@ -156,7 +156,7 @@ export function FlightPlansClient() {
 
                     {/* Actions */}
                     <div className="flex gap-2">
-                      <DownloadPdfButton
+                      <DownloadDropdownButton
                         flightPlan={plan}
                         variant="secondary"
                         size="sm"

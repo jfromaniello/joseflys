@@ -1,6 +1,7 @@
 import { Tooltip } from "@/app/components/Tooltip";
 import { CourseCalculations } from "@/lib/courseCalculations";
 import { FuelUnit, getFuelResultUnit } from "@/lib/fuelConversion";
+import { formatCourse } from "@/lib/formatters";
 
 interface IntermediateResultsProps {
   results: CourseCalculations;
@@ -8,7 +9,7 @@ interface IntermediateResultsProps {
   fuelFlow?: number;
 }
 
-export function IntermediateResults({ results, fuelUnit, fuelFlow }: IntermediateResultsProps) {
+export function IntermediateResults({ results, fuelUnit }: IntermediateResultsProps) {
   // Calculate leg-specific values (just for THIS leg, not including elapsed time)
   const legTimeMinutes = results.eta ? Math.round(results.eta * 60) : undefined;
   // Use the pre-calculated leg fuel from results (includes all leg fuel components)
@@ -155,7 +156,7 @@ export function IntermediateResults({ results, fuelUnit, fuelFlow }: Intermediat
             <Tooltip content="Magnetic Course: Your true course after applying magnetic deviation, but before wind correction. This is the direction you would fly in no-wind conditions using a magnetic compass." />
           </div>
           <p className="text-xl font-bold text-center" style={{ color: "white" }}>
-            {String(Math.round(results.magneticCourse)).padStart(3, '0')}°
+            {formatCourse(results.magneticCourse)}
           </p>
         </div>
 
@@ -181,7 +182,7 @@ export function IntermediateResults({ results, fuelUnit, fuelFlow }: Intermediat
             <Tooltip content="Magnetic Heading: The heading after applying wind correction angle and magnetic deviation. This is used to calculate the final Compass Course." />
           </div>
           <p className="text-xl font-bold text-center" style={{ color: "white" }}>
-            {String(Math.round(results.compassHeading)).padStart(3, '0')}°
+            {formatCourse(results.compassHeading)}
           </p>
         </div>
 

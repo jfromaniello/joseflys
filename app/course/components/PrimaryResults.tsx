@@ -5,6 +5,7 @@ import { SpeedUnit } from "./CourseSpeedInputs";
 import { FuelUnit } from "./RangeFuelInputs";
 import { getSpeedUnitLabel } from "@/lib/speedConversion";
 import { getFuelResultUnit } from "@/lib/fuelConversion";
+import { formatCourse } from "@/lib/formatters";
 
 interface PrimaryResultsProps {
   results: CourseCalculations;
@@ -114,7 +115,7 @@ export function PrimaryResults({
               className="text-3xl sm:text-4xl font-bold"
               style={{ color: "white" }}
             >
-              {compassCourse !== null ? `${String(Math.round(compassCourse)).padStart(3, '0')}°` : "—"}
+              {compassCourse !== null ? formatCourse(compassCourse) : "—"}
             </p>
             <p
               className="text-sm mt-1"

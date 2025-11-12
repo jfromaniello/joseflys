@@ -26,7 +26,7 @@ import { FuelUnit, getFuelResultUnit } from "@/lib/fuelConversion";
 import { generateShareUrl } from "@/lib/flightPlanSharing";
 import { Tooltip } from "@/app/components/Tooltip";
 import { WaypointsCompact } from "@/app/course/components/WaypointsCompact";
-import { DownloadPdfButton } from "@/app/components/DownloadPdfButton";
+import { DownloadDropdownButton } from "@/app/components/DownloadDropdownButton";
 import {
   ArrowLeftIcon,
   TrashIcon,
@@ -38,6 +38,7 @@ import {
   CheckIcon,
 } from "@heroicons/react/24/outline";
 import { compressForUrl } from "@/lib/urlCompression";
+import { formatCourse, formatWind } from "@/lib/formatters";
 
 interface FlightPlanDetailClientProps {
   flightPlanId: string;
@@ -197,14 +198,6 @@ export function FlightPlanDetailClient({
     });
   };
 
-  const formatETA = (eta: string) => {
-    // Convert HHMM to HH:MM
-    if (eta.length === 4) {
-      return `${eta.substring(0, 2)}:${eta.substring(2, 4)}`;
-    }
-    return eta;
-  };
-
   if (loading) {
     return (
       <PageLayout currentPage="flight-plans">
@@ -270,7 +263,7 @@ export function FlightPlanDetailClient({
                 </h2>
               </div>
               <div className="flex gap-2">
-                <DownloadPdfButton
+                <DownloadDropdownButton
                   flightPlan={flightPlan}
                   variant="secondary"
                   size="md"
@@ -567,7 +560,7 @@ export function FlightPlanDetailClient({
                                 <div className="flex justify-between items-center">
                                   <span className="text-sm" style={{ color: "oklch(0.65 0.05 240)" }}>Wind</span>
                                   <span className="text-base font-bold" style={{ color: "oklch(0.85 0.15 230)" }}>
-                                    {leg.wd.toString().padStart(3, '0')}° @ {leg.ws} KT
+                                    {formatWind(leg.wd, leg.ws)}
                                   </span>
                                 </div>
                               ) : <></>}
@@ -605,7 +598,7 @@ export function FlightPlanDetailClient({
                                   <div className="flex justify-between items-center">
                                     <span className="text-sm" style={{ color: "oklch(0.7 0.08 160)" }}>Compass Course</span>
                                     <span className="text-base font-bold" style={{ color: "oklch(0.85 0.15 160)" }}>
-                                      {result.compassCourse.toFixed(0).padStart(3, "0")}°
+                                      {formatCourse(result.compassCourse)}
                                     </span>
                                   </div>
                                 )}

@@ -1,5 +1,6 @@
 import { WaypointResult } from "@/lib/courseCalculations";
 import { FuelUnit, getFuelResultUnit } from "@/lib/fuelConversion";
+import { formatDistance, formatFuel } from "@/lib/formatters";
 
 interface WaypointsCompactProps {
   waypointResults: WaypointResult[];
@@ -23,11 +24,11 @@ export function WaypointsCompact({
     return `${hours}:${minutes}`;
   };
 
-  const formatValue = (leg: number | undefined, total: number, decimals: number = 1): string => {
+  const formatValue = (leg: number | undefined, total: number, decimals: number = 0): string => {
     if (leg === undefined) {
-      return `${total.toFixed(decimals)}`;
+      return formatDistance(total);
     }
-    return `${leg.toFixed(decimals)} → ${total.toFixed(decimals)}`;
+    return `${formatDistance(leg)} → ${formatDistance(total)}`;
   };
 
   return (
@@ -76,8 +77,8 @@ export function WaypointsCompact({
                   style={{ color: "oklch(0.7 0.12 50)" }}
                 >
                   {waypoint.fuelSinceLast !== undefined
-                    ? `${formatValue(waypoint.fuelSinceLast, waypoint.fuelUsed)} ${getFuelResultUnit(fuelUnit)}`
-                    : `${waypoint.fuelUsed.toFixed(1)} ${getFuelResultUnit(fuelUnit)}`}
+                    ? `${formatFuel(waypoint.fuelSinceLast, getFuelResultUnit(fuelUnit))} → ${formatFuel(waypoint.fuelUsed, getFuelResultUnit(fuelUnit))}`
+                    : formatFuel(waypoint.fuelUsed, getFuelResultUnit(fuelUnit))}
                 </span>
               </div>
             )}
@@ -109,7 +110,7 @@ export function WaypointsCompact({
                   Dist Leg
                 </div>
                 <div className="text-sm font-mono mt-0.5" style={{ color: "oklch(0.7 0.12 230)" }}>
-                  {waypoint.distanceSinceLast.toFixed(1)} NM
+                  {formatDistance(waypoint.distanceSinceLast)} NM
                 </div>
               </div>
 
@@ -119,7 +120,7 @@ export function WaypointsCompact({
                   Dist Total
                 </div>
                 <div className="text-sm font-mono font-semibold mt-0.5" style={{ color: "oklch(0.75 0.15 230)" }}>
-                  {waypoint.distance.toFixed(1)} NM
+                  {formatDistance(waypoint.distance)} NM
                 </div>
               </div>
 
@@ -156,7 +157,7 @@ export function WaypointsCompact({
                     </div>
                     <div className="text-sm font-mono mt-0.5" style={{ color: "oklch(0.7 0.12 50)" }}>
                       {waypoint.fuelSinceLast !== undefined
-                        ? `${waypoint.fuelSinceLast.toFixed(1)} ${getFuelResultUnit(fuelUnit)}`
+                        ? formatFuel(waypoint.fuelSinceLast, getFuelResultUnit(fuelUnit))
                         : "—"}
                     </div>
                   </div>
@@ -167,7 +168,7 @@ export function WaypointsCompact({
                       Fuel Total
                     </div>
                     <div className="text-sm font-mono font-semibold mt-0.5" style={{ color: "oklch(0.75 0.15 50)" }}>
-                      {waypoint.fuelUsed.toFixed(1)} {getFuelResultUnit(fuelUnit)}
+                      {formatFuel(waypoint.fuelUsed, getFuelResultUnit(fuelUnit))}
                     </div>
                   </div>
                 </>
