@@ -442,7 +442,7 @@ export function LegPlannerClient({
     previousFuelUsed: prevFuel,
   };
 
-  // Calculate waypoints (includes "Cruise Altitude Reached" and "Descent Started" automatically if phase data exists)
+  // Calculate waypoints (includes "Top of Climb" and "Descent Started" automatically if phase data exists)
   const waypointResults =
     results && dist !== undefined
       ? calculateWaypoints(waypoints, results.groundSpeed, ff, flightParams, dist, results.climbPhase, ff, results.descentPhase)
@@ -1070,8 +1070,8 @@ export function LegPlannerClient({
             >
               <span className="font-semibold">Note:</span> This calculator uses
               standard aviation wind triangle formulas. Wind direction is where
-              the wind is coming FROM. Positive WCA means turn right, negative
-              means turn left. {" "}
+              the wind is coming FROM. WCA with E means turn left, WCA with W
+              means turn right. {" "}
               <span className="font-semibold">ETAS (Effective True Air Speed)</span> is
               shown when WCA exceeds 10° to account for the reduced effective forward
               speed when crabbing at large angles.

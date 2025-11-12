@@ -33,6 +33,8 @@ export interface CourseCalculations {
   crosswind: number;
   /** Headwind component in knots (positive = headwind, negative = tailwind) */
   headwind: number;
+  /** Magnetic course in degrees (true course + magnetic deviation, before wind correction) */
+  magneticCourse: number;
   /** Wind correction angle in degrees (angle to compensate for crosswind) */
   windCorrectionAngle: number;
   /** Compass heading in degrees (true heading + WCA + magnetic deviation) */
@@ -230,6 +232,9 @@ export function calculateCourse(input: CourseCalculationInput): CourseCalculatio
     2 * effectiveSpeed * windSpeed * Math.cos(relativeWind);
   const groundSpeed = Math.sqrt(Math.max(0, gsSquared));
 
+  // Magnetic course = True course + Magnetic deviation (before wind correction)
+  const magneticCourse = normalize(trueHeading + magDev);
+
   // Compass heading = True heading + WCA + Magnetic deviation
   // (East variation is negative, west is positive)
   const compassHeading = normalize(trueHeading + windCorrectionAngle + magDev);
@@ -419,6 +424,7 @@ export function calculateCourse(input: CourseCalculationInput): CourseCalculatio
   return {
     crosswind,
     headwind,
+    magneticCourse,
     windCorrectionAngle,
     compassHeading,
     groundSpeed,
@@ -469,12 +475,12 @@ export function calculateWaypoints(
     ? totalDistance - descentPhase.distance
     : undefined;
 
-  // Add "Cruise Altitude Reached" checkpoint if there's climb data
+  // Add "Top of Climb" checkpoint if there's climb data
   if (climbPhase && climbPhase.distance > 0) {
     // Find the correct position to insert based on distance
     const insertIndex = sortedWaypoints.findIndex(wp => wp.distance > climbPhase.distance);
     const cruiseAltitudeCheckpoint = {
-      name: "Cruise Altitude Reached",
+      name: "Top of Climb",
       distance: climbPhase.distance
     };
 

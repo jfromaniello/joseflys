@@ -239,7 +239,7 @@ describe("calculateWaypoints", () => {
       fuelUsed: 2.5,
     };
 
-    it("should add 'Cruise Altitude Reached' checkpoint at climb distance", () => {
+    it("should add 'Top of Climb' checkpoint at climb distance", () => {
       const waypoints: Waypoint[] = [
         { name: "WP1", distance: 10 }, // Before cruise
         { name: "WP2", distance: 30 }, // After cruise
@@ -249,7 +249,7 @@ describe("calculateWaypoints", () => {
 
       expect(results).toHaveLength(3);
       expect(results[0].name).toBe("WP1");
-      expect(results[1].name).toBe("Cruise Altitude Reached");
+      expect(results[1].name).toBe("Top of Climb");
       expect(results[1].distance).toBe(15);
       expect(results[2].name).toBe("WP2");
     });
@@ -274,7 +274,7 @@ describe("calculateWaypoints", () => {
       const results = calculateWaypoints(waypoints, 120, undefined, undefined, undefined, climbPhase);
 
       expect(results).toHaveLength(2);
-      expect(results[0].name).toBe("Cruise Altitude Reached");
+      expect(results[0].name).toBe("Top of Climb");
       expect(results[1].name).toBe("WP1");
 
       // Climb: 15 NM / 80 kt = 11.25 min -> 11 min
@@ -282,7 +282,7 @@ describe("calculateWaypoints", () => {
       // Total: 26 min
       expect(results[1].cumulativeTime).toBe(26);
 
-      // Time since Cruise Altitude Reached: 15 min
+      // Time since Top of Climb: 15 min
       expect(results[1].timeSinceLast).toBe(15);
     });
 
@@ -435,7 +435,7 @@ describe("calculateWaypoints", () => {
       fuelUsed: 1.5,
     };
 
-    it("should add both 'Cruise Altitude Reached' and 'Descent Started' checkpoints", () => {
+    it("should add both 'Top of Climb' and 'Descent Started' checkpoints", () => {
       const waypoints: Waypoint[] = [
         { name: "WP1", distance: 10 }, // In climb
         { name: "WP2", distance: 40 }, // In cruise
@@ -447,7 +447,7 @@ describe("calculateWaypoints", () => {
 
       expect(results).toHaveLength(6);
       expect(results[0].name).toBe("WP1");
-      expect(results[1].name).toBe("Cruise Altitude Reached");
+      expect(results[1].name).toBe("Top of Climb");
       expect(results[2].name).toBe("WP2");
       expect(results[3].name).toBe("Descent Started");
       expect(results[4].name).toBe("WP3");
@@ -491,9 +491,9 @@ describe("calculateWaypoints", () => {
 
       const results = calculateWaypoints(waypoints, 120, undefined, undefined, 70, climbPhase, undefined, descentPhase);
 
-      // Should have: Top of Climb + Cruise Altitude Reached + Descent Started + Landed
+      // Should have: Top of Climb + Top of Climb + Descent Started + Landed
       expect(results.some(r => r.name === "Top of Climb")).toBe(true);
-      expect(results.some(r => r.name === "Cruise Altitude Reached")).toBe(true);
+      expect(results.some(r => r.name === "Top of Climb")).toBe(true);
 
       const topOfClimb = results.find(r => r.name === "Top of Climb");
       expect(topOfClimb?.distance).toBe(15);
@@ -642,7 +642,7 @@ describe("calculateWaypoints", () => {
       expect(results.length).toBeGreaterThanOrEqual(5);
 
       // Verify all checkpoints exist
-      expect(results.some(r => r.name === "Cruise Altitude Reached")).toBe(true);
+      expect(results.some(r => r.name === "Top of Climb")).toBe(true);
       expect(results.some(r => r.name === "Descent Started")).toBe(true);
       expect(results.some(r => r.name === "Landed")).toBe(true);
 

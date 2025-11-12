@@ -144,19 +144,31 @@ export function IntermediateResults({ results, fuelUnit, fuelFlow }: Intermediat
         </div>
       )}
 
-      {/* First Row - WCA, MH, Crosswind, Tailwind */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+      {/* First Row - MC, WCA, MH, Crosswind, Tailwind */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-3">
+        {/* Magnetic Course */}
+        <div className="p-3 rounded-lg bg-slate-900/30 border border-gray-700">
+          <div className="flex items-center justify-center mb-1">
+            <p className="text-xs font-medium" style={{ color: "white" }}>
+              MC
+            </p>
+            <Tooltip content="Magnetic Course: Your true course after applying magnetic deviation, but before wind correction. This is the direction you would fly in no-wind conditions using a magnetic compass." />
+          </div>
+          <p className="text-xl font-bold text-center" style={{ color: "white" }}>
+            {String(Math.round(results.magneticCourse)).padStart(3, '0')}°
+          </p>
+        </div>
+
         {/* Wind Correction Angle */}
         <div className="p-3 rounded-lg bg-slate-900/30 border border-gray-700">
           <div className="flex items-center justify-center mb-1">
             <p className="text-xs font-medium" style={{ color: "white" }}>
               WCA
             </p>
-            <Tooltip content="Wind Correction Angle: The angle you need to adjust your heading to compensate for wind drift. Positive (+) means turn right, negative (-) means turn left from your true heading." />
+            <Tooltip content="Wind Correction Angle: The angle you need to adjust your heading to compensate for wind drift. E (East) means turn left, W (West) means turn right from your true heading." />
           </div>
           <p className="text-xl font-bold text-center" style={{ color: "white" }}>
-            {results.windCorrectionAngle >= 0 ? "+" : ""}
-            {Math.round(results.windCorrectionAngle)}°
+            {Math.abs(Math.round(results.windCorrectionAngle))}°{results.windCorrectionAngle < 0 ? "E" : results.windCorrectionAngle > 0 ? "W" : ""}
           </p>
         </div>
 
