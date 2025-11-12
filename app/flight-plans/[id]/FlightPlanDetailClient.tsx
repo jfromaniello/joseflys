@@ -378,7 +378,7 @@ export function FlightPlanDetailClient({
                         </span>
                       </div>
                       <div className="text-2xl font-bold" style={{ color: "oklch(0.9 0.18 60)" }}>
-                        {mainRouteTotals.distance.toFixed(1)}
+                        {formatDistance(mainRouteTotals.distance)}
                       </div>
                       <div className="text-xs" style={{ color: "oklch(0.65 0.08 60)" }}>
                         Nautical Miles
