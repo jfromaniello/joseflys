@@ -375,7 +375,7 @@ export function TASCalculatorClient({
                       <div className="text-xs space-y-0.5 ml-2" style={{ color: "oklch(0.6 0.02 240)" }}>
                         <p>P₀ = 101,325 Pa (sea level)</p>
                         <p>L = 0.0065 K/m (lapse rate)</p>
-                        <p>h = {(effectivePressureAlt * 0.3048).toFixed(1)} m</p>
+                        <p>h = {((effectivePressureAlt ?? 0) * 0.3048).toFixed(1)} m</p>
                         <p>T₀ = 288.15 K (15°C)</p>
                         <p>g₀ = 9.807 m/s²</p>
                         <p>R = 287.05 J/(kg·K)</p>
