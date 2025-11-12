@@ -34,6 +34,9 @@ export function TASCalculatorClient({
   const [altitude, setAltitude] = useState<string>(initialAltitude);
   const [qnh, setQnh] = useState<string>(initialQnh);
 
+  // Formula display toggle
+  const [showFormulas, setShowFormulas] = useState<boolean>(false);
+
   // Determine which fields should be disabled based on mutual exclusion
   const isPressureAltDisabled = !!(altitude || qnh);
   const isAltitudeQnhDisabled = !!pressureAltitude;
@@ -75,6 +78,42 @@ export function TASCalculatorClient({
     !isNaN(casVal) && !isNaN(oatVal) && effectivePressureAlt !== null && !isNaN(effectivePressureAlt)
       ? calculateTAS(casVal, oatVal, effectivePressureAlt)
       : null;
+
+  // Calculate intermediate values for display
+  let intermediateValues: {
+    pIsa: number;
+    rho0: number;
+    rho: number;
+    densityRatio: number;
+  } | null = null;
+
+  if (!isNaN(casVal) && !isNaN(oatVal) && effectivePressureAlt !== null && !isNaN(effectivePressureAlt)) {
+    // ISA Constants
+    const T0 = 288.15; // K (15°C)
+    const P0 = 101325.0; // Pa
+    const g0 = 9.80665; // m/s²
+    const R = 287.05287; // J/(kg·K)
+    const L = 0.0065; // K/m (lapse rate troposphere)
+
+    // Unit conversions
+    const hM = effectivePressureAlt * 0.3048;
+    const tAct = oatVal + 273.15; // K
+
+    // ISA pressure at altitude
+    const exp = g0 / (R * L);
+    const pIsa = P0 * Math.pow(1 - (L * hM) / T0, exp);
+
+    // Densities
+    const rho0 = P0 / (R * T0);
+    const rho = pIsa / (R * tAct);
+
+    intermediateValues = {
+      pIsa,
+      rho0,
+      rho,
+      densityRatio: rho0 / rho,
+    };
+  }
 
   // Detect QNH format for display
   const qnhVal = parseFloat(qnh);
@@ -285,6 +324,138 @@ export function TASCalculatorClient({
           {/* Results */}
           {tas !== null && (
             <div className="space-y-6">
+              {/* Formula Display - Collapsible */}
+              <div className="rounded-lg bg-slate-900/30 border border-gray-700 overflow-hidden">
+                <button
+                  onClick={() => setShowFormulas(!showFormulas)}
+                  className="w-full px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors"
+                >
+                  <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: "oklch(0.65 0.15 230)" }}>
+                    {altitude && qnh ? 'Show Formulas' : 'Show Formula'}
+                  </span>
+                  <svg
+                    className={`w-5 h-5 transition-transform ${showFormulas ? 'rotate-180' : ''}`}
+                    style={{ color: "oklch(0.65 0.15 230)" }}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {showFormulas && intermediateValues && (
+                  <div className="px-4 pb-4 space-y-4 border-t border-gray-700/50">
+                    {/* Pressure Altitude Formula - Only show when using altitude + QNH */}
+                    {altitude && qnh && effectivePressureAlt !== null && !isNaN(effectivePressureAlt) && (
+                      <div className="pt-3">
+                        <p className="text-xs font-semibold mb-2" style={{ color: "oklch(0.7 0.02 240)" }}>
+                          Step 1: Pressure Altitude
+                        </p>
+                        <p className="text-xs font-mono py-1.5 px-2 rounded bg-slate-800/50 mb-1" style={{ color: "oklch(0.8 0.02 240)" }}>
+                          {qnhFormat === "inHg"
+                            ? "PA = Alt + (29.92 - QNH) × 1000"
+                            : "PA = Alt + (1013 - QNH) × 27"
+                          }
+                        </p>
+                        <p className="text-xs" style={{ color: "oklch(0.6 0.02 240)" }}>
+                          PA = {effectivePressureAlt.toFixed(0)} ft
+                        </p>
+                      </div>
+                    )}
+
+                    {/* ISA Pressure at Altitude */}
+                    <div className={altitude && qnh ? 'pt-1' : 'pt-3'}>
+                      <p className="text-xs font-semibold mb-2" style={{ color: "oklch(0.7 0.02 240)" }}>
+                        {altitude && qnh ? 'Step 2: ' : 'Step 1: '}ISA Pressure at Altitude
+                      </p>
+                      <p className="text-xs font-mono py-1.5 px-2 rounded bg-slate-800/50 mb-1" style={{ color: "oklch(0.8 0.02 240)" }}>
+                        P = P₀ × (1 - L×h/T₀)^(g₀/R×L)
+                      </p>
+                      <div className="text-xs space-y-0.5 ml-2" style={{ color: "oklch(0.6 0.02 240)" }}>
+                        <p>P₀ = 101,325 Pa (sea level)</p>
+                        <p>L = 0.0065 K/m (lapse rate)</p>
+                        <p>h = {(effectivePressureAlt * 0.3048).toFixed(1)} m</p>
+                        <p>T₀ = 288.15 K (15°C)</p>
+                        <p>g₀ = 9.807 m/s²</p>
+                        <p>R = 287.05 J/(kg·K)</p>
+                      </div>
+                      <p className="text-xs font-medium mt-1" style={{ color: "oklch(0.7 0.02 240)" }}>
+                        P = {intermediateValues.pIsa.toFixed(1)} Pa
+                      </p>
+                    </div>
+
+                    {/* Sea Level Density */}
+                    <div className="pt-1">
+                      <p className="text-xs font-semibold mb-2" style={{ color: "oklch(0.7 0.02 240)" }}>
+                        {altitude && qnh ? 'Step 3: ' : 'Step 2: '}Sea Level Density (ρ₀)
+                      </p>
+                      <p className="text-xs font-mono py-1.5 px-2 rounded bg-slate-800/50 mb-1" style={{ color: "oklch(0.8 0.02 240)" }}>
+                        ρ₀ = P₀ / (R × T₀)
+                      </p>
+                      <p className="text-xs ml-2" style={{ color: "oklch(0.6 0.02 240)" }}>
+                        ρ₀ = 101,325 / (287.05 × 288.15)
+                      </p>
+                      <p className="text-xs font-medium mt-1" style={{ color: "oklch(0.7 0.02 240)" }}>
+                        ρ₀ = {intermediateValues.rho0.toFixed(4)} kg/m³
+                      </p>
+                    </div>
+
+                    {/* Actual Density */}
+                    <div className="pt-1">
+                      <p className="text-xs font-semibold mb-2" style={{ color: "oklch(0.7 0.02 240)" }}>
+                        {altitude && qnh ? 'Step 4: ' : 'Step 3: '}Actual Air Density (ρ)
+                      </p>
+                      <p className="text-xs font-mono py-1.5 px-2 rounded bg-slate-800/50 mb-1" style={{ color: "oklch(0.8 0.02 240)" }}>
+                        ρ = P / (R × T)
+                      </p>
+                      <div className="text-xs space-y-0.5 ml-2" style={{ color: "oklch(0.6 0.02 240)" }}>
+                        <p>P = {intermediateValues.pIsa.toFixed(1)} Pa</p>
+                        <p>T = {(parseFloat(oat) + 273.15).toFixed(2)} K ({oat}°C)</p>
+                      </div>
+                      <p className="text-xs ml-2" style={{ color: "oklch(0.6 0.02 240)" }}>
+                        ρ = {intermediateValues.pIsa.toFixed(1)} / (287.05 × {(parseFloat(oat) + 273.15).toFixed(2)})
+                      </p>
+                      <p className="text-xs font-medium mt-1" style={{ color: "oklch(0.7 0.02 240)" }}>
+                        ρ = {intermediateValues.rho.toFixed(4)} kg/m³
+                      </p>
+                    </div>
+
+                    {/* Density Ratio */}
+                    <div className="pt-1">
+                      <p className="text-xs font-semibold mb-2" style={{ color: "oklch(0.7 0.02 240)" }}>
+                        {altitude && qnh ? 'Step 5: ' : 'Step 4: '}Density Ratio
+                      </p>
+                      <p className="text-xs font-mono py-1.5 px-2 rounded bg-slate-800/50 mb-1" style={{ color: "oklch(0.8 0.02 240)" }}>
+                        ρ₀/ρ = {intermediateValues.rho0.toFixed(4)} / {intermediateValues.rho.toFixed(4)}
+                      </p>
+                      <p className="text-xs font-medium mt-1" style={{ color: "oklch(0.7 0.02 240)" }}>
+                        ρ₀/ρ = {intermediateValues.densityRatio.toFixed(4)}
+                      </p>
+                    </div>
+
+                    {/* Final TAS Calculation */}
+                    <div className="pt-1 pb-2">
+                      <p className="text-xs font-semibold mb-2" style={{ color: "oklch(0.7 0.02 240)" }}>
+                        {altitude && qnh ? 'Step 6: ' : 'Step 5: '}True Airspeed
+                      </p>
+                      <p className="text-xs font-mono py-1.5 px-2 rounded bg-slate-800/50 mb-1" style={{ color: "oklch(0.8 0.02 240)" }}>
+                        TAS = CAS × √(ρ₀/ρ)
+                      </p>
+                      <p className="text-xs ml-2" style={{ color: "oklch(0.6 0.02 240)" }}>
+                        TAS = {cas} × √{intermediateValues.densityRatio.toFixed(4)}
+                      </p>
+                      <p className="text-xs ml-2" style={{ color: "oklch(0.6 0.02 240)" }}>
+                        TAS = {cas} × {Math.sqrt(intermediateValues.densityRatio).toFixed(4)}
+                      </p>
+                      <p className="text-xs font-medium mt-1" style={{ color: "oklch(0.7 0.02 240)" }}>
+                        TAS = {tas?.toFixed(2)} kt
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Intermediate Values - Only show when using altitude + QNH */}
               {altitude && qnh && effectivePressureAlt !== null && !isNaN(effectivePressureAlt) && (
                 <div>
