@@ -4,7 +4,7 @@
  */
 
 import { calculateCourse, calculateWaypoints, WaypointResult } from "./courseCalculations";
-import { calculateCompassCourse } from "./compassDeviation";
+import { calculateCompassCourse, calculateDeviation } from "./compassDeviation";
 import { loadAircraftFromUrl } from "./aircraftStorage";
 import { getFuelResultUnit, type FuelUnit } from "./fuelConversion";
 import type { FlightPlanLeg } from "./flightPlanStorage";
@@ -12,6 +12,7 @@ import type { FlightPlanLeg } from "./flightPlanStorage";
 export interface LegCalculatedResults {
   groundSpeed: number; // knots
   compassCourse: number | null; // degrees
+  compassDeviation: number | null; // degrees (difference between MH and CH)
   legDuration: number; // hours (just this leg, without elapsed)
   climbTime: number | null; // hours (time in climb phase)
   cruiseTime: number | null; // hours (time in cruise phase)
@@ -60,12 +61,16 @@ export function calculateLegResults(leg: FlightPlanLeg): LegCalculatedResults | 
 
     if (!results) return null;
 
-    // Calculate compass course if aircraft with deviation table exists
+    // Calculate compass course and deviation if aircraft with deviation table exists
     let compassCourse: number | null = null;
+    let compassDeviation: number | null = null;
     if (leg.plane) {
       const aircraft = loadAircraftFromUrl(leg.plane);
       if (aircraft?.deviationTable && aircraft.deviationTable.length >= 2) {
         compassCourse = calculateCompassCourse(results.compassHeading, aircraft.deviationTable);
+        if (compassCourse !== null) {
+          compassDeviation = calculateDeviation(results.compassHeading, compassCourse);
+        }
       }
     }
 
@@ -101,6 +106,7 @@ export function calculateLegResults(leg: FlightPlanLeg): LegCalculatedResults | 
     return {
       groundSpeed: results.groundSpeed,
       compassCourse,
+      compassDeviation,
       legDuration,
       climbTime,
       cruiseTime,
@@ -138,6 +144,7 @@ export function calculateLegWaypoints(
       departureTime: leg.depTime,
       elapsedMinutes: leg.elapsedMin,
       previousFuelUsed: leg.prevFuel,
+      elapsedDistance: leg.elapsedDist, // Add elapsed distance from previous legs
     };
 
     // Get climb phase from leg results

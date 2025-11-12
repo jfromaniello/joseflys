@@ -127,7 +127,7 @@ export interface Waypoint {
 export interface WaypointResult {
   /** Name of the waypoint */
   name: string;
-  /** Distance from start of leg in nautical miles (accumulated) */
+  /** Total distance from departure in nautical miles (includes elapsedDistance if provided) */
   distance: number;
   /** Distance since last waypoint in nautical miles (segment/partial) */
   distanceSinceLast: number;

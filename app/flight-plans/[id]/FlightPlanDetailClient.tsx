@@ -26,6 +26,7 @@ import { FuelUnit, getFuelResultUnit } from "@/lib/fuelConversion";
 import { generateShareUrl } from "@/lib/flightPlanSharing";
 import { Tooltip } from "@/app/components/Tooltip";
 import { WaypointsCompact } from "@/app/course/components/WaypointsCompact";
+import { DownloadPdfButton } from "@/app/components/DownloadPdfButton";
 import {
   ArrowLeftIcon,
   TrashIcon,
@@ -269,6 +270,12 @@ export function FlightPlanDetailClient({
                 </h2>
               </div>
               <div className="flex gap-2">
+                <DownloadPdfButton
+                  flightPlan={flightPlan}
+                  variant="secondary"
+                  size="md"
+                  showText={false}
+                />
                 <button
                   onClick={handleShare}
                   className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 cursor-pointer"
@@ -659,7 +666,7 @@ export function FlightPlanDetailClient({
                                   </div>
                                 )}
                                 <div className="flex justify-between items-center">
-                                  <span className="text-sm font-semibold" style={{ color: "oklch(0.75 0.1 160)" }}>Total to Here</span>
+                                  <span className="text-sm font-semibold" style={{ color: "oklch(0.75 0.1 160)" }}>Total Fuel</span>
                                   <span className="text-lg font-bold" style={{ color: "oklch(0.9 0.18 160)" }}>
                                     {formatFuel(result.totalFuel, leg.fuelUnit)}
                                   </span>

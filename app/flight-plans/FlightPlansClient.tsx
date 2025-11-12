@@ -5,6 +5,7 @@ import Link from "next/link";
 import { PageLayout } from "../components/PageLayout";
 import { Footer } from "../components/Footer";
 import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
+import { DownloadPdfButton } from "../components/DownloadPdfButton";
 import {
   loadFlightPlans,
   deleteFlightPlan,
@@ -155,6 +156,12 @@ export function FlightPlansClient() {
 
                     {/* Actions */}
                     <div className="flex gap-2">
+                      <DownloadPdfButton
+                        flightPlan={plan}
+                        variant="secondary"
+                        size="sm"
+                        showText={false}
+                      />
                       <Link
                         href={`/flight-plans/${plan.id}`}
                         className="p-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-lg transition-colors"
