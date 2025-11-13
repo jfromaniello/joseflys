@@ -1173,3 +1173,256 @@ Search for any of these in the files listed above to see complete implementation
 11. **Test thoroughly** using the checklist above
 
 **Remember:** Every step is required for the parameter to work correctly across all features!
+
+---
+
+## Test File Location
+
+### IMPORTANT: Tests Must Be in `__tests__/` Directory
+
+All test files MUST be placed in the `__tests__/` directory at the root of the project, NOT in arbitrary locations like `lib/` or next to source files.
+
+**Project Structure:**
+```
+joseflys/
+├── __tests__/           ✅ Correct - All tests go here
+│   ├── courseCalculations.test.ts
+│   ├── waypoints.test.ts
+│   ├── aircraftStorage.test.ts
+│   ├── distanceCalculations.test.ts
+│   └── segmentCalculations.test.ts
+├── lib/
+│   ├── courseCalculations.ts
+│   ├── segmentCalculations.ts
+│   └── ❌ NO TEST FILES HERE
+└── app/
+    └── ❌ NO TEST FILES HERE
+```
+
+**Testing Framework:**
+- Uses **Vitest** for running tests
+- Tests use `describe`, `it`, `expect` from `vitest`
+- Run tests with: `npm test`
+- Run specific test: `npm test -- __tests__/myfile.test.ts`
+- Watch mode: `npm test:watch`
+
+**Example Test Structure:**
+```typescript
+import { describe, it, expect } from "vitest";
+import { myFunction } from "../lib/myModule";
+
+describe("myModule", () => {
+  describe("myFunction", () => {
+    it("should do something correctly", () => {
+      const result = myFunction(input);
+      expect(result).toBe(expectedValue);
+    });
+
+    it("should handle edge cases", () => {
+      const result = myFunction(edgeCase);
+      expect(result).toBeCloseTo(expectedValue, 2);
+    });
+  });
+});
+```
+
+**Console Logging in Tests:**
+- Use `console.log()` in tests to show intermediate results
+- Vitest captures and displays console output with test results
+- Useful for debugging calculations and showing verification data
+
+---
+
+## Geodesic vs Rhumb Line Calculations
+
+### Understanding the Two Navigation Methods
+
+This project uses **both** geodesic (great circle) and rhumb line (loxodrome) calculations for different purposes, particularly in the LNAV segments calculator.
+
+### Geodesic (Great Circle) - Shortest Path
+
+**Purpose:** Calculate the shortest distance between two points on Earth.
+
+**Library:** GeographicLib's `Geodesic.WGS84`
+
+**Usage:**
+```typescript
+import { Geodesic } from "geographiclib-geodesic";
+
+// Calculate great circle distance and bearings
+const result = Geodesic.WGS84.Inverse(lat1, lon1, lat2, lon2);
+const distanceMeters = result.s12 ?? 0;
+const initialBearing = result.azi1 ?? 0;
+const finalBearing = result.azi2 ?? 0;
+
+// Convert to nautical miles
+const distanceNM = distanceMeters / 1852;
+```
+
+**Properties:**
+- **Shortest possible path** on Earth's ellipsoid (WGS-84)
+- Bearing **changes continuously** during the flight
+- Used by aircraft for long-distance navigation planning
+- More fuel efficient than rhumb line for long distances
+
+### Rhumb Line (Loxodrome) - Constant Heading
+
+**Purpose:** Calculate distance along a path of constant bearing.
+
+**Library:** Turf.js `@turf/rhumb-distance` with WGS-84 correction
+
+**Usage:**
+```typescript
+import rhumbDistance from "@turf/rhumb-distance";
+import { point } from "@turf/helpers";
+
+// Calculate rhumb line distance
+const from = point([lon1, lat1]);
+const to = point([lon2, lat2]);
+const distanceKm = rhumbDistance(from, to);
+
+// Apply WGS-84 correction factor for accuracy
+const avgLat = (lat1 + lat2) / 2;
+const scaleFactor = getWGS84ScaleFactor(avgLat);
+const distanceNM = distanceKm * scaleFactor * 0.539957;
+```
+
+**Properties:**
+- **Constant bearing** throughout the flight (easier to navigate)
+- Generally **longer** than great circle (except along meridians/equator)
+- Simpler to fly manually (no bearing changes)
+- Used by LNAV systems between waypoints
+
+### Why We Use Both
+
+**In LNAV Segments Calculator (`/segments`):**
+
+1. **Plan the route** using **geodesic** (shortest path)
+2. **Divide into waypoints** along the great circle
+3. **Fly between waypoints** using **rhumb lines** (constant heading)
+4. **Calculate penalty** = Total rhumb distance - Great circle distance
+
+```typescript
+// 1. Calculate great circle (shortest path)
+const inverse = Geodesic.WGS84.Inverse(fromLat, fromLon, toLat, toLon);
+const orthodromicDistance = (inverse.s12 ?? 0) / 1852;
+
+// 2. Create geodesic line and place waypoints
+const line = Geodesic.WGS84.InverseLine(fromLat, fromLon, toLat, toLon);
+const waypoint = line.Position(targetDistance);
+
+// 3. Calculate rhumb distance between waypoints
+const segmentDistance = calculateRhumbDistance(
+  currentLat, currentLon,
+  nextLat, nextLon
+);
+
+// 4. Sum all rhumb segments
+const totalDistance = sum of all rhumb segments;
+
+// 5. Calculate penalty (always positive!)
+const penalty = totalDistance - orthodromicDistance;
+```
+
+### WGS-84 Ellipsoid Correction
+
+**Problem:** Turf.js uses a spherical Earth model (radius 6,371,009m), but GeographicLib uses the WGS-84 ellipsoid (varying radius by latitude).
+
+**Solution:** Apply latitude-dependent scale factor to Turf's rhumb distances:
+
+```typescript
+function getWGS84ScaleFactor(latitude: number): number {
+  // WGS-84 parameters
+  const a = 6378137.0; // semi-major axis
+  const f = 1 / 298.257223563; // flattening
+  const e2 = 2 * f - f * f;
+
+  const phi = (latitude * Math.PI) / 180;
+  const sinPhi = Math.sin(phi);
+  const denominator = 1 - e2 * sinPhi * sinPhi;
+
+  // Radius of curvature
+  const N = a / Math.sqrt(denominator);
+  const M = (a * (1 - e2)) / Math.pow(denominator, 1.5);
+  const R_wgs84 = Math.sqrt(N * M);
+
+  // Turf's sphere radius
+  const R_turf = 6371008.8;
+
+  return R_wgs84 / R_turf; // ~1.0037 at mid-latitudes
+}
+```
+
+**Why This Matters:**
+- At latitude 38° (e.g., NY-Tokyo route), WGS-84 radius is 0.366% larger than sphere
+- Without correction, rhumb distances would be systematically too short
+- This caused negative penalties (physically impossible!)
+- With correction, penalties are correctly positive
+
+### When to Use Each
+
+**Use Geodesic (`Geodesic.WGS84.Inverse`) when:**
+- Calculating shortest distance between two points
+- Planning optimal routes for fuel efficiency
+- Showing "as the crow flies" distance
+- Examples: `/distance` calculator, orthodromic distance reference
+
+**Use Rhumb Line (`calculateRhumbDistance`) when:**
+- Calculating actual flown distance at constant heading
+- Simulating LNAV segment navigation
+- Measuring distance along a specific course
+- Examples: `/segments` calculator, segment distances
+
+**Use Both when:**
+- Comparing routing methods (orthodromic vs loxodromic)
+- Calculating LNAV penalties (extra distance from approximation)
+- Showing how FMS systems work
+
+### Why Not Use GeographicLib for Rhumb?
+
+GeographicLib has excellent rhumb line support in C++ (`Rhumb`, `RhumbLine`, `RhumbSolve`), but:
+- **JavaScript port lacks rhumb**: Only geodesic functions are ported to JS
+- **WebAssembly option exists**: `opensphere-asm` package (last updated 1+ years ago)
+- **Current solution works well**: Turf.js + WGS-84 correction is accurate and maintained
+
+**Decision:** Keep using Turf.js with WGS-84 correction factor. It's a good approximation (< 0.01% error after correction), well-tested, and actively maintained.
+
+### Key Differences Summary
+
+| Property | Geodesic (Great Circle) | Rhumb Line (Loxodrome) |
+|----------|-------------------------|------------------------|
+| **Path Type** | Shortest distance | Constant bearing |
+| **Bearing** | Changes continuously | Constant |
+| **Distance** | Shorter (reference) | Longer (penalty) |
+| **Library** | GeographicLib | Turf.js + WGS-84 correction |
+| **Earth Model** | WGS-84 ellipsoid | Sphere → corrected to WGS-84 |
+| **Use Case** | Route planning | Actual flying |
+| **Function** | `Geodesic.WGS84.Inverse()` | `calculateRhumbDistance()` |
+
+### Example: NY to Tokyo
+
+```typescript
+const nyLat = 40.7127281, nyLon = -74.0060152;
+const tokyoLat = 35.6768601, tokyoLon = 139.7638947;
+
+// Great circle (shortest path)
+const gc = Geodesic.WGS84.Inverse(nyLat, nyLon, tokyoLat, tokyoLon);
+console.log(`Great Circle: ${(gc.s12 / 1852).toFixed(1)} NM`);
+// Output: 5870.0 NM
+
+// Pure rhumb line (constant heading)
+const rhumb = calculateRhumbDistance(nyLat, nyLon, tokyoLat, tokyoLon);
+console.log(`Rhumb Line: ${rhumb.toFixed(1)} NM`);
+// Output: 6901.8 NM
+
+// Penalty for flying constant heading
+console.log(`Penalty: ${(rhumb - gc.s12/1852).toFixed(1)} NM`);
+// Output: 1031.8 NM (17.6% longer!)
+```
+
+**With 35 segments (LNAV approximation):**
+- Segmented route: 5872.7 NM
+- Great circle: 5870.0 NM
+- Penalty: 2.7 NM (0.045% - much better!)
+
+More segments = closer to great circle = lower penalty = better approximation.

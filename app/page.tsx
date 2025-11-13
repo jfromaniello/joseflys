@@ -462,6 +462,58 @@ export default function Home() {
               </svg>
             </div>
           </Link>
+
+          {/* LNAV Segments Calculator Card */}
+          <Link
+            href="/segments"
+            className="group block p-8 rounded-2xl bg-slate-800/50 backdrop-blur-sm border-2 border-gray-700 hover:border-sky-500/50 transition-all hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <div className="flex items-start gap-4 mb-4">
+              <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-linear-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30 group-hover:border-sky-500/50 transition-colors">
+                <svg
+                  className="w-8 h-8"
+                  fill="none"
+                  stroke="oklch(0.65 0.15 230)"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                  />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h2 className="text-2xl font-bold mb-2" style={{ color: "white" }}>
+                  LNAV Segments
+                </h2>
+                <p
+                  className="text-sm leading-relaxed"
+                  style={{ color: "oklch(0.65 0.02 240)" }}
+                >
+                  Divide great circle routes into constant-heading segments. See how
+                  FMS systems approximate orthodromic paths with loxodromic navigation
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-sm font-medium" style={{ color: "oklch(0.65 0.15 230)" }}>
+              Open Calculator
+              <svg
+                className="w-4 h-4 group-hover:translate-x-1 transition-transform"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M14 5l7 7m0 0l-7 7m7-7H3"
+                />
+              </svg>
+            </div>
+          </Link>
         </div>
 
         {/* Info Box */}
