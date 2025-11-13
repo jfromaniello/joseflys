@@ -157,37 +157,37 @@ export function SegmentsCalculatorClient({
   const getNavigationEra = (count: number): { era: string; description: string; color: string } => {
     if (count === 1) {
       return {
-        era: "Age of Explorers",
+        era: "⛵ Age of Explorers",
         description: "Single direct heading, like Columbus crossing the Atlantic",
         color: "text-red-400"
       };
     } else if (count <= 3) {
       return {
-        era: "19th Century Sailing Ship",
+        era: "🚢 19th Century Sailing Ship",
         description: "Dead reckoning navigation with very few course changes",
         color: "text-orange-400"
       };
     } else if (count <= 10) {
       return {
-        era: "Pan Am 1940s",
+        era: "✈️ Pan Am 1940s",
         description: "Stage flights with celestial and radio navigation",
         color: "text-yellow-400"
       };
     } else if (count <= 30) {
       return {
-        era: "Classic Jet IFR (VOR/NDB)",
+        era: "🛩️ Classic Jet IFR (VOR/NDB)",
         description: "Ground-based radio navigation aids",
         color: "text-lime-400"
       };
     } else if (count <= 60) {
       return {
-        era: "Modern LNAV / FMS",
+        era: "🛫 Modern LNAV / FMS",
         description: "Flight management system with GPS",
         color: "text-cyan-400"
       };
     } else {
       return {
-        era: "Ultra-Precise LNAV",
+        era: "🚀 Ultra-Precise LNAV",
         description: "Near-perfect great circle approximation",
         color: "text-blue-400"
       };
@@ -734,7 +734,7 @@ export function SegmentsCalculatorClient({
                 <input
                   type="range"
                   min="1"
-                  max="150"
+                  max="50"
                   step="1"
                   value={segmentCount}
                   onChange={(e) => setSegmentCount(e.target.value)}
@@ -743,12 +743,12 @@ export function SegmentsCalculatorClient({
                 <input
                   type="number"
                   min="1"
-                  max="150"
+                  max="50"
                   step="1"
                   value={segmentCount}
                   onChange={(e) => {
                     const val = parseInt(e.target.value);
-                    if (!isNaN(val) && val >= 1 && val <= 150) {
+                    if (!isNaN(val) && val >= 1 && val <= 50) {
                       setSegmentCount(e.target.value);
                     }
                   }}
@@ -762,7 +762,7 @@ export function SegmentsCalculatorClient({
                   {/* Historical era */}
                   <div className="bg-slate-700/50 rounded-lg p-3 border-l-4 border-blue-500">
                     <div className={`text-sm font-bold ${getNavigationEra(parseInt(segmentCount)).color}`}>
-                      🛫 {getNavigationEra(parseInt(segmentCount)).era}
+                      {getNavigationEra(parseInt(segmentCount)).era}
                     </div>
                     <div className="text-xs text-gray-300 mt-1">
                       {getNavigationEra(parseInt(segmentCount)).description}
@@ -800,36 +800,38 @@ export function SegmentsCalculatorClient({
           {result && result.segments.length > 0 && (
             <div className="mb-8 bg-slate-800/50 border-2 border-gray-700 rounded-xl p-6">
               {/* Summary */}
-              <div className="mb-4 grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+              <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                 <div>
-                  <div className="text-gray-400">Segmented Route</div>
-                  <div className="text-lg font-semibold text-blue-400">
-                    {formatSegmentDistance(result.totalDistance)} NM
-                  </div>
-                  <div className="text-xs text-gray-400">
-                    {result.segmentCount} segments × {result.segments.length > 0 && `~${formatSegmentDistance(result.segments[0].distance)} NM`}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-gray-400">Great Circle</div>
+                  <div className="text-gray-400">Great Circle (Ideal)</div>
                   <div className="text-lg font-semibold text-green-400">
                     {formatSegmentDistance(result.orthodromicDistance)} NM
                   </div>
                   <div className="text-xs text-gray-400">
-                    Shortest path
+                    Shortest possible path
                   </div>
                 </div>
                 <div>
-                  <div className="text-gray-400">Distance Penalty</div>
+                  <div className="text-gray-400">Segmented Route ({result.segmentCount} seg)</div>
+                  <div className="text-lg font-semibold text-blue-400">
+                    {formatSegmentDistance(result.totalDistance)} NM
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    {result.segments.length > 0 && `~${formatSegmentDistance(result.segments[0].distance)} NM per segment`}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-gray-400">Difference from Ideal</div>
                   <div className={`text-lg font-semibold ${
                     ((result.totalDistance - result.orthodromicDistance) / result.orthodromicDistance * 100) > 1
                       ? 'text-red-400'
-                      : 'text-amber-400'
+                      : ((result.totalDistance - result.orthodromicDistance) / result.orthodromicDistance * 100) > 0.1
+                      ? 'text-amber-400'
+                      : 'text-green-400'
                   }`}>
                     +{formatSegmentDistance(result.totalDistance - result.orthodromicDistance)} NM
                   </div>
                   <div className="text-xs text-gray-400">
-                    +{((result.totalDistance - result.orthodromicDistance) / result.orthodromicDistance * 100).toFixed(2)}%
+                    +{((result.totalDistance - result.orthodromicDistance) / result.orthodromicDistance * 100).toFixed(3)}% longer
                   </div>
                 </div>
               </div>
@@ -993,6 +995,56 @@ export function SegmentsCalculatorClient({
                   totalDistance={result.totalDistance}
                 />
               )}
+
+              {/* Segment Slider Below Map */}
+              <div className="mt-4 bg-slate-800/50 border-2 border-gray-700 rounded-xl p-4">
+                <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm font-semibold text-white">
+                        Segments: {segmentCount}
+                      </label>
+                      <div className="text-xs text-gray-300">
+                        <span className={getNavigationEra(parseInt(segmentCount)).color}>
+                          {getNavigationEra(parseInt(segmentCount)).era}
+                        </span>
+                      </div>
+                    </div>
+                    <input
+                      type="range"
+                      min="1"
+                      max="50"
+                      step="1"
+                      value={segmentCount}
+                      onChange={(e) => setSegmentCount(e.target.value)}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-xs text-gray-400 mt-1">
+                      <span>1</span>
+                      <span className="text-center">
+                        +{formatSegmentDistance(result.totalDistance - result.orthodromicDistance)} NM
+                        {" "}
+                        ({((result.totalDistance - result.orthodromicDistance) / result.orthodromicDistance * 100).toFixed(2)}%)
+                      </span>
+                      <span>50</span>
+                    </div>
+                  </div>
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    step="1"
+                    value={segmentCount}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value);
+                      if (!isNaN(val) && val >= 1 && val <= 50) {
+                        setSegmentCount(e.target.value);
+                      }
+                    }}
+                    className="w-16 px-2 py-2 bg-slate-700 text-white rounded-lg border-2 border-gray-600 focus:border-blue-500 focus:outline-none text-center text-sm font-semibold"
+                  />
+                </div>
+              </div>
             </div>
           )}
 

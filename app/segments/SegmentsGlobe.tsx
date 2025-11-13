@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { NavigationSegment } from "@/lib/segmentCalculations";
 import { Geodesic } from "geographiclib-geodesic";
 
@@ -29,7 +29,12 @@ export function SegmentsGlobe({
 }: SegmentsGlobeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<any>(null);
+  const cesiumRef = useRef<any>(null);
+  const isInitialLoadRef = useRef<boolean>(true);
+  const lastRouteRef = useRef<string>("");
+  const [viewerReady, setViewerReady] = useState(false);
 
+  // Effect 1: Create viewer once (only when container is ready)
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -37,6 +42,9 @@ export function SegmentsGlobe({
     import("cesium").then((Cesium) => {
       // Check again after import completes (prevents double creation in Strict Mode)
       if (!containerRef.current || viewerRef.current) return;
+
+      // Store Cesium module for later use
+      cesiumRef.current = Cesium;
 
       // Configure Cesium asset paths
       (window as any).CESIUM_BASE_URL = "/cesium";
@@ -89,170 +97,10 @@ export function SegmentsGlobe({
 
         // Force resize after applying styles
         viewer.resize();
+
+        // Signal that viewer is ready for entities
+        setViewerReady(true);
       }, 0);
-
-      // Generate great circle points for visualization
-      const greatCirclePoints = generateGreatCirclePoints(
-        fromLat,
-        fromLon,
-        toLat,
-        toLon,
-        200,
-        Cesium
-      );
-
-      // Add great circle path (dashed green line)
-      viewer.entities.add({
-        name: "Great Circle Route",
-        polyline: {
-          positions: greatCirclePoints,
-          width: 3,
-          material: new Cesium.PolylineDashMaterialProperty({
-            color: Cesium.Color.fromCssColorString("#10b981").withAlpha(0.8),
-            dashLength: 16.0,
-          }),
-          clampToGround: false,
-          arcType: Cesium.ArcType.GEODESIC,
-        },
-        description: `
-          <div style="font-family: system-ui; padding: 8px;">
-            <strong>Great Circle Route</strong><br/>
-            Distance: ${orthodromicDistance.toFixed(1)} NM<br/>
-            (Shortest possible path)
-          </div>
-        `,
-      });
-
-      // Add rhumb line segments with color gradient
-      segments.forEach((segment, index) => {
-        const color = getSegmentColor(index, segments.length, Cesium);
-
-        // Rhumb line segment
-        viewer.entities.add({
-          name: `Segment ${segment.segmentNumber}`,
-          polyline: {
-            positions: Cesium.Cartesian3.fromDegreesArray([
-              segment.startLon,
-              segment.startLat,
-              segment.endLon,
-              segment.endLat,
-            ]),
-            width: 4,
-            material: color,
-            clampToGround: false,
-            arcType: Cesium.ArcType.RHUMB,
-          },
-          description: `
-            <div style="font-family: system-ui; padding: 8px;">
-              <strong>Segment ${segment.segmentNumber}</strong><br/>
-              Heading: ${formatHeading(segment.heading)}<br/>
-              Distance: ${segment.distance.toFixed(1)} NM<br/>
-              Cumulative: ${segment.cumulativeDistance.toFixed(1)} NM
-            </div>
-          `,
-        });
-
-        // Add waypoint markers (except for the last segment)
-        if (index < segments.length - 1) {
-          viewer.entities.add({
-            name: `Waypoint ${index + 1}`,
-            position: Cesium.Cartesian3.fromDegrees(
-              segment.endLon,
-              segment.endLat,
-              1000 // Slightly elevated
-            ),
-            point: {
-              pixelSize: 8,
-              color: Cesium.Color.fromCssColorString("#06b6d4"),
-              outlineColor: Cesium.Color.WHITE,
-              outlineWidth: 2,
-            },
-            description: `
-              <div style="font-family: system-ui; padding: 8px;">
-                <strong>Waypoint ${index + 1}</strong><br/>
-                ${segment.endLat.toFixed(4)}°, ${segment.endLon.toFixed(4)}°
-              </div>
-            `,
-          });
-        }
-      });
-
-      // Add origin marker (green)
-      viewer.entities.add({
-        name: fromName,
-        position: Cesium.Cartesian3.fromDegrees(fromLon, fromLat, 5000),
-        point: {
-          pixelSize: 12,
-          color: Cesium.Color.fromCssColorString("#10b981"),
-          outlineColor: Cesium.Color.WHITE,
-          outlineWidth: 2,
-        },
-        label: {
-          text: "Origin",
-          font: "14px sans-serif",
-          fillColor: Cesium.Color.WHITE,
-          outlineColor: Cesium.Color.BLACK,
-          outlineWidth: 2,
-          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-          pixelOffset: new Cesium.Cartesian2(0, -15),
-        },
-        description: `
-          <div style="font-family: system-ui; padding: 8px;">
-            <strong>Origin</strong><br/>
-            ${fromName}<br/>
-            ${fromLat.toFixed(4)}°, ${fromLon.toFixed(4)}°
-          </div>
-        `,
-      });
-
-      // Add destination marker (red)
-      viewer.entities.add({
-        name: toName,
-        position: Cesium.Cartesian3.fromDegrees(toLon, toLat, 5000),
-        point: {
-          pixelSize: 12,
-          color: Cesium.Color.fromCssColorString("#ef4444"),
-          outlineColor: Cesium.Color.WHITE,
-          outlineWidth: 2,
-        },
-        label: {
-          text: "Destination",
-          font: "14px sans-serif",
-          fillColor: Cesium.Color.WHITE,
-          outlineColor: Cesium.Color.BLACK,
-          outlineWidth: 2,
-          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-          pixelOffset: new Cesium.Cartesian2(0, -15),
-        },
-        description: `
-          <div style="font-family: system-ui; padding: 8px;">
-            <strong>Destination</strong><br/>
-            ${toName}<br/>
-            ${toLat.toFixed(4)}°, ${toLon.toFixed(4)}°
-          </div>
-        `,
-      });
-
-      // Calculate the center point and distance for camera positioning
-      const centerLat = (fromLat + toLat) / 2;
-      const centerLon = (fromLon + toLon) / 2;
-
-      // Use the great circle distance to determine camera altitude
-      // Scale factor to ensure the entire route is visible
-      const distanceMeters = orthodromicDistance * 1852; // Convert NM to meters
-      const cameraAltitude = Math.max(distanceMeters * 1.2, 5000000); // Minimum 5000km
-
-      // Fly to view the entire route
-      viewer.camera.flyTo({
-        destination: Cesium.Cartesian3.fromDegrees(
-          centerLon,
-          centerLat,
-          cameraAltitude
-        ),
-        duration: 2,
-      });
     });
 
     // Cleanup
@@ -266,7 +114,188 @@ export function SegmentsGlobe({
         viewerRef.current = null;
       }
     };
+  }, []); // Only run once on mount
+
+  // Effect 2: Update route data (when segments or locations change)
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    const Cesium = cesiumRef.current;
+
+    // Wait for viewer to be ready
+    if (!viewer || !Cesium || !viewerReady) return;
+
+    // Check if the route changed (origin/destination moved)
+    const currentRoute = `${fromLat},${fromLon},${toLat},${toLon}`;
+    const routeChanged = lastRouteRef.current !== currentRoute;
+    lastRouteRef.current = currentRoute;
+
+    // Clear existing entities
+    viewer.entities.removeAll();
+
+    // Generate great circle points for visualization
+    const greatCirclePoints = generateGreatCirclePoints(
+      fromLat,
+      fromLon,
+      toLat,
+      toLon,
+      200,
+      Cesium
+    );
+
+    // Add great circle path (dashed green line)
+    viewer.entities.add({
+      name: "Great Circle Route",
+      polyline: {
+        positions: greatCirclePoints,
+        width: 3,
+        material: new Cesium.PolylineDashMaterialProperty({
+          color: Cesium.Color.fromCssColorString("#10b981").withAlpha(0.8),
+          dashLength: 16.0,
+        }),
+        clampToGround: false,
+        arcType: Cesium.ArcType.GEODESIC,
+      },
+      description: `
+        <div style="font-family: system-ui; padding: 8px;">
+          <strong>Great Circle Route</strong><br/>
+          Distance: ${orthodromicDistance.toFixed(1)} NM<br/>
+          (Shortest possible path)
+        </div>
+      `,
+    });
+
+    // Add rhumb line segments with color gradient
+    segments.forEach((segment, index) => {
+      const color = getSegmentColor(index, segments.length, Cesium);
+
+      // Rhumb line segment
+      viewer.entities.add({
+        name: `Segment ${segment.segmentNumber}`,
+        polyline: {
+          positions: Cesium.Cartesian3.fromDegreesArray([
+            segment.startLon,
+            segment.startLat,
+            segment.endLon,
+            segment.endLat,
+          ]),
+          width: 4,
+          material: color,
+          clampToGround: false,
+          arcType: Cesium.ArcType.RHUMB,
+        },
+        description: `
+          <div style="font-family: system-ui; padding: 8px;">
+            <strong>Segment ${segment.segmentNumber}</strong><br/>
+            Heading: ${formatHeading(segment.heading)}<br/>
+            Distance: ${segment.distance.toFixed(1)} NM<br/>
+            Cumulative: ${segment.cumulativeDistance.toFixed(1)} NM
+          </div>
+        `,
+      });
+
+      // Add waypoint markers (except for the last segment)
+      if (index < segments.length - 1) {
+        viewer.entities.add({
+          name: `Waypoint ${index + 1}`,
+          position: Cesium.Cartesian3.fromDegrees(
+            segment.endLon,
+            segment.endLat,
+            1000 // Slightly elevated
+          ),
+          point: {
+            pixelSize: 8,
+            color: Cesium.Color.fromCssColorString("#06b6d4"),
+            outlineColor: Cesium.Color.WHITE,
+            outlineWidth: 2,
+          },
+          description: `
+            <div style="font-family: system-ui; padding: 8px;">
+              <strong>Waypoint ${index + 1}</strong><br/>
+              ${segment.endLat.toFixed(4)}°, ${segment.endLon.toFixed(4)}°
+            </div>
+          `,
+        });
+      }
+    });
+
+    // Add origin marker (green)
+    viewer.entities.add({
+      name: fromName,
+      position: Cesium.Cartesian3.fromDegrees(fromLon, fromLat, 5000),
+      point: {
+        pixelSize: 12,
+        color: Cesium.Color.fromCssColorString("#10b981"),
+        outlineColor: Cesium.Color.WHITE,
+        outlineWidth: 2,
+      },
+      label: {
+        text: "Origin",
+        font: "14px sans-serif",
+        fillColor: Cesium.Color.WHITE,
+        outlineColor: Cesium.Color.BLACK,
+        outlineWidth: 2,
+        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+        verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+        pixelOffset: new Cesium.Cartesian2(0, -15),
+      },
+      description: `
+        <div style="font-family: system-ui; padding: 8px;">
+          <strong>Origin</strong><br/>
+          ${fromName}<br/>
+          ${fromLat.toFixed(4)}°, ${fromLon.toFixed(4)}°
+        </div>
+      `,
+    });
+
+    // Add destination marker (red)
+    viewer.entities.add({
+      name: toName,
+      position: Cesium.Cartesian3.fromDegrees(toLon, toLat, 5000),
+      point: {
+        pixelSize: 12,
+        color: Cesium.Color.fromCssColorString("#ef4444"),
+        outlineColor: Cesium.Color.WHITE,
+        outlineWidth: 2,
+      },
+      label: {
+        text: "Destination",
+        font: "14px sans-serif",
+        fillColor: Cesium.Color.WHITE,
+        outlineColor: Cesium.Color.BLACK,
+        outlineWidth: 2,
+        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+        verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+        pixelOffset: new Cesium.Cartesian2(0, -15),
+      },
+      description: `
+        <div style="font-family: system-ui; padding: 8px;">
+          <strong>Destination</strong><br/>
+          ${toName}<br/>
+          ${toLat.toFixed(4)}°, ${toLon.toFixed(4)}°
+        </div>
+      `,
+    });
+
+    // Only fly to route on initial load or when route changes (not when segment count changes)
+    if (isInitialLoadRef.current || routeChanged) {
+      isInitialLoadRef.current = false;
+
+      const centerLat = (fromLat + toLat) / 2;
+      const centerLon = (fromLon + toLon) / 2;
+      const distanceMeters = orthodromicDistance * 1852;
+      const cameraAltitude = Math.max(distanceMeters * 1.2, 5000000);
+
+      viewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(
+          centerLon,
+          centerLat,
+          cameraAltitude
+        ),
+        duration: 2,
+      });
+    }
   }, [
+    viewerReady,
     fromLat,
     fromLon,
     toLat,
