@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Tooltip } from "../components/Tooltip";
 import { PageLayout } from "../components/PageLayout";
 import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
@@ -17,12 +18,21 @@ import {
 import { validateCoordinates } from "@/lib/distanceCalculations";
 import { formatCourse } from "@/lib/formatters";
 
-// Dynamically import map component (Leaflet uses window)
+// Dynamically import map components (both use browser-only APIs)
 const SegmentsMap = dynamic(() => import("./SegmentsMap").then(mod => ({ default: mod.SegmentsMap })), {
   ssr: false,
   loading: () => (
     <div className="w-full h-[600px] rounded-xl border-2 border-gray-700 bg-slate-800/50 flex items-center justify-center">
-      <div className="text-gray-400">Loading map...</div>
+      <div className="text-gray-400">Loading 2D map...</div>
+    </div>
+  ),
+});
+
+const SegmentsGlobe = dynamic(() => import("./SegmentsGlobe").then(mod => ({ default: mod.SegmentsGlobe })), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[600px] rounded-xl border-2 border-gray-700 bg-slate-800/50 flex items-center justify-center">
+      <div className="text-gray-400">Loading 3D globe...</div>
     </div>
   ),
 });
@@ -68,6 +78,7 @@ interface SegmentsCalculatorClientProps {
   initialToLon?: string;
   initialToName?: string;
   initialSegmentCount?: string;
+  initialViewMode?: string;
 }
 
 export function SegmentsCalculatorClient({
@@ -78,6 +89,7 @@ export function SegmentsCalculatorClient({
   initialToLon,
   initialToName,
   initialSegmentCount,
+  initialViewMode,
 }: SegmentsCalculatorClientProps) {
   // Input mode toggle
   const [inputMode, setInputMode] = useState<InputMode>("search");
@@ -137,7 +149,9 @@ export function SegmentsCalculatorClient({
   const [segmentsExpanded, setSegmentsExpanded] = useState(false);
 
   // Map view mode
-  const [viewMode, setViewMode] = useState<"2d" | "3d">("2d");
+  const [viewMode, setViewMode] = useState<"2d" | "3d">(
+    (initialViewMode === "3d" ? "3d" : "2d")
+  );
 
   // Get navigation era description based on segment count
   const getNavigationEra = (count: number): { era: string; description: string; color: string } => {
@@ -179,6 +193,28 @@ export function SegmentsCalculatorClient({
       };
     }
   };
+
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Update URL when viewMode changes
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    const currentView = params.get("view");
+
+    // Only update if the URL doesn't match the current viewMode
+    const shouldBeInUrl = viewMode === "3d";
+    const isInUrl = currentView === "3d";
+
+    if (shouldBeInUrl !== isInUrl) {
+      if (viewMode === "3d") {
+        params.set("view", "3d");
+      } else {
+        params.delete("view");
+      }
+      router.replace(`/segments?${params.toString()}`, { scroll: false });
+    }
+  }, [viewMode, router, searchParams]);
 
   // Debounced search for "from" location
   useEffect(() => {
@@ -894,18 +930,17 @@ export function SegmentsCalculatorClient({
                   </button>
                   <button
                     onClick={() => setViewMode("3d")}
-                    disabled={true}
-                    className="px-4 py-2 rounded-lg bg-slate-700 text-gray-500 cursor-not-allowed relative group"
+                    className={`px-4 py-2 rounded-lg cursor-pointer transition-colors ${
+                      viewMode === "3d"
+                        ? "bg-blue-600 text-white"
+                        : "bg-slate-700 text-gray-300 hover:bg-slate-600"
+                    }`}
                   >
                     <div className="flex items-center gap-2">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       3D Globe
-                      <span className="ml-1 text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded">Soon</span>
-                    </div>
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1 bg-slate-900 text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                      Coming soon with CesiumJS
                     </div>
                   </button>
                 </div>
@@ -946,15 +981,17 @@ export function SegmentsCalculatorClient({
                   totalDistance={result.totalDistance}
                 />
               ) : (
-                <div className="w-full h-[600px] rounded-xl border-2 border-gray-700 bg-slate-800/50 flex items-center justify-center">
-                  <div className="text-center text-gray-400">
-                    <svg className="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <p className="text-lg font-medium mb-2">3D Globe View</p>
-                    <p className="text-sm">Coming soon with CesiumJS</p>
-                  </div>
-                </div>
+                <SegmentsGlobe
+                  fromLat={fromLocation.lat}
+                  fromLon={fromLocation.lon}
+                  toLat={toLocation.lat}
+                  toLon={toLocation.lon}
+                  fromName={fromLocation.name}
+                  toName={toLocation.name}
+                  segments={result.segments}
+                  orthodromicDistance={result.orthodromicDistance}
+                  totalDistance={result.totalDistance}
+                />
               )}
             </div>
           )}

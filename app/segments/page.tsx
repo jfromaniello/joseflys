@@ -33,6 +33,9 @@ export default async function SegmentsPage({
   // Parse segment count (default 10 segments)
   const segmentCount = urlParams.get("seg") || "10";
 
+  // Parse view mode (2d or 3d)
+  const viewMode = urlParams.get("view") || undefined;
+
   return (
     <Suspense
       fallback={
@@ -49,6 +52,7 @@ export default async function SegmentsPage({
         initialToLon={toLon}
         initialToName={toName}
         initialSegmentCount={segmentCount}
+        initialViewMode={viewMode}
       />
     </Suspense>
   );

@@ -51,4 +51,7 @@ next-env.d.ts
 **/public/fallback-*.js
 **/public/fallback-*.js.map
 
+# Cesium build artifacts
+/public/cesium
+
 .claude/hooks
