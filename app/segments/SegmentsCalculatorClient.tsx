@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { Tooltip } from "../components/Tooltip";
 import { PageLayout } from "../components/PageLayout";
 import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
@@ -15,6 +16,16 @@ import {
 } from "@/lib/segmentCalculations";
 import { validateCoordinates } from "@/lib/distanceCalculations";
 import { formatCourse } from "@/lib/formatters";
+
+// Dynamically import map component (Leaflet uses window)
+const SegmentsMap = dynamic(() => import("./SegmentsMap").then(mod => ({ default: mod.SegmentsMap })), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[600px] rounded-xl border-2 border-gray-700 bg-slate-800/50 flex items-center justify-center">
+      <div className="text-gray-400">Loading map...</div>
+    </div>
+  ),
+});
 
 // Helper function to parse coordinate string (e.g., "-30.7505058,-62.8236677")
 function parseCoordinates(text: string): { lat: number; lon: number } | null {
@@ -124,6 +135,9 @@ export function SegmentsCalculatorClient({
   const [result, setResult] = useState<SegmentCalculationResult | null>(null);
   const [showCopied, setShowCopied] = useState(false);
   const [segmentsExpanded, setSegmentsExpanded] = useState(false);
+
+  // Map view mode
+  const [viewMode, setViewMode] = useState<"2d" | "3d">("2d");
 
   // Get navigation era description based on segment count
   const getNavigationEra = (count: number): { era: string; description: string; color: string } => {
@@ -853,6 +867,95 @@ export function SegmentsCalculatorClient({
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* Map Visualization */}
+          {result && fromLocation && toLocation && (
+            <div className="mb-8">
+              {/* Map View Toggle */}
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Route Visualization</h3>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setViewMode("2d")}
+                    className={`px-4 py-2 rounded-lg cursor-pointer transition-colors ${
+                      viewMode === "2d"
+                        ? "bg-blue-600 text-white"
+                        : "bg-slate-700 text-gray-300 hover:bg-slate-600"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                      </svg>
+                      2D Map
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setViewMode("3d")}
+                    disabled={true}
+                    className="px-4 py-2 rounded-lg bg-slate-700 text-gray-500 cursor-not-allowed relative group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      3D Globe
+                      <span className="ml-1 text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded">Soon</span>
+                    </div>
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1 bg-slate-900 text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                      Coming soon with CesiumJS
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Map Legend */}
+              <div className="mb-3 p-4 bg-slate-800/50 border border-gray-700 rounded-lg">
+                <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-0.5 bg-green-500" style={{ borderTop: "2px dashed" }}></div>
+                    <span className="text-gray-300">Great Circle Route (shortest path)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-0.5 bg-gradient-to-r from-cyan-500 to-purple-500"></div>
+                    <span className="text-gray-300">Rhumb Line Segments (constant heading)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-cyan-500 border-2 border-white"></div>
+                    <span className="text-gray-300">Waypoints</span>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-400 mt-2">
+                  Click on any segment or waypoint for details. The colored lines show how LNAV approximates the green great circle path.
+                </p>
+              </div>
+
+              {/* Map Component */}
+              {viewMode === "2d" ? (
+                <SegmentsMap
+                  fromLat={fromLocation.lat}
+                  fromLon={fromLocation.lon}
+                  toLat={toLocation.lat}
+                  toLon={toLocation.lon}
+                  fromName={fromLocation.name}
+                  toName={toLocation.name}
+                  segments={result.segments}
+                  orthodromicDistance={result.orthodromicDistance}
+                  totalDistance={result.totalDistance}
+                />
+              ) : (
+                <div className="w-full h-[600px] rounded-xl border-2 border-gray-700 bg-slate-800/50 flex items-center justify-center">
+                  <div className="text-center text-gray-400">
+                    <svg className="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-lg font-medium mb-2">3D Globe View</p>
+                    <p className="text-sm">Coming soon with CesiumJS</p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
