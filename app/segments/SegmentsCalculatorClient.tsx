@@ -861,9 +861,23 @@ export function SegmentsCalculatorClient({
                   <div className="flex gap-2">
                     <button
                       onClick={handleCopySegments}
-                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg cursor-pointer text-sm"
+                      className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg cursor-pointer border-2 border-gray-600 transition-colors whitespace-nowrap"
                     >
-                      {showCopied ? "Copied!" : "Copy All"}
+                      {showCopied ? (
+                        <>
+                          <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span>Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                          <span>Copy All</span>
+                        </>
+                      )}
                     </button>
                     <ShareButtonSimple
                       shareData={{
