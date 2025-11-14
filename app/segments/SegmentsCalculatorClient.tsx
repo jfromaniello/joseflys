@@ -444,15 +444,62 @@ export function SegmentsCalculatorClient({
     }
   };
 
-  // Copy segments to clipboard
-  const handleCopySegments = () => {
-    if (!result) return;
+  // Generate and download GPX file
+  const handleDownloadGPX = () => {
+    if (!result || !fromLocation || !toLocation) return;
 
-    const text = result.segments
-      .map((seg) => `${seg.segmentNumber}. ${formatSegmentDistance(seg.distance)} NM @ ${formatHeading(seg.heading)}`)
-      .join("\n");
+    // Helper function to escape city names for filename
+    const escapeForFilename = (name: string): string => {
+      return name
+        .split(",")[0] // Take only first part (city name)
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "-") // Replace non-alphanumeric with dashes
+        .replace(/-+/g, "-") // Replace multiple dashes with single dash
+        .replace(/^-|-$/g, ""); // Remove leading/trailing dashes
+    };
 
-    navigator.clipboard.writeText(text);
+    const fromName = escapeForFilename(fromLocation.name);
+    const toName = escapeForFilename(toLocation.name);
+    const filename = `${fromName}-${toName}-s${segmentCount}.gpx`;
+
+    // Build GPX XML
+    const waypoints = [
+      // Origin
+      `    <rtept lat="${fromLocation.lat.toFixed(6)}" lon="${fromLocation.lon.toFixed(6)}">
+      <name>${fromLocation.name.split(",")[0]}</name>
+    </rtept>`,
+      // Intermediate waypoints (use endLat/endLon from each segment except the last)
+      ...result.segments.slice(0, -1).map((seg, idx) =>
+        `    <rtept lat="${seg.endLat.toFixed(6)}" lon="${seg.endLon.toFixed(6)}">
+      <name>WPT${String(idx + 1).padStart(2, "0")}</name>
+    </rtept>`
+      ),
+      // Destination
+      `    <rtept lat="${toLocation.lat.toFixed(6)}" lon="${toLocation.lon.toFixed(6)}">
+      <name>${toLocation.name.split(",")[0]}</name>
+    </rtept>`
+    ];
+
+    const gpxContent = `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="joseflys.com" xmlns="http://www.topografix.com/GPX/1/1">
+  <rte>
+    <name>FPL ${fromLocation.name.split(",")[0]} to ${toLocation.name.split(",")[0]}</name>
+${waypoints.join("\n")}
+  </rte>
+</gpx>`;
+
+    // Download the file
+    const blob = new Blob([gpxContent], { type: "application/gpx+xml" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    // Show feedback
     setShowCopied(true);
     setTimeout(() => setShowCopied(false), 2000);
   };
@@ -860,7 +907,7 @@ export function SegmentsCalculatorClient({
                   </button>
                   <div className="flex gap-2">
                     <button
-                      onClick={handleCopySegments}
+                      onClick={handleDownloadGPX}
                       className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg cursor-pointer border-2 border-gray-600 transition-colors whitespace-nowrap"
                     >
                       {showCopied ? (
@@ -868,14 +915,14 @@ export function SegmentsCalculatorClient({
                           <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                           </svg>
-                          <span>Copied!</span>
+                          <span>Downloaded!</span>
                         </>
                       ) : (
                         <>
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                           </svg>
-                          <span>Copy All</span>
+                          <span>GPX</span>
                         </>
                       )}
                     </button>
