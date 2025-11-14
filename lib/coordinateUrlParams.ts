@@ -115,7 +115,7 @@ export interface ParsedMultipleLocationParams {
   fromLat?: string;
   fromLon?: string;
   fromName?: string;
-  toLocations: Array<{ lat: string; lon: string; name?: string }>;
+  toLocations: Array<{ lat: string; lon: string; name?: string; isFlyOver?: boolean }>;
 }
 
 /**
@@ -128,7 +128,7 @@ export function parseMultipleLocationParams(
   let fromLat: string | undefined;
   let fromLon: string | undefined;
   let fromName: string | undefined;
-  const toLocations: Array<{ lat: string; lon: string; name?: string }> = [];
+  const toLocations: Array<{ lat: string; lon: string; name?: string; isFlyOver?: boolean }> = [];
 
   const fromParam = searchParams.get("from");
   const scaleParam = searchParams.get("s");
@@ -171,7 +171,14 @@ export function parseMultipleLocationParams(
         if (coordParam) {
           const parsed = parseCompactCoordinate(coordParam, scaleFactor);
           if (parsed) {
-            toLocations.push(parsed);
+            // Check for fly-over flag: toFO[i]=1
+            const isFlyOver = searchParams.get(`toFO[${index}]`) === '1';
+            toLocations.push({
+              lat: parsed.lat,
+              lon: parsed.lon,
+              name: parsed.name,
+              isFlyOver
+            });
           }
         }
       });

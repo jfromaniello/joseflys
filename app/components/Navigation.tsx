@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-type Page = "home" | "tas" | "course" | "leg" | "conversions" | "planning" | "distance" | "isa" | "climb" | "my-planes";
+type Page = "home" | "tas" | "course" | "leg" | "conversions" | "planning" | "distance" | "isa" | "climb" | "local-chart" | "my-planes";
 
 interface NavigationProps {
   currentPage: Page;
@@ -185,6 +185,26 @@ const pages = [
           strokeLinecap="round"
           strokeLinejoin="round"
           d="M5 10l7-7m0 0l7 7m-7-7v18"
+        />
+      </svg>
+    ),
+  },
+  {
+    id: "local-chart" as const,
+    name: "Local Chart",
+    href: "/local-chart",
+    icon: (
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        strokeWidth={2}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
         />
       </svg>
     ),
