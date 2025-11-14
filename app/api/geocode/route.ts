@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
     nominatimUrl.searchParams.set('format', 'json');
     nominatimUrl.searchParams.set('limit', '5');
     nominatimUrl.searchParams.set('addressdetails', '1');
+    nominatimUrl.searchParams.set('accept-language', 'en');
 
     const response = await fetch(nominatimUrl.toString(), {
       headers: {
