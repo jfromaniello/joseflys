@@ -228,5 +228,157 @@ describe("segmentCalculations", () => {
       );
       console.log(`  Penalty:         ${penalty.toFixed(2)} NM`);
     });
+
+    it("should calculate SACO to RJAA correctly (reported bug)", () => {
+      // SACO (Córdoba, Argentina) to RJAA (Narita, Japan)
+      const sacoLat = -31.323601;
+      const sacoLon = -64.208;
+      const rjaaLat = 35.764702;
+      const rjaaLon = 140.386002;
+
+      console.log("\n🐛 SACO to RJAA - Bug Investigation:");
+
+      // Test different segment counts
+      const testCases = [1, 2, 10, 33, 50, 100];
+
+      testCases.forEach((numSegments) => {
+        const result = calculateNavigationSegments(
+          sacoLat,
+          sacoLon,
+          rjaaLat,
+          rjaaLon,
+          numSegments
+        );
+
+        const penalty = result.totalDistance - result.orthodromicDistance;
+
+        console.log(
+          `  ${String(numSegments).padStart(3)} segments: Total=${result.totalDistance.toFixed(1)} NM, GC=${result.orthodromicDistance.toFixed(1)} NM, Penalty=${penalty.toFixed(1)} NM`
+        );
+
+        // CRITICAL: Total distance must ALWAYS be >= great circle distance
+        expect(result.totalDistance).toBeGreaterThanOrEqual(
+          result.orthodromicDistance
+        );
+
+        // Penalty must be positive
+        expect(penalty).toBeGreaterThanOrEqual(0);
+      });
+
+      // Verify great circle distance is consistent across segment counts
+      const gc1 = calculateNavigationSegments(
+        sacoLat,
+        sacoLon,
+        rjaaLat,
+        rjaaLon,
+        1
+      ).orthodromicDistance;
+      const gc10 = calculateNavigationSegments(
+        sacoLat,
+        sacoLon,
+        rjaaLat,
+        rjaaLon,
+        10
+      ).orthodromicDistance;
+      const gc100 = calculateNavigationSegments(
+        sacoLat,
+        sacoLon,
+        rjaaLat,
+        rjaaLon,
+        100
+      ).orthodromicDistance;
+
+      // Great circle distance should be identical regardless of segments
+      expect(gc1).toBeCloseTo(gc10, 1);
+      expect(gc1).toBeCloseTo(gc100, 1);
+    });
+
+    it("should show penalty decreases monotonically for SACO to RJAA", () => {
+      const sacoLat = -31.323601;
+      const sacoLon = -64.208;
+      const rjaaLat = 35.764702;
+      const rjaaLon = 140.386002;
+
+      const segments = [1, 2, 5, 10, 20, 33, 50, 100];
+      const results = segments.map((n) =>
+        calculateNavigationSegments(sacoLat, sacoLon, rjaaLat, rjaaLon, n)
+      );
+
+      console.log("\n📉 SACO to RJAA - Penalty Monotonicity Check:");
+
+      results.forEach((result, i) => {
+        const penalty = result.totalDistance - result.orthodromicDistance;
+        console.log(
+          `  ${String(segments[i]).padStart(3)} segments: ${penalty.toFixed(2)} NM penalty`
+        );
+      });
+
+      // Verify all penalties are positive
+      results.forEach((result) => {
+        const penalty = result.totalDistance - result.orthodromicDistance;
+        expect(penalty).toBeGreaterThanOrEqual(0);
+      });
+
+      // Verify penalty decreases as segments increase
+      for (let i = 1; i < results.length; i++) {
+        const prevPenalty =
+          results[i - 1].totalDistance - results[i - 1].orthodromicDistance;
+        const currPenalty =
+          results[i].totalDistance - results[i].orthodromicDistance;
+
+        // Current penalty should be <= previous penalty (monotonic decrease)
+        expect(currPenalty).toBeLessThanOrEqual(prevPenalty);
+      }
+    });
+
+    it("should calculate pure rhumb line distance correctly", () => {
+      const sacoLat = -31.323601;
+      const sacoLon = -64.208;
+      const rjaaLat = 35.764702;
+      const rjaaLon = 140.386002;
+
+      console.log("\n📏 Pure Rhumb Line Distance Comparison:");
+
+      const testCases = [1, 10, 35, 100];
+      testCases.forEach((numSegments) => {
+        const result = calculateNavigationSegments(
+          sacoLat,
+          sacoLon,
+          rjaaLat,
+          rjaaLon,
+          numSegments
+        );
+
+        console.log(`\n  ${numSegments} segment(s):`);
+        console.log(
+          `    Great Circle:    ${result.orthodromicDistance.toFixed(1)} NM`
+        );
+        console.log(
+          `    Pure Rhumb:      ${result.pureRhumbDistance.toFixed(1)} NM`
+        );
+        console.log(
+          `    Segmented:       ${result.totalDistance.toFixed(1)} NM`
+        );
+        console.log(
+          `    Savings vs Rhumb: ${(result.pureRhumbDistance - result.totalDistance).toFixed(1)} NM`
+        );
+
+        // Pure rhumb should be >= great circle
+        expect(result.pureRhumbDistance).toBeGreaterThanOrEqual(
+          result.orthodromicDistance
+        );
+
+        // Pure rhumb distance should be constant across all segment counts
+        expect(result.pureRhumbDistance).toBeCloseTo(9653.3, 0);
+
+        // Segmented route should converge to great circle as segments increase
+        if (numSegments >= 100) {
+          expect(result.totalDistance).toBeCloseTo(
+            result.orthodromicDistance,
+            0
+          );
+        }
+      });
+    });
   });
 });

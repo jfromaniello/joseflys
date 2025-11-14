@@ -94,16 +94,16 @@ export function SegmentsCalculatorClient({
   // Input mode toggle
   const [inputMode, setInputMode] = useState<InputMode>("search");
 
-  // Default locations: New York to Tokyo (from tests)
+  // Default locations: JFK to Tokyo Narita (KJFK to RJAA)
   const defaultFrom = {
-    name: "New York, NY, USA",
-    lat: 40.7127281,
-    lon: -74.0060152,
+    name: "KJFK",
+    lat: 40.639447,
+    lon: -73.779317,
   };
   const defaultTo = {
-    name: "Tokyo, Japan",
-    lat: 35.6768601,
-    lon: 139.7638947,
+    name: "RJAA",
+    lat: 35.764702,
+    lon: 140.386002,
   };
 
   // From location
@@ -847,7 +847,7 @@ ${waypoints.join("\n")}
           {result && result.segments.length > 0 && (
             <div className="mb-8 bg-slate-800/50 border-2 border-gray-700 rounded-xl p-6">
               {/* Summary */}
-              <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div className="mb-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
                 <div>
                   <div className="text-gray-400">Great Circle (Ideal)</div>
                   <div className="text-lg font-semibold text-green-400">
@@ -855,6 +855,15 @@ ${waypoints.join("\n")}
                   </div>
                   <div className="text-xs text-gray-400">
                     Shortest possible path
+                  </div>
+                </div>
+                <div>
+                  <div className="text-gray-400">Pure Rhumb Line</div>
+                  <div className="text-lg font-semibold text-purple-400">
+                    {formatSegmentDistance(result.pureRhumbDistance)} NM
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    Constant heading, no segments
                   </div>
                 </div>
                 <div>
@@ -867,18 +876,22 @@ ${waypoints.join("\n")}
                   </div>
                 </div>
                 <div>
-                  <div className="text-gray-400">Difference from Ideal</div>
+                  <div className="text-gray-400">Savings vs Rhumb</div>
                   <div className={`text-lg font-semibold ${
-                    ((result.totalDistance - result.orthodromicDistance) / result.orthodromicDistance * 100) > 1
-                      ? 'text-red-400'
-                      : ((result.totalDistance - result.orthodromicDistance) / result.orthodromicDistance * 100) > 0.1
-                      ? 'text-amber-400'
-                      : 'text-green-400'
+                    result.pureRhumbDistance - result.totalDistance > 1
+                      ? 'text-green-400'
+                      : result.pureRhumbDistance - result.totalDistance > 0.1
+                      ? 'text-blue-400'
+                      : 'text-gray-400'
                   }`}>
-                    +{formatSegmentDistance(result.totalDistance - result.orthodromicDistance)} NM
+                    {formatSegmentDistance(Math.abs(result.pureRhumbDistance - result.totalDistance))} NM
                   </div>
                   <div className="text-xs text-gray-400">
-                    +{((result.totalDistance - result.orthodromicDistance) / result.orthodromicDistance * 100).toFixed(3)}% longer
+                    {result.pureRhumbDistance > result.totalDistance ? (
+                      <>{(((result.pureRhumbDistance - result.totalDistance) / result.pureRhumbDistance) * 100).toFixed(3)}% shorter</>
+                    ) : (
+                      <>{(((result.totalDistance - result.pureRhumbDistance) / result.pureRhumbDistance) * 100).toFixed(3)}% longer</>
+                    )}
                   </div>
                 </div>
               </div>

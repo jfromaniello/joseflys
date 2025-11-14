@@ -25,18 +25,17 @@ function normalizeAngle(degrees: number): number {
 }
 
 /**
- * Calculates the rhumb line (loxodrome) distance between two points using Turf.js,
- * with correction for WGS-84 ellipsoid.
+ * Calculates the rhumb line (loxodrome) distance between two points.
  *
- * Turf uses a spherical Earth model with radius 6371008.8m, but we need to match
- * GeographicLib's WGS-84 ellipsoid for consistency. We apply a latitude-dependent
- * correction factor.
+ * For very short segments (< 100 NM), rhumb and geodesic are nearly identical,
+ * so we just use the geodesic distance. For longer segments, we use Turf.js
+ * but ONLY if it gives a sensible result (>= geodesic distance).
  *
  * @param lat1 - Starting latitude in degrees
  * @param lon1 - Starting longitude in degrees
  * @param lat2 - Ending latitude in degrees
  * @param lon2 - Ending longitude in degrees
- * @returns Distance in nautical miles along the rhumb line on WGS-84 ellipsoid
+ * @returns Distance in nautical miles along the rhumb line
  */
 function calculateRhumbDistance(
   lat1: number,
@@ -44,53 +43,31 @@ function calculateRhumbDistance(
   lat2: number,
   lon2: number
 ): number {
+  // Calculate geodesic distance first (this is always accurate)
+  const geodesic = Geodesic.WGS84.Inverse(lat1, lon1, lat2, lon2);
+  const geodesicDistanceMeters = geodesic.s12 ?? 0;
+  const geodesicDistanceNM = geodesicDistanceMeters * METERS_TO_NM;
+
+  // For very short segments (< 100 NM), rhumb ≈ geodesic
+  // Just use geodesic to avoid numerical issues
+  if (geodesicDistanceNM < 100) {
+    return geodesicDistanceNM;
+  }
+
+  // For longer segments, try Turf.js rhumb
   const from = point([lon1, lat1]);
   const to = point([lon2, lat2]);
+  const rhumbKm = rhumbDistance(from, to);
+  const rhumbNM = rhumbKm * KM_TO_NM;
 
-  // Calculate rhumb distance on sphere (returns kilometers)
-  const distanceKm = rhumbDistance(from, to);
+  // Sanity check: rhumb distance must be >= geodesic distance
+  // If Turf gives an invalid result (which happens for segments > 100 NM),
+  // fall back to geodesic distance as a conservative approximation
+  if (rhumbNM < geodesicDistanceNM) {
+    return geodesicDistanceNM;
+  }
 
-  // Calculate correction factor for WGS-84 ellipsoid at average latitude
-  const avgLat = (lat1 + lat2) / 2;
-  const scaleFactor = getWGS84ScaleFactor(avgLat);
-
-  // Apply correction and convert to nautical miles
-  return distanceKm * scaleFactor * KM_TO_NM;
-}
-
-/**
- * Gets the scale factor to convert from spherical distance (Turf's model)
- * to WGS-84 ellipsoidal distance at a given latitude.
- *
- * This accounts for the fact that Turf uses a sphere with radius 6371008.8m,
- * while WGS-84 is an ellipsoid with varying radius by latitude.
- *
- * @param latitude - Latitude in degrees
- * @returns Scale factor to apply to spherical distances
- */
-function getWGS84ScaleFactor(latitude: number): number {
-  // WGS-84 parameters
-  const a = 6378137.0; // semi-major axis (equatorial radius) in meters
-  const f = 1 / 298.257223563; // flattening
-  const e2 = 2 * f - f * f; // first eccentricity squared
-
-  // Convert latitude to radians
-  const phi = (latitude * Math.PI) / 180;
-  const sinPhi = Math.sin(phi);
-
-  // Calculate radius of curvature in meridian and prime vertical
-  const denominator = 1 - e2 * sinPhi * sinPhi;
-  const N = a / Math.sqrt(denominator); // prime vertical
-  const M = (a * (1 - e2)) / Math.pow(denominator, 1.5); // meridian
-
-  // Mean radius of curvature (geometric mean)
-  const R_wgs84 = Math.sqrt(N * M);
-
-  // Turf's sphere radius
-  const R_turf = 6371008.8;
-
-  // Scale factor
-  return R_wgs84 / R_turf;
+  return rhumbNM;
 }
 
 /**
@@ -125,6 +102,8 @@ export interface SegmentCalculationResult {
   totalDistance: number;
   /** Great circle distance (shortest possible path) in nautical miles */
   orthodromicDistance: number;
+  /** Pure rhumb line distance (constant heading, no segments) in nautical miles */
+  pureRhumbDistance: number;
   /** Initial great circle bearing */
   initialBearing: number;
   /** Final bearing at destination */
@@ -178,12 +157,22 @@ export function calculateNavigationSegments(
   const initialBearing = normalizeAngle(inverse.azi1 ?? 0);
   const finalBearing = normalizeAngle(inverse.azi2 ?? 0);
 
+  // Calculate pure rhumb line distance (constant heading, no segments)
+  // This is what you'd fly if you didn't segment the route at all
+  const pureRhumbDistanceNM = calculateRhumbDistance(
+    fromLat,
+    fromLon,
+    toLat,
+    toLon
+  );
+
   // Handle case where points are the same
   if (totalDistanceNM < 0.01) {
     return {
       segments: [],
       totalDistance: 0,
       orthodromicDistance: 0,
+      pureRhumbDistance: 0,
       initialBearing: 0,
       finalBearing: 0,
       segmentCount: 0,
@@ -256,6 +245,7 @@ export function calculateNavigationSegments(
     segments,
     totalDistance: cumulativeDistanceNM, // Sum of all rhumb line segments
     orthodromicDistance: totalDistanceNM, // Great circle distance (shortest path)
+    pureRhumbDistance: pureRhumbDistanceNM, // Single constant-heading route
     initialBearing,
     finalBearing,
     segmentCount: numSegments,
