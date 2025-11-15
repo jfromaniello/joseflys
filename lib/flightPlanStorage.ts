@@ -7,10 +7,36 @@ import { SpeedUnit } from "./speedConversion";
  */
 
 /**
+ * Represents a geographic point with coordinates
+ * Used for leg endpoints (from/to) and intermediate waypoints
+ */
+export interface LegPoint {
+  /**
+   * Name or identifier of the point
+   * @example "KJFK", "VOR ABC", "FIXES", "Mountain Pass"
+   */
+  name: string;
+
+  /**
+   * Latitude in decimal degrees (WGS-84)
+   * @example 40.6413 for JFK airport
+   */
+  lat?: number;
+
+  /**
+   * Longitude in decimal degrees (WGS-84)
+   * @example -73.7781 for JFK airport
+   */
+  lon?: number;
+}
+
+/**
  * Represents an intermediate waypoint along a flight plan leg
  *
  * Waypoints allow pilots to track progress along a leg by marking specific
  * geographic points and their distances from the leg's starting point.
+ *
+ * @deprecated - Use LegPoint instead. This interface is kept for backward compatibility.
  */
 export interface Waypoint {
   /**
@@ -91,22 +117,46 @@ export interface FlightPlanLeg {
   dist: number;
 
   /**
-   * Array of intermediate waypoints along this leg
+   * Starting point of the leg with coordinates
+   * Optional - if not provided, shows "Leg Start" in UI
+   * When coordinates are present, True Heading, Distance, and Mag Var can be auto-calculated
+   */
+  from?: LegPoint;
+
+  /**
+   * Ending point of the leg with coordinates
+   * Optional - if not provided, shows "Leg End" in UI
+   * When coordinates are present, True Heading, Distance, and Mag Var can be auto-calculated
+   */
+  to?: LegPoint;
+
+  /**
+   * Array of checkpoints with coordinates along the route
+   * These points are located between start and end of leg
+   * Used to calculate the leg timeline with distances, times, and fuel for each checkpoint
+   */
+  checkpoints?: LegPoint[];
+
+  /**
+   * Array of intermediate waypoints along this leg (LEGACY)
    * Each waypoint includes name and cumulative distance from leg start
+   * @deprecated - Use from/to/viaPoints instead. Kept for backward compatibility.
    */
   waypoints?: Waypoint[];
 
   /**
-   * Name of the departure city (from route lookup)
+   * Name of the departure city (from route lookup) (LEGACY)
    * Optional - only present when route was looked up by city/airport search
    * @example "Madrid", "KJFK"
+   * @deprecated - Use from.name instead
    */
   fromCity?: string;
 
   /**
-   * Name of the destination city (from route lookup)
+   * Name of the destination city (from route lookup) (LEGACY)
    * Optional - only present when route was looked up by city/airport search
    * @example "Barcelona", "EGLL"
+   * @deprecated - Use to.name instead
    */
   toCity?: string;
 

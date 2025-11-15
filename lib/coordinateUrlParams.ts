@@ -1,6 +1,16 @@
 /**
  * Utilities for encoding/decoding coordinates in URL query strings
  * Supports both legacy format and compact quantized format
+ *
+ * TWO FORMATS SUPPORTED:
+ *
+ * 1. Distance Calculator Format (from + multiple destinations):
+ *    from=lat~lon~name&to[0]=lat~lon~name&to[1]=lat~lon~name&s=5
+ *    Used in /distance for calculating distance to multiple destinations
+ *
+ * 2. Leg Planner Format (from + via points + to):
+ *    from=lat~lon~name&via[0]=lat~lon~name&via[1]=lat~lon~name&to=lat~lon~name&s=5
+ *    Used in /leg for flight planning with intermediate waypoints
  */
 
 const SCALE_DECIMALS = 5;
@@ -238,4 +248,106 @@ export function parseLocationParams(searchParams: URLSearchParams): ParsedLocati
     toLon: parsed.toLocations[0]?.lon,
     toName: parsed.toLocations[0]?.name,
   };
+}
+
+/**
+ * Parsed leg parameters with from, to, and checkpoints
+ * Format: from=lat~lon~name&cp[0]=lat~lon~name&cp[1]=...&to=lat~lon~name&s=5
+ */
+export interface ParsedLegParams {
+  from?: { lat: string; lon: string; name?: string };
+  to?: { lat: string; lon: string; name?: string };
+  checkpoints: Array<{ lat: string; lon: string; name?: string }>;
+}
+
+/**
+ * Parse leg parameters from URL (from + checkpoints + to)
+ * Format: from=lat~lon~name&cp[0]=lat~lon~name&to=lat~lon~name&s=5
+ */
+export function parseLegParams(searchParams: URLSearchParams): ParsedLegParams {
+  const scaleParam = searchParams.get("s");
+  const scaleFactor = scaleParam ? Math.pow(10, parseInt(scaleParam, 10)) : SCALE_FACTOR;
+
+  let from: ParsedLegParams["from"] = undefined;
+  let to: ParsedLegParams["to"] = undefined;
+  const checkpoints: ParsedLegParams["checkpoints"] = [];
+
+  // Parse from location
+  const fromParam = searchParams.get("from");
+  if (fromParam) {
+    const parsed = parseCompactCoordinate(fromParam, scaleFactor);
+    if (parsed) {
+      from = {
+        lat: parsed.lat,
+        lon: parsed.lon,
+        name: parsed.name,
+      };
+    }
+  }
+
+  // Parse to location
+  const toParam = searchParams.get("to");
+  if (toParam) {
+    const parsed = parseCompactCoordinate(toParam, scaleFactor);
+    if (parsed) {
+      to = {
+        lat: parsed.lat,
+        lon: parsed.lon,
+        name: parsed.name,
+      };
+    }
+  }
+
+  // Parse checkpoints (cp[0], cp[1], etc.)
+  const cpIndices = new Set<number>();
+  for (const key of searchParams.keys()) {
+    const match = key.match(/^cp\[(\d+)\]/);
+    if (match) {
+      cpIndices.add(parseInt(match[1]));
+    }
+  }
+
+  Array.from(cpIndices)
+    .sort((a, b) => a - b)
+    .forEach((index) => {
+      const cpParam = searchParams.get(`cp[${index}]`);
+      if (cpParam) {
+        const parsed = parseCompactCoordinate(cpParam, scaleFactor);
+        if (parsed) {
+          checkpoints.push({
+            lat: parsed.lat,
+            lon: parsed.lon,
+            name: parsed.name,
+          });
+        }
+      }
+    });
+
+  return { from, to, checkpoints };
+}
+
+/**
+ * Serialize leg parameters to URL format
+ * Format: from=lat~lon~name&cp[0]=lat~lon~name&to=lat~lon~name&s=5
+ */
+export function serializeLegParamsToUrl(
+  from: LocationData,
+  to: LocationData,
+  checkpoints: LocationData[] = []
+): string {
+  const params = new URLSearchParams();
+
+  // Serialize from location
+  params.set("from", serializeCompactCoordinate(from.lat, from.lon, from.name));
+  params.set("s", SCALE_DECIMALS.toString());
+
+  // Serialize checkpoints
+  checkpoints.forEach((cp, index) => {
+    params.set(`cp[${index}]`, serializeCompactCoordinate(cp.lat, cp.lon, cp.name));
+  });
+
+  // Serialize to location
+  params.set("to", serializeCompactCoordinate(to.lat, to.lon, to.name));
+
+  return params.toString();
 }

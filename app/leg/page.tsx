@@ -1,4 +1,5 @@
 import { ClientWrapper } from "./ClientWrapper";
+import { parseLegParams } from "@/lib/coordinateUrlParams";
 
 export { generateMetadata } from "./metadata";
 
@@ -17,7 +18,7 @@ interface LegPageProps {
     desc?: string; // Optional description
     unit?: string; // Speed unit (kt, kmh, mph)
     funit?: string; // Fuel unit (gph, lph, pph, kgh)
-    waypoints?: string; // JSON encoded waypoints
+    waypoints?: string; // JSON encoded waypoints (LEGACY)
     depTime?: string; // Departure time HHMM
     elapsedMin?: string; // Elapsed minutes
     elapsedDist?: string; // Elapsed distance (NM from previous legs)
@@ -36,13 +37,29 @@ interface LegPageProps {
     alf?: string; // Approach & landing fuel (gallons)
     fp?: string; // Flight plan ID
     lid?: string; // Leg ID
-    fc?: string; // From city name (from route lookup)
-    tc?: string; // To city name (from route lookup)
+    fc?: string; // From city name (from route lookup) (LEGACY - use from= instead)
+    tc?: string; // To city name (from route lookup) (LEGACY - use to= instead)
+    from?: string; // From point in compact format: lat~lon~name
+    to?: string; // To point in compact format: lat~lon~name
+    s?: string; // Scale factor for compact coordinates (default: 5)
+    // cp[0], cp[1], etc. - Checkpoints in compact format: lat~lon~name
   }>;
 }
 
 export default async function LegPage({ searchParams }: LegPageProps) {
   const params = await searchParams;
+
+  // Parse from/to/via points using compact coordinate format
+  const urlParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (typeof value === 'string') {
+      urlParams.set(key, value);
+    }
+  });
+
+  // Parse location parameters (from, cp[0], cp[1], ..., to)
+  const { from, to, checkpoints } = parseLegParams(urlParams);
+
   const th = params.th || "";
   const tas = params.tas || "";
   const wd = params.wd || "";
@@ -116,6 +133,9 @@ export default async function LegPage({ searchParams }: LegPageProps) {
       initialLegId={lid}
       initialFromCity={fromCity}
       initialToCity={toCity}
+      initialFrom={from}
+      initialTo={to}
+      initialCheckpoints={checkpoints}
     />
   );
 }

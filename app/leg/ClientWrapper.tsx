@@ -45,6 +45,9 @@ interface ClientWrapperProps {
   initialLegId: string;
   initialFromCity: string;
   initialToCity: string;
+  initialFrom?: { lat: string; lon: string; name?: string };
+  initialTo?: { lat: string; lon: string; name?: string };
+  initialCheckpoints: Array<{ lat: string; lon: string; name?: string }>;
 }
 
 export function ClientWrapper(props: ClientWrapperProps) {

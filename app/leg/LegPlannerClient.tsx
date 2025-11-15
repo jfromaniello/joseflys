@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { useState, useEffect, Fragment } from "react";
+import { useState, useEffect, useRef, useMemo, Fragment } from "react";
 import Link from "next/link";
 import { Menu, MenuButton, MenuItems, MenuItem, Transition } from "@headlessui/react";
 import { PageLayout } from "../components/PageLayout";
@@ -15,6 +15,10 @@ import { TASCalculatorModal } from "../components/TASCalculatorModal";
 import { compressForUrl, decompressFromUrl } from "@/lib/urlCompression";
 import { loadAircraftFromUrl, serializeAircraft } from "@/lib/aircraftStorage";
 import { AircraftPerformance } from "@/lib/aircraftPerformance";
+import { serializeLegParamsToUrl, quantizeCoordinate } from "@/lib/coordinateUrlParams";
+import { calculateHaversineDistance, calculateInitialBearing } from "@/lib/distanceCalculations";
+import { magvar } from "magvar";
+import { ToastContainer } from "../components/Toast";
 import { CourseSpeedInputs, SpeedUnit } from "../course/components/CourseSpeedInputs";
 import { WindInputs } from "../course/components/WindInputs";
 import { CorrectionsInputs } from "../course/components/CorrectionsInputs";
@@ -30,6 +34,7 @@ import { ShareButtonSimple } from "../components/ShareButtonSimple";
 import { NewLegButton } from "../components/NewLegButton";
 import { Tooltip } from "../components/Tooltip";
 import { FlightPlanModal } from "../components/FlightPlanModal";
+import { LegWaypointsTable } from "./components/LegWaypointsTable";
 import {
   addOrUpdateLeg,
   getFlightPlanById,
@@ -75,6 +80,9 @@ interface LegPlannerClientProps {
   initialLegId: string;
   initialFromCity: string;
   initialToCity: string;
+  initialFrom?: { lat: string; lon: string; name?: string };
+  initialTo?: { lat: string; lon: string; name?: string };
+  initialCheckpoints: Array<{ lat: string; lon: string; name?: string }>;
 }
 
 export function LegPlannerClient({
@@ -111,6 +119,9 @@ export function LegPlannerClient({
   initialLegId,
   initialFromCity,
   initialToCity,
+  initialFrom,
+  initialTo,
+  initialCheckpoints,
 }: LegPlannerClientProps) {
   const [trueHeading, setTrueHeading] = useState<string>(initialTh);
   const [tas, setTas] = useState<string>(initialTas);
@@ -138,6 +149,36 @@ export function LegPlannerClient({
   const [approachLandingFuel, setApproachLandingFuel] = useState<string>(initialApproachLandingFuel);
   const [fromCity, setFromCity] = useState<string>(initialFromCity);
   const [toCity, setToCity] = useState<string>(initialToCity);
+
+  // New waypoint-based navigation
+  const [fromPoint, setFromPoint] = useState<{ lat: number; lon: number; name: string } | null>(() => {
+    if (initialFrom?.lat && initialFrom?.lon) {
+      return {
+        lat: parseFloat(initialFrom.lat),
+        lon: parseFloat(initialFrom.lon),
+        name: initialFrom.name || "Leg Start",
+      };
+    }
+    return null;
+  });
+  const [toPoint, setToPoint] = useState<{ lat: number; lon: number; name: string } | null>(() => {
+    if (initialTo?.lat && initialTo?.lon) {
+      return {
+        lat: parseFloat(initialTo.lat),
+        lon: parseFloat(initialTo.lon),
+        name: initialTo.name || "Leg End",
+      };
+    }
+    return null;
+  });
+  const [checkpoints, setCheckpoints] = useState<Array<{ lat: number; lon: number; name: string }>>(() => {
+    return initialCheckpoints.map((p) => ({
+      lat: parseFloat(p.lat),
+      lon: parseFloat(p.lon),
+      name: p.name || "Waypoint",
+    }));
+  });
+
   const [speedUnit, setSpeedUnit] = useState<SpeedUnit>(
     (initialSpeedUnit as SpeedUnit) || 'kt'
   );
@@ -148,6 +189,9 @@ export function LegPlannerClient({
   const [isDistanceModalOpen, setIsDistanceModalOpen] = useState(false);
   const [isTASModalOpen, setIsTASModalOpen] = useState(false);
   const [isFlightPlanModalOpen, setIsFlightPlanModalOpen] = useState(false);
+
+  // Toast notifications state
+  const [toasts, setToasts] = useState<Array<{ id: string; message: string; type?: "info" | "success" | "warning" }>>([]);
 
   // Flight plan tracking state
   const [flightPlanId, setFlightPlanId] = useState<string>(initialFlightPlanId);
@@ -249,6 +293,89 @@ export function LegPlannerClient({
     }
   }, [initialDist, initialFf, initialFlightPlanId, initialMagVar, initialTas, initialTh]); // Run only once on mount
 
+  // Toast notification helper
+  const showToast = (message: string, type: "info" | "success" | "warning" = "info") => {
+    const id = crypto.randomUUID();
+    setToasts(prev => [...prev, { id, message, type }]);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  };
+
+  // Auto-calculate True Heading, Distance, and Mag Var when from/to are entered
+  // Track the last from/to to detect actual changes (not just re-renders)
+  const lastFromToRef = useRef<{ from: typeof fromPoint; to: typeof toPoint }>({ from: null, to: null });
+  const isInitialLoadRef = useRef(true);
+
+  useEffect(() => {
+    if (!fromPoint || !toPoint) return;
+
+    // Check if from/to actually changed (not just a re-render)
+    const fromChanged = !lastFromToRef.current.from ||
+      lastFromToRef.current.from.lat !== fromPoint.lat ||
+      lastFromToRef.current.from.lon !== fromPoint.lon;
+
+    const toChanged = !lastFromToRef.current.to ||
+      lastFromToRef.current.to.lat !== toPoint.lat ||
+      lastFromToRef.current.to.lon !== toPoint.lon;
+
+    // Only auto-calculate if from/to actually changed
+    if (!fromChanged && !toChanged) return;
+
+    // Update the ref with current values
+    lastFromToRef.current = { from: fromPoint, to: toPoint };
+
+    // Skip auto-calculation on initial load if values are already set from URL
+    if (isInitialLoadRef.current && (trueHeading || distance || magVar)) {
+      isInitialLoadRef.current = false;
+      return;
+    }
+    isInitialLoadRef.current = false;
+
+    // Calculate distance and bearing using WGS-84 geodesic
+    const calculatedDistance = calculateHaversineDistance(
+      fromPoint.lat,
+      fromPoint.lon,
+      toPoint.lat,
+      toPoint.lon
+    );
+
+    const calculatedBearing = calculateInitialBearing(
+      fromPoint.lat,
+      fromPoint.lon,
+      toPoint.lat,
+      toPoint.lon
+    );
+
+    // Calculate magnetic variation at midpoint
+    const midLat = (fromPoint.lat + toPoint.lat) / 2;
+    const midLon = (fromPoint.lon + toPoint.lon) / 2;
+    const magVariation = magvar(midLat, midLon, 0); // altitude 0 for simplicity
+
+    const updatedValues: string[] = [];
+
+    // Always update these values when from/to changes
+    // Format TH as 3-digit integer (e.g., 005, 090, 270)
+    const roundedBearing = Math.round(calculatedBearing);
+    const formattedBearing = String(roundedBearing).padStart(3, '0');
+    setTrueHeading(formattedBearing);
+    updatedValues.push(`TH ${formattedBearing}°`);
+
+    setDistance(calculatedDistance.toFixed(1));
+    updatedValues.push(`Dist ${calculatedDistance.toFixed(1)} NM`);
+
+    setMagVar(magVariation.toFixed(1));
+    const magVarStr = magVariation > 0 ? `${magVariation.toFixed(1)}°E` : `${Math.abs(magVariation).toFixed(1)}°W`;
+    updatedValues.push(`Var ${magVarStr}`);
+
+    // Show single consolidated toast
+    const fromName = fromPoint.name.split(",")[0];
+    const toName = toPoint.name.split(",")[0];
+    const valuesText = updatedValues.join(", ");
+    showToast(`${fromName} → ${toName}: ${valuesText}`, "success");
+  }, [fromPoint, toPoint]); // Only re-run when from/to points change
+
   // Update URL when parameters change (client-side only, no page reload)
   useEffect(() => {
     const params = new URLSearchParams();
@@ -313,10 +440,29 @@ export function LegPlannerClient({
     if (flightPlanId) params.set("fp", flightPlanId);
     if (legId) params.set("lid", legId);
 
+    // Add from/to/via points (compact coordinate format)
+    if (fromPoint) {
+      const fromCompact = `${quantizeCoordinate(fromPoint.lat)}~${quantizeCoordinate(fromPoint.lon)}~${fromPoint.name}`;
+      params.set("from", fromCompact);
+      params.set("s", "5"); // Scale factor
+    }
+
+    if (toPoint) {
+      const toCompact = `${quantizeCoordinate(toPoint.lat)}~${quantizeCoordinate(toPoint.lon)}~${toPoint.name}`;
+      params.set("to", toCompact);
+      if (!fromPoint) params.set("s", "5"); // Add scale if not already set
+    }
+
+    checkpoints.forEach((cp, index) => {
+      const cpCompact = `${quantizeCoordinate(cp.lat)}~${quantizeCoordinate(cp.lon)}~${cp.name}`;
+      params.set(`cp[${index}]`, cpCompact);
+      if (!fromPoint && !toPoint) params.set("s", "5"); // Add scale if not already set
+    });
+
     // Use window.history.replaceState instead of router.replace to avoid server requests
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState(null, '', newUrl);
-  }, [trueHeading, tas, windDir, windSpeed, magVar, distance, fuelFlow, description, departureTime, elapsedMinutes, elapsedDistance, previousFuelUsed, climbTas, climbDistance, climbFuelUsed, climbWindDir, climbWindSpeed, descentTas, descentDistance, descentFuelUsed, descentWindDir, descentWindSpeed, additionalFuel, approachLandingFuel, fromCity, toCity, deviationTable, waypoints, speedUnit, fuelUnit, aircraft, flightPlanId, legId]);
+  }, [trueHeading, tas, windDir, windSpeed, magVar, distance, fuelFlow, description, departureTime, elapsedMinutes, elapsedDistance, previousFuelUsed, climbTas, climbDistance, climbFuelUsed, climbWindDir, climbWindSpeed, descentTas, descentDistance, descentFuelUsed, descentWindDir, descentWindSpeed, additionalFuel, approachLandingFuel, fromCity, toCity, deviationTable, waypoints, speedUnit, fuelUnit, aircraft, flightPlanId, legId, fromPoint, toPoint, checkpoints]);
 
   // Calculate results during render (not in useEffect to avoid cascading renders)
   // Parse basic values needed for validation and other components
@@ -400,10 +546,14 @@ export function LegPlannerClient({
       wd: toOptionalNumber(windDir),
       ws: toOptionalNumber(windSpeed),
       md: legacyMD,
+      var: toOptionalNumber(magVar), // Store WMM convention alongside legacy
       dist: toNumber(distance),
       waypoints: waypoints.length > 0 ? waypoints : undefined,
       fromCity: fromCity || undefined,
       toCity: toCity || undefined,
+      from: fromPoint || undefined,
+      to: toPoint || undefined,
+      checkpoints: checkpoints.length > 0 ? checkpoints : undefined,
       ff: toNumber(fuelFlow),
       fuelUnit,
       prevFuel: toOptionalNumber(previousFuelUsed),
@@ -461,9 +611,39 @@ export function LegPlannerClient({
   };
 
   // Calculate waypoints (includes "Top of Climb" and "Descent Started" automatically if phase data exists)
+  // Convert checkpoints to waypoints if we have from/to coordinates, otherwise use legacy waypoints
+  const waypointsForCalculation = useMemo(() => {
+    if (fromPoint && toPoint && checkpoints.length > 0) {
+      // Convert checkpoints with coordinates to waypoint format (name + cumulative distance)
+      // Start point is implicit at distance 0, so we only include checkpoints and end point
+      const converted: Waypoint[] = [];
+      let cumulativeDistance = 0;
+      let prevLat = fromPoint.lat;
+      let prevLon = fromPoint.lon;
+
+      // Add each checkpoint
+      for (const checkpoint of checkpoints) {
+        if (!checkpoint.lat || !checkpoint.lon) continue;
+        const segmentDist = calculateHaversineDistance(prevLat, prevLon, checkpoint.lat, checkpoint.lon);
+        cumulativeDistance += segmentDist;
+        converted.push({ name: checkpoint.name, distance: cumulativeDistance });
+        prevLat = checkpoint.lat;
+        prevLon = checkpoint.lon;
+      }
+
+      // Add end point
+      const finalSegmentDist = calculateHaversineDistance(prevLat, prevLon, toPoint.lat, toPoint.lon);
+      cumulativeDistance += finalSegmentDist;
+      converted.push({ name: toPoint.name, distance: cumulativeDistance });
+
+      return converted;
+    }
+    return waypoints;
+  }, [fromPoint, toPoint, checkpoints, waypoints]);
+
   const waypointResults =
     results && dist !== undefined
-      ? calculateWaypoints(waypoints, results.groundSpeed, ff, flightParams, dist, results.climbPhase, ff, results.descentPhase)
+      ? calculateWaypoints(waypointsForCalculation, results.groundSpeed, ff, flightParams, dist, results.climbPhase, ff, results.descentPhase)
       : [];
 
 
@@ -711,6 +891,16 @@ export function LegPlannerClient({
 
           {/* Input Fields - Grouped */}
           <div className="space-y-6 mb-8 print:space-y-3 print:mb-4">
+            {/* Route Points (From/Via/To) - NEW: Priority placement */}
+            <LegWaypointsTable
+              fromPoint={fromPoint}
+              toPoint={toPoint}
+              checkpoints={checkpoints}
+              onFromChange={setFromPoint}
+              onToChange={setToPoint}
+              onCheckpointsChange={setCheckpoints}
+            />
+
             {/* Course & Speed */}
             <CourseSpeedInputs
               trueHeading={trueHeading}
@@ -767,19 +957,10 @@ export function LegPlannerClient({
                   <Tooltip content="Add intermediate waypoints for this leg. The calculator will compute ETAs and fuel consumption for each waypoint based on your ground speed and fuel flow." />
                 </label>
 
-                {/* Waypoints Button */}
+                {/* Legacy Waypoints Button - DEPRECATED (hidden) */}
                 <button
                   onClick={() => setIsWaypointsModalOpen(true)}
-                  className={`w-full px-4 py-3 rounded-xl transition-all text-base font-medium border-2 cursor-pointer print-hide-waypoints ${
-                    waypoints.length > 0
-                      ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
-                      : "border-gray-600 bg-slate-900/50 hover:border-sky-500/50 hover:bg-sky-500/5"
-                  }`}
-                  style={
-                    waypoints.length === 0
-                      ? { color: "oklch(0.7 0.02 240)" }
-                      : undefined
-                  }
+                  className="hidden"
                 >
                   {waypoints.length > 0 ? (
                     <div className="flex flex-col items-center">
@@ -1138,6 +1319,9 @@ export function LegPlannerClient({
         onSelect={handleFlightPlanSelect}
         currentFlightPlanId={flightPlanId}
       />
+
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </PageLayout>
   );
 }

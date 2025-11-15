@@ -142,6 +142,30 @@ export function FlightPlanDetailClient({
 
   const buildLegUrl = (leg: FlightPlanLeg) => {
     const params = new URLSearchParams();
+
+    // Serialize from/to/via points if they exist
+    if (leg.from && leg.from.lat !== undefined && leg.from.lon !== undefined) {
+      const quantizeLat = (lat: number) => Math.round(lat * 100000);
+      const quantizeLon = (lon: number) => Math.round(lon * 100000);
+
+      params.set("from", `${quantizeLat(leg.from.lat)}~${quantizeLon(leg.from.lon)}~${leg.from.name.split(",")[0]}`);
+      params.set("s", "5");
+
+      // Serialize checkpoints
+      if (leg.checkpoints && leg.checkpoints.length > 0) {
+        leg.checkpoints.forEach((cp, index) => {
+          if (cp.lat !== undefined && cp.lon !== undefined) {
+            params.set(`cp[${index}]`, `${quantizeLat(cp.lat)}~${quantizeLon(cp.lon)}~${cp.name.split(",")[0]}`);
+          }
+        });
+      }
+
+      // Serialize to point
+      if (leg.to && leg.to.lat !== undefined && leg.to.lon !== undefined) {
+        params.set("to", `${quantizeLat(leg.to.lat)}~${quantizeLon(leg.to.lon)}~${leg.to.name.split(",")[0]}`);
+      }
+    }
+
     params.set("th", leg.th.toString());
     params.set("tas", leg.tas.toString());
     if (leg.wd !== undefined) params.set("wd", leg.wd.toString());
@@ -169,11 +193,13 @@ export function FlightPlanDetailClient({
     if (leg.descentWs !== undefined) params.set("dws", leg.descentWs.toString());
     if (leg.additionalFuel !== undefined) params.set("af", leg.additionalFuel.toString());
     if (leg.approachLandingFuel !== undefined) params.set("alf", leg.approachLandingFuel.toString());
+    if (leg.var !== undefined) params.set("var", leg.var.toString());
     if (leg.waypoints && leg.waypoints.length > 0) {
       // Compress waypoints if needed
       const compressed = compressForUrl(leg.waypoints);
       if (compressed) params.set("waypoints", compressed);
     }
+    // Legacy fields
     if (leg.fromCity) params.set("fc", leg.fromCity);
     if (leg.toCity) params.set("tc", leg.toCity);
     // Add flight plan context
@@ -503,6 +529,36 @@ export function FlightPlanDetailClient({
 
                     {/* Leg Content */}
                     <div>
+                        {/* Route Display */}
+                        {leg.from && leg.to && (
+                          <div className="mb-4 p-3 sm:p-4 bg-slate-900/40 rounded-xl border border-slate-700/40">
+                            <div className="flex items-center gap-2 text-sm">
+                              <span className="px-2 py-1 bg-green-500/20 text-green-300 rounded-lg font-medium border border-green-500/30">
+                                {leg.from.name.split(",")[0]}
+                              </span>
+                              <svg className="w-5 h-5" style={{ color: "oklch(0.7 0.05 240)" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                              </svg>
+                              {leg.checkpoints && leg.checkpoints.length > 0 && (
+                                <>
+                                  {leg.checkpoints.map((cp, idx) => (
+                                    <span key={idx} className="flex items-center gap-2">
+                                      <span className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded-lg font-medium border border-blue-500/30">
+                                        {cp.name.split(",")[0]}
+                                      </span>
+                                      <svg className="w-5 h-5" style={{ color: "oklch(0.7 0.05 240)" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                      </svg>
+                                    </span>
+                                  ))}
+                                </>
+                              )}
+                              <span className="px-2 py-1 bg-red-500/20 text-red-300 rounded-lg font-medium border border-red-500/30">
+                                {leg.to.name.split(",")[0]}
+                              </span>
+                            </div>
+                          </div>
+                        )}
 
                         {/* Flight Parameters & Results Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-3 sm:mb-4">

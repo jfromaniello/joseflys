@@ -7,6 +7,7 @@ import { calculateCourse, calculateWaypoints, WaypointResult } from "./courseCal
 import { calculateCompassCourse, calculateDeviation } from "./compassDeviation";
 import { loadAircraftFromUrl } from "./aircraftStorage";
 import { getFuelResultUnit, type FuelUnit } from "./fuelConversion";
+import { calculateHaversineDistance } from "./distanceCalculations";
 import type { FlightPlanLeg } from "./flightPlanStorage";
 
 export interface LegCalculatedResults {
@@ -129,12 +130,22 @@ export function calculateLegResults(leg: FlightPlanLeg): LegCalculatedResults | 
 
 /**
  * Calculate waypoint results for a leg
+ * Converts checkpoints (with coordinates) to waypoints (with cumulative distances)
+ * and calculates timeline for each checkpoint
  */
 export function calculateLegWaypoints(
   leg: FlightPlanLeg,
   legResults: LegCalculatedResults
 ): WaypointResult[] {
-  if (!leg.waypoints || leg.waypoints.length === 0) return [];
+  // Convert checkpoints to waypoints if we have from/to coordinates
+  let waypoints = leg.waypoints || [];
+
+  if (leg.from && leg.to && leg.checkpoints && leg.checkpoints.length > 0) {
+    // We have checkpoints with coordinates - convert to waypoint format
+    waypoints = convertCheckpointsToWaypoints(leg.from, leg.checkpoints, leg.to);
+  }
+
+  if (waypoints.length === 0) return [];
 
   try {
     const ff = leg.ff;
@@ -152,7 +163,7 @@ export function calculateLegWaypoints(
     const results = calculateCourse(leg);
 
     return calculateWaypoints(
-      leg.waypoints,
+      waypoints,
       legResults.groundSpeed,
       ff,
       flightParams,
@@ -165,6 +176,53 @@ export function calculateLegWaypoints(
     console.error("Error calculating waypoints:", error);
     return [];
   }
+}
+
+/**
+ * Convert checkpoints (with coordinates) to waypoints (with cumulative distances)
+ * Returns waypoints for: all checkpoints and end point (start is implicit at distance 0)
+ */
+function convertCheckpointsToWaypoints(
+  from: { lat?: number; lon?: number; name: string },
+  checkpoints: Array<{ lat?: number; lon?: number; name: string }>,
+  to: { lat?: number; lon?: number; name: string }
+): Array<{ name: string; distance: number }> {
+  if (!from.lat || !from.lon || !to.lat || !to.lon) {
+    return [];
+  }
+
+  const waypoints: Array<{ name: string; distance: number }> = [];
+  let cumulativeDistance = 0;
+  let prevLat = from.lat;
+  let prevLon = from.lon;
+
+  // Calculate distance to each checkpoint
+  for (const checkpoint of checkpoints) {
+    if (!checkpoint.lat || !checkpoint.lon) continue;
+
+    // Calculate distance from previous point to this checkpoint
+    const segmentDist = calculateHaversineDistance(prevLat, prevLon, checkpoint.lat, checkpoint.lon);
+    cumulativeDistance += segmentDist;
+
+    waypoints.push({
+      name: checkpoint.name,
+      distance: cumulativeDistance,
+    });
+
+    prevLat = checkpoint.lat;
+    prevLon = checkpoint.lon;
+  }
+
+  // Add final destination as last waypoint
+  const finalSegmentDist = calculateHaversineDistance(prevLat, prevLon, to.lat, to.lon);
+  cumulativeDistance += finalSegmentDist;
+
+  waypoints.push({
+    name: to.name,
+    distance: cumulativeDistance,
+  });
+
+  return waypoints;
 }
 
 /**
