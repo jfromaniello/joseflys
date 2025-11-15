@@ -181,3 +181,24 @@ export function formatAngle(angle: number | null | undefined, decimals: number =
   const direction = roundedAngle > 0 ? "E" : "W";
   return `${absAngle.toFixed(decimals)}°${direction}`;
 }
+
+/**
+ * Parse and normalize heading/direction to 3-digit format
+ * Used for parsing URL parameters and user input
+ *
+ * Examples: "90" → "090", 5 → "005", "360" → "360", "" → ""
+ *
+ * @param value - Direction value as string or number
+ * @returns Formatted 3-digit string, empty string if invalid, or original value if out of range
+ */
+export function parseDirection(value: string | number | undefined | null): string {
+  if (!value && value !== 0) return "";
+
+  const num = typeof value === 'string' ? parseFloat(value) : value;
+
+  if (isNaN(num) || num < 0 || num > 360) {
+    return typeof value === 'string' ? value : "";
+  }
+
+  return String(Math.round(num)).padStart(3, '0');
+}

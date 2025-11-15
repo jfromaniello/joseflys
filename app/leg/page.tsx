@@ -1,5 +1,6 @@
 import { ClientWrapper } from "./ClientWrapper";
 import { parseLegParams } from "@/lib/coordinateUrlParams";
+import { parseDirection } from "@/lib/formatters";
 
 export { generateMetadata } from "./metadata";
 
@@ -62,7 +63,7 @@ export default async function LegPage({ searchParams }: LegPageProps) {
 
   const th = params.th || "";
   const tas = params.tas || "";
-  const wd = params.wd || "";
+  const wd = parseDirection(params.wd);
   const ws = params.ws || "";
 
   // Prefer 'var' (WMM convention) over 'md' (legacy)
@@ -84,12 +85,12 @@ export default async function LegPage({ searchParams }: LegPageProps) {
   const climbTas = params.climbTas || "";
   const climbDist = params.climbDist || "";
   const climbFuel = params.climbFuel || "";
-  const climbWd = params.cwd || "";
+  const climbWd = parseDirection(params.cwd);
   const climbWs = params.cws || "";
   const descentTas = params.descentTas || "";
   const descentDist = params.descentDist || "";
   const descentFuel = params.descentFuel || "";
-  const descentWd = params.dwd || "";
+  const descentWd = parseDirection(params.dwd);
   const descentWs = params.dws || "";
   const additionalFuel = params.af || "";
   const approachLandingFuel = params.alf || "";

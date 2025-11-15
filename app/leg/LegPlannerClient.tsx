@@ -15,7 +15,7 @@ import { TASCalculatorModal } from "../components/TASCalculatorModal";
 import { compressForUrl, decompressFromUrl } from "@/lib/urlCompression";
 import { loadAircraftFromUrl, serializeAircraft } from "@/lib/aircraftStorage";
 import { AircraftPerformance } from "@/lib/aircraftPerformance";
-import { serializeLegParamsToUrl, quantizeCoordinate } from "@/lib/coordinateUrlParams";
+import { quantizeCoordinate } from "@/lib/coordinateUrlParams";
 import { calculateHaversineDistance, calculateInitialBearing } from "@/lib/distanceCalculations";
 import { magvar } from "magvar";
 import { ToastContainer } from "../components/Toast";
@@ -279,6 +279,11 @@ export function LegPlannerClient({
         setSpeedUnit(nextParams.speedUnit as SpeedUnit);
         setFuelUnit(nextParams.fuelUnit as FuelUnit);
 
+        // Set "From" location from previous leg's "To" location
+        if (nextParams.toPoint) {
+          setFromPoint(nextParams.toPoint);
+        }
+
         // Load aircraft if present
         if (nextParams.plane) {
           const loadedAircraft = loadAircraftFromUrl(nextParams.plane);
@@ -323,15 +328,16 @@ export function LegPlannerClient({
     // Only auto-calculate if from/to actually changed
     if (!fromChanged && !toChanged) return;
 
-    // Update the ref with current values
-    lastFromToRef.current = { from: fromPoint, to: toPoint };
-
     // Skip auto-calculation on initial load if values are already set from URL
     if (isInitialLoadRef.current && (trueHeading || distance || magVar)) {
       isInitialLoadRef.current = false;
+      // Don't update the ref yet - we want to recalculate when user changes from/to
       return;
     }
     isInitialLoadRef.current = false;
+
+    // Update the ref with current values (after all early returns)
+    lastFromToRef.current = { from: fromPoint, to: toPoint };
 
     // Calculate distance and bearing using WGS-84 geodesic
     const calculatedDistance = calculateHaversineDistance(
@@ -1156,54 +1162,55 @@ export function LegPlannerClient({
                 return (
                   <div className="pt-4 print:hidden space-y-3">
                     {/* Primary Actions - Flight Plan Management */}
-                    {flightPlanId && (
-                      <div className={`grid grid-cols-1 gap-2 ${gridColsClass} md:max-w-lg md:mx-auto`}>
-                        {/* Update/Save Flight Plan Button - Always first */}
-                        <button
-                          onClick={() => setIsFlightPlanModalOpen(true)}
-                          className={`w-full px-6 py-3 rounded-xl border-2 transition-all text-center flex items-center justify-center gap-2 cursor-pointer ${
-                            flightPlanId
-                              ? "border-blue-500 bg-blue-600/20 hover:bg-blue-600/30"
-                              : "border-gray-600 hover:border-gray-500 hover:bg-slate-700/50"
-                          }`}
-                          style={{ color: flightPlanId ? "oklch(0.8 0.15 230)" : "oklch(0.7 0.02 240)" }}
-                        >
-                          {flightPlanId ? (
-                            <BookmarkSolidIcon className="w-5 h-5" />
-                          ) : (
-                            <BookmarkIcon className="w-5 h-5" />
-                          )}
-                          <span className="text-sm font-medium">
-                            {flightPlanId && legId && currentFlightPlan
-                              ? `Update Leg ${(currentFlightPlan.legs.find(l => l.id === legId)?.index ?? 0) + 1}`
-                              : flightPlanId && currentFlightPlan
-                              ? `Add Leg to ${currentFlightPlan.name}`
-                              : "Save to Flight Plan"}
-                          </span>
-                        </button>
-
-                        {/* Add New Leg Button - Second, only if current leg is last leg */}
-                        {isLastLeg && (
-                          <NewLegButton
-                            magVar={magVar}
-                            departureTime={departureTime}
-                            deviationTable={initialDevTable}
-                            plane={serializedPlane}
-                            fuelFlow={fuelFlow}
-                            tas={tas}
-                            speedUnit={speedUnit}
-                            fuelUnit={fuelUnit}
-                            elapsedMinutes={(elapsedMins || 0) + Math.round((results.eta || 0) * 60)}
-                            elapsedDistance={(elapsedDist || 0) + (dist || 0)}
-                            windDir={windDir}
-                            windSpeed={windSpeed}
-                            fuelUsed={results.fuelUsed}
-                            flightPlanId={flightPlanId}
-                            flightPlanName={currentFlightPlan?.name}
-                          />
+                    <div className={`grid grid-cols-1 gap-2 ${gridColsClass} md:max-w-lg md:mx-auto`}>
+                      {/* Update/Save Flight Plan Button - Always show */}
+                      <button
+                        onClick={() => setIsFlightPlanModalOpen(true)}
+                        className={`w-full px-6 py-3 rounded-xl border-2 transition-all text-center flex items-center justify-center gap-2 cursor-pointer ${
+                          flightPlanId
+                            ? "border-blue-500 bg-blue-600/20 hover:bg-blue-600/30"
+                            : "border-gray-600 hover:border-gray-500 hover:bg-slate-700/50"
+                        }`}
+                        style={{ color: flightPlanId ? "oklch(0.8 0.15 230)" : "oklch(0.7 0.02 240)" }}
+                      >
+                        {flightPlanId ? (
+                          <BookmarkSolidIcon className="w-5 h-5" />
+                        ) : (
+                          <BookmarkIcon className="w-5 h-5" />
                         )}
+                        <span className="text-sm font-medium">
+                          {flightPlanId && legId && currentFlightPlan
+                            ? `Update Leg ${(currentFlightPlan.legs.find(l => l.id === legId)?.index ?? 0) + 1}`
+                            : flightPlanId && currentFlightPlan
+                            ? `Add Leg to ${currentFlightPlan.name}`
+                            : "Save to Flight Plan"}
+                        </span>
+                      </button>
 
-                        {/* Open Plan Button - Third, always show if there's a flight plan */}
+                      {/* Add New Leg Button - Second, only if current leg is last leg */}
+                      {isLastLeg && (
+                        <NewLegButton
+                          magVar={magVar}
+                          departureTime={departureTime}
+                          deviationTable={initialDevTable}
+                          plane={serializedPlane}
+                          fuelFlow={fuelFlow}
+                          tas={tas}
+                          speedUnit={speedUnit}
+                          fuelUnit={fuelUnit}
+                          elapsedMinutes={(elapsedMins || 0) + Math.round((results.eta || 0) * 60)}
+                          elapsedDistance={(elapsedDist || 0) + (dist || 0)}
+                          windDir={windDir}
+                          windSpeed={windSpeed}
+                          fuelUsed={results.fuelUsed}
+                          flightPlanId={flightPlanId}
+                          flightPlanName={currentFlightPlan?.name}
+                          toPoint={toPoint || undefined}
+                        />
+                      )}
+
+                      {/* Open Plan Button - Third, only show if there's a flight plan */}
+                      {flightPlanId && (
                         <Link
                           href={`/flight-plans/${flightPlanId}`}
                           className="w-full px-6 py-3 rounded-xl border-2 border-gray-600 hover:border-gray-500 hover:bg-slate-700/50 transition-all text-center flex items-center justify-center gap-2 cursor-pointer"
@@ -1224,8 +1231,8 @@ export function LegPlannerClient({
                           </svg>
                           <span className="text-sm font-medium">Open Plan</span>
                         </Link>
-                      </div>
-                    )}
+                      )}
+                    </div>
 
                     {/* Secondary Actions - Share & Print */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:max-w-lg md:mx-auto">

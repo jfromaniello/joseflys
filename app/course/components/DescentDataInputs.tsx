@@ -3,6 +3,7 @@ import { SpeedUnit } from "./CourseSpeedInputs";
 import { FuelUnit } from "./RangeFuelInputs";
 import { getSpeedUnitLabel } from "@/lib/speedConversion";
 import { getFuelResultUnit } from "@/lib/fuelConversion";
+import { parseDirection } from "@/lib/formatters";
 
 interface DescentDataInputsProps {
   descentTas: string;
@@ -46,9 +47,9 @@ export function DescentDataInputs({
 
   // Auto-format wind direction to 3 digits on blur
   const handleWindDirBlur = () => {
-    const num = parseFloat(descentWindDir);
-    if (!isNaN(num) && num >= 0 && num <= 360) {
-      setDescentWindDir(String(Math.round(num)).padStart(3, '0'));
+    const formatted = parseDirection(descentWindDir);
+    if (formatted && formatted !== descentWindDir) {
+      setDescentWindDir(formatted);
     }
   };
 
