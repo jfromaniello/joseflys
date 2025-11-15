@@ -53,12 +53,42 @@ describe("courseCalculations", () => {
     });
 
     describe("wind correction angle (WCA)", () => {
-      it("should calculate positive WCA for crosswind from right", () => {
-        // Wind from 090°, heading 360°, TAS 100kt, WS 20kt
-        const result = calculateCourse({ wd: 90, ws: 20, th: 360, tas: 100, md: 0 });
+      describe("WCA sign convention (WMM: positive = East, negative = West)", () => {
+        it("should return POSITIVE WCA (East) for crosswind from RIGHT", () => {
+          // Scenario: Flying North (360°), wind from East (090°)
+          // Wind pushes from right, need to turn INTO wind (right/East)
+          // Expected: WCA > 0 (positive = East per WMM convention)
+          const result = calculateCourse({ wd: 90, ws: 20, th: 360, tas: 100, md: 0 });
 
-        // Should correct to the left (negative WCA in some conventions, positive in ours)
-        expect(Math.abs(result.windCorrectionAngle)).toBeGreaterThan(0);
+          expect(result.windCorrectionAngle).toBeGreaterThan(0);
+          expect(result.crosswind).toBeGreaterThan(0); // Crosswind positive = from right
+        });
+
+        it("should return NEGATIVE WCA (West) for crosswind from LEFT", () => {
+          // Scenario: Flying North (360°), wind from West (270°)
+          // Wind pushes from left, need to turn INTO wind (left/West)
+          // Expected: WCA < 0 (negative = West per WMM convention)
+          const result = calculateCourse({ wd: 270, ws: 20, th: 360, tas: 100, md: 0 });
+
+          expect(result.windCorrectionAngle).toBeLessThan(0);
+          expect(result.crosswind).toBeLessThan(0); // Crosswind negative = from left
+        });
+
+        it("should return POSITIVE WCA for crosswind from right (different heading)", () => {
+          // Scenario: Flying East (090°), wind from South (180°)
+          // Wind pushes from right, need to turn right/East
+          const result = calculateCourse({ wd: 180, ws: 15, th: 90, tas: 100, md: 0 });
+
+          expect(result.windCorrectionAngle).toBeGreaterThan(0);
+        });
+
+        it("should return NEGATIVE WCA for crosswind from left (different heading)", () => {
+          // Scenario: Flying East (090°), wind from North (360°)
+          // Wind pushes from left, need to turn left/West
+          const result = calculateCourse({ wd: 360, ws: 15, th: 90, tas: 100, md: 0 });
+
+          expect(result.windCorrectionAngle).toBeLessThan(0);
+        });
       });
 
       it("should have zero WCA for direct headwind", () => {

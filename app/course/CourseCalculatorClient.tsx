@@ -18,7 +18,7 @@ import { CorrectionsInputs } from "./components/CorrectionsInputs";
 import { ShareButtonSimple } from "../components/ShareButtonSimple";
 import { toKnots } from "@/lib/speedConversion";
 import { Tooltip } from "@/app/components/Tooltip";
-import { formatCourse } from "@/lib/formatters";
+import { formatCourse, formatAngle } from "@/lib/formatters";
 
 interface CourseCalculatorClientProps {
   initialTh: string;
@@ -460,11 +460,10 @@ export function CourseCalculatorClient({
                       <p className="text-xs font-medium" style={{ color: "white" }}>
                         WCA
                       </p>
-                      <Tooltip content="Wind Correction Angle: The angle you need to adjust your heading to compensate for wind drift. Positive (+) means turn right, negative (-) means turn left from your true heading." />
+                      <Tooltip content="Wind Correction Angle: The angle you need to adjust your heading to compensate for wind drift. Positive (East) means crosswind from right, negative (West) means crosswind from left." />
                     </div>
                     <p className="text-xl font-bold text-center" style={{ color: "white" }}>
-                      {results.windCorrectionAngle >= 0 ? "+" : ""}
-                      {Math.round(results.windCorrectionAngle)}°
+                      {formatAngle(results.windCorrectionAngle, 0)}
                     </p>
                   </div>
 

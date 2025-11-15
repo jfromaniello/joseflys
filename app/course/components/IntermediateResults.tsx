@@ -1,7 +1,7 @@
 import { Tooltip } from "@/app/components/Tooltip";
 import { CourseCalculations } from "@/lib/courseCalculations";
 import { FuelUnit, getFuelResultUnit } from "@/lib/fuelConversion";
-import { formatCourse } from "@/lib/formatters";
+import { formatCourse, formatAngle } from "@/lib/formatters";
 
 interface IntermediateResultsProps {
   results: CourseCalculations;
@@ -166,10 +166,10 @@ export function IntermediateResults({ results, fuelUnit }: IntermediateResultsPr
             <p className="text-xs font-medium" style={{ color: "white" }}>
               WCA
             </p>
-            <Tooltip content="Wind Correction Angle: The angle you need to adjust your heading to compensate for wind drift. E (East) means turn left, W (West) means turn right from your true heading." />
+            <Tooltip content="Wind Correction Angle: The angle you need to adjust your heading to compensate for wind drift. Positive (East) means crosswind from right, negative (West) means crosswind from left." />
           </div>
           <p className="text-xl font-bold text-center" style={{ color: "white" }}>
-            {Math.abs(Math.round(results.windCorrectionAngle))}°{results.windCorrectionAngle < 0 ? "E" : results.windCorrectionAngle > 0 ? "W" : ""}
+            {formatAngle(results.windCorrectionAngle, 0)}
           </p>
         </div>
 

@@ -21,31 +21,6 @@ export function formatCourse(degrees: number | null | undefined): string {
 }
 
 /**
- * Format wind correction angle with E/W suffix
- * E (East) means turn left (negative WCA), W (West) means turn right (positive WCA)
- * Examples: -2° → 2°E, 2° → 2°W, 0° → 0°
- *
- * @param wca - Wind correction angle in degrees
- * @returns Formatted string like "2°E" or "5°W"
- */
-export function formatWCA(wca: number | null | undefined): string {
-  if (wca === null || wca === undefined || isNaN(wca)) {
-    return "-";
-  }
-
-  const absWca = Math.abs(Math.round(wca));
-
-  // If WCA is zero, just return "0°"
-  if (absWca === 0) {
-    return "0°";
-  }
-
-  // Negative WCA = East (turn left), Positive WCA = West (turn right)
-  const direction = wca < 0 ? "E" : "W";
-  return `${absWca}°${direction}`;
-}
-
-/**
  * Format magnetic declination/deviation with E/W suffix
  * Positive = West, Negative = East (standard aviation convention)
  * Examples: 5° → 5°W, -3° → 3°E
@@ -197,12 +172,15 @@ export function formatAngle(angle: number | null | undefined, decimals: number =
     return "-";
   }
 
-  // Consider angles less than 0.05° as effectively zero
-  if (Math.abs(angle) < 0.05) {
+  // Round to desired precision first
+  const roundedAngle = Number(angle.toFixed(decimals));
+
+  // After rounding, if effectively zero, return "0°"
+  if (roundedAngle === 0) {
     return "0°";
   }
 
-  const absAngle = Math.abs(angle);
-  const direction = angle > 0 ? "E" : "W";
+  const absAngle = Math.abs(roundedAngle);
+  const direction = roundedAngle > 0 ? "E" : "W";
   return `${absAngle.toFixed(decimals)}°${direction}`;
 }
