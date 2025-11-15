@@ -14,6 +14,8 @@ import {
   MAX_RECOMMENDED_DISTANCE_NM,
 } from "@/lib/distanceCalculations";
 import { quantizeCoordinate } from "@/lib/coordinateUrlParams";
+import { magvar } from "magvar";
+import { formatAngle } from "@/lib/formatters";
 
 // Dynamic import for DistanceMap to avoid SSR issues with Leaflet
 const DistanceMap = dynamic(() => import("./DistanceMap").then((mod) => mod.DistanceMap), {
@@ -307,6 +309,13 @@ export function DistanceCalculatorClient({
       ? calculateInitialBearing(fromLatNum, fromLonNum, toLatNum, toLonNum)
       : null;
 
+    // Calculate magnetic variation at midpoint
+    const midLat = validCoordinates ? (fromLatNum + toLatNum) / 2 : null;
+    const midLon = validCoordinates ? (fromLonNum + toLonNum) / 2 : null;
+    const magneticVariation = midLat !== null && midLon !== null
+      ? magvar(midLat, midLon, 0) // Altitude 0 (sea level)
+      : null;
+
     const distanceExceedsLimit =
       distance !== null && distance > MAX_RECOMMENDED_DISTANCE_NM;
 
@@ -315,6 +324,7 @@ export function DistanceCalculatorClient({
       toLocation,
       distance,
       bearing,
+      magneticVariation,
       distanceExceedsLimit,
       validCoordinates,
     };
@@ -889,9 +899,9 @@ export function DistanceCalculatorClient({
                       </h3>
                     )}
 
-                    {/* Distance and Bearing Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Distance Result */}
+                    {/* Distance, Bearing, and Magnetic Variation Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr] gap-4">
+                      {/* Distance Result - Larger */}
                       <div className="p-6 rounded-xl text-center bg-linear-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30 print:p-4">
                         <div className="flex items-center justify-center mb-2 print:mb-1">
                           <p
@@ -903,7 +913,7 @@ export function DistanceCalculatorClient({
                           <Tooltip content="Geodesic distance calculated using WGS-84 ellipsoid model (Karney's method). More accurate than Haversine, especially for long distances and polar routes." />
                         </div>
                         <p
-                          className="text-4xl sm:text-5xl font-bold mb-1 print:text-3xl print:mb-0"
+                          className="text-5xl sm:text-6xl font-bold mb-1 print:text-3xl print:mb-0"
                           style={{ color: "white" }}
                         >
                           {Math.round(result.distance!)}
@@ -914,13 +924,6 @@ export function DistanceCalculatorClient({
                         >
                           nautical miles
                         </p>
-                        <button
-                          onClick={() => handleCopyDistance(result.id, result.distance!)}
-                          className="mt-3 px-4 py-2 rounded-lg border-2 border-sky-500/50 hover:bg-sky-500/10 transition-all text-sm font-medium cursor-pointer print:hidden"
-                          style={{ color: "oklch(0.7 0.15 230)" }}
-                        >
-                          {showCopiedMessages[result.id]?.distance ? "✓ Copied!" : "📋 Copy"}
-                        </button>
                       </div>
 
                       {/* Bearing Result */}
@@ -946,13 +949,31 @@ export function DistanceCalculatorClient({
                         >
                           true
                         </p>
-                        <button
-                          onClick={() => handleCopyBearing(result.id, result.bearing!)}
-                          className="mt-3 px-4 py-2 rounded-lg border-2 border-purple-500/50 hover:bg-purple-500/10 transition-all text-sm font-medium cursor-pointer print:hidden"
-                          style={{ color: "rgb(192, 132, 252)" }}
+                      </div>
+
+                      {/* Magnetic Variation Result */}
+                      <div className="p-6 rounded-xl text-center bg-linear-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/30 print:p-4">
+                        <div className="flex items-center justify-center mb-2 print:mb-1">
+                          <p
+                            className="text-sm font-semibold uppercase tracking-wider print:text-xs"
+                            style={{ color: "oklch(0.65 0.15 60)" }}
+                          >
+                            Magnetic Variation
+                          </p>
+                          <Tooltip content="Magnetic variation at the midpoint between origin and destination. Positive values indicate East variation, negative indicate West. This is the WMM (World Magnetic Model) value at sea level." />
+                        </div>
+                        <p
+                          className="text-4xl sm:text-5xl font-bold mb-1 print:text-3xl print:mb-0"
+                          style={{ color: "white" }}
                         >
-                          {showCopiedMessages[result.id]?.bearing ? "✓ Copied!" : "📋 Copy"}
-                        </button>
+                          {formatAngle(result.magneticVariation, 1)}
+                        </p>
+                        <p
+                          className="text-base print:text-sm"
+                          style={{ color: "oklch(0.6 0.02 240)" }}
+                        >
+                          at midpoint
+                        </p>
                       </div>
                     </div>
 

@@ -51,7 +51,7 @@ export function CorrectionsInputs({
           style={{ color: "oklch(0.72 0.015 240)" }}
         >
           Magnetic Variation
-          <Tooltip content="Optional: Local magnetic declination (east or west) in degrees. Found on aviation charts. Positive for east, negative for west (WMM convention). Leave empty if unknown." />
+          <Tooltip content="Local magnetic declination. Positive = East, Negative = West. Found on charts or use WMM calculator." />
         </label>
 
         {/* Magnetic Variation Input */}
