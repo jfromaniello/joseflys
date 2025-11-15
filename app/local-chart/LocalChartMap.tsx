@@ -4,6 +4,8 @@ import { useEffect, useState, useRef, useMemo, forwardRef, useImperativeHandle }
 import proj4 from "proj4";
 import dynamic from "next/dynamic";
 import { fetchOSMData, type OSMData, type OSMFeature } from "@/lib/osmData";
+import { magvar } from "magvar";
+import { formatAngle } from "@/lib/formatters";
 
 // Dynamically import Leaflet components to avoid SSR issues
 const MapContainer = dynamic(() => import("react-leaflet").then(mod => mod.MapContainer), { ssr: false });
@@ -357,6 +359,13 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
 
     // Draw scale bar
     drawScaleBar(ctx, scale, rect, printScale);
+
+    // Calculate center of map in geographic coordinates for grid convergence
+    const centerLat = locations.reduce((sum, loc) => sum + loc.lat, 0) / locations.length;
+    const centerLon = locations.reduce((sum, loc) => sum + loc.lon, 0) / locations.length;
+
+    // Draw north indicator
+    drawNorthIndicator(ctx, rect, centerLat, centerLon, utmZone);
 
   }, [osmData, loading, locations, utmZone, hemisphere, printScale]);
 
@@ -788,6 +797,173 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
     ctx.textBaseline = 'top';
     ctx.fillText('0', x, y + 22);
     ctx.fillText(`${lengthNM} NM`, x + barWidth, y + 22);
+  }
+
+  /**
+   * Calculate grid convergence angle (difference between grid north and true north)
+   * Formula: γ = (λ - λ₀) × sin(φ)
+   * where λ is longitude, λ₀ is central meridian, φ is latitude
+   */
+  function calculateGridConvergence(lat: number, lon: number, utmZone: number): number {
+    // Central meridian for UTM zone: (zone - 1) * 6 - 180 + 3
+    const centralMeridian = (utmZone - 1) * 6 - 180 + 3;
+    const latRad = (lat * Math.PI) / 180;
+    const deltaLon = lon - centralMeridian;
+
+    // Grid convergence in degrees
+    const convergence = deltaLon * Math.sin(latRad);
+
+    return convergence;
+  }
+
+  /**
+   * Draw north indicator showing grid north, true north, and magnetic north
+   */
+  function drawNorthIndicator(
+    ctx: CanvasRenderingContext2D,
+    rect: { width: number; height: number },
+    centerLat: number,
+    centerLon: number,
+    utmZone: number
+  ) {
+    const convergence = calculateGridConvergence(centerLat, centerLon, utmZone);
+
+    // Calculate magnetic declination using WMM 2025-2030
+    // Altitude in km (assume 0 for surface)
+    const magneticDeclination = magvar(centerLat, centerLon, 0);
+
+    // Position in top-right corner
+    const x = rect.width - 100;
+    const y = 60;
+    const compassSize = 60;
+
+    // Draw background (wider to accommodate three norths)
+    ctx.fillStyle = 'rgba(248, 250, 252, 0.85)';
+    ctx.fillRect(x - 10, y - 10, compassSize + 40, compassSize + 80);
+
+    const centerX = x + compassSize / 2 + 10;
+    const centerY = y + compassSize;
+
+    // Draw Grid North (vertical line up - always points up on UTM grid)
+    ctx.strokeStyle = '#64748b'; // slate-500 (neutral gray)
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY);
+    ctx.lineTo(centerX, y + 15);
+    ctx.stroke();
+
+    // Draw Grid North arrow
+    ctx.beginPath();
+    ctx.moveTo(centerX, y + 15);
+    ctx.lineTo(centerX - 4, y + 23);
+    ctx.moveTo(centerX, y + 15);
+    ctx.lineTo(centerX + 4, y + 23);
+    ctx.stroke();
+
+    // Draw Grid North label
+    ctx.fillStyle = '#64748b';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('GN', centerX, y);
+
+    // Draw True North (rotated by convergence angle from Grid North)
+    // Positive convergence = true north is clockwise from grid north
+    const convergenceRad = (convergence * Math.PI) / 180;
+
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    ctx.rotate(-convergenceRad); // Negative because canvas rotation is clockwise-positive
+
+    // Draw True North line
+    ctx.strokeStyle = '#2563eb'; // blue-600
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(0, -compassSize + 15);
+    ctx.stroke();
+
+    // Draw True North arrow
+    ctx.beginPath();
+    ctx.moveTo(0, -compassSize + 15);
+    ctx.lineTo(-3, -compassSize + 21);
+    ctx.moveTo(0, -compassSize + 15);
+    ctx.lineTo(3, -compassSize + 21);
+    ctx.stroke();
+
+    ctx.restore();
+
+    // Draw True North label (not rotated)
+    ctx.fillStyle = '#2563eb';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+
+    // Position label offset based on convergence
+    const tnLabelOffset = Math.abs(convergence) > 3 ? 18 : 12;
+    const tnLabelX = centerX + Math.sin(convergenceRad) * tnLabelOffset;
+    const tnLabelY = y - Math.cos(convergenceRad) * 3;
+    ctx.fillText('TN', tnLabelX, tnLabelY);
+
+    // Draw Magnetic North (rotated by magnetic declination from True North)
+    // Magnetic declination is relative to true north
+    // Total rotation from grid north = convergence + magnetic declination
+    const totalMagneticRad = ((convergence + magneticDeclination) * Math.PI) / 180;
+
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    ctx.rotate(-totalMagneticRad);
+
+    // Draw Magnetic North line
+    ctx.strokeStyle = '#dc2626'; // red-600
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(0, -compassSize + 15);
+    ctx.stroke();
+
+    // Draw Magnetic North arrow
+    ctx.beginPath();
+    ctx.moveTo(0, -compassSize + 15);
+    ctx.lineTo(-3, -compassSize + 21);
+    ctx.moveTo(0, -compassSize + 15);
+    ctx.lineTo(3, -compassSize + 21);
+    ctx.stroke();
+
+    ctx.restore();
+
+    // Draw Magnetic North label (not rotated)
+    ctx.fillStyle = '#dc2626';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+
+    const mnLabelOffset = Math.abs(convergence + magneticDeclination) > 3 ? 18 : 12;
+    const mnLabelX = centerX + Math.sin(totalMagneticRad) * mnLabelOffset;
+    const mnLabelY = y - Math.cos(totalMagneticRad) * 3;
+    ctx.fillText('MN', mnLabelX, mnLabelY);
+
+    // Draw angle values at bottom
+    ctx.fillStyle = '#1e293b';
+    ctx.font = '9px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+
+    const infoY = y + compassSize + 5;
+    const infoX = x;
+
+    // Grid convergence (GN → TN) - keep +/- format (geometric, not magnetic)
+    const convergenceText = `GN→TN: ${convergence >= 0 ? '+' : ''}${convergence.toFixed(1)}°`;
+    ctx.fillText(convergenceText, infoX, infoY);
+
+    // Magnetic declination (TN → MN) - use E/W format
+    const declinationText = `TN→MN: ${formatAngle(magneticDeclination)}`;
+    ctx.fillText(declinationText, infoX, infoY + 12);
+
+    // Total (GN → MN) - use E/W format
+    const totalMagnetic = convergence + magneticDeclination;
+    const totalText = `GN→MN: ${formatAngle(totalMagnetic)}`;
+    ctx.fillText(totalText, infoX, infoY + 24);
   }
 
   // Mercator mode rendering

@@ -85,6 +85,23 @@ import { formatDistance } from "@/lib/formatters";
 // Output: "123.5"
 ```
 
+#### `formatAngle(angle: number, decimals?: number): string`
+
+Formats angular corrections with E/W direction (positive = East, negative = West).
+
+```tsx
+import { formatAngle } from "@/lib/formatters";
+
+<p>{formatAngle(10.5)}</p>
+// Output: "10.5°E"
+
+<p>{formatAngle(-8.2)}</p>
+// Output: "8.2°W"
+
+<p>{formatAngle(magneticDeclination, 2)}</p>
+// Output: "10.25°E" (2 decimals)
+```
+
 ### Why Use Formatters?
 
 1. **Consistency**: All values display the same way across the application
@@ -127,6 +144,198 @@ formatWind(windDir, windSpeed, false)
 ```tsx
 formatDeviation(deviation)
 ```
+
+---
+
+## Magnetic Angles and Sign Conventions
+
+### Understanding the Two Conventions
+
+There are TWO different conventions for magnetic angles in aviation, which can be confusing when mixed:
+
+#### 1. **Mathematical/Scientific Convention (WMM Standard)**
+
+This is the convention used by the World Magnetic Model (WMM) and scientific calculations:
+
+- **Positive (+)**: Magnetic north is EAST of true north
+- **Negative (-)**: Magnetic north is WEST of true north
+
+Example: Declination **+10°** means magnetic north is 10° EAST of true north.
+
+#### 2. **Pilot Mnemonic: "ESTE RESTE / OESTE SUME"**
+
+This is a mnemonic rule for APPLYING corrections:
+
+- **Declination ESTE (E)**: SUBTRACT from magnetic heading to get true heading
+- **Declination OESTE (W)**: ADD to magnetic heading to get true heading
+
+### Why They Seem Contradictory (But Aren't)
+
+The conventions speak about different things: sign vs. correction direction.
+
+**Example with 10°E declination:**
+
+```
+WMM Convention: Declination = +10° (positive because it's East)
+
+Your compass shows: 090° (magnetic heading)
+Declination: 10°E (or +10° in WMM)
+True heading: 090° - (+10°) = 080°
+
+Why subtract? Because magnetic north is 10° EAST of true north.
+Your compass follows magnetic north, so to find true heading, you correct WEST (subtract).
+```
+
+**Visual representation:**
+```
+        TN (True North)
+         |
+    080° | (true heading)
+         |
+        /
+       /  10° (declination East = +10°)
+      /
+     /
+    MN (Magnetic North)
+    |
+    | 090° (magnetic heading - what compass shows)
+    |
+```
+
+**Example with 10°W declination:**
+
+```
+WMM Convention: Declination = -10° (negative because it's West)
+
+Your compass shows: 090° (magnetic heading)
+Declination: 10°W (or -10° in WMM)
+True heading: 090° - (-10°) = 100°
+
+Why add? Because you're subtracting a negative.
+```
+
+### Project Standard: Display Format
+
+**IMPORTANT**: This project uses the following standards:
+
+1. **Internal calculations**: Always use WMM mathematical convention (positive = East, negative = West)
+2. **Display format for corrections**: Always use E/W notation for magnetic corrections
+
+#### When to Use E/W Format
+
+Use `formatAngle()` for:
+- **Magnetic declination** (TN → MN)
+- **Grid convergence** when showing total magnetic effect (GN → MN)
+- Any **correction angle** that pilots apply to headings
+
+```tsx
+import { formatAngle } from "@/lib/formatters";
+
+// Magnetic declination from WMM
+const declination = magvar(lat, lon, altitude); // Returns +10 or -10
+const formatted = formatAngle(declination);
+// Output: "10.0°E" or "10.0°W"
+```
+
+#### When to Use +/- Format
+
+Keep mathematical +/- notation for:
+- **Grid convergence** (GN → TN) - this is geometric, not magnetic
+- Internal calculations
+- API responses
+
+### formatAngle() Function
+
+```tsx
+/**
+ * Format angle with E/W direction notation
+ * Positive values = East, Negative values = West
+ */
+export function formatAngle(
+  angle: number | null | undefined,
+  decimals: number = 1
+): string
+```
+
+**Examples:**
+```tsx
+formatAngle(10.5)    // "10.5°E"
+formatAngle(-8.2)    // "8.2°W"
+formatAngle(0.02)    // "0°"
+formatAngle(-0.03)   // "0°"
+```
+
+### Practical Example: Converting Headings
+
+```tsx
+// Get magnetic declination for location
+const declination = magvar(lat, lon, 0); // e.g., +10 (10°E)
+
+// Pilot's magnetic compass shows
+const magneticHeading = 90; // 090°
+
+// Calculate true heading
+const trueHeading = magneticHeading - declination;
+// 90 - 10 = 80
+
+// Display to user
+console.log(`Magnetic: ${magneticHeading}°`);
+console.log(`Declination: ${formatAngle(declination)}`); // "10.0°E"
+console.log(`True: ${trueHeading}°`);
+
+// Output:
+// Magnetic: 90°
+// Declination: 10.0°E
+// True: 80°
+```
+
+### Common Mistakes to Avoid
+
+❌ **Wrong**: Mixing conventions
+```tsx
+// Using E/W direction opposite to WMM sign
+const direction = angle > 0 ? 'W' : 'E'; // WRONG!
+```
+
+✅ **Correct**: Follow WMM convention
+```tsx
+const direction = angle > 0 ? 'E' : 'W'; // Positive = East
+```
+
+---
+
+❌ **Wrong**: Manual formatting of corrections
+```tsx
+`${Math.abs(declination)}°${declination > 0 ? 'E' : 'W'}`
+```
+
+✅ **Correct**: Use formatAngle
+```tsx
+formatAngle(declination)
+```
+
+---
+
+❌ **Wrong**: Applying correction backwards
+```tsx
+// Adding when should subtract, or vice versa
+const trueHeading = magneticHeading + declination; // Maybe wrong!
+```
+
+✅ **Correct**: Always subtract declination from magnetic
+```tsx
+// This works because sign is correct (WMM convention)
+const trueHeading = magneticHeading - declination;
+// Positive (E): 090° - (+10°) = 080°
+// Negative (W): 090° - (-10°) = 100°
+```
+
+### Summary
+
+- **Internally**: Use WMM signs (positive=East, negative=West)
+- **Display**: Use `formatAngle()` for E/W format
+- **Calculations**: Always `magneticHeading - declination` (sign handles direction)
+- **Consistency**: Never mix conventions in the same calculation
 
 ## Button Cursor Styling
 

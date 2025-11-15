@@ -179,3 +179,30 @@ export function formatDistance(distance: number | null | undefined, decimals: nu
   }
   return decimals > 0 ? distance.toFixed(decimals) : Math.round(distance).toString();
 }
+
+/**
+ * Format angle with E/W direction notation
+ * Positive values = East, Negative values = West
+ * This is the standard pilot-friendly format for angular corrections
+ * (magnetic declination, grid convergence, etc.)
+ *
+ * Examples: 10.5 → "10.5°E", -8.2 → "8.2°W", 0.02 → "0°"
+ *
+ * @param angle - Angle in degrees (positive = East, negative = West)
+ * @param decimals - Number of decimal places (default: 1)
+ * @returns Formatted string like "10.5°E" or "8.2°W"
+ */
+export function formatAngle(angle: number | null | undefined, decimals: number = 1): string {
+  if (angle === null || angle === undefined || isNaN(angle)) {
+    return "-";
+  }
+
+  // Consider angles less than 0.05° as effectively zero
+  if (Math.abs(angle) < 0.05) {
+    return "0°";
+  }
+
+  const absAngle = Math.abs(angle);
+  const direction = angle > 0 ? "E" : "W";
+  return `${absAngle.toFixed(decimals)}°${direction}`;
+}
