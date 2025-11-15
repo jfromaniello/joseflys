@@ -10,8 +10,8 @@ import {
 import { AircraftPerformance } from "@/lib/aircraftPerformance";
 
 interface CorrectionsInputsProps {
-  magDev: string;
-  setMagDev: (value: string) => void;
+  magVar: string; // WMM convention (positive=E, negative=W)
+  setMagVar: (value: string) => void;
   deviationTable: DeviationEntry[];
   onDeviationTableChange: (entries: DeviationEntry[]) => void;
   aircraft?: AircraftPerformance | null;
@@ -19,8 +19,8 @@ interface CorrectionsInputsProps {
 }
 
 export function CorrectionsInputs({
-  magDev,
-  setMagDev,
+  magVar,
+  setMagVar,
   deviationTable,
   onDeviationTableChange,
   aircraft,
@@ -35,9 +35,9 @@ export function CorrectionsInputs({
     }
   };
 
-  // Check if magnetic deviation is invalid (> 360 or < -360)
-  const magDevNum = parseFloat(magDev);
-  const isMagDevInvalid = !isNaN(magDevNum) && (magDevNum > 360 || magDevNum < -360);
+  // Check if magnetic variation is invalid (> 360 or < -360)
+  const magVarNum = parseFloat(magVar);
+  const isMagVarInvalid = !isNaN(magVarNum) && (magVarNum > 360 || magVarNum < -360);
 
   return (
     <div className="corrections-inputs">
@@ -51,17 +51,17 @@ export function CorrectionsInputs({
           style={{ color: "oklch(0.72 0.015 240)" }}
         >
           Magnetic Variation
-          <Tooltip content="Optional: Local magnetic variation (east or west) in degrees. Found on aviation charts. Negative for east, positive for west. Leave empty if unknown." />
+          <Tooltip content="Optional: Local magnetic declination (east or west) in degrees. Found on aviation charts. Positive for east, negative for west (WMM convention). Leave empty if unknown." />
         </label>
 
         {/* Magnetic Variation Input */}
         <div className="relative">
           <input
             type="number"
-            value={magDev}
-            onChange={(e) => setMagDev(e.target.value)}
+            value={magVar}
+            onChange={(e) => setMagVar(e.target.value)}
             className={`w-full px-4 pr-10 py-3 rounded-xl focus:outline-none focus:ring-2 ${
-              isMagDevInvalid
+              isMagVarInvalid
                 ? 'focus:ring-red-500/50 border-red-500'
                 : 'focus:ring-sky-500/50 border-gray-600'
             } transition-all text-lg bg-slate-900/50 border-2 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right`}

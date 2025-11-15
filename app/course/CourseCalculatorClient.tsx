@@ -25,7 +25,7 @@ interface CourseCalculatorClientProps {
   initialTas: string;
   initialWd: string;
   initialWs: string;
-  initialMd: string;
+  initialMagVar: string; // WMM convention (positive=E, negative=W)
   initialDist: string;
   initialFf: string;
   initialDevTable: string;
@@ -44,7 +44,7 @@ export function CourseCalculatorClient({
   initialTas,
   initialWd,
   initialWs,
-  initialMd,
+  initialMagVar,
   initialDevTable,
   initialPlane,
   initialDesc,
@@ -54,7 +54,7 @@ export function CourseCalculatorClient({
   const [tas, setTas] = useState<string>(initialTas);
   const [windDir, setWindDir] = useState<string>(initialWd);
   const [windSpeed, setWindSpeed] = useState<string>(initialWs);
-  const [magDev, setMagDev] = useState<string>(initialMd);
+  const [magVar, setMagVar] = useState<string>(initialMagVar);
   const [description, setDescription] = useState<string>(initialDesc);
   const [speedUnit, setSpeedUnit] = useState<SpeedUnit>(
     (initialSpeedUnit as SpeedUnit) || 'kt'
@@ -98,7 +98,7 @@ export function CourseCalculatorClient({
     if (tas) params.set("tas", tas);
     if (windDir) params.set("wd", windDir);
     if (windSpeed) params.set("ws", windSpeed);
-    if (magDev) params.set("md", magDev);
+    if (magVar) params.set("var", magVar); // Use 'var' (WMM convention) instead of 'md' (legacy)
     if (description) params.set("desc", description);
     if (speedUnit !== 'kt') params.set("unit", speedUnit);
 
@@ -125,7 +125,7 @@ export function CourseCalculatorClient({
     // Use window.history.replaceState instead of router.replace to avoid server requests
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState(null, '', newUrl);
-  }, [trueHeading, tas, windDir, windSpeed, magDev, description, deviationTable, speedUnit, aircraft]);
+  }, [trueHeading, tas, windDir, windSpeed, magVar, description, deviationTable, speedUnit, aircraft]);
 
   // Calculate results during render (not in useEffect to avoid cascading renders)
   const th = parseFloat(trueHeading);
@@ -134,7 +134,12 @@ export function CourseCalculatorClient({
   const tasInKnots = !isNaN(tasVal) ? toKnots(tasVal, speedUnit) : NaN;
   const wd = windDir ? parseFloat(windDir) : 0; // Default to 0 if empty
   const ws = windSpeed ? parseFloat(windSpeed) : 0; // Default to 0 if empty
-  const md = parseFloat(magDev) || 0; // Default to 0 if empty
+
+  // Convert magVar (WMM convention) to md (legacy) for calculations
+  // WMM: positive=East, negative=West
+  // Legacy: positive=West, negative=East
+  // So: md = -magVar
+  const md = magVar ? -parseFloat(magVar) : 0;
 
   // Load example data
   const loadExample = () => {
@@ -142,7 +147,7 @@ export function CourseCalculatorClient({
     setTas("120");
     setWindDir("180");
     setWindSpeed("25");
-    setMagDev("-5");
+    setMagVar("5"); // WMM convention: positive = East
     setDescription("SAZS to SACO (Example)");
   };
 
@@ -434,8 +439,8 @@ export function CourseCalculatorClient({
 
             {/* Corrections */}
             <CorrectionsInputs
-              magDev={magDev}
-              setMagDev={setMagDev}
+              magVar={magVar}
+              setMagVar={setMagVar}
               deviationTable={deviationTable}
               onDeviationTableChange={setDeviationTable}
               aircraft={aircraft}
@@ -596,7 +601,7 @@ export function CourseCalculatorClient({
               <div className="pt-4 print:hidden grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-4">
                 {/* Start Leg Planning Button */}
                 <a
-                  href={`/leg?th=${trueHeading}&tas=${tas}&wd=${windDir}&ws=${windSpeed}&md=${magDev}${description ? `&desc=${encodeURIComponent(description)}` : ''}${speedUnit !== 'kt' ? `&unit=${speedUnit}` : ''}${deviationTable.length > 0 ? `&devTable=${compressForUrl(deviationTable)}` : ''}`}
+                  href={`/leg?th=${trueHeading}&tas=${tas}&wd=${windDir}&ws=${windSpeed}&var=${magVar}${description ? `&desc=${encodeURIComponent(description)}` : ''}${speedUnit !== 'kt' ? `&unit=${speedUnit}` : ''}${deviationTable.length > 0 ? `&devTable=${compressForUrl(deviationTable)}` : ''}`}
                   className="block px-6 py-4 rounded-xl bg-linear-to-br from-emerald-500/10 to-green-500/10 border-2 border-emerald-500/30 hover:border-emerald-500/50 hover:bg-emerald-500/20 transition-all text-center group"
                 >
                   <div className="flex items-center justify-center gap-3">

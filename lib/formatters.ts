@@ -22,26 +22,23 @@ export function formatCourse(degrees: number | null | undefined): string {
 
 /**
  * Format magnetic declination/deviation with E/W suffix
- * Positive = West, Negative = East (standard aviation convention)
- * Examples: 5° → 5°W, -3° → 3°E
+ * LEGACY PARAMETER CONVENTION: Positive = West, Negative = East (old aviation)
+ * This function inverts the sign to match WMM convention before displaying
+ * Examples: 5 (old: 5°W) → "5.0°W", -3 (old: 3°E) → "3.0°E"
  *
- * @param deviation - Magnetic declination/deviation in degrees
- * @returns Formatted string like "5°W" or "3°E"
+ * @param deviation - Magnetic declination/deviation in degrees (LEGACY SIGN)
+ * @returns Formatted string like "5.0°W" or "3.0°E"
  */
 export function formatDeviation(deviation: number | null | undefined): string {
   if (deviation === null || deviation === undefined || isNaN(deviation)) {
     return "-";
   }
 
-  const absDeviation = Math.abs(Math.round(deviation));
-
-  if (absDeviation === 0) {
-    return "0°";
-  }
-
-  // Positive = West, Negative = East (aviation convention)
-  const direction = deviation >= 0 ? "W" : "E";
-  return `${absDeviation}°${direction}`;
+  // Invert sign to convert from old aviation convention to WMM convention
+  // Old: positive = West, negative = East
+  // WMM: positive = East, negative = West
+  // So we negate: WMM value = -legacy value
+  return formatAngle(-deviation, 1);
 }
 
 /**

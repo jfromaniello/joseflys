@@ -46,7 +46,7 @@ interface LegPlannerClientProps {
   initialTas: string;
   initialWd: string;
   initialWs: string;
-  initialMd: string;
+  initialMagVar: string; // WMM convention (positive=E, negative=W)
   initialDist: string;
   initialFf: string;
   initialDevTable: string;
@@ -82,7 +82,7 @@ export function LegPlannerClient({
   initialTas,
   initialWd,
   initialWs,
-  initialMd,
+  initialMagVar,
   initialDist,
   initialFf,
   initialDevTable,
@@ -116,7 +116,7 @@ export function LegPlannerClient({
   const [tas, setTas] = useState<string>(initialTas);
   const [windDir, setWindDir] = useState<string>(initialWd);
   const [windSpeed, setWindSpeed] = useState<string>(initialWs);
-  const [magDev, setMagDev] = useState<string>(initialMd);
+  const [magVar, setMagVar] = useState<string>(initialMagVar);
   const [distance, setDistance] = useState<string>(initialDist);
   const [fuelFlow, setFuelFlow] = useState<string>(initialFf);
   const [description, setDescription] = useState<string>(initialDesc);
@@ -206,7 +206,7 @@ export function LegPlannerClient({
   // Auto-populate from last leg when only flight plan ID is provided
   useEffect(() => {
     // Only run if we have a flight plan ID but no other parameters
-    const hasNoOtherParams = !initialTh && !initialTas && !initialMd && !initialDist && !initialFf;
+    const hasNoOtherParams = !initialTh && !initialTas && !initialMagVar && !initialDist && !initialFf;
 
     if (initialFlightPlanId && hasNoOtherParams) {
 
@@ -226,7 +226,7 @@ export function LegPlannerClient({
         setTas(nextParams.tas);
         setWindDir(nextParams.windDir);
         setWindSpeed(nextParams.windSpeed);
-        setMagDev(nextParams.magDev);
+        setMagVar(nextParams.magVar || "");
         setDistance("");
         setFuelFlow(nextParams.fuelFlow);
         setDepartureTime(nextParams.departureTime);
@@ -247,7 +247,7 @@ export function LegPlannerClient({
         }
       }
     }
-  }, [initialDist, initialFf, initialFlightPlanId, initialMd, initialTas, initialTh]); // Run only once on mount
+  }, [initialDist, initialFf, initialFlightPlanId, initialMagVar, initialTas, initialTh]); // Run only once on mount
 
   // Update URL when parameters change (client-side only, no page reload)
   useEffect(() => {
@@ -256,7 +256,7 @@ export function LegPlannerClient({
     if (tas) params.set("tas", tas);
     if (windDir) params.set("wd", windDir);
     if (windSpeed) params.set("ws", windSpeed);
-    if (magDev) params.set("md", magDev);
+    if (magVar) params.set("var", magVar); // Use 'var' (WMM convention) instead of 'md' (legacy)
     if (distance) params.set("dist", distance);
     if (fuelFlow) params.set("ff", fuelFlow);
     if (description) params.set("desc", description);
@@ -316,7 +316,7 @@ export function LegPlannerClient({
     // Use window.history.replaceState instead of router.replace to avoid server requests
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState(null, '', newUrl);
-  }, [trueHeading, tas, windDir, windSpeed, magDev, distance, fuelFlow, description, departureTime, elapsedMinutes, elapsedDistance, previousFuelUsed, climbTas, climbDistance, climbFuelUsed, climbWindDir, climbWindSpeed, descentTas, descentDistance, descentFuelUsed, descentWindDir, descentWindSpeed, additionalFuel, approachLandingFuel, fromCity, toCity, deviationTable, waypoints, speedUnit, fuelUnit, aircraft, flightPlanId, legId]);
+  }, [trueHeading, tas, windDir, windSpeed, magVar, distance, fuelFlow, description, departureTime, elapsedMinutes, elapsedDistance, previousFuelUsed, climbTas, climbDistance, climbFuelUsed, climbWindDir, climbWindSpeed, descentTas, descentDistance, descentFuelUsed, descentWindDir, descentWindSpeed, additionalFuel, approachLandingFuel, fromCity, toCity, deviationTable, waypoints, speedUnit, fuelUnit, aircraft, flightPlanId, legId]);
 
   // Calculate results during render (not in useEffect to avoid cascading renders)
   // Parse basic values needed for validation and other components
@@ -333,7 +333,7 @@ export function LegPlannerClient({
     setTas("120");
     setWindDir("180");
     setWindSpeed("25");
-    setMagDev("-5");
+    setMagVar("5"); // WMM convention: 5°E
     setDistance("85");
     setFuelFlow("8");
     setDescription("SAZS to SACO (Example Flight)");
@@ -388,12 +388,18 @@ export function LegPlannerClient({
    * Single source of truth for mapping view state to FlightPlanLeg
    */
   const buildLegDataFromState = (): Omit<FlightPlanLeg, "id" | "index"> => {
+    // Convert magVar (WMM convention) to md (legacy) for storage
+    // WMM: positive=E, negative=W
+    // Legacy: positive=W, negative=E
+    // So: md = -magVar
+    const legacyMD = magVar ? -parseFloat(magVar) : 0;
+
     return {
       th: toNumber(trueHeading),
       tas: toNumber(tas),
       wd: toOptionalNumber(windDir),
       ws: toOptionalNumber(windSpeed),
-      md: toNumber(magDev),
+      md: legacyMD,
       dist: toNumber(distance),
       waypoints: waypoints.length > 0 ? waypoints : undefined,
       fromCity: fromCity || undefined,
@@ -797,8 +803,8 @@ export function LegPlannerClient({
 
             {/* Corrections */}
             <CorrectionsInputs
-              magDev={magDev}
-              setMagDev={setMagDev}
+              magVar={magVar}
+              setMagVar={setMagVar}
               deviationTable={deviationTable}
               onDeviationTableChange={setDeviationTable}
               aircraft={aircraft}
@@ -998,7 +1004,7 @@ export function LegPlannerClient({
                         {/* Add New Leg Button - Second, only if current leg is last leg */}
                         {isLastLeg && (
                           <NewLegButton
-                            magDev={magDev}
+                            magVar={magVar}
                             departureTime={departureTime}
                             deviationTable={initialDevTable}
                             plane={serializedPlane}

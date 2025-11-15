@@ -70,7 +70,16 @@ export interface FlightPlanLeg {
   ws?: number;
 
   /**
-   * Magnetic variation in degrees
+   * Magnetic variation in degrees (WMM convention: positive=E, negative=W)
+   * PREFERRED - If present, this value takes priority over 'md'
+   * Optional - for backward compatibility with existing flight plans
+   */
+  var?: number;
+
+  /**
+   * Magnetic variation in degrees (LEGACY: positive=W, negative=E)
+   * DEPRECATED - Use 'var' instead. This field is kept for backward compatibility.
+   * If 'var' is present, 'md' is ignored.
    * Used to calculate magnetic course from true course
    */
   md: number;

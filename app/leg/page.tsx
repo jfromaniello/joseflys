@@ -8,7 +8,8 @@ interface LegPageProps {
     ws?: string;
     th?: string;
     tas?: string;
-    md?: string;
+    md?: string; // LEGACY: Magnetic deviation (old aviation convention: positive=W, negative=E)
+    var?: string; // NEW: Magnetic variation (WMM convention: positive=E, negative=W)
     dist?: string;
     ff?: string;
     devTable?: string; // JSON encoded deviation table (legacy)
@@ -46,7 +47,11 @@ export default async function LegPage({ searchParams }: LegPageProps) {
   const tas = params.tas || "";
   const wd = params.wd || "";
   const ws = params.ws || "";
-  const md = params.md || "";
+
+  // Prefer 'var' (WMM convention) over 'md' (legacy)
+  // If 'md' exists, convert it: WMM = -legacy
+  const magVar = params.var || (params.md ? String(-parseFloat(params.md)) : "");
+
   const dist = params.dist || "";
   const ff = params.ff || "";
   const devTable = params.devTable || "";
@@ -82,7 +87,7 @@ export default async function LegPage({ searchParams }: LegPageProps) {
       initialTas={tas}
       initialWd={wd}
       initialWs={ws}
-      initialMd={md}
+      initialMagVar={magVar}
       initialDist={dist}
       initialFf={ff}
       initialDevTable={devTable}

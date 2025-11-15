@@ -16,7 +16,7 @@ interface ClientWrapperProps {
   initialTas: string;
   initialWd: string;
   initialWs: string;
-  initialMd: string;
+  initialMagVar: string; // WMM convention (positive=E, negative=W)
   initialDist: string;
   initialFf: string;
   initialDevTable: string;

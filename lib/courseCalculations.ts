@@ -10,11 +10,15 @@ import { loadAircraftFromUrl } from "./aircraftStorage";
  * All speeds (tas, climbTas, descentTas) are in the unit specified by 'unit' parameter
  * Conversions to knots are done internally by calculateCourse
  * If unit is not provided, defaults to 'kt' (knots)
+ *
+ * Magnetic variation: Either 'var' (WMM convention) or 'md' (legacy) must be provided
+ * - If 'var' is present, it takes priority (WMM: positive=E, negative=W)
+ * - If only 'md' is present, it's converted: var = -md (legacy: positive=W, negative=E)
  */
 export type CourseCalculationInput =
-  & Required<Pick<FlightPlanLeg, 'th' | 'tas' | 'md'>>
+  & Required<Pick<FlightPlanLeg, 'th' | 'tas'>>
   & Partial<Pick<FlightPlanLeg,
-      'wd' | 'ws' | 'dist' | 'ff' | 'elapsedMin' | 'prevFuel' |
+      'var' | 'md' | 'wd' | 'ws' | 'dist' | 'ff' | 'elapsedMin' | 'prevFuel' |
       'climbTas' | 'climbDist' | 'climbFuel' | 'climbWd' | 'climbWs' |
       'descentTas' | 'descentDist' | 'descentFuel' | 'descentWd' | 'descentWs' |
       'additionalFuel' | 'approachLandingFuel' | 'unit' | 'plane'
@@ -180,6 +184,7 @@ export function calculateCourse(input: CourseCalculationInput): CourseCalculatio
 
   const {
     tas,
+    var: magVar,
     md: magDev,
     dist: distance,
     ff: fuelFlow,
@@ -216,6 +221,12 @@ export function calculateCourse(input: CourseCalculationInput): CourseCalculatio
   windDir = normalize(windDir);
   trueHeading = normalize(trueHeading);
 
+  // Handle magnetic variation: prefer 'var' (WMM), fallback to 'md' (legacy)
+  // WMM (var parameter): positive = East, negative = West
+  // LEGACY (md parameter): positive = West, negative = East
+  // If 'var' is present, use it directly; otherwise convert 'md': var = -md
+  const magDevWMM = magVar !== undefined ? magVar : (magDev !== undefined ? -magDev : 0);
+
   // Relative wind angle (angle between wind direction and heading)
   const relativeWind = toRad(windDir - trueHeading);
 
@@ -245,12 +256,12 @@ export function calculateCourse(input: CourseCalculationInput): CourseCalculatio
     2 * effectiveSpeed * windSpeed * Math.cos(relativeWind);
   const groundSpeed = Math.sqrt(Math.max(0, gsSquared));
 
-  // Magnetic course (MC) = True course + Magnetic variation (before wind correction)
-  const magneticCourse = normalize(trueHeading + magDev);
+  // Magnetic course (MC) = True course - Magnetic declination (WMM: positive = East means subtract)
+  // With WMM convention: If declination is +10°E, then MC = TC - 10°
+  const magneticCourse = normalize(trueHeading - magDevWMM);
 
-  // Magnetic heading (MH) = True course + Magnetic variation + WCA
-  // (East variation is negative, west is positive)
-  const magneticHeading = normalize(trueHeading + windCorrectionAngle + magDev);
+  // Magnetic heading (MH) = True course + WCA - Magnetic declination (WMM convention)
+  const magneticHeading = normalize(trueHeading + windCorrectionAngle - magDevWMM);
 
   // Compass course (CH) = Magnetic heading + Compass deviation (from deviation table)
   // If no deviation table provided, compassCourse equals magneticHeading

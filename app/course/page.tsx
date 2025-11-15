@@ -9,7 +9,8 @@ interface WindsPageProps {
     ws?: string;
     th?: string;
     tas?: string;
-    md?: string;
+    md?: string; // LEGACY: Magnetic deviation (old aviation convention: positive=W, negative=E)
+    var?: string; // NEW: Magnetic variation (WMM convention: positive=E, negative=W)
     dist?: string;
     ff?: string;
     devTable?: string; // JSON encoded deviation table
@@ -44,7 +45,9 @@ export default async function WindsPage({ searchParams }: WindsPageProps) {
     if (params.tas) queryParams.set("tas", params.tas);
     if (params.wd) queryParams.set("wd", params.wd);
     if (params.ws) queryParams.set("ws", params.ws);
-    if (params.md) queryParams.set("md", params.md);
+    // Prefer 'var' (WMM) over 'md' (legacy)
+    if (params.var) queryParams.set("var", params.var);
+    else if (params.md) queryParams.set("md", params.md);
     if (params.dist) queryParams.set("dist", params.dist);
     if (params.ff) queryParams.set("ff", params.ff);
     if (params.devTable) queryParams.set("devTable", params.devTable);
@@ -63,7 +66,11 @@ export default async function WindsPage({ searchParams }: WindsPageProps) {
   const tas = params.tas || "";
   const wd = params.wd || "";
   const ws = params.ws || "";
-  const md = params.md || "";
+
+  // Prefer 'var' (WMM convention) over 'md' (legacy)
+  // If 'md' exists, convert it: WMM = -legacy
+  const magVar = params.var || (params.md ? String(-parseFloat(params.md)) : "");
+
   const devTable = params.devTable || "";
   const desc = params.desc || "";
   const unit = params.unit || "kt";
@@ -74,7 +81,7 @@ export default async function WindsPage({ searchParams }: WindsPageProps) {
       initialTas={tas}
       initialWd={wd}
       initialWs={ws}
-      initialMd={md}
+      initialMagVar={magVar}
       initialDist=""
       initialFf=""
       initialDevTable={devTable}

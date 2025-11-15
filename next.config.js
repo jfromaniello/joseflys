@@ -5,6 +5,7 @@ const path = require("path");
 const withSerwist = withSerwistInit({
   swSrc: "app/sw.ts",
   swDest: "public/sw.js",
+  maximumFileSizeToCacheInBytes: 5097152,
   disable: process.env.NODE_ENV !== "production",
 });
 
@@ -18,22 +19,34 @@ const nextConfig = {
         new CopyWebpackPlugin({
           patterns: [
             {
-              from: path.join(__dirname, "node_modules/cesium/Build/Cesium/Workers"),
+              from: path.join(
+                __dirname,
+                "node_modules/cesium/Build/Cesium/Workers"
+              ),
               to: path.join(__dirname, "public/cesium/Workers"),
               info: { minimized: true },
             },
             {
-              from: path.join(__dirname, "node_modules/cesium/Build/Cesium/ThirdParty"),
+              from: path.join(
+                __dirname,
+                "node_modules/cesium/Build/Cesium/ThirdParty"
+              ),
               to: path.join(__dirname, "public/cesium/ThirdParty"),
               info: { minimized: true },
             },
             {
-              from: path.join(__dirname, "node_modules/cesium/Build/Cesium/Assets"),
+              from: path.join(
+                __dirname,
+                "node_modules/cesium/Build/Cesium/Assets"
+              ),
               to: path.join(__dirname, "public/cesium/Assets"),
               info: { minimized: true },
             },
             {
-              from: path.join(__dirname, "node_modules/cesium/Build/Cesium/Widgets"),
+              from: path.join(
+                __dirname,
+                "node_modules/cesium/Build/Cesium/Widgets"
+              ),
               to: path.join(__dirname, "public/cesium/Widgets"),
               info: { minimized: true },
             },

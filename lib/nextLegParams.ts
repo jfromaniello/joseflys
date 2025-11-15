@@ -7,7 +7,7 @@ import type { FlightPlanLeg } from "./flightPlanStorage";
 import type { LegCalculatedResults } from "./flightPlanCalculations";
 
 export interface NextLegParams {
-  magDev: string;
+  magVar?: string; // WMM convention (positive=E, negative=W)
   departureTime: string;
   plane?: string;
   deviationTable?: string;
@@ -32,8 +32,8 @@ export interface NextLegParams {
 export function buildNextLegUrl(params: NextLegParams): string {
   const urlParams = new URLSearchParams();
 
-  // Carry over these values
-  if (params.magDev) urlParams.set("md", params.magDev);
+  // Carry over these values (use WMM 'var' parameter)
+  if (params.magVar) urlParams.set("var", params.magVar);
   if (params.departureTime) urlParams.set("depTime", params.departureTime);
 
   // Prioritize plane (includes deviation table) over legacy devTable param
@@ -85,8 +85,14 @@ export function extractNextLegParams(
   legResults: LegCalculatedResults | null,
   flightPlanId?: string
 ): NextLegParams {
+  // Convert legacy md to WMM magVar
+  // Legacy: positive=W, negative=E
+  // WMM: positive=E, negative=W
+  // So: magVar = -md
+  const magVar = leg.md ? (-leg.md).toString() : undefined;
+
   return {
-    magDev: leg.md.toString(),
+    magVar,
     departureTime: leg.depTime || "",
     plane: leg.plane,
     fuelFlow: leg.ff.toString(),

@@ -5,8 +5,8 @@
  * Used to create a new leg with parameters carried over from the current leg
  */
 interface NewLegButtonProps {
-  /** Magnetic deviation in degrees (e.g., "-5" for 5° East) */
-  magDev: string;
+  /** Magnetic variation in degrees (WMM convention: positive=E, negative=W) */
+  magVar: string;
   /** Departure time in HHMM format (e.g., "1430" for 2:30 PM) */
   departureTime: string;
   /** Compressed deviation table data to be carried over to the new leg */
@@ -38,7 +38,7 @@ interface NewLegButtonProps {
 }
 
 export function NewLegButton({
-  magDev,
+  magVar,
   departureTime,
   deviationTable,
   plane,
@@ -59,7 +59,7 @@ export function NewLegButton({
     const { buildNextLegUrl } = require("@/lib/nextLegParams");
 
     const url = buildNextLegUrl({
-      magDev,
+      magVar,
       departureTime,
       deviationTable,
       plane,
