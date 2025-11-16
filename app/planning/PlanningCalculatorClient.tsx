@@ -10,7 +10,7 @@ import {
   calculateTimeSpeedDistance,
   calculateFuelConsumption,
   formatTime,
-} from "@/lib/flightPlanningCalculations";
+} from "@/lib/flightPlan";
 
 type CalculatorMode = "time-speed-distance" | "fuel";
 

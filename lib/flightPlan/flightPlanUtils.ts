@@ -4,7 +4,7 @@
  */
 
 import type { FlightPlan } from "./flightPlanStorage";
-import { quantizeCoordinate } from "./coordinateUrlParams";
+import { quantizeCoordinate } from "../coordinateUrlParams";
 
 /**
  * Build URL for viewing flight plan on local chart

@@ -10,7 +10,9 @@ import {
   loadFlightPlans,
   deleteFlightPlan,
   type FlightPlan,
-} from "@/lib/flightPlanStorage";
+  buildLocalChartUrl,
+  generateShareUrl,
+} from "@/lib/flightPlan";
 import {
   TrashIcon,
   EyeIcon,
@@ -21,8 +23,6 @@ import {
   ShareIcon,
   CheckIcon,
 } from "@heroicons/react/24/outline";
-import { buildLocalChartUrl } from "@/lib/flightPlanUtils";
-import { generateShareUrl } from "@/lib/flightPlanSharing";
 
 export function FlightPlansClient() {
   const [flightPlans, setFlightPlans] = useState<FlightPlan[]>([]);

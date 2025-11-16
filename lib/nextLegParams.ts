@@ -3,8 +3,8 @@
  * Used by both NewLegButton and Flight Plan's "Add Leg" button
  */
 
-import type { FlightPlanLeg } from "./flightPlanStorage";
-import type { LegCalculatedResults } from "./flightPlanCalculations";
+import type { FlightPlanLeg } from "./flightPlan";
+import type { LegCalculatedResults } from "./flightPlan";
 
 export interface NextLegParams {
   magVar?: string; // WMM convention (positive=E, negative=W)
@@ -115,6 +115,8 @@ export function extractNextLegParams(
     elapsedDistance: (leg.elapsedDist || 0) + leg.dist,
     fuelUsed: legResults?.totalFuel,
     flightPlanId,
-    toPoint: leg.to ? { lat: leg.to.lat, lon: leg.to.lon, name: leg.to.name } : undefined,
+    toPoint: leg.to?.lat !== undefined && leg.to?.lon !== undefined
+      ? { lat: leg.to.lat, lon: leg.to.lon, name: leg.to.name }
+      : undefined,
   };
 }

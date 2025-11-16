@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og';
 import { NextRequest } from 'next/server';
-import { calculateTimeSpeedDistance, calculateFuelConsumption, formatTime } from '@/lib/flightPlanningCalculations';
+import { calculateTimeSpeedDistance, calculateFuelConsumption, formatTime } from '@/lib/flightPlan';
 
 export const runtime = 'edge';
 

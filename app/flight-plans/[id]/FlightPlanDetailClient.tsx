@@ -10,8 +10,6 @@ import {
   removeLeg,
   type FlightPlan,
   type FlightPlanLeg,
-} from "@/lib/flightPlanStorage";
-import {
   calculateLegResults,
   calculateLegWaypoints,
   formatHoursToTime,
@@ -21,9 +19,10 @@ import {
   calculateMainRouteTotals,
   calculateTotalFuelWithAlternatives,
   type LegCalculatedResults,
-} from "@/lib/flightPlanCalculations";
+  generateShareUrl,
+  buildLocalChartUrl,
+} from "@/lib/flightPlan";
 import { FuelUnit, getFuelResultUnit } from "@/lib/fuelConversion";
-import { generateShareUrl } from "@/lib/flightPlanSharing";
 import { Tooltip } from "@/app/components/Tooltip";
 import { WaypointsCompact } from "@/app/course/components/WaypointsCompact";
 import { DownloadDropdownButton } from "@/app/components/DownloadDropdownButton";
@@ -40,7 +39,6 @@ import {
 } from "@heroicons/react/24/outline";
 import { compressForUrl } from "@/lib/urlCompression";
 import { formatCourse, formatWind, formatDistance } from "@/lib/formatters";
-import { buildLocalChartUrl } from "@/lib/flightPlanUtils";
 
 interface FlightPlanDetailClientProps {
   flightPlanId: string;

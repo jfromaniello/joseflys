@@ -6,7 +6,7 @@ import {
   loadFlightPlans,
   createFlightPlan,
   type FlightPlan,
-} from "@/lib/flightPlanStorage";
+} from "@/lib/flightPlan";
 import { XMarkIcon, PlusIcon } from "@heroicons/react/24/outline";
 
 interface FlightPlanModalProps {

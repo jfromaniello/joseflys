@@ -3,11 +3,11 @@
  * Recalculate leg results for display purposes
  */
 
-import { calculateCourse, calculateWaypoints, WaypointResult } from "./courseCalculations";
-import { calculateCompassCourse, calculateDeviation } from "./compassDeviation";
-import { loadAircraftFromUrl } from "./aircraftStorage";
-import { getFuelResultUnit, type FuelUnit } from "./fuelConversion";
-import { calculateHaversineDistance } from "./distanceCalculations";
+import { calculateCourse, calculateWaypoints, WaypointResult } from "../courseCalculations";
+import { calculateCompassCourse, calculateDeviation } from "../compassDeviation";
+import { loadAircraftFromUrl } from "../aircraftStorage";
+import { getFuelResultUnit, type FuelUnit } from "../fuelConversion";
+import { calculateHaversineDistance } from "../distanceCalculations";
 import type { FlightPlanLeg } from "./flightPlanStorage";
 
 export interface LegCalculatedResults {

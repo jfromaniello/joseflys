@@ -1,5 +1,5 @@
 import { calculateLegResults } from "./flightPlanCalculations";
-import { SpeedUnit } from "./speedConversion";
+import { SpeedUnit } from "../speedConversion";
 
 /**
  * Flight Plan Storage

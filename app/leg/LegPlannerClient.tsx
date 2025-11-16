@@ -40,10 +40,10 @@ import {
   getFlightPlanById,
   type FlightPlan,
   type FlightPlanLeg,
-} from "@/lib/flightPlanStorage";
+  calculateLegResults,
+} from "@/lib/flightPlan";
 import { BookmarkIcon } from "@heroicons/react/24/outline";
 import { BookmarkIcon as BookmarkSolidIcon } from "@heroicons/react/24/solid";
-import { calculateLegResults } from "@/lib/flightPlanCalculations";
 import { extractNextLegParams } from "@/lib/nextLegParams";
 
 interface LegPlannerClientProps {

@@ -15,9 +15,9 @@ import {
   formatHoursToTime,
   formatTimeHHMM,
 } from "./flightPlanCalculations";
-import { calculateCourse } from "./courseCalculations";
-import { getFuelResultUnit, type FuelUnit } from "./fuelConversion";
-import { getSpeedUnitLabel, type SpeedUnit } from "./speedConversion";
+import { calculateCourse } from "../courseCalculations";
+import { getFuelResultUnit, type FuelUnit } from "../fuelConversion";
+import { getSpeedUnitLabel, type SpeedUnit } from "../speedConversion";
 import {
   formatCourse,
   formatAngle,
@@ -25,7 +25,7 @@ import {
   formatWind,
   formatFuel,
   formatDistance,
-} from "./formatters";
+} from "../formatters";
 
 // Note: All formatting functions now imported from ./formatters
 
