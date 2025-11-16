@@ -31,7 +31,7 @@ export function WaypointsResults({
     <div className="print-page-break-before">
       <div className="flex items-center gap-2 mb-3">
         <h3 className="text-sm font-semibold uppercase tracking-wide" style={{ color: "oklch(0.65 0.15 230)" }}>
-          Flight Checkpoints
+          Leg Timeline
         </h3>
         <Tooltip content="Time and fuel calculations for each checkpoint along your route. 'Leg' shows segment values from previous waypoint. 'Total' shows accumulated values from departure." />
       </div>

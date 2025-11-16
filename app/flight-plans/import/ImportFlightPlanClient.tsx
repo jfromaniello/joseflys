@@ -7,14 +7,12 @@ import { CalculatorPageHeader } from "../../components/CalculatorPageHeader";
 import { Footer } from "../../components/Footer";
 import {
   deserializeFlightPlan,
-} from "@/lib/flightPlanSharing";
-import {
   createFlightPlan,
   getFlightPlanById,
   updateFlightPlan,
   addOrUpdateLeg,
   generateShortId,
-} from "@/lib/flightPlanStorage";
+} from "@/lib/flightPlan";
 import Link from "next/link";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 

@@ -40,6 +40,17 @@ export function serializeFlightPlan(flightPlan: FlightPlan): string {
         ? leg.waypoints.map((w) => [w.name, w.distance])
         : undefined;
 
+      // Convert LegPoints to compact format [name, lat, lon] or [name] (without coords)
+      const from = leg.from
+        ? [leg.from.name, leg.from.lat ?? null, leg.from.lon ?? null]
+        : null;
+      const to = leg.to
+        ? [leg.to.name, leg.to.lat ?? null, leg.to.lon ?? null]
+        : null;
+      const checkpoints = leg.checkpoints
+        ? leg.checkpoints.map((p) => [p.name, p.lat ?? null, p.lon ?? null])
+        : null;
+
       return [
         leg.th,
         leg.tas,
@@ -70,6 +81,10 @@ export function serializeFlightPlan(flightPlan: FlightPlan): string {
         waypoints,
         leg.fromCity || "",
         leg.toCity || "",
+        leg.var ?? null, // Position 29: magnetic variation (WMM convention)
+        from, // Position 30: from point [name, lat, lon]
+        to, // Position 31: to point [name, lat, lon]
+        checkpoints, // Position 32: checkpoints [[name, lat, lon], ...]
       ];
     });
 
@@ -153,6 +168,10 @@ export function deserializeFlightPlan(serialized: string): Omit<FlightPlan, "id"
         waypoints,
         fromCity,
         toCity,
+        varParam, // Position 29: magnetic variation (WMM convention)
+        fromCompact, // Position 30: from point [name, lat, lon]
+        toCompact, // Position 31: to point [name, lat, lon]
+        checkpointsCompact, // Position 32: checkpoints [[name, lat, lon], ...]
       ] = compactLeg;
 
       // Reconstruct waypoints from compact format
@@ -162,6 +181,34 @@ export function deserializeFlightPlan(serialized: string): Omit<FlightPlan, "id"
             distance,
           }))
         : undefined;
+
+      // Reconstruct LegPoints from compact format [name, lat, lon]
+      const from =
+        fromCompact && Array.isArray(fromCompact)
+          ? {
+              name: fromCompact[0] as string,
+              lat: fromCompact[1] !== null ? parseNumericValue(fromCompact[1]) : undefined,
+              lon: fromCompact[2] !== null ? parseNumericValue(fromCompact[2]) : undefined,
+            }
+          : undefined;
+
+      const to =
+        toCompact && Array.isArray(toCompact)
+          ? {
+              name: toCompact[0] as string,
+              lat: toCompact[1] !== null ? parseNumericValue(toCompact[1]) : undefined,
+              lon: toCompact[2] !== null ? parseNumericValue(toCompact[2]) : undefined,
+            }
+          : undefined;
+
+      const checkpoints =
+        checkpointsCompact && Array.isArray(checkpointsCompact)
+          ? checkpointsCompact.map((point: unknown[]) => ({
+              name: point[0] as string,
+              lat: point[1] !== null ? parseNumericValue(point[1]) : undefined,
+              lon: point[2] !== null ? parseNumericValue(point[2]) : undefined,
+            }))
+          : undefined;
 
       // Parse numeric values with backwards compatibility for strings
       const parsedTh = parseNumericValue(th);
@@ -181,6 +228,7 @@ export function deserializeFlightPlan(serialized: string): Omit<FlightPlan, "id"
         wd: parseNumericValue(wd),
         ws: parseNumericValue(ws),
         md: parsedMd,
+        var: parseNumericValue(varParam),
         dist: parsedDist,
         ff: parsedFf,
         fuelUnit,
@@ -206,6 +254,9 @@ export function deserializeFlightPlan(serialized: string): Omit<FlightPlan, "id"
         waypoints: reconstructedWaypoints,
         fromCity: fromCity || undefined,
         toCity: toCity || undefined,
+        from,
+        to,
+        checkpoints,
       };
     });
 

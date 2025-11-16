@@ -10,18 +10,24 @@ import {
   loadFlightPlans,
   deleteFlightPlan,
   type FlightPlan,
-} from "@/lib/flightPlanStorage";
+  buildLocalChartUrl,
+  generateShareUrl,
+} from "@/lib/flightPlan";
 import {
   TrashIcon,
   EyeIcon,
   PlusIcon,
   ClockIcon,
   CalendarIcon,
+  MapIcon,
+  ShareIcon,
+  CheckIcon,
 } from "@heroicons/react/24/outline";
 
 export function FlightPlansClient() {
   const [flightPlans, setFlightPlans] = useState<FlightPlan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [shareSuccessId, setShareSuccessId] = useState<string | null>(null);
 
   useEffect(() => {
     const plans = loadFlightPlans();
@@ -35,6 +41,29 @@ export function FlightPlansClient() {
       if (success) {
         setFlightPlans(flightPlans.filter((p) => p.id !== planId));
       }
+    }
+  };
+
+  const handleShare = async (plan: FlightPlan) => {
+    try {
+      const shareUrl = generateShareUrl(plan);
+
+      // Try to use Web Share API if available
+      if (navigator.share) {
+        await navigator.share({
+          title: `Flight Plan: ${plan.name}`,
+          text: `Check out this flight plan with ${plan.legs.length} leg${plan.legs.length !== 1 ? "s" : ""}`,
+          url: shareUrl,
+        });
+      } else {
+        // Fallback to copying to clipboard
+        await navigator.clipboard.writeText(shareUrl);
+        setShareSuccessId(plan.id);
+        setTimeout(() => setShareSuccessId(null), 2000);
+      }
+    } catch (error) {
+      // User cancelled share or clipboard failed
+      console.error("Share failed:", error);
     }
   };
 
@@ -162,6 +191,26 @@ export function FlightPlansClient() {
                         size="sm"
                         showText={false}
                       />
+                      <button
+                        onClick={() => handleShare(plan)}
+                        className="p-2 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 rounded-lg transition-colors cursor-pointer"
+                        title="Share flight plan"
+                      >
+                        {shareSuccessId === plan.id ? (
+                          <CheckIcon className="w-5 h-5" />
+                        ) : (
+                          <ShareIcon className="w-5 h-5" />
+                        )}
+                      </button>
+                      {buildLocalChartUrl(plan) && (
+                        <Link
+                          href={buildLocalChartUrl(plan)!}
+                          className="p-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg transition-colors cursor-pointer"
+                          title="View on map"
+                        >
+                          <MapIcon className="w-5 h-5" />
+                        </Link>
+                      )}
                       <Link
                         href={`/flight-plans/${plan.id}`}
                         className="p-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-lg transition-colors"
@@ -171,7 +220,7 @@ export function FlightPlansClient() {
                       </Link>
                       <button
                         onClick={() => handleDelete(plan.id, plan.name)}
-                        className="p-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg transition-colors"
+                        className="p-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg transition-colors cursor-pointer"
                         title="Delete flight plan"
                       >
                         <TrashIcon className="w-5 h-5" />

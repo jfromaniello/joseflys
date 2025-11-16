@@ -1,4 +1,5 @@
 import { Tooltip } from "@/app/components/Tooltip";
+import { parseDirection } from "@/lib/formatters";
 
 interface WindInputsProps {
   windDir: string;
@@ -14,9 +15,9 @@ export function WindInputs({
   setWindSpeed,
 }: WindInputsProps) {
   const handleWindDirBlur = () => {
-    const num = parseFloat(windDir);
-    if (!isNaN(num) && num >= 0 && num <= 360) {
-      setWindDir(String(Math.round(num)).padStart(3, '0'));
+    const formatted = parseDirection(windDir);
+    if (formatted && formatted !== windDir) {
+      setWindDir(formatted);
     }
   };
 

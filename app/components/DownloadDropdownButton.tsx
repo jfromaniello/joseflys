@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import type { FlightPlan } from "@/lib/flightPlanStorage";
-import { generateFlightPlanPDF } from "@/lib/flightPlanPdfExport";
-import { generateFlightPlanXLS } from "@/lib/flightPlanXlsExport";
+import type { FlightPlan } from "@/lib/flightPlan";
+import { generateFlightPlanPDF } from "@/lib/flightPlan";
+import { generateFlightPlanXLS } from "@/lib/flightPlan";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 
 interface DownloadDropdownButtonProps {

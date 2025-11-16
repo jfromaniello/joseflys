@@ -35,6 +35,8 @@ interface NewLegButtonProps {
   flightPlanId?: string;
   /** Flight plan name for display purposes */
   flightPlanName?: string;
+  /** Current leg's "To" location becomes next leg's "From" location */
+  toPoint?: { lat: number; lon: number; name: string };
 }
 
 export function NewLegButton({
@@ -53,6 +55,7 @@ export function NewLegButton({
   fuelUsed,
   flightPlanId,
   flightPlanName,
+  toPoint,
 }: NewLegButtonProps) {
   const handleNewLeg = () => {
     // Use shared utility to build next leg URL
@@ -73,6 +76,7 @@ export function NewLegButton({
       windSpeed,
       fuelUsed,
       flightPlanId,
+      toPoint,
     });
 
     // Open new tab with carried-over parameters

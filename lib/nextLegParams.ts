@@ -3,8 +3,8 @@
  * Used by both NewLegButton and Flight Plan's "Add Leg" button
  */
 
-import type { FlightPlanLeg } from "./flightPlanStorage";
-import type { LegCalculatedResults } from "./flightPlanCalculations";
+import type { FlightPlanLeg } from "./flightPlan";
+import type { LegCalculatedResults } from "./flightPlan";
 
 export interface NextLegParams {
   magVar?: string; // WMM convention (positive=E, negative=W)
@@ -21,6 +21,8 @@ export interface NextLegParams {
   elapsedDistance: number;
   fuelUsed?: number;
   flightPlanId?: string;
+  /** Current leg's "To" location becomes next leg's "From" location */
+  toPoint?: { lat: number; lon: number; name: string };
 }
 
 /**
@@ -32,8 +34,8 @@ export interface NextLegParams {
 export function buildNextLegUrl(params: NextLegParams): string {
   const urlParams = new URLSearchParams();
 
-  // Carry over these values (use WMM 'var' parameter)
-  if (params.magVar) urlParams.set("var", params.magVar);
+  // Carry over these values
+  // NOTE: magVar is NOT carried over - it will be auto-calculated based on new from/to coordinates
   if (params.departureTime) urlParams.set("depTime", params.departureTime);
 
   // Prioritize plane (includes deviation table) over legacy devTable param
@@ -63,6 +65,14 @@ export function buildNextLegUrl(params: NextLegParams): string {
   // Set previous fuel used (total fuel used from current leg) - rounded to 1 decimal
   if (params.fuelUsed !== undefined && params.fuelUsed > 0) {
     urlParams.set("prevFuel", params.fuelUsed.toFixed(1));
+  }
+
+  // Set "From" location from current leg's "To" location
+  if (params.toPoint) {
+    // Use the quantizeCoordinate function from coordinateUrlParams for consistency
+    const { quantizeCoordinate } = require("@/lib/coordinateUrlParams");
+    const fromCompact = `${quantizeCoordinate(params.toPoint.lat)}~${quantizeCoordinate(params.toPoint.lon)}~${params.toPoint.name}`;
+    urlParams.set("from", fromCompact);
   }
 
   // Include flight plan ID if this leg belongs to a flight plan
@@ -105,5 +115,8 @@ export function extractNextLegParams(
     elapsedDistance: (leg.elapsedDist || 0) + leg.dist,
     fuelUsed: legResults?.totalFuel,
     flightPlanId,
+    toPoint: leg.to?.lat !== undefined && leg.to?.lon !== undefined
+      ? { lat: leg.to.lat, lon: leg.to.lon, name: leg.to.name }
+      : undefined,
   };
 }

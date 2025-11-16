@@ -1,4 +1,4 @@
-import type { FlightPlanLeg } from "./flightPlanStorage";
+import type { FlightPlanLeg } from "./flightPlan";
 import { toKnots } from "./speedConversion";
 import { calculateCompassCourse } from "./compassDeviation";
 import { loadAircraftFromUrl } from "./aircraftStorage";
