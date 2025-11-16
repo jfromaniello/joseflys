@@ -92,10 +92,14 @@ export function WaypointsCompact({
           {waypointResults.map((waypoint, index) => (
             <div
               key={index}
-              className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-6 gap-y-1 py-3 px-4 rounded-lg bg-slate-900/30 hover:bg-slate-700/30 transition-colors border border-slate-700/40"
+              className={`grid gap-x-6 py-3 px-4 rounded-lg bg-slate-900/30 hover:bg-slate-700/30 transition-colors border border-slate-700/40 ${
+                showFuel && waypoint.fuelUsed !== undefined
+                  ? "grid-cols-[1fr_auto_auto_auto_auto_auto_auto]"
+                  : "grid-cols-[1fr_auto_auto_auto_auto]"
+              }`}
             >
-              {/* Row 1: Name, Distance (Leg), Distance (Total), Time (Leg), Time (Total) */}
-              <div className="row-span-2 flex flex-col justify-center">
+              {/* Name and ETA */}
+              <div className="flex flex-col justify-center">
                 <div className="font-semibold text-sm" style={{ color: "white" }}>
                   {waypoint.name}
                 </div>
@@ -144,34 +148,30 @@ export function WaypointsCompact({
                 </div>
               </div>
 
-              {/* Row 2: Fuel (if available) - spans across the metric columns */}
+              {/* Fuel Leg (if available) */}
               {showFuel && waypoint.fuelUsed !== undefined && (
-                <>
-                  <div></div> {/* Spacer for distance leg column */}
-                  <div></div> {/* Spacer for distance total column */}
-
-                  {/* Fuel Leg */}
-                  <div className="flex flex-col items-end">
-                    <div className="text-xs uppercase tracking-wide" style={{ color: "oklch(0.5 0.15 50)" }}>
-                      Fuel Leg
-                    </div>
-                    <div className="text-sm font-mono mt-0.5" style={{ color: "oklch(0.7 0.12 50)" }}>
-                      {waypoint.fuelSinceLast !== undefined
-                        ? formatFuel(waypoint.fuelSinceLast, getFuelResultUnit(fuelUnit))
-                        : "—"}
-                    </div>
+                <div className="flex flex-col items-end">
+                  <div className="text-xs uppercase tracking-wide" style={{ color: "oklch(0.5 0.15 50)" }}>
+                    Fuel Leg
                   </div>
-
-                  {/* Fuel Total */}
-                  <div className="flex flex-col items-end">
-                    <div className="text-xs uppercase tracking-wide" style={{ color: "oklch(0.5 0.15 50)" }}>
-                      Fuel Total
-                    </div>
-                    <div className="text-sm font-mono font-semibold mt-0.5" style={{ color: "oklch(0.75 0.15 50)" }}>
-                      {formatFuel(waypoint.fuelUsed, getFuelResultUnit(fuelUnit))}
-                    </div>
+                  <div className="text-sm font-mono mt-0.5" style={{ color: "oklch(0.7 0.12 50)" }}>
+                    {waypoint.fuelSinceLast !== undefined
+                      ? formatFuel(waypoint.fuelSinceLast, getFuelResultUnit(fuelUnit))
+                      : "—"}
                   </div>
-                </>
+                </div>
+              )}
+
+              {/* Fuel Total (if available) */}
+              {showFuel && waypoint.fuelUsed !== undefined && (
+                <div className="flex flex-col items-end">
+                  <div className="text-xs uppercase tracking-wide" style={{ color: "oklch(0.5 0.15 50)" }}>
+                    Fuel Total
+                  </div>
+                  <div className="text-sm font-mono font-semibold mt-0.5" style={{ color: "oklch(0.75 0.15 50)" }}>
+                    {formatFuel(waypoint.fuelUsed, getFuelResultUnit(fuelUnit))}
+                  </div>
+                </div>
               )}
             </div>
           ))}
