@@ -36,9 +36,11 @@ import {
   PlusIcon,
   ShareIcon,
   CheckIcon,
+  MapIcon,
 } from "@heroicons/react/24/outline";
 import { compressForUrl } from "@/lib/urlCompression";
 import { formatCourse, formatWind, formatDistance } from "@/lib/formatters";
+import { buildLocalChartUrl } from "@/lib/flightPlanUtils";
 
 interface FlightPlanDetailClientProps {
   flightPlanId: string;
@@ -314,6 +316,16 @@ export function FlightPlanDetailClient({
                     </>
                   )}
                 </button>
+                {buildLocalChartUrl(flightPlan) && (
+                  <Link
+                    href={buildLocalChartUrl(flightPlan)!}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                    title="View flight plan on local chart"
+                  >
+                    <MapIcon className="w-4 h-4" />
+                    <span className="hidden sm:inline">View on Map</span>
+                  </Link>
+                )}
                 <Link
                   href={`/leg?fp=${flightPlan.id}`}
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
