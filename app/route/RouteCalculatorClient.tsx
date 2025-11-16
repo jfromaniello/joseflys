@@ -15,10 +15,10 @@ import {
 } from "@/lib/distanceCalculations";
 import { quantizeCoordinate } from "@/lib/coordinateUrlParams";
 import { magvar } from "magvar";
-import { formatAngle } from "@/lib/formatters";
+import { formatAngle, formatCourse } from "@/lib/formatters";
 
-// Dynamic import for DistanceMap to avoid SSR issues with Leaflet
-const DistanceMap = dynamic(() => import("./DistanceMap").then((mod) => mod.DistanceMap), {
+// Dynamic import for RouteMap to avoid SSR issues with Leaflet
+const RouteMap = dynamic(() => import("./RouteMap").then((mod) => mod.RouteMap), {
   ssr: false,
   loading: () => (
     <div className="w-full h-96 rounded-xl bg-slate-800/50 border-2 border-gray-700 flex items-center justify-center">
@@ -44,6 +44,15 @@ function parseCoordinates(text: string): { lat: number; lon: number } | null {
   }
 
   return { lat, lon };
+}
+
+// Helper function to normalize angle to 0-360 range
+function normalizeHeading(heading: number): number {
+  let normalized = heading % 360;
+  if (normalized < 0) {
+    normalized += 360;
+  }
+  return normalized;
 }
 
 type InputMode = "search" | "coordinates";
@@ -78,7 +87,7 @@ interface InitialToLocation {
   name?: string;
 }
 
-interface DistanceCalculatorClientProps {
+interface RouteCalculatorClientProps {
   initialFromLat?: string;
   initialFromLon?: string;
   initialFromName?: string;
@@ -89,7 +98,7 @@ interface DistanceCalculatorClientProps {
   initialToName?: string;
 }
 
-export function DistanceCalculatorClient({
+export function RouteCalculatorClient({
   initialFromLat,
   initialFromLon,
   initialFromName,
@@ -98,7 +107,7 @@ export function DistanceCalculatorClient({
   initialToLat,
   initialToLon,
   initialToName,
-}: DistanceCalculatorClientProps) {
+}: RouteCalculatorClientProps) {
   // Input mode toggle
   const [inputMode, setInputMode] = useState<InputMode>("search");
 
@@ -316,6 +325,15 @@ export function DistanceCalculatorClient({
       ? magvar(midLat, midLon, 0) // Altitude 0 (sea level)
       : null;
 
+    // Calculate magnetic heading from true heading - declination
+    // Aviation mnemonics: "East is Least, West is Best"
+    // WMM Convention: positive = East, negative = West
+    // Formula: magneticHeading = trueHeading - declination
+    // Example: TH=12°, VAR=7.5°W(-7.5): MH = 12 - (-7.5) = 19.5° ✓
+    const magneticHeading = bearing !== null && magneticVariation !== null
+      ? normalizeHeading(bearing - magneticVariation)
+      : null;
+
     const distanceExceedsLimit =
       distance !== null && distance > MAX_RECOMMENDED_DISTANCE_NM;
 
@@ -325,6 +343,7 @@ export function DistanceCalculatorClient({
       distance,
       bearing,
       magneticVariation,
+      magneticHeading,
       distanceExceedsLimit,
       validCoordinates,
     };
@@ -457,10 +476,10 @@ export function DistanceCalculatorClient({
   })();
 
   return (
-    <PageLayout currentPage="distance">
+    <PageLayout currentPage="route">
       <CalculatorPageHeader
-        title="Distance Calculator"
-        description="Calculate great circle distance and initial bearing between two points using WGS-84 geodesic algorithms for high-precision navigation"
+        title="Route Calculator"
+        description="Calculate distance, true bearing, magnetic heading, and variation between points using WGS-84 geodesic algorithms for high-precision navigation"
       />
 
       <main className="w-full max-w-4xl print-hide-footer">
@@ -899,9 +918,9 @@ export function DistanceCalculatorClient({
                       </h3>
                     )}
 
-                    {/* Distance, Bearing, and Magnetic Variation Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr] gap-4">
-                      {/* Distance Result - Larger */}
+                    {/* Distance, Bearings, and Magnetic Variation Cards */}
+                    <div className="space-y-4">
+                      {/* Distance Result - Full Width */}
                       <div className="p-6 rounded-xl text-center bg-linear-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30 print:p-4">
                         <div className="flex items-center justify-center mb-2 print:mb-1">
                           <p
@@ -926,54 +945,82 @@ export function DistanceCalculatorClient({
                         </p>
                       </div>
 
-                      {/* Bearing Result */}
-                      <div className="p-6 rounded-xl text-center bg-linear-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/30 print:p-4">
-                        <div className="flex items-center justify-center mb-2 print:mb-1">
+                      {/* Bearings and Variation - Three Equal Columns */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* True Bearing Result */}
+                        <div className="p-6 rounded-xl text-center bg-linear-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/30 print:p-4">
+                          <div className="flex items-center justify-center mb-2 print:mb-1">
+                            <p
+                              className="text-sm font-semibold uppercase tracking-wider print:text-xs"
+                              style={{ color: "rgb(192, 132, 252)" }}
+                            >
+                              True Bearing
+                            </p>
+                            <Tooltip content="The true bearing (course over ground) at departure, referenced to true north. For short to medium distances, this can be used as your True Heading. Note: on longer great circle routes, the bearing changes continuously along the path." />
+                          </div>
                           <p
-                            className="text-sm font-semibold uppercase tracking-wider print:text-xs"
-                            style={{ color: "rgb(192, 132, 252)" }}
+                            className="text-4xl sm:text-5xl font-bold mb-1 print:text-3xl print:mb-0"
+                            style={{ color: "white" }}
                           >
-                            Initial True Bearing
+                            {formatCourse(result.bearing!)}
                           </p>
-                          <Tooltip content="The true bearing at departure. This is the initial course to fly from the departure point. Note: bearing changes along a great circle route." />
+                          <p
+                            className="text-base print:text-sm"
+                            style={{ color: "oklch(0.6 0.02 240)" }}
+                          >
+                            true
+                          </p>
                         </div>
-                        <p
-                          className="text-4xl sm:text-5xl font-bold mb-1 print:text-3xl print:mb-0"
-                          style={{ color: "white" }}
-                        >
-                          {Math.round(result.bearing!).toString().padStart(3, '0')}°
-                        </p>
-                        <p
-                          className="text-base print:text-sm"
-                          style={{ color: "oklch(0.6 0.02 240)" }}
-                        >
-                          true
-                        </p>
-                      </div>
 
-                      {/* Magnetic Variation Result */}
-                      <div className="p-6 rounded-xl text-center bg-linear-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/30 print:p-4">
-                        <div className="flex items-center justify-center mb-2 print:mb-1">
+                        {/* Magnetic Variation Result */}
+                        <div className="p-6 rounded-xl text-center bg-linear-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/30 print:p-4">
+                          <div className="flex items-center justify-center mb-2 print:mb-1">
+                            <p
+                              className="text-sm font-semibold uppercase tracking-wider print:text-xs"
+                              style={{ color: "oklch(0.65 0.15 60)" }}
+                            >
+                              Magnetic Variation
+                            </p>
+                            <Tooltip content="Magnetic variation (declination) at the midpoint between origin and destination, using the World Magnetic Model (WMM) at sea level. East variation means magnetic north is east of true north; West means it's west of true north. Remember: 'East is Least, West is Best' when converting between true and magnetic courses." />
+                          </div>
                           <p
-                            className="text-sm font-semibold uppercase tracking-wider print:text-xs"
-                            style={{ color: "oklch(0.65 0.15 60)" }}
+                            className="text-4xl sm:text-5xl font-bold mb-1 print:text-3xl print:mb-0"
+                            style={{ color: "white" }}
                           >
-                            Magnetic Variation
+                            {formatAngle(result.magneticVariation, 1)}
                           </p>
-                          <Tooltip content="Magnetic variation at the midpoint between origin and destination. Positive values indicate East variation, negative indicate West. This is the WMM (World Magnetic Model) value at sea level." />
+                          <p
+                            className="text-base print:text-sm"
+                            style={{ color: "oklch(0.6 0.02 240)" }}
+                          >
+                            at midpoint
+                          </p>
                         </div>
-                        <p
-                          className="text-4xl sm:text-5xl font-bold mb-1 print:text-3xl print:mb-0"
-                          style={{ color: "white" }}
-                        >
-                          {formatAngle(result.magneticVariation, 1)}
-                        </p>
-                        <p
-                          className="text-base print:text-sm"
-                          style={{ color: "oklch(0.6 0.02 240)" }}
-                        >
-                          at midpoint
-                        </p>
+
+                        {/* Magnetic Heading Result */}
+                        <div className="p-6 rounded-xl text-center bg-linear-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/30 print:p-4">
+                          <div className="flex items-center justify-center mb-2 print:mb-1">
+                            <p
+                              className="text-sm font-semibold uppercase tracking-wider print:text-xs"
+                              style={{ color: "oklch(0.65 0.15 150)" }}
+                            >
+                              Magnetic Heading
+                            </p>
+                            <Tooltip content="The magnetic heading at departure, referenced to magnetic north. Calculated by applying magnetic variation to the true bearing (True - Variation = Magnetic). For short to medium distances, this can be used as your Magnetic Heading. You'll still need to apply wind correction to get your final compass heading." />
+                          </div>
+                          <p
+                            className="text-4xl sm:text-5xl font-bold mb-1 print:text-3xl print:mb-0"
+                            style={{ color: "white" }}
+                          >
+                            {formatCourse(result.magneticHeading!)}
+                          </p>
+                          <p
+                            className="text-base print:text-sm"
+                            style={{ color: "oklch(0.6 0.02 240)" }}
+                          >
+                            magnetic
+                          </p>
+                        </div>
                       </div>
                     </div>
 
@@ -987,7 +1034,7 @@ export function DistanceCalculatorClient({
 
               {/* Map */}
               <div className="mt-6 print:mt-4">
-                <DistanceMap
+                <RouteMap
                   fromLat={fromLatNum}
                   fromLon={fromLonNum}
                   toLocations={toLocations.filter((_, i) => results[i].validCoordinates)}
@@ -1024,7 +1071,7 @@ export function DistanceCalculatorClient({
                   <div className="flex flex-col gap-2">
                     <ShareButtonSimple
                       shareData={{
-                        title: "José's Distance Calculator",
+                        title: "José's Route Calculator",
                         text: results.length === 1 && results[0].distance !== null && results[0].bearing !== null
                           ? `Distance: ${Math.round(results[0].distance)} NM, Bearing: ${Math.round(results[0].bearing).toString().padStart(3, '0')}°T`
                           : `${results.filter(r => r.validCoordinates).length} destinations calculated`,

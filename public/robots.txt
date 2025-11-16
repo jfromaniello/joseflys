@@ -12,8 +12,14 @@ User-agent: *
 Disallow: /api/
 
 # Allow all pages
-Allow: /tas
+Allow: /
+Allow: /leg
 Allow: /course
-Allow: /distance
+Allow: /tas
 Allow: /conversions
+Allow: /route
 Allow: /planning
+Allow: /isa
+Allow: /climb
+Allow: /segments
+Allow: /local-chart

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { createPageMetadata } from "@/lib/metadata";
 
-interface DistancePageProps {
+interface RoutePageProps {
   searchParams: Promise<{
     fromLat?: string;
     fromLon?: string;
@@ -14,7 +14,7 @@ interface DistancePageProps {
 
 export async function generateMetadata({
   searchParams,
-}: DistancePageProps): Promise<Metadata> {
+}: RoutePageProps): Promise<Metadata> {
   const params = await searchParams;
   const fromLat = params.fromLat || "";
   const fromLon = params.fromLon || "";
@@ -22,10 +22,11 @@ export async function generateMetadata({
   const toLon = params.toLon || "";
 
   return createPageMetadata({
-    title: "Distance & Bearing Calculator | WGS-84 Geodesic Navigation",
+    title: "Route Calculator | Distance, Bearing & Magnetic Variation",
     description:
-      "Calculate precise geodesic distance and true bearing using WGS-84 with Karney's algorithm. High-precision navigation calculator for pilots. Search cities or enter coordinates.",
+      "Calculate route information: geodesic distance, true bearing, magnetic heading, and variation using WGS-84 with Karney's algorithm. High-precision navigation calculator for pilots. Search cities or enter coordinates.",
     keywords: [
+      "route calculator",
       "distance calculator",
       "geodesic distance calculator",
       "geodesic distance",
@@ -34,10 +35,14 @@ export async function generateMetadata({
       "GeographicLib",
       "Karney algorithm",
       "Karney method",
-      "aviation distance calculator",
+      "aviation route calculator",
       "bearing calculator",
       "true bearing calculator",
       "true bearing",
+      "magnetic heading calculator",
+      "magnetic heading",
+      "magnetic variation",
+      "magnetic declination",
       "initial bearing",
       "final bearing",
       "geodesic navigation",
@@ -46,8 +51,6 @@ export async function generateMetadata({
       "airport distance calculator",
       "airport distance",
       "nautical miles calculator",
-      "statute miles calculator",
-      "kilometers calculator",
       "route planning",
       "flight route calculator",
       "high precision navigation",
@@ -56,6 +59,6 @@ export async function generateMetadata({
       "lat lon calculator",
       "latitude longitude calculator",
     ],
-    path: "/distance",
+    path: "/route",
   });
 }

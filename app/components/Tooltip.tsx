@@ -29,7 +29,7 @@ export function Tooltip({ content }: TooltipProps) {
       {/* Tooltip popup */}
       {isOpen && (
         <div
-          className="absolute z-50 w-64 p-3 rounded-lg shadow-xl text-sm leading-relaxed left-1/2 -translate-x-1/2 mt-2 border"
+          className="absolute z-[9999] w-64 p-3 rounded-lg shadow-xl text-sm leading-relaxed left-1/2 -translate-x-1/2 mt-2 border"
           style={{
             backgroundColor: "oklch(0.2 0.025 240)",
             borderColor: "oklch(0.65 0.15 230)",
@@ -37,7 +37,7 @@ export function Tooltip({ content }: TooltipProps) {
           }}
         >
           <div
-            className="absolute w-3 h-3 rotate-45 -top-1.5 left-1/2 -translate-x-1/2 border-l border-t"
+            className="absolute w-3 h-3 rotate-45 -top-1.5 left-1/2 -translate-x-1/2 border-l border-t z-[9999]"
             style={{
               backgroundColor: "oklch(0.2 0.025 240)",
               borderColor: "oklch(0.65 0.15 230)",

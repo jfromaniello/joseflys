@@ -1,16 +1,16 @@
 import { Suspense } from "react";
-import { DistanceCalculatorClient } from "./DistanceCalculatorClient";
+import { RouteCalculatorClient } from "./RouteCalculatorClient";
 import { parseMultipleLocationParams } from "@/lib/coordinateUrlParams";
 
 export { generateMetadata } from "./metadata";
 
-interface DistancePageProps {
+interface RoutePageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-export default async function DistancePage({
+export default async function RoutePage({
   searchParams,
-}: DistancePageProps) {
+}: RoutePageProps) {
   const params = await searchParams;
 
   // Convert to URLSearchParams for parsing
@@ -37,7 +37,7 @@ export default async function DistancePage({
         </div>
       }
     >
-      <DistanceCalculatorClient
+      <RouteCalculatorClient
         initialFromLat={fromLat}
         initialFromLon={fromLon}
         initialFromName={fromName}

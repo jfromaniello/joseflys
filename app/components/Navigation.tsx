@@ -90,9 +90,9 @@ const pages = [
     ),
   },
   {
-    id: "distance" as const,
-    name: "Distance Calculator",
-    href: "/distance",
+    id: "route" as const,
+    name: "Route Calculator",
+    href: "/route",
     icon: (
       <svg
         className="w-4 h-4"

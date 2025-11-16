@@ -10,7 +10,7 @@ interface ToLocationMap {
   lon: number;
 }
 
-interface DistanceMapProps {
+interface RouteMapProps {
   fromLat: number;
   fromLon: number;
   toLocations: ToLocationMap[];
@@ -59,11 +59,11 @@ const createCustomIcon = (color: string) => {
 
 const fromIcon = createCustomIcon('#0ea5e9'); // sky-500
 
-export function DistanceMap({
+export function RouteMap({
   fromLat,
   fromLon,
   toLocations,
-}: DistanceMapProps) {
+}: RouteMapProps) {
   const fromPosition: [number, number] = [fromLat, fromLon];
 
   // Calculate center point from all locations

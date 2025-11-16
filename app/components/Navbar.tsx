@@ -4,7 +4,7 @@ import { useState, Fragment } from "react";
 import Link from "next/link";
 import { Dialog, Transition, TransitionChild, DialogPanel, Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/react";
 
-type Page = "home" | "tas" | "course" | "leg" | "conversions" | "planning" | "distance" | "local-chart" | "segments" | "isa" | "climb" | "my-planes" | "flight-plans";
+type Page = "home" | "tas" | "course" | "leg" | "conversions" | "planning" | "route" | "local-chart" | "segments" | "isa" | "climb" | "my-planes" | "flight-plans";
 
 interface NavbarProps {
   currentPage: Page;
@@ -92,9 +92,9 @@ const calculators = [
     ),
   },
   {
-    id: "distance" as const,
-    name: "Distance Calculator",
-    href: "/distance",
+    id: "route" as const,
+    name: "Route Calculator",
+    href: "/route",
     icon: (
       <svg
         className="w-5 h-5"

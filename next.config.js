@@ -12,6 +12,15 @@ const withSerwist = withSerwistInit({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: false, // Disabled for Cesium 3D compatibility
+  async redirects() {
+    return [
+      {
+        source: '/distance',
+        destination: '/route',
+        permanent: true,
+      },
+    ];
+  },
   webpack: (config, { isServer }) => {
     // Configure Cesium assets to be publicly accessible
     if (!isServer) {

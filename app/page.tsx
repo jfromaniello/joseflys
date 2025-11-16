@@ -255,9 +255,9 @@ export default function Home() {
             </div>
           </Link>
 
-          {/* Distance Calculator Card */}
+          {/* Route Calculator Card */}
           <Link
-            href="/distance"
+            href="/route"
             className="group block p-8 rounded-2xl bg-slate-800/50 backdrop-blur-sm border-2 border-gray-700 hover:border-sky-500/50 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             <div className="flex items-start gap-4 mb-4">
@@ -278,13 +278,13 @@ export default function Home() {
               </div>
               <div className="flex-1">
                 <h2 className="text-2xl font-bold mb-2" style={{ color: "white" }}>
-                  Distance Calculator
+                  Route Calculator
                 </h2>
                 <p
                   className="text-sm leading-relaxed"
                   style={{ color: "oklch(0.65 0.02 240)" }}
                 >
-                  Calculate precise distances and bearings between coordinates
+                  Calculate distance, true bearing, magnetic heading, and variation
                   using WGS-84 geodesic algorithms for high-precision navigation
                 </p>
               </div>
