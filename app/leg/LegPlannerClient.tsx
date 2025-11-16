@@ -45,45 +45,7 @@ import {
 import { BookmarkIcon } from "@heroicons/react/24/outline";
 import { BookmarkIcon as BookmarkSolidIcon } from "@heroicons/react/24/solid";
 import { extractNextLegParams } from "@/lib/nextLegParams";
-
-interface LegPlannerClientProps {
-  initialTh: string;
-  initialTas: string;
-  initialWd: string;
-  initialWs: string;
-  initialMagVar: string; // WMM convention (positive=E, negative=W)
-  initialDist: string;
-  initialFf: string;
-  initialDevTable: string;
-  initialPlane: string;
-  initialDesc: string;
-  initialSpeedUnit: string;
-  initialFuelUnit: string;
-  initialWaypoints: string;
-  initialDepTime: string;
-  initialElapsedMin: string;
-  initialElapsedDist: string;
-  initialPrevFuel: string;
-  initialClimbTas: string;
-  initialClimbDist: string;
-  initialClimbFuel: string;
-  initialClimbWd: string;
-  initialClimbWs: string;
-  initialDescentTas: string;
-  initialDescentDist: string;
-  initialDescentFuel: string;
-  initialDescentWd: string;
-  initialDescentWs: string;
-  initialAdditionalFuel: string;
-  initialApproachLandingFuel: string;
-  initialFlightPlanId: string;
-  initialLegId: string;
-  initialFromCity: string;
-  initialToCity: string;
-  initialFrom?: { lat: string; lon: string; name?: string };
-  initialTo?: { lat: string; lon: string; name?: string };
-  initialCheckpoints: Array<{ lat: string; lon: string; name?: string }>;
-}
+import { LegPlannerProps } from "./types";
 
 export function LegPlannerClient({
   initialTh,
@@ -122,7 +84,7 @@ export function LegPlannerClient({
   initialFrom,
   initialTo,
   initialCheckpoints,
-}: LegPlannerClientProps) {
+}: LegPlannerProps) {
   const [trueHeading, setTrueHeading] = useState<string>(initialTh);
   const [tas, setTas] = useState<string>(initialTas);
   const [windDir, setWindDir] = useState<string>(initialWd);

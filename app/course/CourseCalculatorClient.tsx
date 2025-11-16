@@ -19,25 +19,7 @@ import { ShareButtonSimple } from "../components/ShareButtonSimple";
 import { toKnots } from "@/lib/speedConversion";
 import { Tooltip } from "@/app/components/Tooltip";
 import { formatCourse, formatAngle } from "@/lib/formatters";
-
-interface CourseCalculatorClientProps {
-  initialTh: string;
-  initialTas: string;
-  initialWd: string;
-  initialWs: string;
-  initialMagVar: string; // WMM convention (positive=E, negative=W)
-  initialDist: string;
-  initialFf: string;
-  initialDevTable: string;
-  initialPlane?: string;
-  initialDesc: string;
-  initialSpeedUnit: string;
-  initialFuelUnit: string;
-  initialWaypoints: string;
-  initialDepTime: string;
-  initialElapsedMin: string;
-  initialPrevFuel: string;
-}
+import { CourseCalculatorProps } from "./types";
 
 export function CourseCalculatorClient({
   initialTh,
@@ -49,7 +31,7 @@ export function CourseCalculatorClient({
   initialPlane,
   initialDesc,
   initialSpeedUnit,
-}: CourseCalculatorClientProps) {
+}: CourseCalculatorProps) {
   const [trueHeading, setTrueHeading] = useState<string>(initialTh);
   const [tas, setTas] = useState<string>(initialTas);
   const [windDir, setWindDir] = useState<string>(initialWd);

@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { CourseCalculatorProps } from "./types";
 
 const CourseCalculatorClient = dynamic(() => import("./CourseCalculatorClient").then(mod => ({ default: mod.CourseCalculatorClient })), {
   ssr: false,
@@ -11,24 +12,6 @@ const CourseCalculatorClient = dynamic(() => import("./CourseCalculatorClient").
   ),
 });
 
-interface ClientWrapperProps {
-  initialTh: string;
-  initialTas: string;
-  initialWd: string;
-  initialWs: string;
-  initialMagVar: string; // WMM convention (positive=E, negative=W)
-  initialDist: string;
-  initialFf: string;
-  initialDevTable: string;
-  initialDesc: string;
-  initialSpeedUnit: string;
-  initialFuelUnit: string;
-  initialWaypoints: string;
-  initialDepTime: string;
-  initialElapsedMin: string;
-  initialPrevFuel: string;
-}
-
-export function ClientWrapper(props: ClientWrapperProps) {
+export function ClientWrapper(props: CourseCalculatorProps) {
   return <CourseCalculatorClient {...props} />;
 }
