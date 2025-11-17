@@ -7,20 +7,31 @@
 ### Available Formatters
 
 - `formatCourse(course)` → "090°", "270°", "005°"
-- `formatWCA(wca)` → "5°E", "10°W", "0°"
-- `formatDeviation(deviation)` → "5°E", "10°W", "0°"
+- `formatAngle(angle, decimals?)` → "10.5°E", "8.2°W" (for magnetic variation)
+- `formatCorrection(angle, decimals?)` → "+8°", "-3°", "0°" (for WCA, compass deviation)
+- `formatDeviation(deviation)` → "5.0°E", "3.0°W" (legacy, inverts sign)
 - `formatWind(dir, speed, compact?)` → "270°/15" or "270° at 15 KT"
 - `formatFuel(fuel, unit)` → "25.5 GAL"
 - `formatDistance(distance)` → "123.5"
-- `formatAngle(angle, decimals?)` → "10.5°E", "8.2°W"
 
 ```tsx
-// ✅ Correct
-import { formatCourse } from "@/lib/formatters";
-<p>{formatCourse(results.magneticHeading)}</p>
+// ✅ Correct - Magnetic Variation (E/W notation)
+import { formatAngle } from "@/lib/formatters";
+<p>{formatAngle(magneticVariation, 1)}</p> // "10.5°E" or "8.2°W"
 
-// ❌ Wrong
+// ✅ Correct - WCA and Compass Deviation (+/- notation)
+import { formatCorrection } from "@/lib/formatters";
+<p>{formatCorrection(windCorrectionAngle, 0)}</p> // "+8°" or "-3°"
+
+// ✅ Correct - Courses (3-digit)
+import { formatCourse } from "@/lib/formatters";
+<p>{formatCourse(results.magneticHeading)}</p> // "090°"
+
+// ❌ Wrong - Inline formatting
 <p>{`${String(Math.round(results.magneticHeading)).padStart(3, '0')}°`}</p>
+
+// ❌ Wrong - Using formatAngle for WCA (should use formatCorrection)
+<p>{formatAngle(windCorrectionAngle, 0)}</p> // Shows "3°E" instead of "+3°"
 ```
 
 ---
@@ -32,8 +43,10 @@ import { formatCourse } from "@/lib/formatters";
 - **Negative (-)**: West of true north
 
 ### Project Standards
-1. **Internal**: Use WMM signs (positive=East, negative=West)
-2. **Display**: Use `formatAngle()` for E/W format
+1. **Internal**: Use WMM signs (positive=East, negative=West) for magnetic variation
+2. **Display Formats**:
+   - Magnetic Variation: Use `formatAngle()` for E/W format (e.g., "10.5°E")
+   - WCA & Compass Deviation: Use `formatCorrection()` for +/- format (e.g., "+8°", "-3°")
 3. **Calculations**: Always `trueCourse = magneticCourse - declination`
 
 ```tsx
@@ -42,19 +55,29 @@ const declination = magvar(lat, lon, 0);
 const trueCourse = magneticCourse - declination;
 // Example: 090° - (+10°) = 080°
 
-// Display
+// Display - Magnetic Variation (E/W)
 formatAngle(declination); // "10.0°E"
+
+// Display - WCA and Compass Deviation (+/-)
+formatCorrection(windCorrectionAngle); // "+8°" or "-3°"
+formatCorrection(compassDeviation); // "+2°" or "0°"
 
 // Note: In our codebase, 'th' field/param always represents True Course
 ```
 
-**Common Mistake:**
+**Common Mistakes:**
 ```tsx
-// ❌ Wrong
+// ❌ Wrong - Magnetic variation E/W direction reversed
 const direction = angle > 0 ? 'W' : 'E';
 
-// ✅ Correct
+// ✅ Correct - Magnetic variation (positive=East)
 const direction = angle > 0 ? 'E' : 'W';
+
+// ❌ Wrong - Using formatAngle for WCA (shows E/W instead of +/-)
+formatAngle(windCorrectionAngle, 0); // "3°E" - confusing!
+
+// ✅ Correct - Using formatCorrection for WCA (shows +/-)
+formatCorrection(windCorrectionAngle, 0); // "+3°" - clear!
 ```
 
 ## Button Cursor Styling

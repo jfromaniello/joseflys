@@ -22,6 +22,7 @@ import { getSpeedUnitLabel, type SpeedUnit } from "../speedConversion";
 import {
   formatCourse,
   formatAngle,
+  formatCorrection,
   formatDeviation,
   formatWind,
   formatFuel,
@@ -194,8 +195,8 @@ export function generateFlightPlanPDF(flightPlan: FlightPlan): void {
     // Check if this is an alternative leg
     const isAlternative = alternativeLegs.has(leg.id);
 
-    // Format leg name - add [Alt.] prefix for alternatives
-    const baseLegName = leg.desc || `Leg ${legIndex + 1}`;
+    // Format leg name - use description, then from city name, then fallback to "Leg N"
+    const baseLegName = leg.desc || leg.from?.name || leg.fromCity || `Leg ${legIndex + 1}`;
     const legName = isAlternative ? `[Alt.] ${baseLegName}` : baseLegName;
 
     const altitude = "-";
@@ -219,7 +220,7 @@ export function generateFlightPlanPDF(flightPlan: FlightPlan): void {
         trueCourse: formatCourse(leg.th),
         declination: formatDeviation(leg.md),
         magneticCourse: formatCourse(courseCalc.magneticCourse),
-        wca: formatAngle(courseCalc.windCorrectionAngle, 0),
+        wca: formatCorrection(courseCalc.windCorrectionAngle, 0),
         magneticHeading: formatCourse(magneticHeading),
         deviation: compassDeviation !== null ? formatDeviation(compassDeviation) : "-",
         compassHeading: compassCourse !== null ? formatCourse(compassCourse) : "-",
@@ -304,7 +305,7 @@ export function generateFlightPlanPDF(flightPlan: FlightPlan): void {
           trueCourse: formatCourse(leg.th),
           declination: formatDeviation(leg.md),
           magneticCourse: formatCourse(courseCalc.magneticCourse),
-          wca: formatAngle(courseCalc.windCorrectionAngle, 0),
+          wca: formatCorrection(courseCalc.windCorrectionAngle, 0),
           magneticHeading: formatCourse(magneticHeading),
           deviation: compassDeviation !== null ? formatDeviation(compassDeviation) : "-",
           compassHeading: compassCourse !== null ? formatCourse(compassCourse) : "-",
@@ -334,7 +335,7 @@ export function generateFlightPlanPDF(flightPlan: FlightPlan): void {
         trueCourse: formatCourse(leg.th),
         declination: formatDeviation(leg.md),
         magneticCourse: formatCourse(courseCalc.magneticCourse),
-        wca: formatAngle(courseCalc.windCorrectionAngle, 0),
+        wca: formatCorrection(courseCalc.windCorrectionAngle, 0),
         magneticHeading: formatCourse(magneticHeading),
         deviation: compassDeviation !== null ? formatDeviation(compassDeviation) : "-",
         compassHeading: compassCourse !== null ? formatCourse(compassCourse) : "-",

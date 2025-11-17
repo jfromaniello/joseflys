@@ -183,6 +183,35 @@ export function formatAngle(angle: number | null | undefined, decimals: number =
 }
 
 /**
+ * Format angular correction with sign notation
+ * Used for Wind Correction Angle (WCA) and Compass Deviation
+ * Displays with explicit + or - sign (no E/W notation)
+ *
+ * Examples: 8.5 → "+9°", -3.2 → "-3°", 0 → "0°"
+ *
+ * @param angle - Angle in degrees (positive or negative)
+ * @param decimals - Number of decimal places (default: 0)
+ * @returns Formatted string like "+8°", "-3°", or "0°"
+ */
+export function formatCorrection(angle: number | null | undefined, decimals: number = 0): string {
+  if (angle === null || angle === undefined || isNaN(angle)) {
+    return "-";
+  }
+
+  // Round to desired precision first
+  const roundedAngle = Number(angle.toFixed(decimals));
+
+  // If effectively zero, return "0°"
+  if (roundedAngle === 0) {
+    return "0°";
+  }
+
+  // Format with explicit sign
+  const sign = roundedAngle > 0 ? "+" : "";
+  return `${sign}${roundedAngle.toFixed(decimals)}°`;
+}
+
+/**
  * Parse and normalize heading/direction to 3-digit format
  * Used for parsing URL parameters and user input
  *

@@ -18,7 +18,7 @@ import { CorrectionsInputs } from "./components/CorrectionsInputs";
 import { ShareButtonSimple } from "../components/ShareButtonSimple";
 import { toKnots } from "@/lib/speedConversion";
 import { Tooltip } from "@/app/components/Tooltip";
-import { formatCourse, formatAngle } from "@/lib/formatters";
+import { formatCourse, formatAngle, formatCorrection } from "@/lib/formatters";
 import { CourseCalculatorProps } from "./types";
 
 export function CourseCalculatorClient({
@@ -439,6 +439,107 @@ export function CourseCalculatorClient({
                   Intermediate Values
                 </h3>
 
+                {/* Course Calculation Flow Diagram */}
+                <div className="mb-4 p-4 rounded-lg bg-slate-900/40 border border-sky-500/30">
+                  <h4 className="text-xs font-semibold mb-3 uppercase tracking-wide text-center" style={{ color: "oklch(0.65 0.15 230)" }}>
+                    Course Calculation Flow
+                  </h4>
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-center">
+                    {/* True Course */}
+                    <div className="flex flex-col sm:flex-row items-center gap-2">
+                      <div className="px-3 py-2 rounded bg-sky-500/20 border border-sky-500/50">
+                        <div className="text-[10px] font-medium mb-0.5" style={{ color: "oklch(0.65 0.15 230)" }}>TC</div>
+                        <div className="text-sm font-bold" style={{ color: "oklch(0.9 0.15 230)" }}>
+                          {!isNaN(th) ? formatCourse(th) : '—'}
+                        </div>
+                      </div>
+                      <div className="flex flex-col sm:flex-row items-center gap-1">
+                        <div className="w-px h-8 bg-sky-400/40 sm:hidden"></div>
+                        <div className="h-px w-8 bg-sky-400/40 hidden sm:block"></div>
+                        <div className="text-xs font-medium text-left" style={{ color: "oklch(0.6 0.02 240)" }}>
+                          <div className="text-[9px] opacity-70">VAR</div>
+                          <div>{magVar ? formatAngle(parseFloat(magVar), 1) : '—'}</div>
+                        </div>
+                        <span className="hidden sm:inline text-sky-400 text-lg">→</span>
+                        <span className="sm:hidden text-sky-400 text-lg">↓</span>
+                      </div>
+                    </div>
+
+                    {/* Magnetic Course */}
+                    <div className="flex flex-col sm:flex-row items-center gap-2">
+                      <div className="px-3 py-2 rounded bg-purple-500/20 border border-purple-500/50">
+                        <div className="text-[10px] font-medium mb-0.5" style={{ color: "oklch(0.65 0.15 300)" }}>MC</div>
+                        <div className="text-sm font-bold" style={{ color: "oklch(0.85 0.15 300)" }}>
+                          {formatCourse(results.magneticCourse)}
+                        </div>
+                      </div>
+                      <div className="flex flex-col sm:flex-row items-center gap-1">
+                        <div className="w-px h-8 bg-sky-400/40 sm:hidden"></div>
+                        <div className="h-px w-8 bg-sky-400/40 hidden sm:block"></div>
+                        <div className="text-xs font-medium text-left" style={{ color: "oklch(0.6 0.02 240)" }}>
+                          <div className="text-[9px] opacity-70">WCA</div>
+                          <div>{formatCorrection(results.windCorrectionAngle, 0)}</div>
+                        </div>
+                        <span className="hidden sm:inline text-sky-400 text-lg">→</span>
+                        <span className="sm:hidden text-sky-400 text-lg">↓</span>
+                      </div>
+                    </div>
+
+                    {/* Magnetic Heading */}
+                    <div className="flex flex-col sm:flex-row items-center gap-2">
+                      <div className="px-3 py-2 rounded bg-amber-500/20 border border-amber-500/50">
+                        <div className="text-[10px] font-medium mb-0.5" style={{ color: "oklch(0.65 0.15 60)" }}>MH</div>
+                        <div className="text-sm font-bold" style={{ color: "oklch(0.85 0.15 60)" }}>
+                          {formatCourse(results.magneticHeading)}
+                        </div>
+                      </div>
+                      <div className="flex flex-col sm:flex-row items-center gap-1">
+                        <div className="w-px h-8 bg-sky-400/40 sm:hidden"></div>
+                        <div className="h-px w-8 bg-sky-400/40 hidden sm:block"></div>
+                        <div className="text-xs font-medium text-left" style={{ color: "oklch(0.6 0.02 240)" }}>
+                          <div className="text-[9px] opacity-70">Dev</div>
+                          <div>{(() => {
+                            if (!results.hasDeviationTable) return '0°';
+                            // Handle angle wrapping for deviation calculation
+                            let dev = results.compassCourse - results.magneticHeading;
+                            if (dev > 180) dev -= 360;
+                            if (dev < -180) dev += 360;
+                            return formatCorrection(dev, 0);
+                          })()}</div>
+                        </div>
+                        <span className="hidden sm:inline text-sky-400 text-lg">→</span>
+                        <span className="sm:hidden text-sky-400 text-lg">↓</span>
+                      </div>
+                    </div>
+
+                    {/* Compass Course */}
+                    <div className="px-3 py-2 rounded bg-green-500/20 border border-green-500/50">
+                      <div className="text-[10px] font-medium mb-0.5" style={{ color: "oklch(0.65 0.15 150)" }}>CC</div>
+                      <div className="text-sm font-bold" style={{ color: "oklch(0.8 0.15 150)" }}>
+                        {formatCourse(results.compassCourse)}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Legend */}
+                  <div className="mt-3 pt-3 border-t border-gray-700">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs" style={{ color: "oklch(0.6 0.02 240)" }}>
+                      <div><span className="font-semibold" style={{ color: "oklch(0.8 0.15 230)" }}>TC:</span> True Course</div>
+                      <div><span className="font-semibold" style={{ color: "oklch(0.75 0.15 300)" }}>MC:</span> Magnetic Course</div>
+                      <div>
+                        <span className="font-semibold" style={{ color: "oklch(0.75 0.15 60)" }}>MH:</span> Magnetic Heading
+                        <span className="text-[10px] italic block sm:inline sm:ml-1">(aka "True Heading")</span>
+                      </div>
+                      <div><span className="font-semibold" style={{ color: "oklch(0.7 0.15 150)" }}>CC:</span> Compass Course</div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs mt-2" style={{ color: "oklch(0.6 0.02 240)" }}>
+                      <div><span className="font-semibold">VAR:</span> Magnetic Variation</div>
+                      <div><span className="font-semibold">WCA:</span> Wind Correction Angle</div>
+                      <div><span className="font-semibold">Dev:</span> Compass Deviation</div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* All intermediate values in one row on desktop */}
                 <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
                   {/* Wind Correction Angle */}
@@ -447,10 +548,10 @@ export function CourseCalculatorClient({
                       <p className="text-xs font-medium" style={{ color: "white" }}>
                         WCA
                       </p>
-                      <Tooltip content="Wind Correction Angle: The angle you need to adjust your heading to compensate for wind drift. Positive (East) means crosswind from right, negative (West) means crosswind from left." />
+                      <Tooltip content="Wind Correction Angle: The angle you need to adjust your heading to compensate for wind drift. Positive means crosswind from right, negative means crosswind from left." />
                     </div>
                     <p className="text-xl font-bold text-center" style={{ color: "white" }}>
-                      {formatAngle(results.windCorrectionAngle, 0)}
+                      {formatCorrection(results.windCorrectionAngle, 0)}
                     </p>
                   </div>
 

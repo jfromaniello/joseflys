@@ -21,6 +21,7 @@ import { getSpeedUnitLabel, type SpeedUnit } from "../speedConversion";
 import {
   formatCourse,
   formatAngle,
+  formatCorrection,
   formatDeviation,
   formatWind,
   formatFuel,
@@ -152,8 +153,8 @@ export function generateFlightPlanXLS(flightPlan: FlightPlan): void {
     // Check if this is an alternative leg
     const isAlternative = alternativeLegs.has(leg.id);
 
-    // Format leg name - add [Alt.] prefix for alternatives
-    const baseLegName = leg.desc || `Leg ${legIndex + 1}`;
+    // Format leg name - use description, then from city name, then fallback to "Leg N"
+    const baseLegName = leg.desc || leg.from?.name || leg.fromCity || `Leg ${legIndex + 1}`;
     const legName = isAlternative ? `[Alt.] ${baseLegName}` : baseLegName;
 
     const altitude = "-";
@@ -177,7 +178,7 @@ export function generateFlightPlanXLS(flightPlan: FlightPlan): void {
         formatCourse(leg.th),
         formatDeviation(leg.md),
         formatCourse(courseCalc.magneticCourse),
-        formatAngle(courseCalc.windCorrectionAngle, 0),
+        formatCorrection(courseCalc.windCorrectionAngle, 0),
         formatCourse(magneticHeading),
         compassDeviation !== null ? formatDeviation(compassDeviation) : "-",
         compassCourse !== null ? formatCourse(compassCourse) : "-",
@@ -244,7 +245,7 @@ export function generateFlightPlanXLS(flightPlan: FlightPlan): void {
           formatCourse(leg.th),
           formatDeviation(leg.md),
           formatCourse(courseCalc.magneticCourse),
-          formatAngle(courseCalc.windCorrectionAngle, 0),
+          formatCorrection(courseCalc.windCorrectionAngle, 0),
           formatCourse(magneticHeading),
           compassDeviation !== null ? formatDeviation(compassDeviation) : "-",
           compassCourse !== null ? formatCourse(compassCourse) : "-",
@@ -274,7 +275,7 @@ export function generateFlightPlanXLS(flightPlan: FlightPlan): void {
         formatCourse(leg.th),
         formatDeviation(leg.md),
         formatCourse(courseCalc.magneticCourse),
-        formatAngle(courseCalc.windCorrectionAngle, 0),
+        formatCorrection(courseCalc.windCorrectionAngle, 0),
         formatCourse(magneticHeading),
         compassDeviation !== null ? formatDeviation(compassDeviation) : "-",
         compassCourse !== null ? formatCourse(compassCourse) : "-",

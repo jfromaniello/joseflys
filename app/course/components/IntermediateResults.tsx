@@ -1,7 +1,7 @@
 import { Tooltip } from "@/app/components/Tooltip";
 import { CourseCalculations } from "@/lib/courseCalculations";
 import { FuelUnit, getFuelResultUnit } from "@/lib/fuelConversion";
-import { formatCourse, formatAngle } from "@/lib/formatters";
+import { formatCourse, formatAngle, formatCorrection } from "@/lib/formatters";
 
 interface IntermediateResultsProps {
   results: CourseCalculations;
@@ -9,7 +9,12 @@ interface IntermediateResultsProps {
   fuelFlow?: number;
 }
 
-export function IntermediateResults({ results, fuelUnit }: IntermediateResultsProps) {
+interface IntermediateResultsExtendedProps extends IntermediateResultsProps {
+  trueCourse?: number;
+  magVar?: number;
+}
+
+export function IntermediateResults({ results, fuelUnit, trueCourse, magVar }: IntermediateResultsExtendedProps) {
   // Calculate leg-specific values (just for THIS leg, not including elapsed time)
   const legTimeMinutes = results.eta ? Math.round(results.eta * 60) : undefined;
   // Use the pre-calculated leg fuel from results (includes all leg fuel components)
@@ -24,11 +29,119 @@ export function IntermediateResults({ results, fuelUnit }: IntermediateResultsPr
   const phaseCount = (hasClimbData ? 1 : 0) + (hasCruiseData ? 1 : 0) + (hasDescentData ? 1 : 0);
   const gridCols = phaseCount === 3 ? 'grid-cols-3' : 'grid-cols-2';
 
+  // Calculate compass deviation (difference between MH and CC)
+  // Handle angle wrapping (e.g., if MH=359° and CC=001°, dev should be +2° not -358°)
+  const calculateDeviation = (cc: number, mh: number): number => {
+    let dev = cc - mh;
+    // Normalize to -180 to +180 range
+    if (dev > 180) dev -= 360;
+    if (dev < -180) dev += 360;
+    return dev;
+  };
+
+  const compassDeviation = results.hasDeviationTable
+    ? calculateDeviation(results.compassCourse, results.magneticHeading)
+    : 0;
+
   return (
     <div className="print-page-break-before">
       <h3 className="text-sm font-semibold mb-3 uppercase tracking-wide" style={{ color: "oklch(0.65 0.15 230)" }}>
         Intermediate Values
       </h3>
+
+      {/* Course Calculation Flow Diagram */}
+      <div className="mb-4 p-4 rounded-lg bg-slate-900/40 border border-sky-500/30">
+        <h4 className="text-xs font-semibold mb-3 uppercase tracking-wide text-center" style={{ color: "oklch(0.65 0.15 230)" }}>
+          Course Calculation Flow
+        </h4>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-center">
+          {/* True Course */}
+          <div className="flex flex-col sm:flex-row items-center gap-2">
+            <div className="px-3 py-2 rounded bg-sky-500/20 border border-sky-500/50">
+              <div className="text-[10px] font-medium mb-0.5" style={{ color: "oklch(0.65 0.15 230)" }}>TC</div>
+              <div className="text-sm font-bold" style={{ color: "oklch(0.9 0.15 230)" }}>
+                {trueCourse !== undefined ? formatCourse(trueCourse) : '—'}
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row items-center gap-1">
+              <div className="w-px h-8 bg-sky-400/40 sm:hidden"></div>
+              <div className="h-px w-8 bg-sky-400/40 hidden sm:block"></div>
+              <div className="text-xs font-medium text-left" style={{ color: "oklch(0.6 0.02 240)" }}>
+                <div className="text-[9px] opacity-70">VAR</div>
+                <div>{magVar !== undefined ? formatAngle(magVar, 1) : '—'}</div>
+              </div>
+              <span className="hidden sm:inline text-sky-400 text-lg">→</span>
+              <span className="sm:hidden text-sky-400 text-lg">↓</span>
+            </div>
+          </div>
+
+          {/* Magnetic Course */}
+          <div className="flex flex-col sm:flex-row items-center gap-2">
+            <div className="px-3 py-2 rounded bg-purple-500/20 border border-purple-500/50">
+              <div className="text-[10px] font-medium mb-0.5" style={{ color: "oklch(0.65 0.15 300)" }}>MC</div>
+              <div className="text-sm font-bold" style={{ color: "oklch(0.85 0.15 300)" }}>
+                {formatCourse(results.magneticCourse)}
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row items-center gap-1">
+              <div className="w-px h-8 bg-sky-400/40 sm:hidden"></div>
+              <div className="h-px w-8 bg-sky-400/40 hidden sm:block"></div>
+              <div className="text-xs font-medium text-left" style={{ color: "oklch(0.6 0.02 240)" }}>
+                <div className="text-[9px] opacity-70">WCA</div>
+                <div>{formatCorrection(results.windCorrectionAngle, 0)}</div>
+              </div>
+              <span className="hidden sm:inline text-sky-400 text-lg">→</span>
+              <span className="sm:hidden text-sky-400 text-lg">↓</span>
+            </div>
+          </div>
+
+          {/* Magnetic Heading */}
+          <div className="flex flex-col sm:flex-row items-center gap-2">
+            <div className="px-3 py-2 rounded bg-amber-500/20 border border-amber-500/50">
+              <div className="text-[10px] font-medium mb-0.5" style={{ color: "oklch(0.65 0.15 60)" }}>MH</div>
+              <div className="text-sm font-bold" style={{ color: "oklch(0.85 0.15 60)" }}>
+                {formatCourse(results.magneticHeading)}
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row items-center gap-1">
+              <div className="w-px h-8 bg-sky-400/40 sm:hidden"></div>
+              <div className="h-px w-8 bg-sky-400/40 hidden sm:block"></div>
+              <div className="text-xs font-medium text-left" style={{ color: "oklch(0.6 0.02 240)" }}>
+                <div className="text-[9px] opacity-70">Dev</div>
+                <div>{results.hasDeviationTable ? formatCorrection(compassDeviation, 0) : '0°'}</div>
+              </div>
+              <span className="hidden sm:inline text-sky-400 text-lg">→</span>
+              <span className="sm:hidden text-sky-400 text-lg">↓</span>
+            </div>
+          </div>
+
+          {/* Compass Course */}
+          <div className="px-3 py-2 rounded bg-green-500/20 border border-green-500/50">
+            <div className="text-[10px] font-medium mb-0.5" style={{ color: "oklch(0.65 0.15 150)" }}>CC</div>
+            <div className="text-sm font-bold" style={{ color: "oklch(0.8 0.15 150)" }}>
+              {formatCourse(results.compassCourse)}
+            </div>
+          </div>
+        </div>
+
+        {/* Legend */}
+        <div className="mt-3 pt-3 border-t border-gray-700">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs" style={{ color: "oklch(0.6 0.02 240)" }}>
+            <div><span className="font-semibold" style={{ color: "oklch(0.8 0.15 230)" }}>TC:</span> True Course</div>
+            <div><span className="font-semibold" style={{ color: "oklch(0.75 0.15 300)" }}>MC:</span> Magnetic Course</div>
+            <div>
+              <span className="font-semibold" style={{ color: "oklch(0.75 0.15 60)" }}>MH:</span> Magnetic Heading
+              <span className="text-[10px] italic block sm:inline sm:ml-1">(aka "True Heading")</span>
+            </div>
+            <div><span className="font-semibold" style={{ color: "oklch(0.7 0.15 150)" }}>CC:</span> Compass Course</div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs mt-2" style={{ color: "oklch(0.6 0.02 240)" }}>
+            <div><span className="font-semibold">VAR:</span> Magnetic Variation</div>
+            <div><span className="font-semibold">WCA:</span> Wind Correction Angle</div>
+            <div><span className="font-semibold">Dev:</span> Compass Deviation</div>
+          </div>
+        </div>
+      </div>
 
       {/* Flight Phase Breakdown (if climb or descent data provided) */}
       {hasPhaseData && (
@@ -145,47 +258,8 @@ export function IntermediateResults({ results, fuelUnit }: IntermediateResultsPr
         </div>
       )}
 
-      {/* First Row - MC, WCA, MH, Crosswind, Tailwind */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-3">
-        {/* Magnetic Course */}
-        <div className="p-3 rounded-lg bg-slate-900/30 border border-gray-700">
-          <div className="flex items-center justify-center mb-1">
-            <p className="text-xs font-medium" style={{ color: "white" }}>
-              MC
-            </p>
-            <Tooltip content="Magnetic Course: Your true course after applying magnetic variation, but before wind correction. This is the direction you would fly in no-wind conditions using a magnetic compass." />
-          </div>
-          <p className="text-xl font-bold text-center" style={{ color: "white" }}>
-            {formatCourse(results.magneticCourse)}
-          </p>
-        </div>
-
-        {/* Wind Correction Angle */}
-        <div className="p-3 rounded-lg bg-slate-900/30 border border-gray-700">
-          <div className="flex items-center justify-center mb-1">
-            <p className="text-xs font-medium" style={{ color: "white" }}>
-              WCA
-            </p>
-            <Tooltip content="Wind Correction Angle: The angle you need to adjust your heading to compensate for wind drift. Positive (East) means crosswind from right, negative (West) means crosswind from left." />
-          </div>
-          <p className="text-xl font-bold text-center" style={{ color: "white" }}>
-            {formatAngle(results.windCorrectionAngle, 0)}
-          </p>
-        </div>
-
-        {/* Magnetic Heading */}
-        <div className="p-3 rounded-lg bg-slate-900/30 border border-gray-700">
-          <div className="flex items-center justify-center mb-1">
-            <p className="text-xs font-medium" style={{ color: "white" }}>
-              MH
-            </p>
-            <Tooltip content="Magnetic Heading: The heading after applying wind correction angle and magnetic variation. This is used to calculate the final Compass Course. Note: Sometimes incorrectly called 'True Heading' in some references." />
-          </div>
-          <p className="text-xl font-bold text-center" style={{ color: "white" }}>
-            {formatCourse(results.magneticHeading)}
-          </p>
-        </div>
-
+      {/* Intermediate Values - Single Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         {/* Crosswind */}
         <div className="p-3 rounded-lg bg-slate-900/30 border border-gray-700">
           <div className="flex items-center justify-center mb-1">
@@ -214,10 +288,7 @@ export function IntermediateResults({ results, fuelUnit }: IntermediateResultsPr
             {Math.round(Math.abs(results.headwind))} KT
           </p>
         </div>
-      </div>
 
-      {/* Second Row - Leg Time, Leg Fuel, ETAS */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
         {/* Leg Time */}
         <div className={`p-3 rounded-lg ${legTimeMinutes !== undefined ? 'bg-slate-900/30 border-gray-700' : 'bg-slate-900/20 border-gray-800'} border`}>
           <div className="flex items-center justify-center mb-1">

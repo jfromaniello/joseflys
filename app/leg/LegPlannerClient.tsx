@@ -1069,6 +1069,8 @@ export function LegPlannerClient({
                 results={results}
                 fuelUnit={fuelUnit}
                 fuelFlow={ff}
+                trueCourse={thVal}
+                magVar={magVar ? parseFloat(magVar) : undefined}
               />
 
               {/* Primary Results */}
