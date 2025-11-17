@@ -74,7 +74,8 @@ export interface FlightPlanLeg {
 
   // Flight navigation & wind
   /**
-   * True heading in degrees (0-359°)
+   * True course in degrees (0-359°)
+   * Note: Despite the field name 'th', this represents true course (desired track over ground)
    */
   th: number;
 
@@ -119,14 +120,14 @@ export interface FlightPlanLeg {
   /**
    * Starting point of the leg with coordinates
    * Optional - if not provided, shows "Leg Start" in UI
-   * When coordinates are present, True Heading, Distance, and Mag Var can be auto-calculated
+   * When coordinates are present, True Course, Distance, and Mag Var can be auto-calculated
    */
   from?: LegPoint;
 
   /**
    * Ending point of the leg with coordinates
    * Optional - if not provided, shows "Leg End" in UI
-   * When coordinates are present, True Heading, Distance, and Mag Var can be auto-calculated
+   * When coordinates are present, True Course, Distance, and Mag Var can be auto-calculated
    */
   to?: LegPoint;
 

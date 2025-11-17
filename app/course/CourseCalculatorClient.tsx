@@ -32,7 +32,7 @@ export function CourseCalculatorClient({
   initialDesc,
   initialSpeedUnit,
 }: CourseCalculatorProps) {
-  const [trueHeading, setTrueHeading] = useState<string>(initialTh);
+  const [trueCourse, setTrueCourse] = useState<string>(initialTh);
   const [tas, setTas] = useState<string>(initialTas);
   const [windDir, setWindDir] = useState<string>(initialWd);
   const [windSpeed, setWindSpeed] = useState<string>(initialWs);
@@ -76,7 +76,7 @@ export function CourseCalculatorClient({
   // Update URL when parameters change (client-side only, no page reload)
   useEffect(() => {
     const params = new URLSearchParams();
-    if (trueHeading) params.set("th", trueHeading);
+    if (trueCourse) params.set("th", trueCourse); // 'th' kept for URL params (True Course)
     if (tas) params.set("tas", tas);
     if (windDir) params.set("wd", windDir);
     if (windSpeed) params.set("ws", windSpeed);
@@ -107,10 +107,10 @@ export function CourseCalculatorClient({
     // Use window.history.replaceState instead of router.replace to avoid server requests
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState(null, '', newUrl);
-  }, [trueHeading, tas, windDir, windSpeed, magVar, description, deviationTable, speedUnit, aircraft]);
+  }, [trueCourse, tas, windDir, windSpeed, magVar, description, deviationTable, speedUnit, aircraft]);
 
   // Calculate results during render (not in useEffect to avoid cascading renders)
-  const th = parseFloat(trueHeading);
+  const th = parseFloat(trueCourse);
   const tasVal = parseFloat(tas);
   // Convert TAS to knots for calculations
   const tasInKnots = !isNaN(tasVal) ? toKnots(tasVal, speedUnit) : NaN;
@@ -125,7 +125,7 @@ export function CourseCalculatorClient({
 
   // Load example data
   const loadExample = () => {
-    setTrueHeading("090");
+    setTrueCourse("090");
     setTas("120");
     setWindDir("180");
     setWindSpeed("25");
@@ -139,7 +139,7 @@ export function CourseCalculatorClient({
     fromName: string;
     toName: string;
   }) => {
-    setTrueHeading(data.bearing.toString().padStart(3, '0'));
+    setTrueCourse(data.bearing.toString().padStart(3, '0'));
     if (!description) {
       setDescription(`${data.fromName} to ${data.toName}`);
     }
@@ -207,7 +207,7 @@ export function CourseCalculatorClient({
                   </button>
                   {/* Custom Tooltip */}
                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none whitespace-nowrap border border-gray-700 z-50">
-                    Search for two cities or airports to automatically populate True Heading and Description fields
+                    Search for two cities or airports to automatically populate True Course and Description fields
                     <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-slate-900"></div>
                   </div>
                 </div>
@@ -403,8 +403,8 @@ export function CourseCalculatorClient({
           <div className="space-y-6 mb-8 print:space-y-3 print:mb-4">
             {/* Course & Speed */}
             <CourseSpeedInputs
-              trueHeading={trueHeading}
-              setTrueHeading={setTrueHeading}
+              trueCourse={trueCourse}
+              setTrueCourse={setTrueCourse}
               tas={tas}
               setTas={setTas}
               speedUnit={speedUnit}
@@ -460,7 +460,7 @@ export function CourseCalculatorClient({
                       <p className="text-xs font-medium" style={{ color: "white" }}>
                         MH
                       </p>
-                      <Tooltip content="Magnetic Heading: The heading after applying wind correction angle and magnetic deviation. This is used to calculate the final Compass Course." />
+                      <Tooltip content="Magnetic Heading: The heading after applying wind correction angle and magnetic variation. This is used to calculate the final Compass Course. Note: Sometimes incorrectly called 'True Heading' in some references." />
                     </div>
                     <p className="text-xl font-bold text-center" style={{ color: "white" }}>
                       {String(Math.round(results.magneticHeading)).padStart(3, '0')}°
@@ -583,7 +583,7 @@ export function CourseCalculatorClient({
               <div className="pt-4 print:hidden grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-4">
                 {/* Start Leg Planning Button */}
                 <a
-                  href={`/leg?th=${trueHeading}&tas=${tas}&wd=${windDir}&ws=${windSpeed}&var=${magVar}${description ? `&desc=${encodeURIComponent(description)}` : ''}${speedUnit !== 'kt' ? `&unit=${speedUnit}` : ''}${deviationTable.length > 0 ? `&devTable=${compressForUrl(deviationTable)}` : ''}`}
+                  href={`/leg?th=${trueCourse}&tas=${tas}&wd=${windDir}&ws=${windSpeed}&var=${magVar}${description ? `&desc=${encodeURIComponent(description)}` : ''}${speedUnit !== 'kt' ? `&unit=${speedUnit}` : ''}${deviationTable.length > 0 ? `&devTable=${compressForUrl(deviationTable)}` : ''}`}
                   className="block px-6 py-4 rounded-xl bg-linear-to-br from-emerald-500/10 to-green-500/10 border-2 border-emerald-500/30 hover:border-emerald-500/50 hover:bg-emerald-500/20 transition-all text-center group"
                 >
                   <div className="flex items-center justify-center gap-3">
@@ -627,7 +627,7 @@ export function CourseCalculatorClient({
                   <ShareButtonSimple
                     shareData={{
                       title: "José's Course Calculator",
-                      text: `Wind: ${windDir}° at ${windSpeed} kt, Heading: ${trueHeading}° → GS: ${results?.groundSpeed.toFixed(1)} kt`,
+                      text: `Wind: ${windDir}° at ${windSpeed} kt, Course: ${trueCourse}° → GS: ${results?.groundSpeed.toFixed(1)} kt`,
                     }}
                   />
                   <button
@@ -682,7 +682,7 @@ export function CourseCalculatorClient({
         isOpen={isDistanceModalOpen}
         onClose={() => setIsDistanceModalOpen(false)}
         onApply={handleDistanceCalculatorApply}
-        description="Search for cities or airports to populate True Heading and Description fields for your course calculation"
+        description="Search for cities or airports to populate True Course and Description fields for your course calculation"
       />
 
       {/* TAS Calculator Modal */}

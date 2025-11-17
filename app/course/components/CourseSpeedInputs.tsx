@@ -4,8 +4,8 @@ import { SpeedUnit } from "@/lib/speedConversion";
 export type { SpeedUnit };
 
 interface CourseSpeedInputsProps {
-  trueHeading: string;
-  setTrueHeading: (value: string) => void;
+  trueCourse: string;
+  setTrueCourse: (value: string) => void;
   tas: string;
   setTas: (value: string) => void;
   speedUnit: SpeedUnit;
@@ -13,22 +13,22 @@ interface CourseSpeedInputsProps {
 }
 
 export function CourseSpeedInputs({
-  trueHeading,
-  setTrueHeading,
+  trueCourse,
+  setTrueCourse,
   tas,
   setTas,
   speedUnit,
   setSpeedUnit,
 }: CourseSpeedInputsProps) {
-  const handleHeadingBlur = () => {
-    const num = parseFloat(trueHeading);
+  const handleCourseBlur = () => {
+    const num = parseFloat(trueCourse);
     if (!isNaN(num) && num >= 0 && num <= 360) {
-      setTrueHeading(String(Math.round(num)).padStart(3, '0'));
+      setTrueCourse(String(Math.round(num)).padStart(3, '0'));
     }
   };
 
-  const headingNum = parseFloat(trueHeading);
-  const isHeadingInvalid = !isNaN(headingNum) && headingNum > 360;
+  const courseNum = parseFloat(trueCourse);
+  const isCourseInvalid = !isNaN(courseNum) && courseNum > 360;
 
   return (
     <div className="course-speed-inputs">
@@ -36,30 +36,30 @@ export function CourseSpeedInputs({
         Course & Speed
       </h3>
       <div className="grid grid-cols-1 lg:grid-cols-[10.5rem_12rem_2rem_10.5rem_6rem_5rem] gap-x-4 gap-y-4 lg:items-center print:grid-cols-[auto_1fr]">
-        {/* True Heading Label */}
+        {/* True Course Label */}
         <label
           className="flex items-center text-sm font-medium mb-2 lg:mb-0"
           style={{ color: "oklch(0.72 0.015 240)" }}
         >
-          True Heading
+          True Course
           <Tooltip content="Your desired track or course over the ground in true degrees (000-360). This is the direction you want to fly, not accounting for wind drift." />
         </label>
 
-        {/* True Heading Input */}
+        {/* True Course Input */}
         <div className="relative">
           <input
             type="text"
-            value={trueHeading}
+            value={trueCourse}
             onChange={(e) => {
               const value = e.target.value;
               // Allow empty or valid numbers
               if (value === '' || /^\d{0,3}$/.test(value)) {
-                setTrueHeading(value);
+                setTrueCourse(value);
               }
             }}
-            onBlur={handleHeadingBlur}
+            onBlur={handleCourseBlur}
             className={`w-full px-4 pr-10 py-3 rounded-xl focus:outline-none focus:ring-2 ${
-              isHeadingInvalid
+              isCourseInvalid
                 ? 'focus:ring-red-500/50 border-red-500'
                 : 'focus:ring-sky-500/50 border-gray-600'
             } transition-all text-lg bg-slate-900/50 border-2 text-white text-right`}

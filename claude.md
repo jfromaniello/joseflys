@@ -34,16 +34,18 @@ import { formatCourse } from "@/lib/formatters";
 ### Project Standards
 1. **Internal**: Use WMM signs (positive=East, negative=West)
 2. **Display**: Use `formatAngle()` for E/W format
-3. **Calculations**: Always `trueHeading = magneticHeading - declination`
+3. **Calculations**: Always `trueCourse = magneticCourse - declination`
 
 ```tsx
 // WMM returns +10 for 10°E, -10 for 10°W
 const declination = magvar(lat, lon, 0);
-const trueHeading = magneticHeading - declination;
+const trueCourse = magneticCourse - declination;
 // Example: 090° - (+10°) = 080°
 
 // Display
 formatAngle(declination); // "10.0°E"
+
+// Note: In our codebase, 'th' field/param always represents True Course
 ```
 
 **Common Mistake:**

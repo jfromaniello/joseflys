@@ -1,13 +1,13 @@
 import { Tooltip } from "@/app/components/Tooltip";
 
 interface CourseInputProps {
-  trueHeading: string;
-  setTrueHeading: (value: string) => void;
+  trueCourse: string;
+  setTrueCourse: (value: string) => void;
 }
 
 export function CourseInput({
-  trueHeading,
-  setTrueHeading,
+  trueCourse,
+  setTrueCourse,
 }: CourseInputProps) {
   return (
     <div className="course-input">
@@ -15,21 +15,21 @@ export function CourseInput({
         Course
       </h3>
       <div className="grid grid-cols-1 lg:grid-cols-[10.5rem_12rem_2rem_10.5rem_12rem] gap-x-4 gap-y-4 lg:items-center">
-        {/* True Heading Label */}
+        {/* True Course Label */}
         <label
           className="flex items-center text-sm font-medium mb-2 lg:mb-0"
           style={{ color: "oklch(0.72 0.015 240)" }}
         >
-          True Heading
-          <Tooltip content="Direction you intend to fly during climb (true heading, 0-360°)" />
+          True Course
+          <Tooltip content="Direction you intend to fly during climb (true course, 0-360°)" />
         </label>
 
-        {/* True Heading Input */}
+        {/* True Course Input */}
         <div className="relative">
           <input
             type="number"
-            value={trueHeading}
-            onChange={(e) => setTrueHeading(e.target.value)}
+            value={trueCourse}
+            onChange={(e) => setTrueCourse(e.target.value)}
             className="w-full px-4 pr-10 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white text-right"
             placeholder="090"
             min="0"

@@ -956,7 +956,7 @@ export function RouteCalculatorClient({
                             >
                               True Bearing
                             </p>
-                            <Tooltip content="The true bearing (course over ground) at departure, referenced to true north. For short to medium distances, this can be used as your True Heading. Note: on longer great circle routes, the bearing changes continuously along the path." />
+                            <Tooltip content="The true bearing (course over ground) at departure, referenced to true north. For short to medium distances, this can be used as your True Course. Note: on longer great circle routes, the bearing changes continuously along the path." />
                           </div>
                           <p
                             className="text-4xl sm:text-5xl font-bold mb-1 print:text-3xl print:mb-0"

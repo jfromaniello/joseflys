@@ -407,7 +407,7 @@ html {
   }
 
   /* Reduce right padding for inputs with degree symbol (°) - closer spacing */
-  /* True Heading in course-speed-inputs */
+  /* True Course in course-speed-inputs */
   .course-speed-inputs .grid > div.relative:first-of-type input {
     padding-right: 1.5rem !important;
   }

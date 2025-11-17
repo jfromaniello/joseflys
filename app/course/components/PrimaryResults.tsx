@@ -10,7 +10,7 @@ interface PrimaryResultsProps {
   results: CourseCalculations;
   windDir: string;
   windSpeed: string;
-  trueHeading: string;
+  trueCourse: string;
   speedUnit: SpeedUnit;
   fuelUnit: FuelUnit;
   departureTime?: string;

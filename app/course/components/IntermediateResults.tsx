@@ -179,7 +179,7 @@ export function IntermediateResults({ results, fuelUnit }: IntermediateResultsPr
             <p className="text-xs font-medium" style={{ color: "white" }}>
               MH
             </p>
-            <Tooltip content="Magnetic Heading: The heading after applying wind correction angle and magnetic variation. This is used to calculate the final Compass Course." />
+            <Tooltip content="Magnetic Heading: The heading after applying wind correction angle and magnetic variation. This is used to calculate the final Compass Course. Note: Sometimes incorrectly called 'True Heading' in some references." />
           </div>
           <p className="text-xl font-bold text-center" style={{ color: "white" }}>
             {formatCourse(results.magneticHeading)}

@@ -47,7 +47,7 @@ export function ClimbCalculatorClient({
   const [targetAlt, setTargetAlt] = useState<string>(initialTargetAlt);
   const [densityAlt, setDensityAlt] = useState<string>(initialDA);
   const [weight, setWeight] = useState<string>(initialWeight);
-  const [trueHeading, setTrueHeading] = useState<string>(initialTH);
+  const [trueCourse, setTrueCourse] = useState<string>(initialTH);
   const [windDir, setWindDir] = useState<string>(initialWD);
   const [windSpeed, setWindSpeed] = useState<string>(initialWS);
 
@@ -74,7 +74,7 @@ export function ClimbCalculatorClient({
     if (targetAlt) params.set("tgt", targetAlt);
     if (densityAlt) params.set("da", densityAlt);
     if (weight) params.set("wt", weight);
-    if (trueHeading) params.set("th", trueHeading);
+    if (trueCourse) params.set("th", trueCourse); // 'th' kept for URL params (True Course)
     if (windDir) params.set("wd", windDir);
     if (windSpeed) params.set("ws", windSpeed);
 
@@ -99,14 +99,14 @@ export function ClimbCalculatorClient({
 
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState(null, "", newUrl);
-  }, [currentAlt, targetAlt, densityAlt, weight, trueHeading, windDir, windSpeed, aircraft]);
+  }, [currentAlt, targetAlt, densityAlt, weight, trueCourse, windDir, windSpeed, aircraft]);
 
   // Parse values
   const currentAltVal = parseFloat(currentAlt);
   const targetAltVal = parseFloat(targetAlt);
   const densityAltVal = parseFloat(densityAlt);
   const weightVal = parseFloat(weight);
-  const thVal = parseFloat(trueHeading);
+  const thVal = parseFloat(trueCourse);
   const wdVal = windDir ? parseFloat(windDir) : 0;
   const wsVal = windSpeed ? parseFloat(windSpeed) : 0;
 
@@ -246,8 +246,8 @@ export function ClimbCalculatorClient({
 
             {/* Course */}
             <CourseInput
-              trueHeading={trueHeading}
-              setTrueHeading={setTrueHeading}
+              trueCourse={trueCourse}
+              setTrueCourse={setTrueCourse}
             />
 
             {/* Wind */}

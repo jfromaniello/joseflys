@@ -601,7 +601,7 @@ export function FlightPlanDetailClient({
                                 </div>
                               )}
                               <div className="flex justify-between items-center">
-                                <span className="text-sm" style={{ color: "oklch(0.65 0.05 240)" }}>True Heading</span>
+                                <span className="text-sm" style={{ color: "oklch(0.65 0.05 240)" }}>True Course</span>
                                 <span className="text-base font-bold" style={{ color: "oklch(0.85 0.15 230)" }}>
                                   {formatCourse(leg.th)}
                                 </span>

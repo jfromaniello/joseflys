@@ -23,7 +23,7 @@ export default async function ClimbPage({ searchParams }: ClimbPageProps) {
   const targetAlt = params.tgt || "6000";
   const densityAlt = params.da || "3000";
   const weight = params.wt || "1500";
-  const trueHeading = params.th || "090";
+  const trueCourse = params.th || "090"; // 'th' URL param represents True Course
   const windDir = params.wd || "";
   const windSpeed = params.ws || "";
   const aircraft = params.ac || "C150";
@@ -42,7 +42,7 @@ export default async function ClimbPage({ searchParams }: ClimbPageProps) {
         initialTargetAlt={targetAlt}
         initialDA={densityAlt}
         initialWeight={weight}
-        initialTH={trueHeading}
+        initialTH={trueCourse}
         initialWD={windDir}
         initialWS={windSpeed}
         initialAircraft={aircraft}

@@ -85,7 +85,7 @@ export function LegPlannerClient({
   initialTo,
   initialCheckpoints,
 }: LegPlannerProps) {
-  const [trueHeading, setTrueHeading] = useState<string>(initialTh);
+  const [trueCourse, setTrueCourse] = useState<string>(initialTh);
   const [tas, setTas] = useState<string>(initialTas);
   const [windDir, setWindDir] = useState<string>(initialWd);
   const [windSpeed, setWindSpeed] = useState<string>(initialWs);
@@ -228,7 +228,7 @@ export function LegPlannerClient({
         const nextParams = extractNextLegParams(lastLeg, legResults, initialFlightPlanId);
 
         // Pre-fill all fields
-        setTrueHeading("");
+        setTrueCourse("");
         setTas(nextParams.tas);
         setWindDir(nextParams.windDir);
         setWindSpeed(nextParams.windSpeed);
@@ -270,7 +270,7 @@ export function LegPlannerClient({
     setToasts(prev => prev.filter(t => t.id !== id));
   };
 
-  // Auto-calculate True Heading, Distance, and Mag Var when from/to are entered
+  // Auto-calculate True Course, Distance, and Mag Var when from/to are entered
   // Track the last from/to to detect actual changes (not just re-renders)
   const lastFromToRef = useRef<{ from: typeof fromPoint; to: typeof toPoint }>({ from: null, to: null });
   const isInitialLoadRef = useRef(true);
@@ -291,7 +291,7 @@ export function LegPlannerClient({
     if (!fromChanged && !toChanged) return;
 
     // Skip auto-calculation on initial load if values are already set from URL
-    if (isInitialLoadRef.current && (trueHeading || distance || magVar)) {
+    if (isInitialLoadRef.current && (trueCourse || distance || magVar)) {
       isInitialLoadRef.current = false;
       // Don't update the ref yet - we want to recalculate when user changes from/to
       return;
@@ -324,11 +324,11 @@ export function LegPlannerClient({
     const updatedValues: string[] = [];
 
     // Always update these values when from/to changes
-    // Format TH as 3-digit integer (e.g., 005, 090, 270)
+    // Format TC (True Course) as 3-digit integer (e.g., 005, 090, 270)
     const roundedBearing = Math.round(calculatedBearing);
     const formattedBearing = String(roundedBearing).padStart(3, '0');
-    setTrueHeading(formattedBearing);
-    updatedValues.push(`TH ${formattedBearing}°`);
+    setTrueCourse(formattedBearing);
+    updatedValues.push(`TC ${formattedBearing}°`);
 
     setDistance(calculatedDistance.toFixed(1));
     updatedValues.push(`Dist ${calculatedDistance.toFixed(1)} NM`);
@@ -347,7 +347,7 @@ export function LegPlannerClient({
   // Update URL when parameters change (client-side only, no page reload)
   useEffect(() => {
     const params = new URLSearchParams();
-    if (trueHeading) params.set("th", trueHeading);
+    if (trueCourse) params.set("th", trueCourse); // 'th' kept for URL params (True Course)
     if (tas) params.set("tas", tas);
     if (windDir) params.set("wd", windDir);
     if (windSpeed) params.set("ws", windSpeed);
@@ -430,20 +430,20 @@ export function LegPlannerClient({
     // Use window.history.replaceState instead of router.replace to avoid server requests
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState(null, '', newUrl);
-  }, [trueHeading, tas, windDir, windSpeed, magVar, distance, fuelFlow, description, departureTime, elapsedMinutes, elapsedDistance, previousFuelUsed, climbTas, climbDistance, climbFuelUsed, climbWindDir, climbWindSpeed, descentTas, descentDistance, descentFuelUsed, descentWindDir, descentWindSpeed, additionalFuel, approachLandingFuel, fromCity, toCity, deviationTable, waypoints, speedUnit, fuelUnit, aircraft, flightPlanId, legId, fromPoint, toPoint, checkpoints]);
+  }, [trueCourse, tas, windDir, windSpeed, magVar, distance, fuelFlow, description, departureTime, elapsedMinutes, elapsedDistance, previousFuelUsed, climbTas, climbDistance, climbFuelUsed, climbWindDir, climbWindSpeed, descentTas, descentDistance, descentFuelUsed, descentWindDir, descentWindSpeed, additionalFuel, approachLandingFuel, fromCity, toCity, deviationTable, waypoints, speedUnit, fuelUnit, aircraft, flightPlanId, legId, fromPoint, toPoint, checkpoints]);
 
   // Calculate results during render (not in useEffect to avoid cascading renders)
   // Parse basic values needed for validation and other components
   const elapsedMins = elapsedMinutes ? parseInt(elapsedMinutes) : undefined;
   const prevFuel = previousFuelUsed ? parseFloat(previousFuelUsed) : undefined;
   const tasVal = parseFloat(tas);
-  const thVal = parseFloat(trueHeading);
+  const thVal = parseFloat(trueCourse);
   const dist = distance ? parseFloat(distance) : undefined;
   const ff = fuelFlow ? parseFloat(fuelFlow) : undefined;
 
   // Load example data
   const loadExample = () => {
-    setTrueHeading("090");
+    setTrueCourse("090");
     setTas("120");
     setWindDir("180");
     setWindSpeed("25");
@@ -470,7 +470,7 @@ export function LegPlannerClient({
     fromName: string;
     toName: string;
   }) => {
-    setTrueHeading(data.bearing.toString().padStart(3, '0'));
+    setTrueCourse(data.bearing.toString().padStart(3, '0'));
     setDistance(data.distance.toString());
     setFromCity(data.fromName);
     setToCity(data.toName);
@@ -509,7 +509,7 @@ export function LegPlannerClient({
     const legacyMD = magVar ? -parseFloat(magVar) : 0;
 
     return {
-      th: toNumber(trueHeading),
+      th: toNumber(trueCourse), // 'th' field kept for storage (represents True Course)
       tas: toNumber(tas),
       wd: toOptionalNumber(windDir),
       ws: toOptionalNumber(windSpeed),
@@ -665,7 +665,7 @@ export function LegPlannerClient({
                   </button>
                   {/* Custom Tooltip */}
                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none whitespace-nowrap border border-gray-700 z-50">
-                    Search for two cities or airports to automatically populate True Heading, Distance, and Description fields
+                    Search for two cities or airports to automatically populate True Course, Distance, and Description fields
                     <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-slate-900"></div>
                   </div>
                 </div>
@@ -871,8 +871,8 @@ export function LegPlannerClient({
 
             {/* Course & Speed */}
             <CourseSpeedInputs
-              trueHeading={trueHeading}
-              setTrueHeading={setTrueHeading}
+              trueCourse={trueCourse}
+              setTrueCourse={setTrueCourse}
               tas={tas}
               setTas={setTas}
               speedUnit={speedUnit}
@@ -1076,7 +1076,7 @@ export function LegPlannerClient({
                 results={results}
                 windDir={windDir}
                 windSpeed={windSpeed}
-                trueHeading={trueHeading}
+                trueCourse={trueCourse}
                 speedUnit={speedUnit}
                 fuelUnit={fuelUnit}
                 departureTime={departureTime}
@@ -1201,7 +1201,7 @@ export function LegPlannerClient({
                       <ShareButtonSimple
                         shareData={{
                           title: "José's Leg Planner",
-                          text: `Wind: ${windDir}° at ${windSpeed} kt, Heading: ${trueHeading}° → GS: ${results?.groundSpeed.toFixed(1)} kt`,
+                          text: `Wind: ${windDir}° at ${windSpeed} kt, Course: ${trueCourse}° → GS: ${results?.groundSpeed.toFixed(1)} kt`,
                         }}
                       />
                       <button
@@ -1268,7 +1268,7 @@ export function LegPlannerClient({
         isOpen={isDistanceModalOpen}
         onClose={() => setIsDistanceModalOpen(false)}
         onApply={handleDistanceCalculatorApply}
-        description="Search for cities or airports to populate True Heading, Distance, and Description fields for your flight plan"
+        description="Search for cities or airports to populate True Course, Distance, and Description fields for your flight plan"
       />
 
       {/* TAS Calculator Modal */}
