@@ -516,6 +516,7 @@ export function calculateWaypoints(
     ? totalDistance - descentPhase.distance
     : undefined;
 
+
   // Add "Top of Climb" checkpoint if there's climb data
   if (climbPhase && climbPhase.distance > 0) {
     // Find the correct position to insert based on distance
@@ -667,11 +668,23 @@ export function calculateWaypoints(
         waypointFuelFromLegStart += effectiveCruiseFuelFlow * cruiseTime;
       }
 
-      // Descent fuel (proportional to distance covered in descent)
+      // Descent fuel
       if (descentPhase && waypoint.distance > descentStart) {
         const descentDistCovered = waypoint.distance - descentStart;
-        const descentFuelRate = descentPhase.fuelUsed / descentPhase.distance;
-        waypointFuelFromLegStart += descentDistCovered * descentFuelRate;
+
+        // Check if this is the final waypoint at end of descent (use exact fuel value)
+        const isEndOfDescent = totalDistance !== undefined &&
+                               waypoint.distance === totalDistance &&
+                               Math.abs(descentDistCovered - descentPhase.distance) < 0.001;
+
+        if (isEndOfDescent) {
+          // Use exact descent fuel value provided by user (not proportional)
+          waypointFuelFromLegStart += descentPhase.fuelUsed;
+        } else {
+          // Use proportional calculation for intermediate waypoints during descent
+          const descentFuelRate = descentPhase.fuelUsed / descentPhase.distance;
+          waypointFuelFromLegStart += descentDistCovered * descentFuelRate;
+        }
       }
     } else {
       // No climb or descent data - use original calculation
@@ -705,7 +718,9 @@ export function calculateWaypoints(
 
     if (hasFuelData) {
       const previousFuel = flightParams?.previousFuelUsed || 0;
-      if (climbPhase && climbPhase.fuelUsed > 0) {
+      // If we have climb or descent phases, waypointFuelFromLegStart contains the accurate
+      // phase-specific calculations, so always use it
+      if (climbPhase || descentPhase) {
         fuelUsed = previousFuel + waypointFuelFromLegStart;
       } else if (fuelFlow !== undefined && fuelFlow > 0) {
         if (previousFuel > 0) {

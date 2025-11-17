@@ -158,8 +158,7 @@ export function deserializeAircraft(serialized: string): AircraftPerformance | n
 
         return aircraft;
       } catch (err) {
-        // Not CBOR format, fall through to legacy
-        console.debug("Not CBOR format:", err);
+        // Not CBOR format, fall through to legacy format
       }
     }
 

@@ -39,16 +39,6 @@ describe("segmentCalculations", () => {
 
       // Penalty should be positive
       expect(penalty).toBeGreaterThanOrEqual(0);
-
-      console.log("\n📊 NY to Tokyo (35 segments):");
-      console.log(`  Segmented Route: ${result.totalDistance.toFixed(1)} NM`);
-      console.log(
-        `  Great Circle:    ${result.orthodromicDistance.toFixed(1)} NM`
-      );
-      console.log(`  Penalty:         ${penalty.toFixed(1)} NM`);
-      console.log(
-        `  Penalty %:       ${((penalty / result.orthodromicDistance) * 100).toFixed(3)}%`
-      );
     });
 
     it("should show penalty increases with fewer segments", () => {
@@ -67,13 +57,6 @@ describe("segmentCalculations", () => {
           n
         );
         return result.totalDistance - result.orthodromicDistance;
-      });
-
-      console.log("\n📈 Penalty vs Segment Count (NY-Tokyo):");
-      segments.forEach((n, i) => {
-        console.log(
-          `  ${String(n).padStart(3)} segments: ${penalties[i].toFixed(2)} NM`
-        );
       });
 
       // Verify all penalties are positive
@@ -108,13 +91,6 @@ describe("segmentCalculations", () => {
       // For short routes with many segments, rhumb and geodesic converge
       const penalty = result.totalDistance - result.orthodromicDistance;
       expect(penalty).toBeGreaterThanOrEqual(-1.0); // Allow 1 NM tolerance for short routes
-
-      console.log("\n📊 Madrid to Barcelona (10 segments):");
-      console.log(`  Segmented Route: ${result.totalDistance.toFixed(1)} NM`);
-      console.log(
-        `  Great Circle:    ${result.orthodromicDistance.toFixed(1)} NM`
-      );
-      console.log(`  Penalty:         ${penalty.toFixed(2)} NM`);
     });
 
     it("should handle single segment (pure loxodrome)", () => {
@@ -193,13 +169,6 @@ describe("segmentCalculations", () => {
       // Verify penalty is positive even at high latitudes
       const penalty = result.totalDistance - result.orthodromicDistance;
       expect(penalty).toBeGreaterThanOrEqual(0);
-
-      console.log("\n📊 Oslo to Anchorage (20 segments):");
-      console.log(`  Segmented Route: ${result.totalDistance.toFixed(1)} NM`);
-      console.log(
-        `  Great Circle:    ${result.orthodromicDistance.toFixed(1)} NM`
-      );
-      console.log(`  Penalty:         ${penalty.toFixed(2)} NM`);
     });
 
     it("should handle crossing antimeridian", () => {
@@ -220,13 +189,6 @@ describe("segmentCalculations", () => {
       // Verify penalty is positive when crossing antimeridian
       const penalty = result.totalDistance - result.orthodromicDistance;
       expect(penalty).toBeGreaterThanOrEqual(0);
-
-      console.log("\n📊 Fiji to Alaska (25 segments, crosses antimeridian):");
-      console.log(`  Segmented Route: ${result.totalDistance.toFixed(1)} NM`);
-      console.log(
-        `  Great Circle:    ${result.orthodromicDistance.toFixed(1)} NM`
-      );
-      console.log(`  Penalty:         ${penalty.toFixed(2)} NM`);
     });
 
     it("should calculate SACO to RJAA correctly (reported bug)", () => {
@@ -235,8 +197,6 @@ describe("segmentCalculations", () => {
       const sacoLon = -64.208;
       const rjaaLat = 35.764702;
       const rjaaLon = 140.386002;
-
-      console.log("\n🐛 SACO to RJAA - Bug Investigation:");
 
       // Test different segment counts
       const testCases = [1, 2, 10, 33, 50, 100];
@@ -251,10 +211,6 @@ describe("segmentCalculations", () => {
         );
 
         const penalty = result.totalDistance - result.orthodromicDistance;
-
-        console.log(
-          `  ${String(numSegments).padStart(3)} segments: Total=${result.totalDistance.toFixed(1)} NM, GC=${result.orthodromicDistance.toFixed(1)} NM, Penalty=${penalty.toFixed(1)} NM`
-        );
 
         // CRITICAL: Total distance must ALWAYS be >= great circle distance
         expect(result.totalDistance).toBeGreaterThanOrEqual(
@@ -304,15 +260,6 @@ describe("segmentCalculations", () => {
         calculateNavigationSegments(sacoLat, sacoLon, rjaaLat, rjaaLon, n)
       );
 
-      console.log("\n📉 SACO to RJAA - Penalty Monotonicity Check:");
-
-      results.forEach((result, i) => {
-        const penalty = result.totalDistance - result.orthodromicDistance;
-        console.log(
-          `  ${String(segments[i]).padStart(3)} segments: ${penalty.toFixed(2)} NM penalty`
-        );
-      });
-
       // Verify all penalties are positive
       results.forEach((result) => {
         const penalty = result.totalDistance - result.orthodromicDistance;
@@ -337,8 +284,6 @@ describe("segmentCalculations", () => {
       const rjaaLat = 35.764702;
       const rjaaLon = 140.386002;
 
-      console.log("\n📏 Pure Rhumb Line Distance Comparison:");
-
       const testCases = [1, 10, 35, 100];
       testCases.forEach((numSegments) => {
         const result = calculateNavigationSegments(
@@ -347,20 +292,6 @@ describe("segmentCalculations", () => {
           rjaaLat,
           rjaaLon,
           numSegments
-        );
-
-        console.log(`\n  ${numSegments} segment(s):`);
-        console.log(
-          `    Great Circle:    ${result.orthodromicDistance.toFixed(1)} NM`
-        );
-        console.log(
-          `    Pure Rhumb:      ${result.pureRhumbDistance.toFixed(1)} NM`
-        );
-        console.log(
-          `    Segmented:       ${result.totalDistance.toFixed(1)} NM`
-        );
-        console.log(
-          `    Savings vs Rhumb: ${(result.pureRhumbDistance - result.totalDistance).toFixed(1)} NM`
         );
 
         // Pure rhumb should be >= great circle

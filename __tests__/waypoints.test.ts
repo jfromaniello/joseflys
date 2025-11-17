@@ -449,6 +449,39 @@ describe("calculateWaypoints", () => {
       expect(results[1].name).toBe("Landed");
       expect(results[1].distance).toBe(70);
     });
+
+    it("should calculate 'Descent Started' with cruise speeds and 'Landed' with descent speeds", () => {
+      // Flight: 100 NM total
+      // - Descent: 10 NM (starts at 90 NM)
+      // - Cruise GS: 120 kt, Fuel: 12 GPH
+      // - Descent GS: 90 kt, Fuel: 1.5 GAL (given)
+      const results = calculateWaypoints([], 120, 12, undefined, 100, undefined, undefined, descentPhase);
+
+      expect(results).toHaveLength(2);
+
+      // "Descent Started" should use cruise speeds
+      const descentStarted = results[0];
+      expect(descentStarted.name).toBe("Descent Started");
+      expect(descentStarted.distance).toBe(90); // 100 - 10 = 90 NM from start
+      expect(descentStarted.distanceSinceLast).toBe(90); // First waypoint, so full distance from start
+      expect(descentStarted.timeSinceLast).toBe(45); // 90 NM / 120 kt * 60 min = 45 min
+      expect(descentStarted.cumulativeTime).toBe(45);
+      expect(descentStarted.fuelUsed).toBeCloseTo(9, 1); // 90 NM / 120 kt * 12 GPH = 9 GAL
+
+      // "Landed" should use descent speeds
+      const landed = results[1];
+      expect(landed.name).toBe("Landed");
+      expect(landed.distance).toBe(100); // Total distance
+      expect(landed.distanceSinceLast).toBe(10); // Descent distance
+      expect(landed.timeSinceLast).toBe(7); // 10 NM / 90 kt * 60 min = 6.67 -> 7 min (rounded)
+      expect(landed.cumulativeTime).toBe(52); // 45 + 7
+
+
+      // Expected: 9 (cruise) + 1.5 (descent) = 10.5 GAL
+      // Note: For the final waypoint, uses exact descentPhase.fuelUsed (not proportional calculation)
+      expect(landed.fuelUsed).toBeCloseTo(10.5, 1);
+      expect(landed.fuelSinceLast).toBeCloseTo(1.5, 1); // Exact value from descentPhase.fuelUsed
+    });
   });
 
   // ===== Climb + Descent Phase =====
