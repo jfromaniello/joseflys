@@ -8,7 +8,7 @@ import { Footer } from "../components/Footer";
 import { ShareButtonSimple } from "../components/ShareButtonSimple";
 import { AircraftPerformanceModal } from "../components/AircraftPerformanceModal";
 import { DensityAltitudeModal } from "../components/DensityAltitudeModal";
-import { AircraftPerformance, PRESET_AIRCRAFT } from "@/lib/aircraftPerformance";
+import { AircraftPerformance, PRESET_AIRCRAFT } from "@/lib/aircraft";
 import { calculateClimbPerformance, ClimbResults } from "@/lib/climbCalculations";
 import { calculateCourse } from "@/lib/courseCalculations";
 import {
@@ -124,8 +124,8 @@ export function ClimbCalculatorClient({
   const groundSpeedVal = windCalc ? windCalc.groundSpeed : avgTAS;
 
   // Calculate weight ratio
-  const weightRatio = !isNaN(weightVal) && aircraft.standardWeight && aircraft.standardWeight > 0
-    ? weightVal / aircraft.standardWeight
+  const weightRatio = !isNaN(weightVal) && aircraft.weights?.standardWeight && aircraft.weights.standardWeight > 0
+    ? weightVal / aircraft.weights.standardWeight
     : 1.0;
 
   // Calculate results
@@ -152,8 +152,8 @@ export function ClimbCalculatorClient({
   const handleAircraftApply = (newAircraft: AircraftPerformance) => {
     setAircraft(newAircraft);
     // Update weight if it's still at the old standard weight
-    if (aircraft.standardWeight && newAircraft.standardWeight && parseFloat(weight) === aircraft.standardWeight) {
-      setWeight(newAircraft.standardWeight.toString());
+    if (aircraft.weights?.standardWeight && newAircraft.weights?.standardWeight && parseFloat(weight) === aircraft.weights.standardWeight) {
+      setWeight(newAircraft.weights.standardWeight.toString());
     }
   };
 
@@ -193,7 +193,7 @@ export function ClimbCalculatorClient({
                   </p>
                   <p className="text-xs" style={{ color: "oklch(0.6 0.02 240)" }}>
                     {aircraft.climbTable?.length || 0} altitude segments
-                    {aircraft.standardWeight && ` • Standard weight: ${aircraft.standardWeight} lbs`}
+                    {aircraft.weights?.standardWeight && ` • Standard weight: ${aircraft.weights.standardWeight} lbs`}
                   </p>
                 </div>
 
@@ -212,7 +212,7 @@ export function ClimbCalculatorClient({
                       value={weight}
                       onChange={(e) => setWeight(e.target.value)}
                       className="w-full px-3 pr-12 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-base bg-slate-900/50 border-2 border-gray-600 text-white text-right"
-                      placeholder={aircraft.standardWeight?.toString() || "2000"}
+                      placeholder={aircraft.weights?.standardWeight?.toString() || "2000"}
                     />
                     <span
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium pointer-events-none"
@@ -221,9 +221,9 @@ export function ClimbCalculatorClient({
                       lbs
                     </span>
                   </div>
-                  {aircraft.maxWeight && !isNaN(weightVal) && weightVal > aircraft.maxWeight && (
+                  {aircraft.weights?.maxGrossWeight && !isNaN(weightVal) && weightVal > aircraft.weights.maxGrossWeight && (
                     <p className="text-xs mt-1" style={{ color: "oklch(0.7 0.1 30)" }}>
-                      ⚠️ Exceeds max ({aircraft.maxWeight} lbs)
+                      ⚠️ Exceeds max ({aircraft.weights.maxGrossWeight} lbs)
                     </p>
                   )}
                 </div>

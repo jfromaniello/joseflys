@@ -8,7 +8,7 @@ import {
   ClimbPerformanceData,
   PRESET_AIRCRAFT,
   createEmptyAircraftWithClimb,
-} from "@/lib/aircraftPerformance";
+} from "@/lib/aircraft";
 import { saveAircraft, loadCustomAircraft, updateAircraft } from "@/lib/aircraftStorage";
 
 interface AircraftPerformanceModalProps {
@@ -83,8 +83,17 @@ export function AircraftPerformanceModal({
                 fuelFlow: 8.0,
               },
             ];
-            aircraftCopy.standardWeight = aircraftCopy.standardWeight || 2000;
-            aircraftCopy.maxWeight = aircraftCopy.maxWeight || 2200;
+            // Ensure weights object exists
+            if (!aircraftCopy.weights) {
+              aircraftCopy.weights = {
+                emptyWeight: 1200,
+                standardWeight: 2000,
+                maxGrossWeight: 2200,
+              };
+            } else {
+              aircraftCopy.weights.standardWeight = aircraftCopy.weights.standardWeight || 2000;
+              aircraftCopy.weights.maxGrossWeight = aircraftCopy.weights.maxGrossWeight || 2200;
+            }
           }
           setAircraft(aircraftCopy);
           setSelectedPreset(model);
@@ -273,9 +282,17 @@ export function AircraftPerformanceModal({
                         <div className="relative">
                           <input
                             type="number"
-                            value={aircraft.standardWeight}
+                            value={aircraft.weights?.standardWeight}
                             onChange={(e) =>
-                              setAircraft({ ...aircraft, standardWeight: parseFloat(e.target.value) })
+                              setAircraft({
+                                ...aircraft,
+                                weights: {
+                                  ...aircraft.weights,
+                                  emptyWeight: aircraft.weights?.emptyWeight || 0,
+                                  maxGrossWeight: aircraft.weights?.maxGrossWeight || 0,
+                                  standardWeight: parseFloat(e.target.value)
+                                }
+                              })
                             }
                             className="w-full px-4 pr-12 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white text-right"
                           />
@@ -295,9 +312,17 @@ export function AircraftPerformanceModal({
                         <div className="relative">
                           <input
                             type="number"
-                            value={aircraft.maxWeight}
+                            value={aircraft.weights?.maxGrossWeight}
                             onChange={(e) =>
-                              setAircraft({ ...aircraft, maxWeight: parseFloat(e.target.value) })
+                              setAircraft({
+                                ...aircraft,
+                                weights: {
+                                  ...aircraft.weights,
+                                  emptyWeight: aircraft.weights?.emptyWeight || 0,
+                                  standardWeight: aircraft.weights?.standardWeight,
+                                  maxGrossWeight: parseFloat(e.target.value)
+                                }
+                              })
                             }
                             className="w-full px-4 pr-12 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white text-right"
                           />

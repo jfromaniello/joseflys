@@ -9,7 +9,7 @@
  * - Ground speed during climb
  */
 
-import { AircraftPerformance, ClimbPerformanceData } from "./aircraftPerformance";
+import { AircraftPerformance, ClimbPerformanceData } from "./aircraft";
 
 export interface ClimbSegment {
   altitudeFrom: number;

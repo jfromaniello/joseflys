@@ -11,7 +11,7 @@ import { DistanceCalculatorModal } from "../components/DistanceCalculatorModal";
 import { TASCalculatorModal } from "../components/TASCalculatorModal";
 import { compressForUrl, decompressFromUrl } from "@/lib/urlCompression";
 import { loadAircraftFromUrl, serializeAircraft } from "@/lib/aircraftStorage";
-import { AircraftPerformance } from "@/lib/aircraftPerformance";
+import { AircraftPerformance } from "@/lib/aircraft";
 import { CourseSpeedInputs, SpeedUnit } from "./components/CourseSpeedInputs";
 import { WindInputs } from "./components/WindInputs";
 import { CorrectionsInputs } from "./components/CorrectionsInputs";

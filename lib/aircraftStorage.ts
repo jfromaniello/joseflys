@@ -3,7 +3,13 @@
  * Handles compact URL encoding and localStorage management for custom aircraft
  */
 
-import { AircraftPerformance, ClimbPerformanceData, DeviationEntry, PRESET_AIRCRAFT } from "./aircraftPerformance";
+import {
+  AircraftPerformance,
+  ClimbPerformanceData,
+  DeviationEntry,
+  PRESET_AIRCRAFT,
+  migrateAircraftToNewFormat,
+} from "./aircraft";
 import { encode, decode } from "cbor-x";
 
 const STORAGE_KEY = "custom_aircraft";
@@ -48,11 +54,15 @@ export function serializeAircraft(aircraft: AircraftPerformance, options?: Seria
       ...options,
     };
 
+    // Support both old and new format for backward compatibility
+    const standardWeight = aircraft.weights?.standardWeight ?? (aircraft as any).standardWeight ?? null;
+    const maxWeight = aircraft.weights?.maxGrossWeight ?? (aircraft as any).maxWeight ?? null;
+
     const compactArray = [
       aircraft.name,  // 0
       aircraft.model, // 1
-      opts.includeStandardWeight ? (aircraft.standardWeight ?? null) : null, // 2
-      opts.includeMaxWeight ? (aircraft.maxWeight ?? null) : null, // 3
+      opts.includeStandardWeight ? standardWeight : null, // 2
+      opts.includeMaxWeight ? maxWeight : null, // 3
       opts.includeClimbTable
         ? (aircraft.climbTable?.map(seg => [
             seg.altitudeFrom,
@@ -126,12 +136,13 @@ export function deserializeAircraft(serialized: string): AircraftPerformance | n
           throw new Error("Invalid CBOR structure");
         }
 
-        const aircraft: AircraftPerformance = {
+        // Use 'as any' to support backward compatibility with old serialized format
+        const aircraft: any = {
           name: decoded[0],
           model: decoded[1],
         };
 
-        // Optional fields
+        // Optional fields (old format for backward compatibility)
         if (decoded[2] !== null) aircraft.standardWeight = decoded[2];
         if (decoded[3] !== null) aircraft.maxWeight = decoded[3];
 
@@ -171,7 +182,8 @@ export function deserializeAircraft(serialized: string): AircraftPerformance | n
     const standardWeight = parts[2] ? parseFloat(parts[2]) : undefined;
     const maxWeight = parts[3] ? parseFloat(parts[3]) : undefined;
 
-    const aircraft: AircraftPerformance = {
+    // Use 'as any' to support backward compatibility with old serialized format
+    const aircraft: any = {
       name,
       model,
       standardWeight,
@@ -248,7 +260,10 @@ function hashAircraftData(aircraft: AircraftPerformance): string {
     `${dev.forHeading},${dev.steerHeading}`
   ).join("|") || "";
 
-  const dataString = `${aircraft.standardWeight || ""}|${aircraft.maxWeight || ""}|${climbData}|${devData}`;
+  // Support both old and new format
+  const standardWeight = aircraft.weights?.standardWeight ?? (aircraft as any).standardWeight ?? "";
+  const maxWeight = aircraft.weights?.maxGrossWeight ?? (aircraft as any).maxWeight ?? "";
+  const dataString = `${standardWeight}|${maxWeight}|${climbData}|${devData}`;
 
   // Simple hash function
   let hash = 0;
@@ -283,11 +298,15 @@ function generateShortId(): string {
  * Check if aircraft matches any preset (to avoid saving presets as custom)
  */
 function isPresetAircraft(aircraft: AircraftPerformance): boolean {
+  // Support both old and new format
+  const aircraftStandardWeight = aircraft.weights?.standardWeight ?? (aircraft as any).standardWeight;
+  const aircraftMaxWeight = aircraft.weights?.maxGrossWeight ?? (aircraft as any).maxWeight;
+
   return PRESET_AIRCRAFT.some(preset =>
     preset.model === aircraft.model &&
     preset.name === aircraft.name &&
-    preset.standardWeight === aircraft.standardWeight &&
-    preset.maxWeight === aircraft.maxWeight &&
+    preset.weights?.standardWeight === aircraftStandardWeight &&
+    preset.weights?.maxGrossWeight === aircraftMaxWeight &&
     JSON.stringify(preset.climbTable) === JSON.stringify(aircraft.climbTable) &&
     JSON.stringify(preset.deviationTable) === JSON.stringify(aircraft.deviationTable)
   );
@@ -365,6 +384,7 @@ export function saveAircraft(aircraft: AircraftPerformance): AircraftPerformance
 
 /**
  * Load all custom aircraft from localStorage
+ * Automatically migrates old format to new format
  */
 export function loadCustomAircraft(): AircraftPerformance[] {
   if (!isBrowser) return [];
@@ -374,7 +394,17 @@ export function loadCustomAircraft(): AircraftPerformance[] {
     if (!stored) return [];
 
     const parsed = JSON.parse(stored);
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) return [];
+
+    // Migrate old format aircraft to new format
+    const migrated = parsed.map(migrateAircraftToNewFormat);
+
+    // If any aircraft were migrated, save the updated data back to localStorage
+    if (migrated.some((ac, i) => ac !== parsed[i])) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+    }
+
+    return migrated;
   } catch (error) {
     console.error("Failed to load custom aircraft:", error);
     return [];

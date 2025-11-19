@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { loadCustomAircraft, deleteCustomAircraft, updateAircraft } from "@/lib/aircraftStorage";
-import { AircraftPerformance } from "@/lib/aircraftPerformance";
+import { AircraftPerformance } from "@/lib/aircraft";
 import { Navbar } from "../components/Navbar";
 
 export default function MyPlanesClient() {
@@ -99,13 +99,13 @@ export default function MyPlanesClient() {
                         <span className="text-slate-400 font-mono text-sm">{plane.model}</span>
                       </td>
                       <td className="py-3 px-4 text-center">
-                        <span className={plane.standardWeight !== undefined ? "text-green-400" : "text-slate-500"}>
-                          {plane.standardWeight !== undefined ? "Yes" : "No"}
+                        <span className={plane.weights?.standardWeight !== undefined ? "text-green-400" : "text-slate-500"}>
+                          {plane.weights?.standardWeight !== undefined ? "Yes" : "No"}
                         </span>
                       </td>
                       <td className="py-3 px-4 text-center">
-                        <span className={plane.maxWeight !== undefined ? "text-green-400" : "text-slate-500"}>
-                          {plane.maxWeight !== undefined ? "Yes" : "No"}
+                        <span className={plane.weights?.maxGrossWeight !== undefined ? "text-green-400" : "text-slate-500"}>
+                          {plane.weights?.maxGrossWeight !== undefined ? "Yes" : "No"}
                         </span>
                       </td>
                       <td className="py-3 px-4 text-center">

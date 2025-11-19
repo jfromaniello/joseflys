@@ -7,7 +7,7 @@ import {
   CompassDeviationModal,
   DeviationEntry,
 } from "@/app/components/CompassDeviationModal";
-import { AircraftPerformance } from "@/lib/aircraftPerformance";
+import { AircraftPerformance } from "@/lib/aircraft";
 
 interface CorrectionsInputsProps {
   magVar: string; // WMM convention (positive=E, negative=W)

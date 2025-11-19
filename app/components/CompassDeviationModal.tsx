@@ -8,12 +8,15 @@ import {
   saveAircraft,
   updateAircraft,
 } from "@/lib/aircraftStorage";
-import { AircraftPerformance, createEmptyAircraft, PRESET_AIRCRAFT } from "@/lib/aircraftPerformance";
+import {
+  AircraftPerformance,
+  createEmptyAircraft,
+  PRESET_AIRCRAFT,
+  DeviationEntry,
+} from "@/lib/aircraft";
 
-export interface DeviationEntry {
-  forHeading: number;
-  steerHeading: number;
-}
+// Re-export DeviationEntry for backward compatibility
+export type { DeviationEntry };
 
 interface CompassDeviationModalProps {
   isOpen: boolean;

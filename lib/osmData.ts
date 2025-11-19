@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * OSM Data Fetching via Overpass API
  *
@@ -16,7 +17,7 @@ export interface OSMFeature {
     highway?: string;
     waterway?: string;
     natural?: string;
-    wetland?: string; // Subtipo de wetland: marsh, reedbed, swamp, etc.
+    wetland?: string; // Subtype of wetland: marsh, reedbed, swamp, etc.
     aeroway?: string;
     place?: string;
     landuse?: string;
@@ -75,7 +76,7 @@ function buildOverpassQuery(bbox: BoundingBox): string {
       way["natural"="water"](${bboxStr});
       relation["natural"="water"](${bboxStr});
 
-      // Wetlands (bañados, marshes)
+      // Wetlands (marshes, swamps, etc.)
       way["natural"="wetland"](${bboxStr});
       relation["natural"="wetland"](${bboxStr});
 
@@ -326,7 +327,7 @@ function getCachedData(cacheKey: string): OSMData | null {
     }
 
     return data.osmData;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
