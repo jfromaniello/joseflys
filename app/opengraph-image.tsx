@@ -21,103 +21,91 @@ export default async function Image() {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0f172a 100%)',
+          background: 'linear-gradient(to bottom right, #0f172a 0%, #172554 50%, #0f172a 100%)',
           fontFamily: 'system-ui, sans-serif',
+          padding: '80px',
         }}
       >
-        {/* Icon */}
+        {/* Icon + Domain */}
         <div
           style={{
-            width: '120px',
-            height: '120px',
-            borderRadius: '30px',
-            background: 'rgba(30, 58, 138, 0.5)',
-            border: '3px solid rgba(56, 189, 248, 0.3)',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
+            gap: '20px',
             marginBottom: '40px',
           }}
         >
-          <svg
-            width="72"
-            height="72"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="rgb(56, 189, 248)"
-            strokeWidth="2"
+          <div
+            style={{
+              width: '80px',
+              height: '80px',
+              borderRadius: '20px',
+              background: '#1e293b',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
           >
-            <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-          </svg>
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#93b4f0"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            </svg>
+          </div>
+          <div
+            style={{
+              fontSize: '32px',
+              fontWeight: '600',
+              color: '#94a3b8',
+            }}
+          >
+            joseflys.com
+          </div>
         </div>
 
         {/* Title */}
         <div
           style={{
-            fontSize: '80px',
+            fontSize: '72px',
             fontWeight: 'bold',
             color: 'white',
             marginBottom: '20px',
+            textAlign: 'center',
           }}
         >
-          José&apos;s Aviation Tools
+          Aviation Tools
         </div>
 
         {/* Subtitle */}
         <div
           style={{
-            fontSize: '36px',
-            color: 'rgba(148, 163, 184, 1)',
+            fontSize: '44px',
+            color: '#93b4f0',
+            textAlign: 'center',
             marginBottom: '50px',
           }}
         >
-          Experimental flight planning tools
+          for Flight Planning
         </div>
 
-        {/* Features */}
+        {/* Description */}
         <div
           style={{
-            display: 'flex',
-            gap: '40px',
+            fontSize: '26px',
+            color: '#94a3b8',
+            textAlign: 'center',
+            maxWidth: '1000px',
+            lineHeight: 1.5,
           }}
         >
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              background: 'rgba(30, 41, 59, 0.5)',
-              border: '2px solid rgba(71, 85, 105, 0.5)',
-              borderRadius: '20px',
-              padding: '30px 40px',
-            }}
-          >
-            <div style={{ fontSize: '28px', fontWeight: 'bold', color: 'white', marginBottom: '10px' }}>
-              TAS Calculator
-            </div>
-            <div style={{ fontSize: '20px', color: 'rgba(148, 163, 184, 1)', textAlign: 'center' }}>
-              True Airspeed from<br />CAS, OAT & Altitude
-            </div>
-          </div>
-
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              background: 'rgba(30, 41, 59, 0.5)',
-              border: '2px solid rgba(71, 85, 105, 0.5)',
-              borderRadius: '20px',
-              padding: '30px 40px',
-            }}
-          >
-            <div style={{ fontSize: '28px', fontWeight: 'bold', color: 'white', marginBottom: '10px' }}>
-              Wind Calculator
-            </div>
-            <div style={{ fontSize: '20px', color: 'rgba(148, 163, 184, 1)', textAlign: 'center' }}>
-              Wind Correction, Ground Speed<br />& Compass Heading
-            </div>
-          </div>
+          Professional flight planning tools for accurate navigation. Leg planner, TAS, wind correction, distance & bearing, fuel consumption, climb & takeoff performance
         </div>
       </div>
     ),

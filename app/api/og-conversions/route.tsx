@@ -1,26 +1,10 @@
 import { ImageResponse } from 'next/og';
 import { NextRequest } from 'next/server';
-import { getAllConversions, categories, type Category } from '@/lib/unitConversions';
 
 export const runtime = 'edge';
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-
-    // Get parameters from URL
-    const category = (searchParams.get('cat') || 'distance') as Category;
-    const value = searchParams.get('val') || '100';
-    const fromUnit = searchParams.get('from') || 'NM';
-
-    // Calculate conversions
-    const numValue = parseFloat(value);
-    const results = getAllConversions(numValue, fromUnit, category);
-
-    // Get up to 4 conversion results to display
-    const displayResults = results.slice(0, 4);
-    const categoryInfo = categories[category];
-
     return new ImageResponse(
       (
         <div
@@ -31,11 +15,12 @@ export async function GET(request: NextRequest) {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0f172a 100%)',
+            background: 'linear-gradient(to bottom right, #0f172a 0%, #172554 50%, #0f172a 100%)',
             fontFamily: 'system-ui, sans-serif',
+            padding: '80px',
           }}
         >
-          {/* Title */}
+          {/* Icon + Domain */}
           <div
             style={{
               display: 'flex',
@@ -49,8 +34,7 @@ export async function GET(request: NextRequest) {
                 width: '80px',
                 height: '80px',
                 borderRadius: '20px',
-                background: 'rgba(30, 58, 138, 0.5)',
-                border: '2px solid rgba(56, 189, 248, 0.3)',
+                background: '#1e293b',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -61,83 +45,47 @@ export async function GET(request: NextRequest) {
                 height="48"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="rgb(56, 189, 248)"
+                stroke="#93b4f0"
                 strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                <path d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
               </svg>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div
-                style={{
-                  display: 'flex',
-                  fontSize: '56px',
-                  fontWeight: 'bold',
-                  color: 'white',
-                }}
-              >
-                Unit Converter
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  fontSize: '26px',
-                  color: 'rgba(148, 163, 184, 1)',
-                }}
-              >
-                {categoryInfo.name} Conversions
-              </div>
+            <div
+              style={{
+                fontSize: '32px',
+                fontWeight: '600',
+                color: '#94a3b8',
+              }}
+            >
+              joseflys.com
             </div>
           </div>
 
-          {/* Input Value */}
+          {/* Title */}
           <div
             style={{
-              display: 'flex',
-              fontSize: '32px',
-              color: 'rgb(56, 189, 248)',
+              fontSize: '72px',
+              fontWeight: 'bold',
+              color: 'white',
               marginBottom: '30px',
+              textAlign: 'center',
             }}
           >
-            {value} {fromUnit}
+            Unit Converter
           </div>
 
-          {/* Conversion Results Grid */}
+          {/* Subtitle */}
           <div
             style={{
-              display: 'flex',
-              gap: '20px',
-              flexWrap: 'wrap',
-              justifyContent: 'center',
-              maxWidth: '1100px',
+              fontSize: '36px',
+              color: '#94a3b8',
+              textAlign: 'center',
             }}
           >
-            {displayResults.map((result, index) => {
-              const unitInfo = categoryInfo.units.find(u => u.symbol === result.unit);
-              return (
-                <div
-                  key={index}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%)',
-                    border: '2px solid rgba(56, 189, 248, 0.3)',
-                    borderRadius: '16px',
-                    padding: '25px 40px',
-                    minWidth: '230px',
-                    gap: '8px',
-                  }}
-                >
-                  <div style={{ display: 'flex', fontSize: '48px', fontWeight: 'bold', color: 'white' }}>
-                    {result.value.toFixed(2)}
-                  </div>
-                  <div style={{ display: 'flex', fontSize: '20px', color: 'rgba(148, 163, 184, 1)' }}>
-                    {unitInfo?.name || result.unit}
-                  </div>
-                </div>
-              );
-            })}
+            José&apos;s Aviation Tools
           </div>
         </div>
       ),
