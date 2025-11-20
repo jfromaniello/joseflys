@@ -55,3 +55,18 @@ export function getSpeedUnitName(unit: SpeedUnit): string {
       return 'miles per hour';
   }
 }
+
+/**
+ * Get the corresponding distance unit for a speed unit
+ * Returns the symbol used in unitConversions.ts
+ */
+export function getDistanceUnitForSpeed(speedUnit: SpeedUnit): string {
+  switch (speedUnit) {
+    case 'kt':
+      return 'NM'; // Nautical miles
+    case 'kmh':
+      return 'KM'; // Kilometers
+    case 'mph':
+      return 'SM'; // Statute miles
+  }
+}

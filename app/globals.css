@@ -47,6 +47,24 @@ html {
   background: #0f172a;
 }
 
+/* Select dropdown styling - remove native arrow and add custom arrow for all selects */
+select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  padding-right: 2.5rem !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+  background-position: right 0.75rem center;
+  background-repeat: no-repeat;
+  background-size: 1.25rem 1.25rem;
+}
+
+/* Select without arrow - for compact unit selectors */
+select.select-no-arrow {
+  background-image: none !important;
+  padding-right: 0.75rem !important;
+}
+
 /* Toast notification animation */
 @keyframes slide-up {
   from {
@@ -349,9 +367,13 @@ html {
   }
 
   /* Reduce padding on inputs for print */
-  input,
-  select {
+  input {
     padding: 0.5rem 0.75rem !important;
+  }
+
+  /* Select padding for print - more on right for arrow */
+  select {
+    padding: 0.5rem 2rem 0.5rem 0.75rem !important;
   }
 
   /* Inputs with absolute positioned units - reduce right padding and move units closer */

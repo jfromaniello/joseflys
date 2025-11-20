@@ -11,6 +11,15 @@ import {
   calculateFuelConsumption,
   formatTime,
 } from "@/lib/flightPlan";
+import {
+  SpeedUnit,
+  getDistanceUnitForSpeed,
+  getSpeedUnitLabel,
+  toKnots,
+  fromKnots,
+} from "@/lib/speedConversion";
+import { FuelUnit, getFuelUnitLabel, getFuelResultUnit } from "@/lib/fuelConversion";
+import { convert } from "@/lib/unitConversions";
 
 type CalculatorMode = "time-speed-distance" | "fuel";
 
@@ -25,6 +34,8 @@ interface PlanningCalculatorClientProps {
   initialFth?: string;
   initialFtm?: string;
   initialFa?: string;
+  initialSpeedUnit?: string;
+  initialFuelUnit?: string;
 }
 
 export function PlanningCalculatorClient({
@@ -38,27 +49,47 @@ export function PlanningCalculatorClient({
   initialFth = "",
   initialFtm = "",
   initialFa = "",
+  initialSpeedUnit = "kt",
+  initialFuelUnit = "gph",
 }: PlanningCalculatorClientProps) {
   // Mode selection
   const [mode, setMode] = useState<CalculatorMode>(initialMode);
+
+  // Speed unit
+  const [speedUnit, setSpeedUnit] = useState<SpeedUnit>(initialSpeedUnit as SpeedUnit);
+
+  // Fuel unit
+  const [fuelUnit, setFuelUnit] = useState<FuelUnit>(initialFuelUnit as FuelUnit);
 
   // Time-Speed-Distance inputs
   const [groundSpeed, setGroundSpeed] = useState<string>(initialGs);
   const [distance, setDistance] = useState<string>(initialDist);
   const [timeHours, setTimeHours] = useState<string>(initialTh);
   const [timeMinutes, setTimeMinutes] = useState<string>(initialTm);
+  const [timeDecimal, setTimeDecimal] = useState<string>(() => {
+    const th = parseFloat(initialTh) || 0;
+    const tm = parseFloat(initialTm) || 0;
+    return th > 0 || tm > 0 ? ((th * 60 + tm) / 60).toString() : "";
+  });
 
   // Fuel inputs
   const [fuelFlow, setFuelFlow] = useState<string>(initialFf);
   const [fuelUsed, setFuelUsed] = useState<string>(initialFu);
   const [fuelTimeHours, setFuelTimeHours] = useState<string>(initialFth);
   const [fuelTimeMinutes, setFuelTimeMinutes] = useState<string>(initialFtm);
+  const [fuelTimeDecimal, setFuelTimeDecimal] = useState<string>(() => {
+    const fth = parseFloat(initialFth) || 0;
+    const ftm = parseFloat(initialFtm) || 0;
+    return fth > 0 || ftm > 0 ? ((fth * 60 + ftm) / 60).toString() : "";
+  });
   const [fuelAvailable, setFuelAvailable] = useState<string>(initialFa);
 
   // Update URL when inputs change
   useEffect(() => {
     const params = new URLSearchParams();
     params.set("mode", mode);
+    if (speedUnit !== "kt") params.set("su", speedUnit);
+    if (fuelUnit !== "gph") params.set("funit", fuelUnit);
 
     if (mode === "time-speed-distance") {
       if (groundSpeed) params.set("gs", groundSpeed);
@@ -67,7 +98,7 @@ export function PlanningCalculatorClient({
       if (timeMinutes) params.set("tm", timeMinutes);
     } else {
       if (fuelFlow) params.set("ff", fuelFlow);
-      if (fuelUsed) params.set("fu", fuelUsed);
+      if (fuelUsed) params.set("fused", fuelUsed);
       if (fuelTimeHours) params.set("fth", fuelTimeHours);
       if (fuelTimeMinutes) params.set("ftm", fuelTimeMinutes);
       if (fuelAvailable) params.set("fa", fuelAvailable);
@@ -78,6 +109,8 @@ export function PlanningCalculatorClient({
     window.history.replaceState(null, '', newUrl);
   }, [
     mode,
+    speedUnit,
+    fuelUnit,
     groundSpeed,
     distance,
     timeHours,
@@ -92,11 +125,31 @@ export function PlanningCalculatorClient({
   // Calculate results for Time-Speed-Distance
   const totalTimeMinutes =
     (parseFloat(timeHours) || 0) * 60 + (parseFloat(timeMinutes) || 0);
-  const tsdResult = calculateTimeSpeedDistance(
-    groundSpeed ? parseFloat(groundSpeed) : undefined,
-    distance ? parseFloat(distance) : undefined,
+
+  // Get distance unit for current speed unit
+  const distanceUnit = getDistanceUnitForSpeed(speedUnit);
+
+  // Convert input values to base units (knots, nautical miles)
+  const groundSpeedKnots = groundSpeed ? toKnots(parseFloat(groundSpeed), speedUnit) : undefined;
+  const distanceNM = distance
+    ? convert(parseFloat(distance), distanceUnit, 'NM', 'distance') || undefined
+    : undefined;
+
+  // Perform calculations in base units
+  const tsdResultBase = calculateTimeSpeedDistance(
+    groundSpeedKnots,
+    distanceNM,
     totalTimeMinutes > 0 ? totalTimeMinutes : undefined
   );
+
+  // Convert results back to selected units
+  const tsdResult = {
+    groundSpeed: tsdResultBase.groundSpeed ? fromKnots(tsdResultBase.groundSpeed, speedUnit) : undefined,
+    distance: tsdResultBase.distance
+      ? convert(tsdResultBase.distance, 'NM', distanceUnit, 'distance') || undefined
+      : undefined,
+    time: tsdResultBase.time,
+  };
 
   // Calculate results for Fuel
   const fuelTotalTimeMinutes =
@@ -204,7 +257,7 @@ export function PlanningCalculatorClient({
                   </label>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                   {/* Ground Speed */}
                   <div>
                     <label
@@ -212,23 +265,26 @@ export function PlanningCalculatorClient({
                       style={{ color: "oklch(0.72 0.015 240)" }}
                     >
                       Ground Speed
-                      <Tooltip content="Your speed over the ground in knots" />
+                      <Tooltip content="Your speed over the ground. Select your preferred units." />
                     </label>
-                    <div className="relative">
+                    <div className="grid grid-cols-[1fr_auto] gap-x-3">
                       <input
                         type="number"
                         value={groundSpeed}
                         onChange={(e) => setGroundSpeed(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white"
+                        className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
                         placeholder="200"
                         step="any"
                       />
-                      <span
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-                        style={{ color: "oklch(0.55 0.02 240)" }}
+                      <select
+                        value={speedUnit}
+                        onChange={(e) => setSpeedUnit(e.target.value as SpeedUnit)}
+                        className="select-no-arrow w-22 px-3 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white cursor-pointer"
                       >
-                        KT
-                      </span>
+                        <option value="kt">KT</option>
+                        <option value="kmh">km/h</option>
+                        <option value="mph">mph</option>
+                      </select>
                     </div>
                   </div>
 
@@ -239,14 +295,14 @@ export function PlanningCalculatorClient({
                       style={{ color: "oklch(0.72 0.015 240)" }}
                     >
                       Distance
-                      <Tooltip content="Distance to travel in nautical miles" />
+                      <Tooltip content="Distance to travel" />
                     </label>
                     <div className="relative">
                       <input
                         type="number"
                         value={distance}
                         onChange={(e) => setDistance(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white"
+                        className="w-full px-4 py-3 pr-12 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
                         placeholder="300"
                         step="any"
                       />
@@ -254,7 +310,7 @@ export function PlanningCalculatorClient({
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
                         style={{ color: "oklch(0.55 0.02 240)" }}
                       >
-                        NM
+                        {getDistanceUnitForSpeed(speedUnit)}
                       </span>
                     </div>
                   </div>
@@ -266,42 +322,34 @@ export function PlanningCalculatorClient({
                       style={{ color: "oklch(0.72 0.015 240)" }}
                     >
                       Time
-                      <Tooltip content="Time in hours and minutes" />
+                      <Tooltip content="Time in decimal hours (e.g., 1.5 for 1 hour 30 minutes)" />
                     </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="relative">
-                        <input
-                          type="number"
-                          value={timeHours}
-                          onChange={(e) => setTimeHours(e.target.value)}
-                          className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white"
-                          placeholder="1"
-                          min="0"
-                        />
-                        <span
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-                          style={{ color: "oklch(0.55 0.02 240)" }}
-                        >
-                          HRS
-                        </span>
-                      </div>
-                      <div className="relative">
-                        <input
-                          type="number"
-                          value={timeMinutes}
-                          onChange={(e) => setTimeMinutes(e.target.value)}
-                          className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white"
-                          placeholder="30"
-                          min="0"
-                          max="59"
-                        />
-                        <span
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-                          style={{ color: "oklch(0.55 0.02 240)" }}
-                        >
-                          MIN
-                        </span>
-                      </div>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        value={timeDecimal}
+                        onChange={(e) => {
+                          setTimeDecimal(e.target.value);
+                          if (e.target.value === "") {
+                            setTimeHours("");
+                            setTimeMinutes("");
+                          } else {
+                            const hours = parseFloat(e.target.value) || 0;
+                            const totalMinutes = hours * 60;
+                            setTimeHours(Math.floor(totalMinutes / 60).toString());
+                            setTimeMinutes(Math.round(totalMinutes % 60).toString());
+                          }
+                        }}
+                        className="w-full px-4 py-3 pr-16 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
+                        placeholder="1.5"
+                        step="any"
+                      />
+                      <span
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
+                        style={{ color: "oklch(0.55 0.02 240)" }}
+                      >
+                        HRS
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -341,7 +389,7 @@ export function PlanningCalculatorClient({
                           className="text-sm font-medium"
                           style={{ color: "oklch(0.72 0.015 240)" }}
                         >
-                          KT
+                          {getSpeedUnitLabel(speedUnit)}
                         </span>
                       </div>
                     </div>
@@ -368,7 +416,7 @@ export function PlanningCalculatorClient({
                           className="text-sm font-medium"
                           style={{ color: "oklch(0.72 0.015 240)" }}
                         >
-                          NM
+                          {getDistanceUnitForSpeed(speedUnit)}
                         </span>
                       </div>
                     </div>
@@ -413,7 +461,7 @@ export function PlanningCalculatorClient({
                   </label>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
                   {/* Fuel Flow */}
                   <div>
                     <label
@@ -421,23 +469,27 @@ export function PlanningCalculatorClient({
                       style={{ color: "oklch(0.72 0.015 240)" }}
                     >
                       Fuel Flow
-                      <Tooltip content="Fuel consumption rate in gallons per hour or pounds per hour" />
+                      <Tooltip content="Fuel consumption rate per hour. Select your preferred units." />
                     </label>
-                    <div className="relative">
+                    <div className="grid grid-cols-[1fr_auto] gap-x-3">
                       <input
                         type="number"
                         value={fuelFlow}
                         onChange={(e) => setFuelFlow(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white"
+                        className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
                         placeholder="70"
                         step="any"
                       />
-                      <span
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-                        style={{ color: "oklch(0.55 0.02 240)" }}
+                      <select
+                        value={fuelUnit}
+                        onChange={(e) => setFuelUnit(e.target.value as FuelUnit)}
+                        className="select-no-arrow w-22 px-3 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white cursor-pointer"
                       >
-                        /HR
-                      </span>
+                        <option value="gph">GPH</option>
+                        <option value="lph">LPH</option>
+                        <option value="pph">PPH</option>
+                        <option value="kgh">KG/H</option>
+                      </select>
                     </div>
                   </div>
 
@@ -448,14 +500,14 @@ export function PlanningCalculatorClient({
                       style={{ color: "oklch(0.72 0.015 240)" }}
                     >
                       Fuel Used
-                      <Tooltip content="Amount of fuel consumed in gallons or pounds" />
+                      <Tooltip content="Amount of fuel consumed" />
                     </label>
                     <div className="relative">
                       <input
                         type="number"
                         value={fuelUsed}
                         onChange={(e) => setFuelUsed(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white"
+                        className="w-full px-4 py-3 pr-14 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
                         placeholder="105"
                         step="any"
                       />
@@ -463,7 +515,7 @@ export function PlanningCalculatorClient({
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
                         style={{ color: "oklch(0.55 0.02 240)" }}
                       >
-                        GAL/LBS
+                        {getFuelResultUnit(fuelUnit)}
                       </span>
                     </div>
                   </div>
@@ -475,70 +527,62 @@ export function PlanningCalculatorClient({
                       style={{ color: "oklch(0.72 0.015 240)" }}
                     >
                       Time
-                      <Tooltip content="Time period in hours and minutes" />
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="relative">
-                        <input
-                          type="number"
-                          value={fuelTimeHours}
-                          onChange={(e) => setFuelTimeHours(e.target.value)}
-                          className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white"
-                          placeholder="1"
-                          min="0"
-                        />
-                        <span
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-                          style={{ color: "oklch(0.55 0.02 240)" }}
-                        >
-                          HRS
-                        </span>
-                      </div>
-                      <div className="relative">
-                        <input
-                          type="number"
-                          value={fuelTimeMinutes}
-                          onChange={(e) => setFuelTimeMinutes(e.target.value)}
-                          className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white"
-                          placeholder="30"
-                          min="0"
-                          max="59"
-                        />
-                        <span
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-                          style={{ color: "oklch(0.55 0.02 240)" }}
-                        >
-                          MIN
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Fuel Available (Optional - for endurance) */}
-                  <div>
-                    <label
-                      className="block text-xs font-medium mb-2"
-                      style={{ color: "oklch(0.72 0.015 240)" }}
-                    >
-                      Fuel Available (Optional)
-                      <Tooltip content="Total fuel available to calculate endurance (how long fuel will last)" />
+                      <Tooltip content="Time in decimal hours (e.g., 1.5 for 1 hour 30 minutes)" />
                     </label>
                     <div className="relative">
                       <input
                         type="number"
-                        value={fuelAvailable}
-                        onChange={(e) => setFuelAvailable(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white"
-                        placeholder="200"
+                        value={fuelTimeDecimal}
+                        onChange={(e) => {
+                          setFuelTimeDecimal(e.target.value);
+                          if (e.target.value === "") {
+                            setFuelTimeHours("");
+                            setFuelTimeMinutes("");
+                          } else {
+                            const hours = parseFloat(e.target.value) || 0;
+                            const totalMinutes = hours * 60;
+                            setFuelTimeHours(Math.floor(totalMinutes / 60).toString());
+                            setFuelTimeMinutes(Math.round(totalMinutes % 60).toString());
+                          }
+                        }}
+                        className="w-full px-4 py-3 pr-16 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
+                        placeholder="1.5"
                         step="any"
                       />
                       <span
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
                         style={{ color: "oklch(0.55 0.02 240)" }}
                       >
-                        GAL/LBS
+                        HRS
                       </span>
                     </div>
+                  </div>
+                </div>
+
+                {/* Fuel Available (Optional - for endurance) */}
+                <div>
+                  <label
+                    className="block text-xs font-medium mb-2"
+                    style={{ color: "oklch(0.72 0.015 240)" }}
+                  >
+                    Fuel Available (Optional)
+                    <Tooltip content="Total fuel available to calculate endurance (how long fuel will last)" />
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      value={fuelAvailable}
+                      onChange={(e) => setFuelAvailable(e.target.value)}
+                      className="w-full px-4 py-3 pr-14 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
+                      placeholder="200"
+                      step="any"
+                    />
+                    <span
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
+                      style={{ color: "oklch(0.55 0.02 240)" }}
+                    >
+                      {getFuelResultUnit(fuelUnit)}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -557,7 +601,7 @@ export function PlanningCalculatorClient({
                       Results
                     </label>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div
                       className="rounded-xl p-4 border backdrop-blur-sm"
                       style={{
@@ -580,7 +624,7 @@ export function PlanningCalculatorClient({
                           className="text-sm font-medium"
                           style={{ color: "oklch(0.72 0.015 240)" }}
                         >
-                          /HR
+                          {getFuelUnitLabel(fuelUnit)}
                         </span>
                       </div>
                     </div>
@@ -607,7 +651,7 @@ export function PlanningCalculatorClient({
                           className="text-sm font-medium"
                           style={{ color: "oklch(0.72 0.015 240)" }}
                         >
-                          GAL/LBS
+                          {getFuelResultUnit(fuelUnit)}
                         </span>
                       </div>
                     </div>

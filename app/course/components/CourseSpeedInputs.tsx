@@ -101,10 +101,7 @@ export function CourseSpeedInputs({
           <select
             value={speedUnit}
             onChange={(e) => setSpeedUnit(e.target.value as SpeedUnit)}
-            className="w-22 lg:w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white cursor-pointer appearance-none"
-            style={{
-              backgroundImage: 'none',
-            }}
+            className="select-no-arrow w-22 lg:w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white cursor-pointer"
           >
             <option value="kt">KT</option>
             <option value="kmh">km/h</option>

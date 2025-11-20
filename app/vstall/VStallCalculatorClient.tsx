@@ -239,7 +239,7 @@ export function VStallCalculatorClient({
                 <select
                   value={selectedAircraft}
                   onChange={(e) => setSelectedAircraft(e.target.value)}
-                  className="w-full h-[52px] pl-4 pr-10 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 hover:border-gray-500 text-white cursor-pointer"
+                  className="w-full h-[52px] pl-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 hover:border-gray-500 text-white cursor-pointer"
                 >
                   <optgroup label="Preset Aircraft">
                     {PRESET_AIRCRAFT.map((ac) => (
@@ -356,7 +356,7 @@ export function VStallCalculatorClient({
                 <select
                   value={flaps}
                   onChange={(e) => setFlaps(e.target.value)}
-                  className="w-full h-[52px] pl-4 pr-10 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 hover:border-gray-500 text-white cursor-pointer"
+                  className="w-full h-[52px] pl-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 hover:border-gray-500 text-white cursor-pointer"
                 >
                   <option value="clean">✈️ Clean (No Flaps)</option>
                   <option value="takeoff">🛫 Takeoff / Approach</option>
