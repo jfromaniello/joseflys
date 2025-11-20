@@ -10,84 +10,25 @@ interface NavbarProps {
   currentPage: Page;
 }
 
-const calculators = [
-  {
-    id: "course" as const,
-    name: "Course Calculator",
-    href: "/course",
-    icon: (
-      <svg
-        className="w-5 h-5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        strokeWidth={2}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M14 5l7 7m0 0l-7 7m7-7H3"
-        />
-      </svg>
-    ),
-  },
+// ========== FLIGHT PLANNING ==========
+const flightPlanningTools = [
   {
     id: "leg" as const,
     name: "Leg Planner",
     href: "/leg",
     icon: (
-      <svg
-        className="w-5 h-5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        strokeWidth={2}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
-        />
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
       </svg>
     ),
   },
   {
-    id: "tas" as const,
-    name: "TAS Calculator",
-    href: "/tas",
+    id: "course" as const,
+    name: "Course Calculator",
+    href: "/course",
     icon: (
-      <svg
-        className="w-5 h-5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        strokeWidth={2}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-        />
-      </svg>
-    ),
-  },
-  {
-    id: "isa" as const,
-    name: "ISA Calculator",
-    href: "/isa",
-    icon: (
-      <svg
-        className="w-5 h-5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        strokeWidth={2}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"
-        />
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
       </svg>
     ),
   },
@@ -96,79 +37,8 @@ const calculators = [
     name: "Route Calculator",
     href: "/route",
     icon: (
-      <svg
-        className="w-5 h-5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        strokeWidth={2}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
-        />
-      </svg>
-    ),
-  },
-  {
-    id: "local-chart" as const,
-    name: "Local Chart",
-    href: "/local-chart",
-    icon: (
-      <svg
-        className="w-5 h-5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        strokeWidth={2}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
-        />
-        <circle cx="12" cy="12" r="2" fill="currentColor" />
-      </svg>
-    ),
-  },
-  {
-    id: "segments" as const,
-    name: "LNAV Segments",
-    href: "/segments",
-    icon: (
-      <svg
-        className="w-5 h-5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        strokeWidth={2}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-        />
-      </svg>
-    ),
-  },
-  {
-    id: "conversions" as const,
-    name: "Unit Converter",
-    href: "/conversions",
-    icon: (
-      <svg
-        className="w-5 h-5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        strokeWidth={2}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-        />
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
       </svg>
     ),
   },
@@ -177,38 +47,33 @@ const calculators = [
     name: "Flight Planning",
     href: "/planning",
     icon: (
-      <svg
-        className="w-5 h-5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        strokeWidth={2}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-        />
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
       </svg>
     ),
   },
+  {
+    id: "local-chart" as const,
+    name: "Local Chart",
+    href: "/local-chart",
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+        <circle cx="12" cy="12" r="2" fill="currentColor" />
+      </svg>
+    ),
+  },
+];
+
+// ========== AIRCRAFT PERFORMANCE ==========
+const aircraftPerformance = [
   {
     id: "climb" as const,
     name: "Climb Calculator",
     href: "/climb",
     icon: (
-      <svg
-        className="w-5 h-5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        strokeWidth={2}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M5 10l7-7m0 0l7 7m-7-7v18"
-        />
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
       </svg>
     ),
   },
@@ -217,18 +82,8 @@ const calculators = [
     name: "V-Stall Calculator",
     href: "/vstall",
     icon: (
-      <svg
-        className="w-5 h-5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        strokeWidth={2}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-        />
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
       </svg>
     ),
   },
@@ -237,54 +92,72 @@ const calculators = [
     name: "Takeoff Performance",
     href: "/takeoff",
     icon: (
-      <svg
-        className="w-5 h-5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        strokeWidth={2}
-      >
-        {/* Runway */}
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M3 18h8"
-        />
-        {/* Takeoff trajectory with arrow */}
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M11 18Q14 18 16 14T18 6"
-        />
-        {/* Arrow head */}
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M15 8l3-2 1 3"
-        />
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 18h8" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M11 18Q14 18 16 14T18 6" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 8l3-2 1 3" />
       </svg>
     ),
   },
 ];
 
+// ========== UTILITIES ==========
+const utilities = [
+  {
+    id: "conversions" as const,
+    name: "Unit Converter",
+    href: "/conversions",
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+      </svg>
+    ),
+  },
+  {
+    id: "tas" as const,
+    name: "TAS Calculator",
+    href: "/tas",
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+      </svg>
+    ),
+  },
+  {
+    id: "isa" as const,
+    name: "ISA Calculator",
+    href: "/isa",
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+      </svg>
+    ),
+  },
+];
+
+// ========== EDUCATIONAL ==========
+const educational = [
+  {
+    id: "segments" as const,
+    name: "LNAV Segments",
+    href: "/segments",
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+      </svg>
+    ),
+  },
+];
+
+// ========== USER DATA ==========
 const otherPages = [
   {
     id: "my-planes" as const,
     name: "My Planes",
     href: "/my-planes",
     icon: (
-      <svg
-        className="w-5 h-5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        strokeWidth={2}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
-        />
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
       </svg>
     ),
   },
@@ -293,24 +166,14 @@ const otherPages = [
     name: "My Flight Plans",
     href: "/flight-plans",
     icon: (
-      <svg
-        className="w-5 h-5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        strokeWidth={2}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-        />
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
       </svg>
     ),
   },
 ];
 
-const allPages = [...calculators, ...otherPages];
+const allPages = [...flightPlanningTools, ...aircraftPerformance, ...utilities, ...educational, ...otherPages];
 
 export function Navbar({ currentPage }: NavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -353,7 +216,7 @@ export function Navbar({ currentPage }: NavbarProps) {
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center ml-auto">
               <Menu as="div" className="relative">
-                <MenuButton className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-300 hover:bg-slate-800 hover:text-white transition-all">
+                <MenuButton className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-300 hover:bg-slate-800 hover:text-white transition-all cursor-pointer">
                   {currentPage === "home" ? (
                     <svg
                       className="w-5 h-5"
@@ -398,38 +261,113 @@ export function Navbar({ currentPage }: NavbarProps) {
                 >
                   <MenuItems className="absolute right-0 mt-2 w-64 origin-top-right rounded-xl bg-slate-900 shadow-xl border border-gray-700 ring-1 ring-black ring-opacity-5 focus:outline-none overflow-hidden">
                     <div className="py-1">
-                      {calculators.map((calc) => (
-                        <MenuItem key={calc.id}>
-                          {({ active }) => (
+                      {/* Flight Planning */}
+                      <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                        Flight Planning
+                      </div>
+                      {flightPlanningTools.map((tool) => (
+                        <MenuItem key={tool.id}>
+                          {({ focus }) => (
                             <Link
-                              href={calc.href}
-                              className={`flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
-                                calc.id === currentPage
+                              href={tool.href}
+                              className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors cursor-pointer ${
+                                tool.id === currentPage
                                   ? "bg-sky-500/20 text-sky-400"
-                                  : active
+                                  : focus
                                   ? "bg-slate-800 text-white"
                                   : "text-gray-300"
                               }`}
                             >
-                              {calc.icon}
-                              <span>{calc.name}</span>
+                              {tool.icon}
+                              <span>{tool.name}</span>
                             </Link>
                           )}
                         </MenuItem>
                       ))}
 
-                      {/* Separator */}
-                      <div className="border-t border-gray-700 my-1" />
+                      {/* Aircraft Performance */}
+                      <div className="border-t border-gray-700 mt-1 pt-2 px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                        Aircraft Performance
+                      </div>
+                      {aircraftPerformance.map((tool) => (
+                        <MenuItem key={tool.id}>
+                          {({ focus }) => (
+                            <Link
+                              href={tool.href}
+                              className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors cursor-pointer ${
+                                tool.id === currentPage
+                                  ? "bg-sky-500/20 text-sky-400"
+                                  : focus
+                                  ? "bg-slate-800 text-white"
+                                  : "text-gray-300"
+                              }`}
+                            >
+                              {tool.icon}
+                              <span>{tool.name}</span>
+                            </Link>
+                          )}
+                        </MenuItem>
+                      ))}
 
+                      {/* Utilities */}
+                      <div className="border-t border-gray-700 mt-1 pt-2 px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                        Utilities
+                      </div>
+                      {utilities.map((tool) => (
+                        <MenuItem key={tool.id}>
+                          {({ focus }) => (
+                            <Link
+                              href={tool.href}
+                              className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors cursor-pointer ${
+                                tool.id === currentPage
+                                  ? "bg-sky-500/20 text-sky-400"
+                                  : focus
+                                  ? "bg-slate-800 text-white"
+                                  : "text-gray-300"
+                              }`}
+                            >
+                              {tool.icon}
+                              <span>{tool.name}</span>
+                            </Link>
+                          )}
+                        </MenuItem>
+                      ))}
+
+                      {/* Educational */}
+                      <div className="border-t border-gray-700 mt-1 pt-2 px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                        Educational
+                      </div>
+                      {educational.map((tool) => (
+                        <MenuItem key={tool.id}>
+                          {({ focus }) => (
+                            <Link
+                              href={tool.href}
+                              className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors cursor-pointer ${
+                                tool.id === currentPage
+                                  ? "bg-sky-500/20 text-sky-400"
+                                  : focus
+                                  ? "bg-slate-800 text-white"
+                                  : "text-gray-300"
+                              }`}
+                            >
+                              {tool.icon}
+                              <span>{tool.name}</span>
+                            </Link>
+                          )}
+                        </MenuItem>
+                      ))}
+
+                      {/* User Data */}
+                      <div className="border-t border-gray-700 mt-1" />
                       {otherPages.map((page) => (
                         <MenuItem key={page.id}>
-                          {({ active }) => (
+                          {({ focus }) => (
                             <Link
                               href={page.href}
-                              className={`flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
+                              className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors cursor-pointer ${
                                 page.id === currentPage
                                   ? "bg-sky-500/20 text-sky-400"
-                                  : active
+                                  : focus
                                   ? "bg-slate-800 text-white"
                                   : "text-gray-300"
                               }`}
@@ -449,7 +387,7 @@ export function Navbar({ currentPage }: NavbarProps) {
             {/* Mobile menu button */}
             <button
               onClick={() => setIsMobileMenuOpen(true)}
-              className="md:hidden flex items-center gap-2 px-3 py-1.5 rounded-lg text-gray-300 hover:bg-slate-800 hover:text-white transition-colors"
+              className="md:hidden flex items-center gap-2 px-3 py-1.5 rounded-lg text-gray-300 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer"
             >
               <span className="text-sm font-medium">{currentPageData?.name || 'Menu'}</span>
               <svg
@@ -500,9 +438,9 @@ export function Navbar({ currentPage }: NavbarProps) {
                 leaveFrom="translate-x-0"
                 leaveTo="translate-x-full"
               >
-                <DialogPanel className="w-full max-w-sm h-full bg-slate-900 shadow-xl">
+                <DialogPanel className="w-full max-w-sm h-full bg-slate-900 shadow-xl overflow-y-auto">
                   {/* Mobile menu header */}
-                  <div className="flex items-center justify-between p-4 border-b border-gray-800">
+                  <div className="flex items-center justify-between p-4 border-b border-gray-800 sticky top-0 bg-slate-900 z-10">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-sky-500/20 border border-sky-500/30">
                         <svg
@@ -533,7 +471,7 @@ export function Navbar({ currentPage }: NavbarProps) {
                     </div>
                     <button
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className="p-2 rounded-lg text-gray-400 hover:bg-slate-800 hover:text-white transition-colors"
+                      className="p-2 rounded-lg text-gray-400 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer"
                     >
                       <svg
                         className="w-6 h-6"
@@ -556,7 +494,7 @@ export function Navbar({ currentPage }: NavbarProps) {
                     <Link
                       href="/"
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-all ${
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-all cursor-pointer ${
                         currentPage === "home"
                           ? "bg-sky-500/20 text-sky-400"
                           : "text-gray-300 hover:bg-slate-800 hover:text-white"
@@ -578,31 +516,94 @@ export function Navbar({ currentPage }: NavbarProps) {
                       Home
                     </Link>
 
-                    {calculators.map((calc) => (
+                    {/* Flight Planning */}
+                    <div className="pt-3 pb-2 px-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                      Flight Planning
+                    </div>
+                    {flightPlanningTools.map((tool) => (
                       <Link
-                        key={calc.id}
-                        href={calc.href}
+                        key={tool.id}
+                        href={tool.href}
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-all ${
-                          calc.id === currentPage
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-all cursor-pointer ${
+                          tool.id === currentPage
                             ? "bg-sky-500/20 text-sky-400"
                             : "text-gray-300 hover:bg-slate-800 hover:text-white"
                         }`}
                       >
-                        {calc.icon}
-                        {calc.name}
+                        {tool.icon}
+                        {tool.name}
                       </Link>
                     ))}
 
-                    {/* Separator */}
-                    <div className="border-t border-gray-700 my-2" />
+                    {/* Aircraft Performance */}
+                    <div className="pt-3 pb-2 px-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                      Aircraft Performance
+                    </div>
+                    {aircraftPerformance.map((tool) => (
+                      <Link
+                        key={tool.id}
+                        href={tool.href}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-all cursor-pointer ${
+                          tool.id === currentPage
+                            ? "bg-sky-500/20 text-sky-400"
+                            : "text-gray-300 hover:bg-slate-800 hover:text-white"
+                        }`}
+                      >
+                        {tool.icon}
+                        {tool.name}
+                      </Link>
+                    ))}
 
+                    {/* Utilities */}
+                    <div className="pt-3 pb-2 px-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                      Utilities
+                    </div>
+                    {utilities.map((tool) => (
+                      <Link
+                        key={tool.id}
+                        href={tool.href}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-all cursor-pointer ${
+                          tool.id === currentPage
+                            ? "bg-sky-500/20 text-sky-400"
+                            : "text-gray-300 hover:bg-slate-800 hover:text-white"
+                        }`}
+                      >
+                        {tool.icon}
+                        {tool.name}
+                      </Link>
+                    ))}
+
+                    {/* Educational */}
+                    <div className="pt-3 pb-2 px-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                      Educational
+                    </div>
+                    {educational.map((tool) => (
+                      <Link
+                        key={tool.id}
+                        href={tool.href}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-all cursor-pointer ${
+                          tool.id === currentPage
+                            ? "bg-sky-500/20 text-sky-400"
+                            : "text-gray-300 hover:bg-slate-800 hover:text-white"
+                        }`}
+                      >
+                        {tool.icon}
+                        {tool.name}
+                      </Link>
+                    ))}
+
+                    {/* User Data */}
+                    <div className="border-t border-gray-700 my-2" />
                     {otherPages.map((page) => (
                       <Link
                         key={page.id}
                         href={page.href}
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-all ${
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-all cursor-pointer ${
                           page.id === currentPage
                             ? "bg-sky-500/20 text-sky-400"
                             : "text-gray-300 hover:bg-slate-800 hover:text-white"

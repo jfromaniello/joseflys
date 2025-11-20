@@ -22,7 +22,7 @@ import { formatCourse } from "@/lib/formatters";
 const SegmentsMap = dynamic(() => import("./SegmentsMap").then(mod => ({ default: mod.SegmentsMap })), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-[600px] rounded-xl border-2 border-gray-700 bg-slate-800/50 flex items-center justify-center">
+    <div className="w-full h-[600px] rounded-xl border border-gray-700 bg-slate-900/30 flex items-center justify-center">
       <div className="text-gray-400">Loading 2D map...</div>
     </div>
   ),
@@ -31,7 +31,7 @@ const SegmentsMap = dynamic(() => import("./SegmentsMap").then(mod => ({ default
 const SegmentsGlobe = dynamic(() => import("./SegmentsGlobe").then(mod => ({ default: mod.SegmentsGlobe })), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-[600px] rounded-xl border-2 border-gray-700 bg-slate-800/50 flex items-center justify-center">
+    <div className="w-full h-[600px] rounded-xl border border-gray-700 bg-slate-900/30 flex items-center justify-center">
       <div className="text-gray-400">Loading 3D globe...</div>
     </div>
   ),
@@ -506,40 +506,47 @@ ${waypoints.join("\n")}
 
   return (
     <PageLayout currentPage="segments">
-      <div className="min-h-screen bg-linear-to-br from-slate-900 via-blue-950 to-slate-900 text-white px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <CalculatorPageHeader
-            title="LNAV Segments Calculator"
-            description="Divide long-distance orthodromic routes into constant-heading loxodromic segments. Simulates how FMS/LNAV systems approximate great circle routes."
-          />
+      <CalculatorPageHeader
+        title="LNAV Segments Calculator"
+        description="Divide long-distance orthodromic routes into constant-heading loxodromic segments. Simulates how FMS/LNAV systems approximate great circle routes."
+      />
 
-          {/* Input Mode Toggle */}
-          <div className="mb-6 flex gap-4">
-            <button
-              onClick={() => setInputMode("search")}
-              className={`px-4 py-2 rounded-lg cursor-pointer ${
-                inputMode === "search"
-                  ? "bg-blue-600 text-white"
-                  : "bg-slate-700 text-slate-300 hover:bg-slate-600"
-              }`}
-            >
-              Search Cities/Airports
-            </button>
-            <button
-              onClick={() => setInputMode("coordinates")}
-              className={`px-4 py-2 rounded-lg cursor-pointer ${
-                inputMode === "coordinates"
-                  ? "bg-blue-600 text-white"
-                  : "bg-slate-700 text-slate-300 hover:bg-slate-600"
-              }`}
-            >
-              Enter Coordinates
-            </button>
+      <main className="w-full max-w-4xl">
+        <div className="rounded-2xl p-6 sm:p-8 shadow-2xl bg-slate-800/50 backdrop-blur-sm border border-gray-700">
+          {/* Section Header */}
+          <div className="mb-6 pb-6 border-b border-gray-700">
+            <h2 className="text-xl sm:text-2xl font-bold mb-2" style={{ color: "white" }}>
+              Route Configuration
+            </h2>
+
+            {/* Input Mode Toggle */}
+            <div className="mt-4 flex gap-4">
+              <button
+                onClick={() => setInputMode("search")}
+                className={`px-4 py-2 rounded-lg cursor-pointer ${
+                  inputMode === "search"
+                    ? "bg-blue-600 text-white"
+                    : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                }`}
+              >
+                Search Cities/Airports
+              </button>
+              <button
+                onClick={() => setInputMode("coordinates")}
+                className={`px-4 py-2 rounded-lg cursor-pointer ${
+                  inputMode === "coordinates"
+                    ? "bg-blue-600 text-white"
+                    : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                }`}
+              >
+                Enter Coordinates
+              </button>
+            </div>
           </div>
 
           {/* Inputs Section */}
-          <div className="mb-8 bg-slate-800/50 border-2 border-gray-700 rounded-xl p-6">
-            <h3 className="text-lg font-semibold mb-4">Route</h3>
+          <div className="mb-6 space-y-6">
+            <h3 className="text-sm font-semibold mb-3 uppercase tracking-wide" style={{ color: "oklch(0.65 0.15 230)" }}>Route</h3>
 
             {inputMode === "search" ? (
               <>
@@ -773,7 +780,7 @@ ${waypoints.join("\n")}
 
             {/* Segment Count Slider */}
             <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">
+              <label className="flex items-center text-sm font-medium mb-2" style={{ color: "oklch(0.72 0.015 240)" }}>
                 Number of Segments: {segmentCount}
                 <Tooltip content="Choose how many waypoints to use. Fewer segments = old navigation (less precise). More segments = modern navigation (more precise)." />
               </label>
@@ -845,7 +852,7 @@ ${waypoints.join("\n")}
 
           {/* Results Section */}
           {result && result.segments.length > 0 && (
-            <div className="mb-8 bg-slate-800/50 border-2 border-gray-700 rounded-xl p-6">
+            <div className="mb-6 pt-6 border-t border-gray-700 space-y-6">
               {/* Summary */}
               <div className="mb-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
                 <div>
@@ -961,7 +968,7 @@ ${waypoints.join("\n")}
                             {segment.segmentNumber}
                           </div>
                           <div>
-                            <div className="text-lg font-semibold">
+                            <div className="text-lg font-semibold text-white">
                               {formatHeading(segment.heading)}
                             </div>
                             <div className="text-sm text-gray-400">
@@ -984,10 +991,10 @@ ${waypoints.join("\n")}
 
           {/* Map Visualization */}
           {result && fromLocation && toLocation && (
-            <div className="mb-8">
+            <div className="mb-6 pt-6 border-t border-gray-700">
               {/* Map View Toggle */}
               <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Route Visualization</h3>
+                <h3 className="text-lg font-semibold" style={{ color: "white" }}>Route Visualization</h3>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setViewMode("2d")}
@@ -1023,7 +1030,7 @@ ${waypoints.join("\n")}
               </div>
 
               {/* Map Legend */}
-              <div className="mb-3 p-4 bg-slate-800/50 border border-gray-700 rounded-lg">
+              <div className="mb-3 p-4 bg-slate-900/30 border border-gray-700 rounded-lg">
                 <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs">
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-0.5 bg-green-500" style={{ borderTop: "2px dashed" }}></div>
@@ -1071,7 +1078,7 @@ ${waypoints.join("\n")}
               )}
 
               {/* Segment Slider Below Map */}
-              <div className="mt-4 bg-slate-800/50 border-2 border-gray-700 rounded-xl p-4">
+              <div className="mt-4 bg-slate-900/30 border border-gray-700 rounded-xl p-4">
                 <div className="flex items-center gap-4">
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
@@ -1124,8 +1131,8 @@ ${waypoints.join("\n")}
 
           {/* Info Section */}
           {!result && (
-            <div className="mb-8 bg-slate-800/50 border-2 border-gray-700 rounded-xl p-6">
-              <h3 className="text-lg font-semibold mb-2">How It Works</h3>
+            <div className="mb-6 pt-6 border-t border-gray-700">
+              <h3 className="text-lg font-semibold mb-2" style={{ color: "white" }}>How It Works</h3>
               <p className="text-gray-300 text-sm leading-relaxed">
                 Modern Flight Management Systems (FMS) approximate the shortest great circle route
                 by dividing it into constant-heading segments. This calculator demonstrates this process:
@@ -1150,10 +1157,10 @@ ${waypoints.join("\n")}
               </div>
             </div>
           )}
-
-          <Footer description="Calculate LNAV segments for long-distance navigation planning" />
         </div>
-      </div>
+      </main>
+
+      <Footer description="Calculate LNAV segments for long-distance navigation planning" />
     </PageLayout>
   );
 }
