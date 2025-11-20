@@ -1,5 +1,26 @@
 /**
+ * Fully resolved aircraft with all properties defined (no inheritance)
+ * This is what you get after calling resolveAircraft()
+ */
+export interface ResolvedAircraftPerformance {
+  name: string;
+  model: string;
+  weights: AircraftWeights;
+  climbTable: ClimbPerformance[];
+  cruiseTable: CruisePerformance[];
+  engine: EngineData;
+  limits: AircraftLimits;
+  serviceCeiling?: number;
+  takeoffTable?: TakeoffPerformance[];
+  landingTable?: LandingPerformance[];
+  deviationTable?: DeviationEntry[];
+}
+
+/**
  * General aircraft performance model for planning, training and automation.
+ *
+ * When `inherit` is set, all other fields become optional and inherit from the parent preset.
+ * When `inherit` is not set, weights/climbTable/cruiseTable/engine/limits are required.
  */
 export interface AircraftPerformance {
   /** Aircraft commercial name (e.g., "Cessna 150") */
@@ -8,20 +29,43 @@ export interface AircraftPerformance {
   /** Short model code (e.g., "C150") */
   model: string;
 
-  /** All relevant aircraft weights */
-  weights: AircraftWeights;
+  /**
+   * Inherit from a preset aircraft (model code)
+   * When set, all undefined properties are inherited from the preset
+   * Only custom overrides are stored, reducing storage size
+   * Example: inherit: "C150" - inherits all C150 properties
+   */
+  inherit?: string;
 
-  /** Climb performance tables grouped by altitude ranges */
-  climbTable: ClimbPerformance[];
+  /**
+   * All relevant aircraft weights
+   * Required unless inheriting from a preset
+   */
+  weights?: AircraftWeights;
 
-  /** Cruise performance tables at different altitudes and power settings */
-  cruiseTable: CruisePerformance[];
+  /**
+   * Climb performance tables grouped by altitude ranges
+   * Required unless inheriting from a preset
+   */
+  climbTable?: ClimbPerformance[];
 
-  /** Engine performance and limits information */
-  engine: EngineData;
+  /**
+   * Cruise performance tables at different altitudes and power settings
+   * Required unless inheriting from a preset
+   */
+  cruiseTable?: CruisePerformance[];
 
-  /** Airplane operating limitations (V-speeds, max wind, etc.) */
-  limits: AircraftLimits;
+  /**
+   * Engine performance and limits information
+   * Required unless inheriting from a preset
+   */
+  engine?: EngineData;
+
+  /**
+   * Airplane operating limitations (V-speeds, max wind, etc.)
+   * Required unless inheriting from a preset
+   */
+  limits?: AircraftLimits;
 
   /** Service ceiling in feet (pressure altitude) - maximum altitude where aircraft can maintain 100 fpm climb */
   serviceCeiling?: number;

@@ -7,6 +7,7 @@ export { PIPER_PA11 } from "./PIPER_PA11";
 // Type exports
 export type {
   AircraftPerformance,
+  ResolvedAircraftPerformance,
   AircraftWeights,
   ClimbPerformance,
   CruisePerformance,

@@ -6,7 +6,7 @@ import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
 import { Footer } from "../components/Footer";
 import { ShareButton } from "../components/ShareButton";
 import { Tooltip } from "../components/Tooltip";
-import { PRESET_AIRCRAFT, AircraftPerformance } from "@/lib/aircraft";
+import { PRESET_AIRCRAFT, ResolvedAircraftPerformance } from "@/lib/aircraft";
 import {
   calculateTakeoffPerformance,
   validateTakeoffInputs,
@@ -14,7 +14,7 @@ import {
   type TakeoffResults,
 } from "@/lib/takeoffCalculations";
 import { calculatePA, calculateDA, calculateISATemp, isInHg } from "@/lib/isaCalculations";
-import { loadAircraftFromUrl, serializeAircraft } from "@/lib/aircraftStorage";
+import { loadAircraftFromUrl, serializeAircraft, getAircraftByModel, loadCustomAircraft, resolveAircraft } from "@/lib/aircraftStorage";
 import { formatDistance } from "@/lib/formatters";
 import { TakeoffVisualization } from "./TakeoffVisualization";
 
@@ -52,16 +52,25 @@ export function TakeoffCalculatorClient({
   initialObstacle,
 }: TakeoffCalculatorClientProps) {
   // Aircraft state
-  const [aircraft, setAircraft] = useState<AircraftPerformance>(() => {
+  const [aircraft, setAircraft] = useState<ResolvedAircraftPerformance>(() => {
     // Try loading from serialized plane parameter first
     if (initialPlane) {
       const loadedAircraft = loadAircraftFromUrl(initialPlane);
       if (loadedAircraft) return loadedAircraft;
     }
-    // Fall back to model code
-    const aircraftFromModel = PRESET_AIRCRAFT.find((a) => a.model === initialAircraft);
-    return aircraftFromModel || PRESET_AIRCRAFT[0];
+    // Fall back to model code (check presets and custom)
+    const aircraftFromModel = getAircraftByModel(initialAircraft);
+    return aircraftFromModel || (PRESET_AIRCRAFT[0] as ResolvedAircraftPerformance);
   });
+
+  // Custom aircraft list
+  const [customAircraft, setCustomAircraft] = useState<ResolvedAircraftPerformance[]>([]);
+
+  // Load custom aircraft on mount
+  useEffect(() => {
+    const loaded = loadCustomAircraft().map(ac => resolveAircraft(ac));
+    setCustomAircraft(loaded);
+  }, []);
 
   // Input state
   const [weight, setWeight] = useState<string>(initialWeight);
@@ -86,8 +95,10 @@ export function TakeoffCalculatorClient({
   // Set default weight to standard weight or max gross weight
   useEffect(() => {
     if (!weight && aircraft) {
-      const defaultWeight = aircraft.weights.standardWeight || aircraft.weights.maxGrossWeight;
-      setWeight(defaultWeight.toString());
+      const defaultWeight = aircraft.weights?.standardWeight || aircraft.weights?.maxGrossWeight;
+      if (defaultWeight) {
+        setWeight(defaultWeight.toString());
+      }
     }
   }, [aircraft, weight]);
 
@@ -257,16 +268,27 @@ export function TakeoffCalculatorClient({
                 <select
                   value={aircraft.model}
                   onChange={(e) => {
-                    const selected = PRESET_AIRCRAFT.find((a) => a.model === e.target.value);
+                    const selected = getAircraftByModel(e.target.value);
                     if (selected) setAircraft(selected);
                   }}
                   className="w-full h-[52px] pl-4 pr-10 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 hover:border-gray-500 text-white cursor-pointer"
                 >
-                  {PRESET_AIRCRAFT.map((ac) => (
-                    <option key={ac.model} value={ac.model}>
-                      {ac.name}
-                    </option>
-                  ))}
+                  <optgroup label="Preset Aircraft">
+                    {PRESET_AIRCRAFT.map((ac) => (
+                      <option key={ac.model} value={ac.model}>
+                        {ac.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                  {customAircraft.length > 0 && (
+                    <optgroup label="Custom Aircraft">
+                      {customAircraft.map((ac) => (
+                        <option key={ac.model} value={ac.model}>
+                          {ac.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -275,7 +297,7 @@ export function TakeoffCalculatorClient({
                     Empty Weight
                   </p>
                   <p className="text-lg font-bold" style={{ color: "white" }}>
-                    {aircraft.weights.emptyWeight} <span className="text-xs font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>lbs</span>
+                    {aircraft.weights?.emptyWeight || "N/A"} <span className="text-xs font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>lbs</span>
                   </p>
                 </div>
                 <div className="p-3 rounded-xl bg-slate-900/30 border border-gray-700/50">
@@ -283,7 +305,7 @@ export function TakeoffCalculatorClient({
                     Max Gross
                   </p>
                   <p className="text-lg font-bold" style={{ color: "white" }}>
-                    {aircraft.weights.maxGrossWeight} <span className="text-xs font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>lbs</span>
+                    {aircraft.weights?.maxGrossWeight || "N/A"} <span className="text-xs font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>lbs</span>
                   </p>
                 </div>
                 <div className="p-3 rounded-xl bg-gradient-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30">
@@ -291,7 +313,7 @@ export function TakeoffCalculatorClient({
                     Vs Clean
                   </p>
                   <p className="text-lg font-bold" style={{ color: "white" }}>
-                    {aircraft.limits.vs} <span className="text-xs font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>KIAS</span>
+                    {aircraft.limits?.vs || "N/A"} <span className="text-xs font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>KIAS</span>
                   </p>
                 </div>
                 <div className="p-3 rounded-xl bg-gradient-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30">
@@ -299,7 +321,7 @@ export function TakeoffCalculatorClient({
                     Vs0 Landing
                   </p>
                   <p className="text-lg font-bold" style={{ color: "white" }}>
-                    {aircraft.limits.vs0} <span className="text-xs font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>KIAS</span>
+                    {aircraft.limits?.vs0 || "N/A"} <span className="text-xs font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>KIAS</span>
                   </p>
                 </div>
               </div>

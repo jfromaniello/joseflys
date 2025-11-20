@@ -5,6 +5,7 @@
 
 import {
   AircraftPerformance,
+  ResolvedAircraftPerformance,
   ClimbPerformanceData,
   DeviationEntry,
   PRESET_AIRCRAFT,
@@ -424,13 +425,32 @@ export function deleteCustomAircraft(model: string): void {
 
 /**
  * Get aircraft by model (checks both presets and custom)
+ * Always returns fully resolved aircraft (inheritance applied)
  */
-export function getAircraftByModel(model: string): AircraftPerformance | undefined {
+export function getAircraftByModel(model: string): ResolvedAircraftPerformance | undefined {
   // Check presets first
   const preset = PRESET_AIRCRAFT.find(ac => ac.model === model);
-  if (preset) return preset;
+  if (preset) return preset as ResolvedAircraftPerformance; // Presets are always complete
 
   // Check custom aircraft
+  const custom = loadCustomAircraft();
+  const aircraft = custom.find(ac => ac.model === model);
+
+  // Resolve inheritance before returning
+  return aircraft ? resolveAircraft(aircraft) : undefined;
+}
+
+/**
+ * Get raw aircraft by model WITHOUT resolving inheritance
+ * Used by the editor to maintain inheritance relationships
+ * Returns the aircraft as stored, with optional fields if inheriting
+ */
+export function getRawAircraftByModel(model: string): AircraftPerformance | undefined {
+  // Check presets first
+  const preset = PRESET_AIRCRAFT.find(ac => ac.model === model);
+  if (preset) return preset; // Presets are complete but return as-is
+
+  // Check custom aircraft - return raw without resolving
   const custom = loadCustomAircraft();
   return custom.find(ac => ac.model === model);
 }
@@ -441,17 +461,18 @@ export function getAircraftByModel(model: string): AircraftPerformance | undefin
  * 1. If aircraft exists with same name but no devTable → add devTable from URL
  * 2. If aircraft doesn't exist → create new
  * 3. If exists with devTable → compare hash, create duplicate if different
+ * Always returns fully resolved aircraft
  */
-export function loadAircraftFromUrl(serialized: string | null): AircraftPerformance | null {
+export function loadAircraftFromUrl(serialized: string | null): ResolvedAircraftPerformance | null {
   if (!serialized) return null;
   if (!isBrowser) return null;
 
   const aircraftFromUrl = deserializeAircraft(serialized);
   if (!aircraftFromUrl) return null;
 
-  // If it's a preset, just return it
+  // If it's a preset, just return it (already complete)
   if (isPresetAircraft(aircraftFromUrl)) {
-    return aircraftFromUrl;
+    return aircraftFromUrl as ResolvedAircraftPerformance;
   }
 
   const stored = loadCustomAircraft();
@@ -463,12 +484,13 @@ export function loadAircraftFromUrl(serialized: string | null): AircraftPerforma
     const updated = updateAircraft(existing.model, {
       deviationTable: aircraftFromUrl.deviationTable,
     });
-    return updated || aircraftFromUrl;
+    return updated ? resolveAircraft(updated) : resolveAircraft(aircraftFromUrl);
   }
 
   // Case 2: Aircraft doesn't exist
   if (!existing) {
-    return saveAircraft(aircraftFromUrl);
+    const saved = saveAircraft(aircraftFromUrl);
+    return resolveAircraft(saved);
   }
 
   // Case 3: Aircraft exists with deviation table - compare data
@@ -476,21 +498,25 @@ export function loadAircraftFromUrl(serialized: string | null): AircraftPerforma
   const urlHash = hashAircraftData(aircraftFromUrl);
 
   if (existingHash === urlHash) {
-    // Same data, return existing
-    return existing;
+    // Same data, return existing (resolved)
+    return resolveAircraft(existing);
   } else {
     // Different data, create duplicate with suffix
-    return saveAircraft(aircraftFromUrl);
+    const saved = saveAircraft(aircraftFromUrl);
+    return resolveAircraft(saved);
   }
 }
 
 /**
- * Update an existing aircraft with new data (e.g., add deviation table to existing aircraft)
- * Merges the new data with existing data
+ * Update an existing aircraft with new data
+ * @param model - Model ID of aircraft to update
+ * @param updates - New aircraft data
+ * @param replace - If true, replaces aircraft completely. If false, merges with existing (default: false)
  */
 export function updateAircraft(
   model: string,
-  updates: Partial<AircraftPerformance>
+  updates: Partial<AircraftPerformance>,
+  replace: boolean = false
 ): AircraftPerformance | null {
   if (!isBrowser) return null;
 
@@ -502,18 +528,203 @@ export function updateAircraft(
     return null;
   }
 
-  // Merge updates with existing aircraft
-  const updatedAircraft = {
-    ...stored[index],
-    ...updates,
-    // Preserve original model and name unless explicitly updated
-    model: stored[index].model,
-    name: updates.name || stored[index].name,
-  };
+  let updatedAircraft: AircraftPerformance;
+
+  if (replace) {
+    // Complete replacement - use updates as-is (model/name preserved from original)
+    updatedAircraft = {
+      ...updates,
+      model: stored[index].model,
+      name: updates.name || stored[index].name,
+    } as AircraftPerformance;
+  } else {
+    // Merge mode - preserve existing fields not in updates
+    updatedAircraft = {
+      ...stored[index],
+      ...updates,
+      model: stored[index].model,
+      name: updates.name || stored[index].name,
+    };
+  }
 
   // Update in storage
   stored[index] = updatedAircraft;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
 
   return updatedAircraft;
+}
+
+/**
+ * Resolve aircraft inheritance by merging with preset
+ * If aircraft has `inherit` property, merge with preset aircraft
+ * Returns fully resolved aircraft with all required properties
+ */
+export function resolveAircraft(aircraft: AircraftPerformance): ResolvedAircraftPerformance {
+  // No inheritance, assume complete and cast
+  if (!aircraft.inherit) {
+    return aircraft as ResolvedAircraftPerformance;
+  }
+
+  // Find parent preset
+  const parent = PRESET_AIRCRAFT.find(ac => ac.model === aircraft.inherit);
+  if (!parent) {
+    console.warn(`Inherited aircraft "${aircraft.inherit}" not found, using aircraft as-is`);
+    return aircraft as ResolvedAircraftPerformance;
+  }
+
+  // Deep merge: parent properties overridden by aircraft properties
+  // For objects (weights, engine, limits), merge keys
+  // For arrays (tables), use child if defined, else parent
+  const resolved: ResolvedAircraftPerformance = {
+    // Basic fields - child overrides parent
+    name: aircraft.name,
+    model: aircraft.model,
+
+    // Merge weights object (parent is a preset so weights is always defined)
+    weights: {
+      emptyWeight: aircraft.weights?.emptyWeight ?? parent.weights!.emptyWeight,
+      standardWeight: aircraft.weights?.standardWeight ?? parent.weights!.standardWeight,
+      maxGrossWeight: aircraft.weights?.maxGrossWeight ?? parent.weights!.maxGrossWeight,
+    },
+
+    // Merge engine object (parent is a preset so engine is always defined)
+    engine: {
+      type: aircraft.engine?.type ?? parent.engine!.type,
+      maxRPM: aircraft.engine?.maxRPM ?? parent.engine!.maxRPM,
+      ratedHP: aircraft.engine?.ratedHP ?? parent.engine!.ratedHP,
+      specificFuelConsumption: aircraft.engine?.specificFuelConsumption ?? parent.engine!.specificFuelConsumption,
+      usableFuelGallons: aircraft.engine?.usableFuelGallons ?? parent.engine!.usableFuelGallons,
+    },
+
+    // Merge limits object (parent is a preset so limits is always defined)
+    limits: {
+      vne: aircraft.limits?.vne ?? parent.limits!.vne,
+      vno: aircraft.limits?.vno ?? parent.limits!.vno,
+      va: aircraft.limits?.va ?? parent.limits!.va,
+      vfe: aircraft.limits?.vfe ?? parent.limits!.vfe,
+      vs: aircraft.limits?.vs ?? parent.limits!.vs,
+      vs0: aircraft.limits?.vs0 ?? parent.limits!.vs0,
+      maxCrosswind: aircraft.limits?.maxCrosswind ?? parent.limits!.maxCrosswind,
+      clMaxClean: aircraft.limits?.clMaxClean ?? parent.limits!.clMaxClean,
+      clMaxTakeoff: aircraft.limits?.clMaxTakeoff ?? parent.limits!.clMaxTakeoff,
+      clMaxLanding: aircraft.limits?.clMaxLanding ?? parent.limits!.clMaxLanding,
+    },
+
+    // Tables - use child if exists, else parent (parent is a preset so required tables are always defined)
+    climbTable: aircraft.climbTable ?? parent.climbTable!,
+    cruiseTable: aircraft.cruiseTable ?? parent.cruiseTable!,
+    takeoffTable: aircraft.takeoffTable ?? parent.takeoffTable,
+    landingTable: aircraft.landingTable ?? parent.landingTable,
+    deviationTable: aircraft.deviationTable ?? parent.deviationTable,
+
+    // Optional fields
+    serviceCeiling: aircraft.serviceCeiling ?? parent.serviceCeiling,
+  };
+
+  return resolved;
+}
+
+/**
+ * Fork (duplicate) an aircraft with a new unique ID
+ * Uses inheritance pattern - stores only overrides, not full data
+ * Automatically saves the forked aircraft to localStorage
+ */
+export function forkAircraft(aircraft: AircraftPerformance): AircraftPerformance {
+  // Resolve inheritance first to get full aircraft
+  const resolved = resolveAircraft(aircraft);
+
+  // Find unique name with (Copy) suffix
+  const stored = loadCustomAircraft();
+  let baseName = resolved.name;
+  let suffix = 1;
+  let newName = `${baseName} (Copy)`;
+
+  while (stored.some(ac => ac.name === newName)) {
+    suffix++;
+    newName = `${baseName} (Copy ${suffix})`;
+  }
+
+  // Check if original aircraft is a preset
+  const isPreset = PRESET_AIRCRAFT.some(p => p.model === resolved.model);
+
+  // Create minimal fork with inheritance
+  const forked: Partial<AircraftPerformance> = {
+    name: newName,
+    model: `CUSTOM_${generateShortId()}`,
+  };
+
+  // If forking from a preset, just set inherit
+  if (isPreset) {
+    forked.inherit = resolved.model;
+  } else if (aircraft.inherit) {
+    // If forking from a custom that already inherits, keep the same parent
+    forked.inherit = aircraft.inherit;
+    // Copy over all custom overrides from the source
+    // This creates a "sibling" fork with same parent
+    if (aircraft.weights) forked.weights = JSON.parse(JSON.stringify(aircraft.weights));
+    if (aircraft.engine) forked.engine = JSON.parse(JSON.stringify(aircraft.engine));
+    if (aircraft.limits) forked.limits = JSON.parse(JSON.stringify(aircraft.limits));
+    if (aircraft.climbTable) forked.climbTable = JSON.parse(JSON.stringify(aircraft.climbTable));
+    if (aircraft.cruiseTable) forked.cruiseTable = JSON.parse(JSON.stringify(aircraft.cruiseTable));
+    if (aircraft.takeoffTable) forked.takeoffTable = JSON.parse(JSON.stringify(aircraft.takeoffTable));
+    if (aircraft.landingTable) forked.landingTable = JSON.parse(JSON.stringify(aircraft.landingTable));
+    if (aircraft.deviationTable) forked.deviationTable = JSON.parse(JSON.stringify(aircraft.deviationTable));
+    if (aircraft.serviceCeiling !== undefined) forked.serviceCeiling = aircraft.serviceCeiling;
+  } else {
+    // Forking from a fully custom aircraft (no inheritance)
+    // Copy everything except name and model
+    Object.assign(forked, JSON.parse(JSON.stringify(resolved)));
+    forked.name = newName;
+    forked.model = `CUSTOM_${generateShortId()}`;
+  }
+
+  // Save and return (saveAircraft expects AircraftPerformance, but we're using inheritance)
+  return saveAircraft(forked as AircraftPerformance);
+}
+
+/**
+ * Export aircraft to JSON string (for download/sharing)
+ * Includes all aircraft data in human-readable format
+ */
+export function exportAircraftToJSON(aircraft: AircraftPerformance): string {
+  return JSON.stringify(aircraft, null, 2);
+}
+
+/**
+ * Import aircraft from JSON string
+ * Validates and saves to localStorage
+ * Returns the saved aircraft or null if invalid
+ */
+export function importAircraftFromJSON(jsonString: string): AircraftPerformance | null {
+  try {
+    const aircraft = JSON.parse(jsonString) as AircraftPerformance;
+
+    // Basic validation - check required fields
+    if (!aircraft.name || !aircraft.model) {
+      throw new Error("Invalid aircraft data - missing name or model");
+    }
+
+    // If not inheriting, check required fields
+    if (!aircraft.inherit) {
+      if (!aircraft.weights || !aircraft.climbTable || !aircraft.cruiseTable ||
+          !aircraft.engine || !aircraft.limits) {
+        throw new Error("Invalid aircraft data - missing required fields (or set inherit property)");
+      }
+    } else {
+      // Validate that the inherited preset exists
+      const parent = PRESET_AIRCRAFT.find(ac => ac.model === aircraft.inherit);
+      if (!parent) {
+        throw new Error(`Invalid inherit value: "${aircraft.inherit}" not found in presets`);
+      }
+    }
+
+    // Migrate if needed (in case it's an old format)
+    const migrated = migrateAircraftToNewFormat(aircraft);
+
+    // Save and return
+    return saveAircraft(migrated);
+  } catch (error) {
+    console.error("Failed to import aircraft from JSON:", error);
+    return null;
+  }
 }

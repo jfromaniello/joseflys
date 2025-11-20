@@ -5,17 +5,18 @@ import { Dialog, Transition, TransitionChild, DialogPanel, DialogTitle } from "@
 import { Tooltip } from "./Tooltip";
 import {
   AircraftPerformance,
+  ResolvedAircraftPerformance,
   ClimbPerformanceData,
   PRESET_AIRCRAFT,
   createEmptyAircraftWithClimb,
 } from "@/lib/aircraft";
-import { saveAircraft, loadCustomAircraft, updateAircraft } from "@/lib/aircraftStorage";
+import { saveAircraft, loadCustomAircraft, updateAircraft, resolveAircraft } from "@/lib/aircraftStorage";
 
 interface AircraftPerformanceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onApply: (aircraft: AircraftPerformance) => void;
-  initialAircraft?: AircraftPerformance;
+  onApply: (aircraft: ResolvedAircraftPerformance) => void;
+  initialAircraft?: ResolvedAircraftPerformance;
 }
 
 export function AircraftPerformanceModal({
@@ -121,7 +122,8 @@ export function AircraftPerformanceModal({
       }
     }
 
-    onApply(savedAircraft);
+    // Always resolve aircraft before passing to caller (in case it has inheritance)
+    onApply(resolveAircraft(savedAircraft));
     onClose();
   };
 

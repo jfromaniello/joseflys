@@ -6,9 +6,9 @@ import { PageLayout } from "../components/PageLayout";
 import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
 import { Footer } from "../components/Footer";
 import { ShareButtonSimple } from "../components/ShareButtonSimple";
-import { AircraftPerformanceModal } from "../components/AircraftPerformanceModal";
+import { AircraftSelectorModal } from "../components/AircraftSelectorModal";
 import { DensityAltitudeModal } from "../components/DensityAltitudeModal";
-import { AircraftPerformance, PRESET_AIRCRAFT } from "@/lib/aircraft";
+import { ResolvedAircraftPerformance, PRESET_AIRCRAFT } from "@/lib/aircraft";
 import { calculateClimbPerformance, ClimbResults } from "@/lib/climbCalculations";
 import { calculateCourse } from "@/lib/courseCalculations";
 import {
@@ -52,7 +52,7 @@ export function ClimbCalculatorClient({
   const [windSpeed, setWindSpeed] = useState<string>(initialWS);
 
   // Initialize aircraft from URL (prioritize plane param, then ac param)
-  const [aircraft, setAircraft] = useState<AircraftPerformance>(() => {
+  const [aircraft, setAircraft] = useState<ResolvedAircraftPerformance>(() => {
     // Try loading from serialized plane parameter first
     if (initialPlane) {
       const loadedAircraft = loadAircraftFromUrl(initialPlane);
@@ -61,7 +61,7 @@ export function ClimbCalculatorClient({
 
     // Fall back to model code (ac parameter)
     const aircraftFromModel = getAircraftByModel(initialAircraft);
-    return aircraftFromModel || PRESET_AIRCRAFT[0];
+    return aircraftFromModel || (PRESET_AIRCRAFT[0] as ResolvedAircraftPerformance);
   });
 
   const [isAircraftModalOpen, setIsAircraftModalOpen] = useState(false);
@@ -149,7 +149,7 @@ export function ClimbCalculatorClient({
       )
     : null;
 
-  const handleAircraftApply = (newAircraft: AircraftPerformance) => {
+  const handleAircraftApply = (newAircraft: ResolvedAircraftPerformance) => {
     setAircraft(newAircraft);
     // Update weight if it's still at the old standard weight
     if (aircraft.weights?.standardWeight && newAircraft.weights?.standardWeight && parseFloat(weight) === aircraft.weights.standardWeight) {
@@ -549,7 +549,7 @@ export function ClimbCalculatorClient({
       <Footer description="Climb performance calculations based on aircraft POH data and ISA corrections" />
 
       {/* Modals */}
-      <AircraftPerformanceModal
+      <AircraftSelectorModal
         isOpen={isAircraftModalOpen}
         onClose={() => setIsAircraftModalOpen(false)}
         onApply={handleAircraftApply}

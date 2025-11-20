@@ -14,7 +14,7 @@ import { DistanceCalculatorModal } from "../components/DistanceCalculatorModal";
 import { TASCalculatorModal } from "../components/TASCalculatorModal";
 import { compressForUrl, decompressFromUrl } from "@/lib/urlCompression";
 import { loadAircraftFromUrl, serializeAircraft } from "@/lib/aircraftStorage";
-import { AircraftPerformance } from "@/lib/aircraft";
+import { ResolvedAircraftPerformance } from "@/lib/aircraft";
 import { quantizeCoordinate } from "@/lib/coordinateUrlParams";
 import { calculateHaversineDistance, calculateInitialBearing } from "@/lib/distanceCalculations";
 import { magvar } from "magvar";
@@ -166,7 +166,7 @@ export function LegPlannerClient({
   });
 
   // Aircraft state - initialize from URL if plane param exists
-  const [aircraft, setAircraft] = useState<AircraftPerformance | null>(() => {
+  const [aircraft, setAircraft] = useState<ResolvedAircraftPerformance | null>(() => {
     if (initialPlane) {
       return loadAircraftFromUrl(initialPlane);
     }

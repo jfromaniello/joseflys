@@ -6,7 +6,7 @@
  * and obstacle height.
  */
 
-import type { AircraftPerformance } from "./aircraft/types";
+import type { ResolvedAircraftPerformance } from "./aircraft/types";
 
 // ============================================================================
 // Types & Interfaces
@@ -18,7 +18,7 @@ export type TakeoffDecision = "GO" | "MARGINAL" | "NO-GO";
 
 export interface TakeoffInputs {
   // Aircraft
-  aircraft: AircraftPerformance;
+  aircraft: ResolvedAircraftPerformance;
   weight: number; // lbs
 
   // Atmospheric

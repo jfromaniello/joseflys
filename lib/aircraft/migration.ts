@@ -19,6 +19,11 @@ interface LegacyAircraftPerformance {
  * Checks if an aircraft is in the old format (missing new required fields)
  */
 export function isLegacyAircraft(aircraft: any): boolean {
+  // If aircraft has inheritance, it's NOT legacy (it inherits missing fields)
+  if (aircraft.inherit) {
+    return false;
+  }
+
   // Check if it's missing any of the new required fields
   return (
     !aircraft.weights ||

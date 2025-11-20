@@ -7,9 +7,11 @@ import {
   loadCustomAircraft,
   saveAircraft,
   updateAircraft,
+  resolveAircraft,
 } from "@/lib/aircraftStorage";
 import {
   AircraftPerformance,
+  ResolvedAircraftPerformance,
   createEmptyAircraft,
   PRESET_AIRCRAFT,
   DeviationEntry,
@@ -21,9 +23,9 @@ export type { DeviationEntry };
 interface CompassDeviationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onApply: (entries: DeviationEntry[], aircraft?: AircraftPerformance) => void;
+  onApply: (entries: DeviationEntry[], aircraft?: ResolvedAircraftPerformance) => void;
   initialEntries?: DeviationEntry[];
-  initialAircraft?: AircraftPerformance | null;
+  initialAircraft?: ResolvedAircraftPerformance | null;
 }
 
 export function CompassDeviationModal({
@@ -215,7 +217,9 @@ export function CompassDeviationModal({
       }
     }
 
-    onApply(sortedEntries, savedAircraft);
+    // Resolve aircraft before passing to callback (in case it has inheritance)
+    const resolvedAircraft = savedAircraft ? resolveAircraft(savedAircraft) : undefined;
+    onApply(sortedEntries, resolvedAircraft);
     onClose();
   };
 

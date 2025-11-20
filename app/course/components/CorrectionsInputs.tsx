@@ -7,15 +7,15 @@ import {
   CompassDeviationModal,
   DeviationEntry,
 } from "@/app/components/CompassDeviationModal";
-import { AircraftPerformance } from "@/lib/aircraft";
+import { ResolvedAircraftPerformance } from "@/lib/aircraft";
 
 interface CorrectionsInputsProps {
   magVar: string; // WMM convention (positive=E, negative=W)
   setMagVar: (value: string) => void;
   deviationTable: DeviationEntry[];
   onDeviationTableChange: (entries: DeviationEntry[]) => void;
-  aircraft?: AircraftPerformance | null;
-  onAircraftChange?: (aircraft: AircraftPerformance | null) => void;
+  aircraft?: ResolvedAircraftPerformance | null;
+  onAircraftChange?: (aircraft: ResolvedAircraftPerformance | null) => void;
 }
 
 export function CorrectionsInputs({
@@ -28,7 +28,7 @@ export function CorrectionsInputs({
 }: CorrectionsInputsProps) {
   const [isDeviationModalOpen, setIsDeviationModalOpen] = useState(false);
 
-  const handleDeviationApply = (entries: DeviationEntry[], updatedAircraft?: AircraftPerformance) => {
+  const handleDeviationApply = (entries: DeviationEntry[], updatedAircraft?: ResolvedAircraftPerformance) => {
     onDeviationTableChange(entries);
     if (onAircraftChange && updatedAircraft) {
       onAircraftChange(updatedAircraft);

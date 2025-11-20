@@ -6,9 +6,10 @@ import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
 import { Footer } from "../components/Footer";
 import { ShareButton } from "../components/ShareButton";
 import { Tooltip } from "../components/Tooltip";
-import { PRESET_AIRCRAFT, AircraftPerformance } from "@/lib/aircraft";
+import { PRESET_AIRCRAFT, ResolvedAircraftPerformance } from "@/lib/aircraft";
 import { calculateVStall, validateInputs, FlapConfiguration, ValidationError } from "@/lib/vstallCalculations";
 import { calculatePA, calculateDA, calculateISATemp } from "@/lib/isaCalculations";
+import { getAircraftByModel, loadCustomAircraft, resolveAircraft } from "@/lib/aircraftStorage";
 
 interface VStallCalculatorClientProps {
   initialAircraft: string;
@@ -46,6 +47,15 @@ export function VStallCalculatorClient({
   const [flaps, setFlaps] = useState<string>(initialFlaps);
   const [bank, setBank] = useState<string>(initialBank);
 
+  // Custom aircraft list
+  const [customAircraft, setCustomAircraft] = useState<ResolvedAircraftPerformance[]>([]);
+
+  // Load custom aircraft on mount
+  useEffect(() => {
+    const loaded = loadCustomAircraft().map(ac => resolveAircraft(ac));
+    setCustomAircraft(loaded);
+  }, []);
+
   // Altitude mode
   const [altitudeMode, setAltitudeMode] = useState<AltitudeMode>(() => {
     if (initialDA) return "da";
@@ -53,10 +63,8 @@ export function VStallCalculatorClient({
     return "pa";
   });
 
-  // Get aircraft data
-  const aircraft: AircraftPerformance | undefined = PRESET_AIRCRAFT.find(
-    (a) => a.model === selectedAircraft
-  );
+  // Get aircraft data (from presets or custom)
+  const aircraft: ResolvedAircraftPerformance | undefined = getAircraftByModel(selectedAircraft);
 
   // Set default weight to standard weight or max gross weight
   useEffect(() => {
@@ -233,11 +241,22 @@ export function VStallCalculatorClient({
                   onChange={(e) => setSelectedAircraft(e.target.value)}
                   className="w-full h-[52px] pl-4 pr-10 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 hover:border-gray-500 text-white cursor-pointer"
                 >
-                  {PRESET_AIRCRAFT.map((ac) => (
-                    <option key={ac.model} value={ac.model}>
-                      {ac.name}
-                    </option>
-                  ))}
+                  <optgroup label="Preset Aircraft">
+                    {PRESET_AIRCRAFT.map((ac) => (
+                      <option key={ac.model} value={ac.model}>
+                        {ac.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                  {customAircraft.length > 0 && (
+                    <optgroup label="Custom Aircraft">
+                      {customAircraft.map((ac) => (
+                        <option key={ac.model} value={ac.model}>
+                          {ac.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
               </div>
               {aircraft && (
