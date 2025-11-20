@@ -161,22 +161,23 @@ export function VStallCalculatorClient({
       (flaps === "takeoff" && !aircraft.limits.clMaxTakeoff) ||
       (flaps === "landing" && !aircraft.limits.clMaxLanding));
 
-  // Build share URL
-  const _shareUrl = (() => {
-    if (typeof window === "undefined" || !atmosphericData) return "";
+  // Load example data - demonstrates significant KIAS vs KTAS difference
+  const loadExample = () => {
+    // Use Cessna 172N at high weight, high altitude, hot temperature
+    // This creates a large difference between KIAS and KTAS
+    // PA: 10,000 ft, OAT: 25°C → DA: ~12,800 ft
+    // This will show ~15-17% difference between IAS and TAS
     const params = new URLSearchParams();
-    if (selectedAircraft) params.set("aircraft", selectedAircraft);
-    if (weight) params.set("weight", weight);
-    if (atmosphericData.altitudeMode === "pa" && atmosphericData.pressureAlt) params.set("pa", atmosphericData.pressureAlt);
-    else if (atmosphericData.altitudeMode === "qnh" && atmosphericData.altitude && atmosphericData.qnh) {
-      params.set("alt", atmosphericData.altitude);
-      params.set("qnh", atmosphericData.qnh);
-    } else if (atmosphericData.altitudeMode === "da" && atmosphericData.densityAlt) params.set("da", atmosphericData.densityAlt);
-    if (atmosphericData.oat) params.set("oat", atmosphericData.oat);
-    if (flaps) params.set("flaps", flaps);
-    if (bank) params.set("bank", bank);
-    return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
-  })();
+    params.set("aircraft", "C172N");
+    params.set("weight", "2300"); // Max gross weight
+    params.set("flaps", "clean"); // Clean configuration for higher Vs
+    params.set("bank", "30"); // 30° bank for accelerated stall
+    params.set("pa", "10000"); // High pressure altitude
+    params.set("oat", "25"); // Hot temperature (ISA +30°C at 10,000 ft)
+
+    // Navigate to the example URL
+    window.location.href = `${window.location.pathname}?${params.toString()}`;
+  };
 
   return (
     <PageLayout currentPage="vstall">
@@ -189,19 +190,49 @@ export function VStallCalculatorClient({
         <div className="rounded-2xl p-6 sm:p-8 shadow-2xl bg-slate-800/50 backdrop-blur-sm border border-gray-700">
           {/* Aircraft Selection Section */}
           <div className="mb-8 pb-8 border-b border-gray-700/50">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-sky-500/20 to-blue-500/20 border border-sky-500/30">
-                <svg className="w-6 h-6" fill="none" stroke="oklch(0.7 0.15 230)" viewBox="0 0 24 24" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                </svg>
+            <div className="flex items-center justify-between gap-3 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-sky-500/20 to-blue-500/20 border border-sky-500/30">
+                  <svg className="w-6 h-6" fill="none" stroke="oklch(0.7 0.15 230)" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold" style={{ color: "white" }}>
+                    Aircraft Selection
+                  </h2>
+                  <p className="text-sm" style={{ color: "oklch(0.65 0.02 240)" }}>
+                    Choose your aircraft model
+                  </p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-2xl font-bold" style={{ color: "white" }}>
-                  Aircraft Selection
-                </h2>
-                <p className="text-sm" style={{ color: "oklch(0.65 0.02 240)" }}>
-                  Choose your aircraft model
-                </p>
+              {/* Example Button */}
+              <div className="relative group">
+                <button
+                  onClick={loadExample}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed border-gray-600 hover:border-purple-500/50 hover:bg-purple-500/10 transition-all text-sm font-medium cursor-pointer whitespace-nowrap"
+                  style={{ color: "oklch(0.75 0.15 300)" }}
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 10V3L4 14h7v7l9-11h-7z"
+                    />
+                  </svg>
+                  Example
+                </button>
+                {/* Custom Tooltip */}
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none whitespace-nowrap border border-gray-700 z-50">
+                  Load example showing significant KIAS vs KTAS difference at high altitude
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-slate-900"></div>
+                </div>
               </div>
             </div>
             <div className="space-y-4">

@@ -17,6 +17,7 @@ import {
 import { loadAircraftFromUrl, serializeAircraft, getAircraftByModel, loadCustomAircraft, resolveAircraft } from "@/lib/aircraftStorage";
 import { formatDistance } from "@/lib/formatters";
 import { TakeoffVisualization } from "./TakeoffVisualization";
+import { TAKEOFF_EXAMPLES, type TakeoffExample } from "@/lib/takeoffExamples";
 
 interface TakeoffCalculatorClientProps {
   initialAircraft: string;
@@ -204,6 +205,50 @@ export function TakeoffCalculatorClient({
       })
     : [];
 
+  // Load example data - rotates through Easy -> Complicated -> NO GO
+  const loadExample = () => {
+    // Detect current example by comparing current state with examples
+    let currentExampleIndex = -1;
+
+    for (let i = 0; i < TAKEOFF_EXAMPLES.length; i++) {
+      const example = TAKEOFF_EXAMPLES[i];
+      const matches =
+        aircraft.model === example.aircraft &&
+        weight === example.weight &&
+        atmosphericData?.pressureAlt === example.pa &&
+        atmosphericData?.oat === example.oat &&
+        runwayLength === example.runway &&
+        surfaceType === example.surface &&
+        runwaySlope === example.slope &&
+        headwindComponent === example.wind &&
+        obstacleHeight === example.obstacle;
+
+      if (matches) {
+        currentExampleIndex = i;
+        break;
+      }
+    }
+
+    // Load next example (or first if none matched)
+    const nextIndex = (currentExampleIndex + 1) % TAKEOFF_EXAMPLES.length;
+    const nextExample = TAKEOFF_EXAMPLES[nextIndex];
+
+    // Build URL with example parameters
+    const params = new URLSearchParams();
+    params.set("aircraft", nextExample.aircraft);
+    params.set("weight", nextExample.weight);
+    params.set("pa", nextExample.pa);
+    params.set("oat", nextExample.oat);
+    params.set("runway", nextExample.runway);
+    params.set("surface", nextExample.surface);
+    params.set("slope", nextExample.slope);
+    params.set("wind", nextExample.wind);
+    params.set("obstacle", nextExample.obstacle);
+
+    // Navigate to example URL
+    window.location.href = `${window.location.pathname}?${params.toString()}`;
+  };
+
   return (
     <PageLayout currentPage="takeoff">
       <CalculatorPageHeader
@@ -216,19 +261,49 @@ export function TakeoffCalculatorClient({
 
           {/* Aircraft Selection Section */}
           <div className="mb-8 pb-8 border-b border-gray-700/50">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-sky-500/20 to-blue-500/20 border border-sky-500/30">
-                <svg className="w-6 h-6" fill="none" stroke="oklch(0.7 0.15 230)" viewBox="0 0 24 24" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                </svg>
+            <div className="flex items-center justify-between gap-3 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-sky-500/20 to-blue-500/20 border border-sky-500/30">
+                  <svg className="w-6 h-6" fill="none" stroke="oklch(0.7 0.15 230)" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold" style={{ color: "white" }}>
+                    Aircraft Selection
+                  </h2>
+                  <p className="text-sm" style={{ color: "oklch(0.65 0.02 240)" }}>
+                    Choose your aircraft model
+                  </p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-2xl font-bold" style={{ color: "white" }}>
-                  Aircraft Selection
-                </h2>
-                <p className="text-sm" style={{ color: "oklch(0.65 0.02 240)" }}>
-                  Choose your aircraft model
-                </p>
+              {/* Example Button */}
+              <div className="relative group">
+                <button
+                  onClick={loadExample}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed border-gray-600 hover:border-purple-500/50 hover:bg-purple-500/10 transition-all text-sm font-medium cursor-pointer whitespace-nowrap"
+                  style={{ color: "oklch(0.75 0.15 300)" }}
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 10V3L4 14h7v7l9-11h-7z"
+                    />
+                  </svg>
+                  Example
+                </button>
+                {/* Custom Tooltip */}
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none whitespace-nowrap border border-gray-700 z-50">
+                  Rotate through examples: Easy → Complicated → NO GO
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-slate-900"></div>
+                </div>
               </div>
             </div>
             <div className="space-y-4">
