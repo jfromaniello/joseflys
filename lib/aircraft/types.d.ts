@@ -23,6 +23,9 @@ export interface AircraftPerformance {
   /** Airplane operating limitations (V-speeds, max wind, etc.) */
   limits: AircraftLimits;
 
+  /** Service ceiling in feet (pressure altitude) - maximum altitude where aircraft can maintain 100 fpm climb */
+  serviceCeiling?: number;
+
   /** Optional takeoff performance table */
   takeoffTable?: TakeoffPerformance[];
 
@@ -151,6 +154,15 @@ export interface AircraftLimits {
 
   /** Demonstrated crosswind component (kts) — not a limitation */
   maxCrosswind?: number;
+
+  /** Maximum lift coefficient in clean configuration (no flaps) */
+  clMaxClean?: number;
+
+  /** Maximum lift coefficient with takeoff/approach flaps */
+  clMaxTakeoff?: number;
+
+  /** Maximum lift coefficient with landing flaps */
+  clMaxLanding?: number;
 }
 
 /* -------------------------------------------------------------------------- */

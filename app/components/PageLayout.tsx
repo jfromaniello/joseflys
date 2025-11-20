@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { Navbar } from "./Navbar";
 
-type Page = "home" | "tas" | "course" | "leg" | "conversions" | "planning" | "route" | "local-chart" | "segments" | "isa" | "climb" | "my-planes" | "flight-plans";
+type Page = "home" | "tas" | "course" | "leg" | "conversions" | "planning" | "route" | "local-chart" | "segments" | "isa" | "climb" | "vstall" | "takeoff" | "my-planes" | "flight-plans";
 
 interface PageLayoutProps {
   children: ReactNode;
