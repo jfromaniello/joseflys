@@ -5,10 +5,12 @@ import {
   type TakeoffInputs,
 } from "../lib/takeoffCalculations";
 import { PRESET_AIRCRAFT } from "../lib/aircraft";
+import type { ResolvedAircraftPerformance } from "../lib/aircraft/types";
 
 describe("takeoffCalculations", () => {
   // Get a test aircraft (Cessna 150)
-  const testAircraft = PRESET_AIRCRAFT.find((a) => a.model === "C150")!;
+  // PRESET_AIRCRAFT entries are fully resolved, so we can safely cast to ResolvedAircraftPerformance
+  const testAircraft = PRESET_AIRCRAFT.find((a) => a.model === "C150")! as ResolvedAircraftPerformance;
 
   describe("V-speeds calculations", () => {
     it("should calculate weight-adjusted VS1", () => {
