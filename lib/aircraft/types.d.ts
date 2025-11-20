@@ -5,6 +5,7 @@
 export interface ResolvedAircraftPerformance {
   name: string;
   model: string;
+  isCustom: boolean;
   weights: AircraftWeights;
   climbTable: ClimbPerformance[];
   cruiseTable: CruisePerformance[];

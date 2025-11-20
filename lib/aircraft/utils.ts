@@ -1,17 +1,37 @@
 import type { AircraftPerformance } from "./types";
 import { CESSNA_150 } from "./CESSNA_150";
+import { CESSNA_152 } from "./CESSNA_152";
 import { CESSNA_170 } from "./CESSNA_170";
+import { CESSNA_172N } from "./CESSNA_172N";
 import { CESSNA_182 } from "./CESSNA_182";
+import { CESSNA_210 } from "./CESSNA_210";
 import { PIPER_PA11 } from "./PIPER_PA11";
+import { PIPER_J3 } from "./PIPER_J3";
+import { PIPER_PA28_140 } from "./PIPER_PA28_140";
+import { PIPER_PA28_180 } from "./PIPER_PA28_180";
+import { PIPER_PA28R_200 } from "./PIPER_PA28R_200";
+import { BEECHCRAFT_A36 } from "./BEECHCRAFT_A36";
+import { DIAMOND_DA40 } from "./DIAMOND_DA40";
+import { CIRRUS_SR20 } from "./CIRRUS_SR20";
 
 /**
  * Array of all preset aircraft
  */
 export const PRESET_AIRCRAFT: AircraftPerformance[] = [
   CESSNA_150,
+  CESSNA_152,
   CESSNA_170,
+  CESSNA_172N,
   CESSNA_182,
+  CESSNA_210,
   PIPER_PA11,
+  PIPER_J3,
+  PIPER_PA28_140,
+  PIPER_PA28_180,
+  PIPER_PA28R_200,
+  BEECHCRAFT_A36,
+  DIAMOND_DA40,
+  CIRRUS_SR20,
 ];
 
 /**
