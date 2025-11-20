@@ -202,7 +202,7 @@ export function Navbar({ currentPage }: NavbarProps) {
                   />
                 </svg>
               </div>
-              <div className="hidden sm:block">
+              <div>
                 <div className="text-white font-bold text-base leading-tight">José Flies</div>
                 <div className="text-xs text-gray-400 -mt-0.5">Aviation Tools</div>
               </div>
