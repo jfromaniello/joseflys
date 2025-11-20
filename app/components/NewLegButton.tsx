@@ -1,5 +1,7 @@
 "use client";
 
+import { buildNextLegUrl } from "@/lib/nextLegParams";
+
 /**
  * Props for the NewLegButton component
  * Used to create a new leg with parameters carried over from the current leg
@@ -54,13 +56,9 @@ export function NewLegButton({
   windSpeed,
   fuelUsed,
   flightPlanId,
-  flightPlanName,
   toPoint,
 }: NewLegButtonProps) {
   const handleNewLeg = () => {
-    // Use shared utility to build next leg URL
-    const { buildNextLegUrl } = require("@/lib/nextLegParams");
-
     const url = buildNextLegUrl({
       magVar,
       departureTime,

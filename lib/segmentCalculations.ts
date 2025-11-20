@@ -10,7 +10,6 @@ import { point } from "@turf/helpers";
 
 // Conversion constants
 const METERS_TO_NM = 1 / 1852;
-const NM_TO_METERS = 1852;
 const KM_TO_NM = 0.539957;
 
 /**

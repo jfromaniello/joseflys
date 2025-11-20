@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Fragment } from "react";
+import { useState, useEffect, useRef, Fragment } from "react";
 import { Dialog, Transition, TransitionChild, DialogPanel, DialogTitle } from "@headlessui/react";
 import { Tooltip } from "./Tooltip";
 import {
@@ -31,27 +31,39 @@ export function AircraftPerformanceModal({
   );
   const [isCustom, setIsCustom] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+
   const [customAircraft, setCustomAircraft] = useState<AircraftPerformance[]>([]);
 
-  // Load custom aircraft from localStorage when modal opens
+  // Track previous modal state to detect open transition
+  const prevIsOpenRef = useRef(false);
+
+  // Load custom aircraft when modal opens
   useEffect(() => {
     if (isOpen) {
-      setCustomAircraft(loadCustomAircraft());
+      loadCustomAircraft().then(loaded => {
+        setCustomAircraft(loaded);
+      });
     }
   }, [isOpen]);
 
+  // Reset form when modal opens or initialAircraft changes
   useEffect(() => {
-    if (initialAircraft) {
-      setAircraft(initialAircraft);
-      const preset = PRESET_AIRCRAFT.find((ac) => ac.model === initialAircraft.model);
-      if (preset) {
-        setSelectedPreset(preset.model);
-        setIsCustom(false);
-      } else {
-        setIsCustom(true);
+    // Only reset when modal transitions from closed to open, or initialAircraft changes
+    if ((isOpen && !prevIsOpenRef.current) || initialAircraft) {
+      if (initialAircraft) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setAircraft(initialAircraft);
+        const preset = PRESET_AIRCRAFT.find((ac) => ac.model === initialAircraft.model);
+        if (preset) {
+          setSelectedPreset(preset.model);
+          setIsCustom(false);
+        } else {
+          setIsCustom(true);
+        }
       }
     }
-  }, [initialAircraft]);
+    prevIsOpenRef.current = isOpen;
+  }, [isOpen, initialAircraft]);
 
   const handlePresetChange = (model: string) => {
     if (model === "CUSTOM") {
@@ -108,7 +120,7 @@ export function AircraftPerformanceModal({
 
     if (isCustom || isEditing) {
       // Check if this is an existing custom aircraft being edited
-      const existingCustom = customAircraft.find(ac => ac.model === aircraft.model && aircraft.model.startsWith("CUSTOM_"));
+      const existingCustom = customAircraft.find(ac => ac.model === aircraft.model);
 
       if (existingCustom) {
         // Update existing aircraft
@@ -230,7 +242,7 @@ export function AircraftPerformanceModal({
                         Select Aircraft
                       </label>
                       <select
-                        value={isCustom ? (aircraft.model.startsWith("CUSTOM_") ? aircraft.model : "CUSTOM") : selectedPreset}
+                        value={isCustom ? (customAircraft.some(ac => ac.model === aircraft.model) ? aircraft.model : "CUSTOM") : selectedPreset}
                         onChange={(e) => handlePresetChange(e.target.value)}
                         className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white cursor-pointer"
                       >
@@ -254,8 +266,7 @@ export function AircraftPerformanceModal({
                     {!isCustom && !isEditing && (
                       <button
                         onClick={() => setIsEditing(true)}
-                        className="px-4 py-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 transition-all cursor-pointer border border-amber-500/30 text-sm font-medium whitespace-nowrap"
-                        style={{ color: "oklch(0.8 0.1 30)" }}
+                        className="px-4 py-3 rounded-xl bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 hover:text-amber-200 transition-all cursor-pointer border border-amber-500/30 text-sm font-medium whitespace-nowrap"
                       >
                         Edit
                       </button>
@@ -349,8 +360,7 @@ export function AircraftPerformanceModal({
                       {(isCustom || isEditing) && (
                         <button
                           onClick={addSegment}
-                          className="text-sm px-3 py-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 transition-colors cursor-pointer"
-                          style={{ color: "oklch(0.8 0.15 230)" }}
+                          className="text-sm px-3 py-1.5 rounded-lg bg-sky-600/30 hover:bg-sky-600/50 text-sky-300 hover:text-sky-200 border border-sky-500/30 transition-all cursor-pointer"
                         >
                           + Add Segment
                         </button>
@@ -447,7 +457,7 @@ export function AircraftPerformanceModal({
                                   <button
                                     onClick={() => removeSegment(index)}
                                     disabled={(aircraft.climbTable?.length || 0) === 1}
-                                    className="px-2 py-1 rounded text-xs bg-red-500/20 hover:bg-red-500/30 text-red-400 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                                    className="px-2 py-1 rounded text-xs bg-red-600/30 hover:bg-red-600/50 text-red-300 hover:text-red-200 border border-red-500/30 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                                   >
                                     Remove
                                   </button>
@@ -479,8 +489,7 @@ export function AircraftPerformanceModal({
                   </button>
                   <button
                     onClick={handleApply}
-                    className="flex-1 py-3 px-6 rounded-xl font-medium border-2 border-sky-500 bg-sky-500/20 hover:bg-sky-500/30 transition-all cursor-pointer"
-                    style={{ color: "oklch(0.8 0.15 230)" }}
+                    className="flex-1 py-3 px-6 rounded-xl font-medium border-2 border-sky-500 bg-sky-600/30 hover:bg-sky-600/50 text-sky-300 hover:text-sky-200 transition-all cursor-pointer"
                   >
                     Apply Performance Data
                   </button>

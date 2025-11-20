@@ -21,7 +21,6 @@ import { getFuelResultUnit, type FuelUnit } from "../fuelConversion";
 import { getSpeedUnitLabel, type SpeedUnit } from "../speedConversion";
 import {
   formatCourse,
-  formatAngle,
   formatCorrection,
   formatDeviation,
   formatWind,

@@ -25,16 +25,14 @@ export function AircraftSelectorModal({
   // Load custom aircraft from localStorage when modal opens
   useEffect(() => {
     if (isOpen) {
-      const loaded = loadCustomAircraft().map(ac => resolveAircraft(ac));
-      setCustomAircraft(loaded);
+      loadCustomAircraft().then(loaded => {
+        setCustomAircraft(loaded.map(ac => resolveAircraft(ac)));
+        if (initialAircraft) {
+          setSelectedModel(initialAircraft.model);
+        }
+      });
     }
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (initialAircraft) {
-      setSelectedModel(initialAircraft.model);
-    }
-  }, [initialAircraft]);
+  }, [isOpen, initialAircraft]);
 
   const handleApply = () => {
     const aircraft = getAircraftByModel(selectedModel);

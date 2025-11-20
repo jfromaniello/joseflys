@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
                   color: 'rgba(148, 163, 184, 1)',
                 }}
               >
-                José's Aviation Tools
+                José&apos;s Aviation Tools
               </div>
             </div>
           </div>

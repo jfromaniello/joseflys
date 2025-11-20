@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 export default function OfflinePage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4">
@@ -61,12 +63,12 @@ export default function OfflinePage() {
           >
             Reintentar conexión
           </button>
-          <a
+          <Link
             href="/"
             className="block w-full bg-slate-800 hover:bg-slate-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
           >
             Volver al inicio
-          </a>
+          </Link>
         </div>
       </div>
     </div>

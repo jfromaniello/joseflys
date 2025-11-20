@@ -60,7 +60,7 @@ export default async function Image() {
             marginBottom: '20px',
           }}
         >
-          José's Aviation Calculators
+          José&apos;s Aviation Calculators
         </div>
 
         {/* Subtitle */}

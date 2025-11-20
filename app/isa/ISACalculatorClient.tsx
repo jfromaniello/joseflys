@@ -52,7 +52,7 @@ export function ISACalculatorClient({
   const da = results?.densityAltitude ?? null;
 
   // Build share URL
-  const shareUrl = (() => {
+  const _shareUrl = (() => {
     if (typeof window === "undefined") return "";
     const params = new URLSearchParams();
     if (elevation) params.set("elev", elevation);

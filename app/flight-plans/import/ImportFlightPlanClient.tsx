@@ -9,9 +9,7 @@ import {
   deserializeFlightPlan,
   createFlightPlan,
   getFlightPlanById,
-  updateFlightPlan,
   addOrUpdateLeg,
-  generateShortId,
 } from "@/lib/flightPlan";
 import Link from "next/link";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
@@ -29,7 +27,10 @@ export function ImportFlightPlanClient({
   const [flightPlanId, setFlightPlanId] = useState<string>("");
 
   useEffect(() => {
+    // Safe: Synchronizing with external system (URL params, localStorage)
+    // Import and deserialize flight plan from URL parameter on mount
     if (!serializedPlan) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setStatus("error");
       setErrorMessage("No flight plan data provided");
       return;

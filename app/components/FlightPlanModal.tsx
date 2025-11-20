@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState, useEffect } from "react";
+import { Fragment, useState, useEffect, useRef, useMemo } from "react";
 import { Dialog, Transition, TransitionChild } from "@headlessui/react";
 import {
   loadFlightPlans,
@@ -22,33 +22,37 @@ export function FlightPlanModal({
   onSelect,
   currentFlightPlanId,
 }: FlightPlanModalProps) {
-  const [flightPlans, setFlightPlans] = useState<FlightPlan[]>([]);
-  const [selectedPlanId, setSelectedPlanId] = useState<string>("");
+  // Load plans whenever modal is open (cached by useMemo)
+  const flightPlans = useMemo(() => {
+    return isOpen ? loadFlightPlans() : [];
+  }, [isOpen]);
+
+  // Initialize selectedPlanId based on currentFlightPlanId
+  const [selectedPlanId, setSelectedPlanId] = useState<string>(() => currentFlightPlanId || "");
   const [isCreatingNew, setIsCreatingNew] = useState(false);
 
   // New flight plan form
   const [newPlanName, setNewPlanName] = useState("");
   const [newPlanDate, setNewPlanDate] = useState("");
 
+  // Track previous values to detect modal open transition
+  const prevIsOpenRef = useRef(false);
+
+  // Reset form when modal opens
   useEffect(() => {
-    if (isOpen) {
-      const plans = loadFlightPlans();
+    // This effect intentionally resets form state when modal opens.
+    // It's safe because:
+    // 1. It only runs on the open transition (isOpen changes from false to true)
+    // 2. The states being set are form fields, not the dependencies
+    // 3. This is a common pattern for modal reset behavior
+    if (isOpen && !prevIsOpenRef.current) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setFlightPlans(plans);
-
-      // Pre-select current flight plan if editing
-      if (currentFlightPlanId) {
-        setSelectedPlanId(currentFlightPlanId);
-        setIsCreatingNew(false);
-      } else {
-        setSelectedPlanId("");
-        setIsCreatingNew(false);
-      }
-
-      // Reset new plan form
+      setSelectedPlanId(currentFlightPlanId || "");
+      setIsCreatingNew(false);
       setNewPlanName("");
       setNewPlanDate("");
     }
+    prevIsOpenRef.current = isOpen;
   }, [isOpen, currentFlightPlanId]);
 
   const handleSubmit = () => {

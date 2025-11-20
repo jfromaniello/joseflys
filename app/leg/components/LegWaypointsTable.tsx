@@ -236,7 +236,7 @@ export function LegWaypointsTable({
     });
 
     return () => timers.forEach(timer => clearTimeout(timer));
-  }, [checkpointSearchStates.map(s => s.query).join(",")]);
+  }, [checkpointSearchStates]);
 
   const handleFromLocationSelect = (result: GeocodingResult) => {
     onFromChange({

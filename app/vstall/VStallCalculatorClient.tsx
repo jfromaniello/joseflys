@@ -7,7 +7,7 @@ import { Footer } from "../components/Footer";
 import { ShareButton } from "../components/ShareButton";
 import { Tooltip } from "../components/Tooltip";
 import { PRESET_AIRCRAFT, ResolvedAircraftPerformance } from "@/lib/aircraft";
-import { calculateVStall, validateInputs, FlapConfiguration, ValidationError } from "@/lib/vstallCalculations";
+import { calculateVStall, validateInputs, ValidationError } from "@/lib/vstallCalculations";
 import { calculatePA, calculateDA, calculateISATemp } from "@/lib/isaCalculations";
 import { getAircraftByModel, loadCustomAircraft, resolveAircraft } from "@/lib/aircraftStorage";
 
@@ -52,8 +52,9 @@ export function VStallCalculatorClient({
 
   // Load custom aircraft on mount
   useEffect(() => {
-    const loaded = loadCustomAircraft().map(ac => resolveAircraft(ac));
-    setCustomAircraft(loaded);
+    loadCustomAircraft().then(loaded => {
+      setCustomAircraft(loaded.map(ac => resolveAircraft(ac)));
+    });
   }, []);
 
   // Altitude mode
@@ -70,6 +71,8 @@ export function VStallCalculatorClient({
   useEffect(() => {
     if (!weight && aircraft) {
       const defaultWeight = aircraft.weights.standardWeight || aircraft.weights.maxGrossWeight;
+      // Safe: Setting default value based on aircraft selection
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setWeight(defaultWeight.toString());
     }
   }, [aircraft, weight]);
@@ -185,7 +188,7 @@ export function VStallCalculatorClient({
       (flaps === "landing" && !aircraft.limits.clMaxLanding));
 
   // Build share URL
-  const shareUrl = (() => {
+  const _shareUrl = (() => {
     if (typeof window === "undefined") return "";
     const params = new URLSearchParams();
     if (selectedAircraft) params.set("aircraft", selectedAircraft);

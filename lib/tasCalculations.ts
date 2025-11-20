@@ -1,3 +1,19 @@
+/**
+ * Calculates True Airspeed (TAS) from Calibrated Airspeed (CAS) using ISA atmospheric model.
+ * 
+ * This function computes TAS by accounting for air density changes with altitude and temperature.
+ * It uses the International Standard Atmosphere (ISA) model for tropospheric conditions.
+ * 
+ * @param casKt - Calibrated Airspeed in knots
+ * @param oatC - Outside Air Temperature in degrees Celsius
+ * @param hFt - Pressure altitude in feet
+ * @returns True Airspeed in knots
+ * 
+ * @example
+ * // Calculate TAS at 10,000 ft with 120 KCAS and 5°C OAT
+ * const tas = calculateTAS(120, 5, 10000);
+ * // Returns approximately 140 knots
+ */
 export function calculateTAS(casKt: number, oatC: number, hFt: number): number {
   // ISA Constants
   const T0 = 288.15; // K (15°C)

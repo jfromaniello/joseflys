@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, Fragment } from "react";
 import { Dialog, Transition, TransitionChild, DialogPanel, DialogTitle } from "@headlessui/react";
-import { Tooltip } from "./Tooltip";
 import {
   calculateHaversineDistance,
   calculateInitialBearing,

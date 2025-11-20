@@ -16,7 +16,7 @@ interface SegmentsPageProps {
 export async function generateMetadata({
   searchParams,
 }: SegmentsPageProps): Promise<Metadata> {
-  const params = await searchParams;
+  const _params = await searchParams;
 
   return createPageMetadata({
     title: "LNAV Segments Calculator | Orthodromic to Loxodromic Route Division",

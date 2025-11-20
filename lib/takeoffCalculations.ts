@@ -90,12 +90,6 @@ const SLOPE_CORRECTION_FACTOR = 0.10; // 10% per 1% slope
 /** Vr is typically 1.2 × VS1 for most GA aircraft */
 const VR_MULTIPLIER = 1.2;
 
-/** Standard temperature lapse rate (°C per 1000 ft) */
-const STANDARD_LAPSE_RATE = 1.98; // °C per 1000 ft
-
-/** Sea level standard temperature (ISA) */
-const SEA_LEVEL_TEMP_ISA = 15; // °C
-
 /** Safety margin thresholds */
 const MARGINAL_THRESHOLD = 0.20; // 20%
 const UNSAFE_THRESHOLD = 0.0; // 0%
@@ -103,13 +97,6 @@ const UNSAFE_THRESHOLD = 0.0; // 0%
 // ============================================================================
 // Helper Functions
 // ============================================================================
-
-/**
- * Calculate ISA temperature at a given altitude
- */
-function calculateISATemp(altitudeFt: number): number {
-  return SEA_LEVEL_TEMP_ISA - (altitudeFt / 1000) * STANDARD_LAPSE_RATE;
-}
 
 /**
  * Calculate TAS from IAS using density altitude
@@ -219,7 +206,7 @@ function interpolateTakeoffPerformance(
  */
 function estimateGroundRoll(
   vrTAS: number, // kt TAS
-  weightLbs: number,
+  _weightLbs: number,
   densityAltitudeFt: number
 ): number {
   // Convert Vr from kt to ft/s

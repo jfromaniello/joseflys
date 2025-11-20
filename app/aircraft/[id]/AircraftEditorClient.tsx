@@ -1238,7 +1238,7 @@ export function AircraftEditorClient({ aircraftId }: AircraftEditorClientProps) 
                   <div>
                     <h3 className="text-lg font-semibold text-white mb-2">Compass Deviation Table</h3>
                     <p className="text-sm text-slate-400 mb-4">
-                      Maps the magnetic heading you want to fly to the compass heading you need to steer. This compensates for magnetic interference from the aircraft's metal and electrical systems.
+                      Maps the magnetic heading you want to fly to the compass heading you need to steer. This compensates for magnetic interference from the aircraft&apos;s metal and electrical systems.
                     </p>
                     <div className="flex items-center justify-between">
                       <div></div>

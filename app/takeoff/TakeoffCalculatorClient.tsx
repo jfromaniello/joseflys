@@ -68,8 +68,9 @@ export function TakeoffCalculatorClient({
 
   // Load custom aircraft on mount
   useEffect(() => {
-    const loaded = loadCustomAircraft().map(ac => resolveAircraft(ac));
-    setCustomAircraft(loaded);
+    loadCustomAircraft().then(loaded => {
+      setCustomAircraft(loaded.map(ac => resolveAircraft(ac)));
+    });
   }, []);
 
   // Input state
@@ -97,6 +98,8 @@ export function TakeoffCalculatorClient({
     if (!weight && aircraft) {
       const defaultWeight = aircraft.weights?.standardWeight || aircraft.weights?.maxGrossWeight;
       if (defaultWeight) {
+        // Safe: Setting default value based on aircraft selection
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setWeight(defaultWeight.toString());
       }
     }

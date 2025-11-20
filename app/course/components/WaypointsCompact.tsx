@@ -24,7 +24,7 @@ export function WaypointsCompact({
     return `${hours}:${minutes}`;
   };
 
-  const formatValue = (leg: number | undefined, total: number, decimals: number = 0): string => {
+  const formatValue = (leg: number | undefined, total: number, _decimals: number = 0): string => {
     if (leg === undefined) {
       return formatDistance(total);
     }

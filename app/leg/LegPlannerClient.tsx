@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useState, useEffect, useRef, useMemo, Fragment } from "react";
@@ -209,12 +208,19 @@ export function LegPlannerClient({
     return [];
   });
 
+  // Track if we've already initialized from last leg to prevent multiple executions
+  const hasInitializedFromLastLegRef = useRef(false);
+
   // Auto-populate from last leg when only flight plan ID is provided
   useEffect(() => {
+    // Only run once on mount
+    if (hasInitializedFromLastLegRef.current) return;
+
     // Only run if we have a flight plan ID but no other parameters
     const hasNoOtherParams = !initialTh && !initialTas && !initialMagVar && !initialDist && !initialFf;
 
     if (initialFlightPlanId && hasNoOtherParams) {
+      hasInitializedFromLastLegRef.current = true;
 
       const plan = getFlightPlanById(initialFlightPlanId);
       if (plan && plan.legs.length > 0) {
@@ -276,6 +282,10 @@ export function LegPlannerClient({
   const isInitialLoadRef = useRef(true);
 
   useEffect(() => {
+    // Safe to set state here because:
+    // 1. Dependencies are only fromPoint/toPoint (not the states we're setting)
+    // 2. We use refs to track actual changes and prevent unnecessary updates
+    // 3. Early returns prevent infinite loops
     if (!fromPoint || !toPoint) return;
 
     // Check if from/to actually changed (not just a re-render)
@@ -342,7 +352,9 @@ export function LegPlannerClient({
     const toName = toPoint.name.split(",")[0];
     const valuesText = updatedValues.join(", ");
     showToast(`${fromName} → ${toName}: ${valuesText}`, "success");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fromPoint, toPoint]); // Only re-run when from/to points change
+  // trueCourse, distance, magVar are intentionally not in deps - we only read them on initial load check
 
   // Update URL when parameters change (client-side only, no page reload)
   useEffect(() => {

@@ -12,15 +12,7 @@ interface RoutePageProps {
   }>;
 }
 
-export async function generateMetadata({
-  searchParams,
-}: RoutePageProps): Promise<Metadata> {
-  const params = await searchParams;
-  const fromLat = params.fromLat || "";
-  const fromLon = params.fromLon || "";
-  const toLat = params.toLat || "";
-  const toLon = params.toLon || "";
-
+export async function generateMetadata(_params: RoutePageProps): Promise<Metadata> {
   return createPageMetadata({
     title: "Route Calculator | Distance, Bearing & Magnetic Variation",
     description:
