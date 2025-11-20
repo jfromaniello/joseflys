@@ -1,7 +1,7 @@
 {
-  "name": "José's Aviation Calculators",
+  "name": "José's Aviation Tools",
   "short_name": "Aviation Calc",
-  "description": "Experimental aviation calculators for TAS, wind correction, and flight planning",
+  "description": "Aviation tools for flight planning, performance, and navigation",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",

@@ -7,6 +7,7 @@ import { Footer } from "../components/Footer";
 import { ShareButton } from "../components/ShareButton";
 import { Tooltip } from "../components/Tooltip";
 import { AtmosphericConditionsInputs, type AtmosphericConditionsData } from "../components/AtmosphericConditionsInputs";
+import { AircraftSearchSelector } from "../components/AircraftSearchSelector";
 import { PRESET_AIRCRAFT, ResolvedAircraftPerformance } from "@/lib/aircraft";
 import {
   calculateTakeoffPerformance,
@@ -52,7 +53,7 @@ export function TakeoffCalculatorClient({
   initialObstacle,
 }: TakeoffCalculatorClientProps) {
   // Aircraft state
-  const [aircraft, setAircraft] = useState<ResolvedAircraftPerformance>(() => {
+  const [aircraft, setAircraft] = useState<ResolvedAircraftPerformance | null>(() => {
     // Try loading from serialized plane parameter first
     if (initialPlane) {
       const loadedAircraft = loadAircraftFromUrl(initialPlane);
@@ -213,7 +214,7 @@ export function TakeoffCalculatorClient({
     for (let i = 0; i < TAKEOFF_EXAMPLES.length; i++) {
       const example = TAKEOFF_EXAMPLES[i];
       const matches =
-        aircraft.model === example.aircraft &&
+        aircraft?.model === example.aircraft &&
         weight === example.weight &&
         atmosphericData?.pressureAlt === example.pa &&
         atmosphericData?.oat === example.oat &&
@@ -307,74 +308,48 @@ export function TakeoffCalculatorClient({
               </div>
             </div>
             <div className="space-y-4">
-              <div>
-                <label
-                  className="flex items-center text-sm font-medium mb-2"
-                  style={{ color: "oklch(0.72 0.015 240)" }}
-                >
-                  Aircraft Type
-                  <Tooltip content="Select the aircraft model from the database" />
-                </label>
-                <select
-                  value={aircraft.model}
-                  onChange={(e) => {
-                    const selected = getAircraftByModel(e.target.value);
-                    if (selected) setAircraft(selected);
-                  }}
-                  className="w-full h-[52px] pl-4 pr-10 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 hover:border-gray-500 text-white cursor-pointer"
-                >
-                  <optgroup label="Preset Aircraft">
-                    {PRESET_AIRCRAFT.map((ac) => (
-                      <option key={ac.model} value={ac.model}>
-                        {ac.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                  {customAircraft.length > 0 && (
-                    <optgroup label="Custom Aircraft">
-                      {customAircraft.map((ac) => (
-                        <option key={ac.model} value={ac.model}>
-                          {ac.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-                </select>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="p-3 rounded-xl bg-slate-900/30 border border-gray-700/50">
-                  <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "oklch(0.55 0.02 240)" }}>
-                    Empty Weight
-                  </p>
-                  <p className="text-lg font-bold" style={{ color: "white" }}>
-                    {aircraft.weights?.emptyWeight || "N/A"} <span className="text-xs font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>lbs</span>
-                  </p>
+              <AircraftSearchSelector
+                selectedAircraft={aircraft}
+                customAircraft={customAircraft}
+                onSelect={setAircraft}
+                onClear={() => setAircraft(null)}
+              />
+              {aircraft && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="p-3 rounded-xl bg-slate-900/30 border border-gray-700/50">
+                    <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "oklch(0.55 0.02 240)" }}>
+                      Empty Weight
+                    </p>
+                    <p className="text-lg font-bold" style={{ color: "white" }}>
+                      {aircraft.weights?.emptyWeight || "N/A"} <span className="text-xs font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>lbs</span>
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-900/30 border border-gray-700/50">
+                    <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "oklch(0.55 0.02 240)" }}>
+                      Max Gross
+                    </p>
+                    <p className="text-lg font-bold" style={{ color: "white" }}>
+                      {aircraft.weights?.maxGrossWeight || "N/A"} <span className="text-xs font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>lbs</span>
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30">
+                    <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "oklch(0.65 0.15 230)" }}>
+                      Vs Clean
+                    </p>
+                    <p className="text-lg font-bold" style={{ color: "white" }}>
+                      {aircraft.limits?.vs || "N/A"} <span className="text-xs font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>KIAS</span>
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30">
+                    <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "oklch(0.65 0.15 230)" }}>
+                      Vs0 Landing
+                    </p>
+                    <p className="text-lg font-bold" style={{ color: "white" }}>
+                      {aircraft.limits?.vs0 || "N/A"} <span className="text-xs font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>KIAS</span>
+                    </p>
+                  </div>
                 </div>
-                <div className="p-3 rounded-xl bg-slate-900/30 border border-gray-700/50">
-                  <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "oklch(0.55 0.02 240)" }}>
-                    Max Gross
-                  </p>
-                  <p className="text-lg font-bold" style={{ color: "white" }}>
-                    {aircraft.weights?.maxGrossWeight || "N/A"} <span className="text-xs font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>lbs</span>
-                  </p>
-                </div>
-                <div className="p-3 rounded-xl bg-gradient-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30">
-                  <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "oklch(0.65 0.15 230)" }}>
-                    Vs Clean
-                  </p>
-                  <p className="text-lg font-bold" style={{ color: "white" }}>
-                    {aircraft.limits?.vs || "N/A"} <span className="text-xs font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>KIAS</span>
-                  </p>
-                </div>
-                <div className="p-3 rounded-xl bg-gradient-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30">
-                  <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "oklch(0.65 0.15 230)" }}>
-                    Vs0 Landing
-                  </p>
-                  <p className="text-lg font-bold" style={{ color: "white" }}>
-                    {aircraft.limits?.vs0 || "N/A"} <span className="text-xs font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>KIAS</span>
-                  </p>
-                </div>
-              </div>
+              )}
             </div>
           </div>
 

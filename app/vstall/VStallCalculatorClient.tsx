@@ -7,6 +7,7 @@ import { Footer } from "../components/Footer";
 import { ShareButton } from "../components/ShareButton";
 import { Tooltip } from "../components/Tooltip";
 import { AtmosphericConditionsInputs, type AtmosphericConditionsData } from "../components/AtmosphericConditionsInputs";
+import { AircraftSearchSelector } from "../components/AircraftSearchSelector";
 import { PRESET_AIRCRAFT, ResolvedAircraftPerformance } from "@/lib/aircraft";
 import { calculateVStall, validateInputs, ValidationError } from "@/lib/vstallCalculations";
 import { getAircraftByModel, loadCustomAircraft, resolveAircraft } from "@/lib/aircraftStorage";
@@ -35,7 +36,10 @@ export function VStallCalculatorClient({
   initialBank,
 }: VStallCalculatorClientProps) {
   // State for inputs
-  const [selectedAircraft, setSelectedAircraft] = useState<string>(initialAircraft);
+  const [selectedAircraft, setSelectedAircraft] = useState<ResolvedAircraftPerformance | null>(() => {
+    // Load initial aircraft from model code
+    return getAircraftByModel(initialAircraft) || null;
+  });
   const [weight, setWeight] = useState<string>(initialWeight);
   const [flaps, setFlaps] = useState<string>(initialFlaps);
   const [bank, setBank] = useState<string>(initialBank);
@@ -61,8 +65,8 @@ export function VStallCalculatorClient({
     setAtmosphericData(data);
   }, []);
 
-  // Get aircraft data (from presets or custom)
-  const aircraft: ResolvedAircraftPerformance | undefined = getAircraftByModel(selectedAircraft);
+  // Get aircraft data (from state)
+  const aircraft: ResolvedAircraftPerformance | undefined = selectedAircraft || undefined;
 
   // Set default weight to standard weight or max gross weight
   useEffect(() => {
@@ -79,7 +83,7 @@ export function VStallCalculatorClient({
     if (!atmosphericData) return; // Wait for initial atmospheric data
 
     const params = new URLSearchParams();
-    if (selectedAircraft) params.set("aircraft", selectedAircraft);
+    if (selectedAircraft) params.set("aircraft", selectedAircraft.model);
     if (weight) params.set("weight", weight);
 
     // Add atmospheric parameters based on mode
@@ -236,37 +240,12 @@ export function VStallCalculatorClient({
               </div>
             </div>
             <div className="space-y-4">
-              <div>
-                <label
-                  className="flex items-center text-sm font-medium mb-2"
-                  style={{ color: "oklch(0.72 0.015 240)" }}
-                >
-                  Aircraft Type
-                  <Tooltip content="Select the aircraft model from the database" />
-                </label>
-                <select
-                  value={selectedAircraft}
-                  onChange={(e) => setSelectedAircraft(e.target.value)}
-                  className="w-full h-[52px] pl-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 hover:border-gray-500 text-white cursor-pointer"
-                >
-                  <optgroup label="Preset Aircraft">
-                    {PRESET_AIRCRAFT.map((ac) => (
-                      <option key={ac.model} value={ac.model}>
-                        {ac.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                  {customAircraft.length > 0 && (
-                    <optgroup label="Custom Aircraft">
-                      {customAircraft.map((ac) => (
-                        <option key={ac.model} value={ac.model}>
-                          {ac.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-                </select>
-              </div>
+              <AircraftSearchSelector
+                selectedAircraft={selectedAircraft}
+                customAircraft={customAircraft}
+                onSelect={setSelectedAircraft}
+                onClear={() => setSelectedAircraft(null)}
+              />
               {aircraft && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div className="p-3 rounded-xl bg-slate-900/30 border border-gray-700/50">

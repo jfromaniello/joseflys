@@ -10,9 +10,9 @@ export default function Home() {
       {/* Hero Section */}
       <div className="text-center mb-12 sm:mb-16 max-w-4xl">
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-4 sm:mb-6" style={{ color: "white" }}>
-          Aviation Calculators
+          Aviation Tools
           <span className="block mt-2 text-3xl sm:text-4xl md:text-5xl" style={{ color: "oklch(0.75 0.15 230)" }}>
-            for Pilots
+            for Flight Planning
           </span>
         </h1>
         <p
@@ -760,7 +760,7 @@ export default function Home() {
         </div>
       </main>
 
-      <Footer description="Experimental aviation calculators for leg planning, TAS, wind correction, distance & bearing, and fuel calculations" />
+      <Footer description="Aviation tools for flight planning, performance, and navigation. Professional calculators for TAS, wind correction, distance & bearing, and fuel consumption" />
     </PageLayout>
   );
 }
