@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { PageLayout } from "../components/PageLayout";
 import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
 import { Footer } from "../components/Footer";
 import { ShareButton } from "../components/ShareButton";
 import { Tooltip } from "../components/Tooltip";
+import { AtmosphericConditionsInputs, type AtmosphericConditionsData } from "../components/AtmosphericConditionsInputs";
 import { PRESET_AIRCRAFT, ResolvedAircraftPerformance } from "@/lib/aircraft";
 import {
   calculateTakeoffPerformance,
@@ -13,7 +14,6 @@ import {
   type SurfaceType,
   type TakeoffResults,
 } from "@/lib/takeoffCalculations";
-import { calculatePA, calculateDA, calculateISATemp, isInHg } from "@/lib/isaCalculations";
 import { loadAircraftFromUrl, serializeAircraft, getAircraftByModel, loadCustomAircraft, resolveAircraft } from "@/lib/aircraftStorage";
 import { formatDistance } from "@/lib/formatters";
 import { TakeoffVisualization } from "./TakeoffVisualization";
@@ -34,7 +34,6 @@ interface TakeoffCalculatorClientProps {
   initialObstacle: string;
 }
 
-type AltitudeMode = "pa" | "qnh" | "da";
 
 export function TakeoffCalculatorClient({
   initialAircraft,
@@ -75,23 +74,22 @@ export function TakeoffCalculatorClient({
 
   // Input state
   const [weight, setWeight] = useState<string>(initialWeight);
-  const [pressureAlt, setPressureAlt] = useState<string>(initialPA);
-  const [altitude, setAltitude] = useState<string>(initialAlt);
-  const [qnh, setQnh] = useState<string>(initialQNH);
-  const [densityAlt, setDensityAlt] = useState<string>(initialDA);
-  const [oat, setOat] = useState<string>(initialOAT);
   const [runwayLength, setRunwayLength] = useState<string>(initialRunway);
   const [surfaceType, setSurfaceType] = useState<SurfaceType>(initialSurface as SurfaceType || "dry-asphalt");
   const [runwaySlope, setRunwaySlope] = useState<string>(initialSlope);
   const [headwindComponent, setHeadwindComponent] = useState<string>(initialWind);
   const [obstacleHeight, setObstacleHeight] = useState<string>(initialObstacle);
 
-  // Altitude mode
-  const [altitudeMode, setAltitudeMode] = useState<AltitudeMode>(() => {
-    if (initialDA) return "da";
-    if (initialAlt && initialQNH) return "qnh";
-    return "pa";
-  });
+  // Atmospheric conditions data (from component)
+  const [atmosphericData, setAtmosphericData] = useState<AtmosphericConditionsData | null>(null);
+
+  // Determine initial altitude mode from URL params
+  const initialAltitudeMode = initialDA ? "da" : (initialAlt && initialQNH) ? "qnh" : "pa";
+
+  // Callback for atmospheric conditions changes
+  const handleAtmosphericChange = useCallback((data: AtmosphericConditionsData) => {
+    setAtmosphericData(data);
+  }, []);
 
   // Set default weight to standard weight or max gross weight
   useEffect(() => {
@@ -107,6 +105,8 @@ export function TakeoffCalculatorClient({
 
   // Update URL when parameters change
   useEffect(() => {
+    if (!atmosphericData) return; // Wait for initial atmospheric data
+
     const params = new URLSearchParams();
 
     // Aircraft
@@ -126,17 +126,17 @@ export function TakeoffCalculatorClient({
     // Weight
     if (weight) params.set("weight", weight);
 
-    // Altitude parameters
-    if (altitudeMode === "pa" && pressureAlt) {
-      params.set("pa", pressureAlt);
-    } else if (altitudeMode === "qnh" && altitude && qnh) {
-      params.set("alt", altitude);
-      params.set("qnh", qnh);
-    } else if (altitudeMode === "da" && densityAlt) {
-      params.set("da", densityAlt);
+    // Add atmospheric parameters based on mode
+    if (atmosphericData.altitudeMode === "pa" && atmosphericData.pressureAlt) {
+      params.set("pa", atmosphericData.pressureAlt);
+    } else if (atmosphericData.altitudeMode === "qnh" && atmosphericData.altitude && atmosphericData.qnh) {
+      params.set("alt", atmosphericData.altitude);
+      params.set("qnh", atmosphericData.qnh);
+    } else if (atmosphericData.altitudeMode === "da" && atmosphericData.densityAlt) {
+      params.set("da", atmosphericData.densityAlt);
     }
 
-    if (oat) params.set("oat", oat);
+    if (atmosphericData.oat) params.set("oat", atmosphericData.oat);
 
     // Runway parameters
     if (runwayLength) params.set("runway", runwayLength);
@@ -147,47 +147,19 @@ export function TakeoffCalculatorClient({
 
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState(null, "", newUrl);
-  }, [aircraft, weight, pressureAlt, altitude, qnh, densityAlt, oat, runwayLength, surfaceType, runwaySlope, headwindComponent, obstacleHeight, altitudeMode]);
+  }, [aircraft, weight, atmosphericData, runwayLength, surfaceType, runwaySlope, headwindComponent, obstacleHeight]);
 
   // Parse values
   const weightVal = parseFloat(weight);
-  const paVal = parseFloat(pressureAlt);
-  const altVal = parseFloat(altitude);
-  const qnhVal = parseFloat(qnh);
-  const daVal = parseFloat(densityAlt);
-  const oatVal = parseFloat(oat);
   const runwayVal = parseFloat(runwayLength);
   const slopeVal = parseFloat(runwaySlope);
   const windVal = parseFloat(headwindComponent);
   const obstacleVal = parseFloat(obstacleHeight);
 
-  // Detect QNH format independently
-  const qnhFormat = !isNaN(qnhVal) && isInHg(qnhVal) ? "inHg" : "hPa";
-
-  // Calculate actual PA and DA based on mode
-  let actualPA = 0;
-  let actualDA = 0;
-
-  if (altitudeMode === "pa" && !isNaN(paVal)) {
-    actualPA = paVal;
-    if (!isNaN(oatVal)) {
-      const isaTemp = calculateISATemp(paVal);
-      actualDA = calculateDA(paVal, oatVal, isaTemp);
-    } else {
-      actualDA = paVal; // Assume ISA conditions
-    }
-  } else if (altitudeMode === "qnh" && !isNaN(altVal) && !isNaN(qnhVal)) {
-    actualPA = calculatePA(altVal, qnhVal);
-    if (!isNaN(oatVal)) {
-      const isaTemp = calculateISATemp(actualPA);
-      actualDA = calculateDA(actualPA, oatVal, isaTemp);
-    } else {
-      actualDA = actualPA;
-    }
-  } else if (altitudeMode === "da" && !isNaN(daVal)) {
-    actualDA = daVal;
-    actualPA = daVal; // Approximate
-  }
+  // Get actual PA and DA from atmospheric data
+  const actualPA = atmosphericData?.actualPA || 0;
+  const actualDA = atmosphericData?.actualDA || 0;
+  const oatVal = atmosphericData?.oatVal || 0;
 
   // Calculate results
   const hasValidInputs =
@@ -374,223 +346,17 @@ export function TakeoffCalculatorClient({
             </div>
           </div>
 
-          {/* Altitude Section */}
-          <div className="mb-8 pb-8 border-b border-gray-700/50">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-cyan-500/20 to-teal-500/20 border border-cyan-500/30">
-                <svg className="w-6 h-6" fill="none" stroke="oklch(0.7 0.15 200)" viewBox="0 0 24 24" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
-                </svg>
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold" style={{ color: "white" }}>
-                  Atmospheric Conditions
-                </h2>
-                <p className="text-sm" style={{ color: "oklch(0.65 0.02 240)" }}>
-                  Set altitude and temperature
-                </p>
-              </div>
-            </div>
-
-            {/* Altitude Mode Selection */}
-            <div className="mb-6">
-              <div className="inline-flex gap-2 p-1.5 rounded-xl bg-slate-900/50 border border-gray-700">
-                <button
-                  onClick={() => setAltitudeMode("pa")}
-                  className={`px-5 py-2.5 rounded-lg transition-all cursor-pointer font-medium ${
-                    altitudeMode === "pa"
-                      ? "bg-gradient-to-r from-cyan-500/30 to-teal-500/30 border border-cyan-500/50 shadow-lg"
-                      : "border border-transparent hover:bg-slate-800/50"
-                  }`}
-                  style={{ color: altitudeMode === "pa" ? "oklch(0.8 0.15 200)" : "oklch(0.65 0.02 240)" }}
-                >
-                  Pressure Altitude
-                </button>
-                <button
-                  onClick={() => setAltitudeMode("qnh")}
-                  className={`px-5 py-2.5 rounded-lg transition-all cursor-pointer font-medium ${
-                    altitudeMode === "qnh"
-                      ? "bg-gradient-to-r from-cyan-500/30 to-teal-500/30 border border-cyan-500/50 shadow-lg"
-                      : "border border-transparent hover:bg-slate-800/50"
-                  }`}
-                  style={{ color: altitudeMode === "qnh" ? "oklch(0.8 0.15 200)" : "oklch(0.65 0.02 240)" }}
-                >
-                  Altitude + QNH
-                </button>
-                <button
-                  onClick={() => setAltitudeMode("da")}
-                  className={`px-5 py-2.5 rounded-lg transition-all cursor-pointer font-medium ${
-                    altitudeMode === "da"
-                      ? "bg-gradient-to-r from-cyan-500/30 to-teal-500/30 border border-cyan-500/50 shadow-lg"
-                      : "border border-transparent hover:bg-slate-800/50"
-                  }`}
-                  style={{ color: altitudeMode === "da" ? "oklch(0.8 0.15 200)" : "oklch(0.65 0.02 240)" }}
-                >
-                  Density Altitude
-                </button>
-              </div>
-            </div>
-
-            {/* Altitude Inputs */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {altitudeMode === "pa" && (
-                <div>
-                  <label
-                    className="flex items-center text-sm font-medium mb-2"
-                    style={{ color: "oklch(0.72 0.015 240)" }}
-                  >
-                    Pressure Altitude
-                    <Tooltip content="Altitude corrected for non-standard pressure (altimeter set to 29.92)" />
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      value={pressureAlt}
-                      onChange={(e) => setPressureAlt(e.target.value)}
-                      className="w-full h-[52px] px-4 pr-16 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 hover:border-gray-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
-                      placeholder="2000"
-                    />
-                    <span
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-                      style={{ color: "oklch(0.55 0.02 240)" }}
-                    >
-                      ft
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {altitudeMode === "qnh" && (
-                <>
-                  <div>
-                    <label
-                      className="flex items-center text-sm font-medium mb-2"
-                      style={{ color: "oklch(0.72 0.015 240)" }}
-                    >
-                      Field Elevation
-                      <Tooltip content="Airport elevation above sea level" />
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        value={altitude}
-                        onChange={(e) => setAltitude(e.target.value)}
-                        className="w-full h-[52px] px-4 pr-16 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 hover:border-gray-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
-                        placeholder="2000"
-                      />
-                      <span
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-                        style={{ color: "oklch(0.55 0.02 240)" }}
-                      >
-                        ft
-                      </span>
-                    </div>
-                  </div>
-                  <div>
-                    <label
-                      className="flex items-center text-sm font-medium mb-2"
-                      style={{ color: "oklch(0.72 0.015 240)" }}
-                    >
-                      QNH
-                      <Tooltip content="The barometric pressure setting. Enter in hPa (millibars) or inHg. Format is auto-detected (25-35 = inHg, otherwise hPa)." />
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={qnh}
-                        onChange={(e) => setQnh(e.target.value)}
-                        className="w-full h-[52px] px-4 pr-16 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 hover:border-gray-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
-                        placeholder="1013 or 29.92"
-                      />
-                      <span
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-                        style={{ color: "oklch(0.55 0.02 240)" }}
-                      >
-                        {qnhFormat}
-                      </span>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {altitudeMode === "da" && (
-                <div>
-                  <label
-                    className="flex items-center text-sm font-medium mb-2"
-                    style={{ color: "oklch(0.72 0.015 240)" }}
-                  >
-                    Density Altitude
-                    <Tooltip content="Pressure altitude corrected for non-standard temperature" />
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      value={densityAlt}
-                      onChange={(e) => setDensityAlt(e.target.value)}
-                      className="w-full h-[52px] px-4 pr-16 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 hover:border-gray-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
-                      placeholder="3500"
-                    />
-                    <span
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-                      style={{ color: "oklch(0.55 0.02 240)" }}
-                    >
-                      ft
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <label
-                  className="flex items-center text-sm font-medium mb-2"
-                  style={{ color: "oklch(0.72 0.015 240)" }}
-                >
-                  Outside Air Temperature
-                  <Tooltip content="Current temperature at the airport" />
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={oat}
-                    onChange={(e) => setOat(e.target.value)}
-                    className="w-full h-[52px] px-4 pr-16 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 hover:border-gray-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
-                    placeholder="25"
-                  />
-                  <span
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-                    style={{ color: "oklch(0.55 0.02 240)" }}
-                  >
-                    °C
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Calculated Values Display */}
-            {!isNaN(actualPA) && !isNaN(actualDA) && (
-              <div className="mt-6 p-4 rounded-xl bg-cyan-500/5 border border-cyan-500/20">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "oklch(0.65 0.15 200)" }}>
-                      Pressure Altitude
-                    </p>
-                    <p className="text-lg font-bold" style={{ color: "white" }}>
-                      {formatDistance(actualPA)} ft
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "oklch(0.65 0.15 200)" }}>
-                      Density Altitude
-                    </p>
-                    <p className="text-lg font-bold" style={{ color: "white" }}>
-                      {formatDistance(actualDA)} ft
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+          {/* Atmospheric Conditions */}
+          <AtmosphericConditionsInputs
+            initialAltitudeMode={initialAltitudeMode}
+            initialPressureAlt={initialPA}
+            initialAltitude={initialAlt}
+            initialQNH={initialQNH}
+            initialDensityAlt={initialDA}
+            initialOAT={initialOAT}
+            onChange={handleAtmosphericChange}
+            showCalculatedValues={true}
+          />
 
           {/* Runway Section */}
           <div className="mb-8 pb-8 border-b border-gray-700/50">

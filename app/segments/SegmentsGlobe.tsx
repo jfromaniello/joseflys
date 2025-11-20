@@ -28,7 +28,7 @@ export function SegmentsGlobe({
   totalDistance,
 }: SegmentsGlobeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const viewerRef = useRef<typeof import("cesium").Viewer | null>(null);
+  const viewerRef = useRef<import("cesium").Viewer | null>(null);
   const cesiumRef = useRef<typeof import("cesium") | null>(null);
   const isInitialLoadRef = useRef<boolean>(true);
   const lastRouteRef = useRef<string>("");

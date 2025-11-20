@@ -14,6 +14,12 @@ const Marker = dynamic(() => import("react-leaflet").then(mod => mod.Marker), { 
 const Polyline = dynamic(() => import("react-leaflet").then(mod => mod.Polyline), { ssr: false });
 const Popup = dynamic(() => import("react-leaflet").then(mod => mod.Popup), { ssr: false });
 
+// Import leaflet for icon creation
+let L: typeof import("leaflet") | null = null;
+if (typeof window !== 'undefined') {
+  import('leaflet').then(mod => { L = mod; });
+}
+
 interface LocationData {
   name: string;
   lat: number;
@@ -1121,10 +1127,8 @@ function MercatorMap({ locations }: { locations: LocationData[] }) {
 }
 
 // Create custom Leaflet icon for waypoints
-async function createWaypointIcon(isFlyOver: boolean) {
-  if (typeof window === 'undefined') return undefined;
-
-  const L = await import('leaflet');
+function createWaypointIcon(isFlyOver: boolean) {
+  if (typeof window === 'undefined' || !L) return undefined;
 
   const color = isFlyOver ? '#f59e0b' : CHART_STYLES.route.waypoint.fill;
   const shape = isFlyOver ? 'diamond' : 'circle';

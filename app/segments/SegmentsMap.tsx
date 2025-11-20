@@ -131,7 +131,6 @@ export function SegmentsMap({
   toName,
   segments,
   orthodromicDistance,
-  _totalDistance,
 }: SegmentsMapProps) {
   const fromPosition: [number, number] = [fromLat, fromLon];
 

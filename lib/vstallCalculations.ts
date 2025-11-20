@@ -3,6 +3,8 @@
  * Calculates actual stall speeds under various flight conditions
  */
 
+import { calculateTASFromIAS } from "./tasCalculations";
+
 /**
  * Flap configuration options
  */
@@ -90,39 +92,6 @@ export function calculateVsWeight(vsRef: number, weightActual: number, weightRef
  */
 export function calculateVsLoadFactor(vs: number, loadFactor: number): number {
   return vs * Math.sqrt(loadFactor);
-}
-
-/**
- * Calculate TAS from IAS using density altitude
- * TAS = IAS * sqrt(ρ0 / ρ)
- *
- * This uses a simplified approximation based on density altitude.
- * For more accurate results, use the full atmosphere model from tasCalculations.ts
- */
-export function calculateTASFromIAS(ias: number, densityAltitudeFt: number): number {
-  // Standard sea level conditions
-  const T0 = 288.15; // K (15°C)
-  const P0 = 101325.0; // Pa
-  const R = 287.05287; // J/(kg·K)
-  const g0 = 9.80665; // m/s²
-  const L = 0.0065; // K/m (lapse rate troposphere)
-
-  // Convert DA to meters
-  const hM = densityAltitudeFt * 0.3048;
-
-  // Calculate ISA temperature at this altitude
-  const tIsa = T0 - L * hM;
-
-  // Calculate ISA pressure at altitude (troposphere)
-  const exp = g0 / (R * L);
-  const pIsa = P0 * Math.pow(1 - (L * hM) / T0, exp);
-
-  // Densities
-  const rho0 = P0 / (R * T0);
-  const rho = pIsa / (R * tIsa);
-
-  // TAS
-  return ias * Math.sqrt(rho0 / rho);
 }
 
 /**
