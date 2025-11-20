@@ -89,8 +89,62 @@ export const CESSNA_170: AircraftPerformance = {
     vs: 50, // clean, KIAS :contentReference[oaicite:9]{index=9}
     vs0: 45, // landing config, KIAS :contentReference[oaicite:10]{index=10}
     maxCrosswind: 15, // kts aprox (demostrado, no límite oficial)
+    clMaxClean: 1.50,      // Clean configuration
+    clMaxTakeoff: 1.70,    // Takeoff/approach flaps
+    clMaxLanding: 1.85,    // Full landing flaps
   },
-  // Puedes agregar luego tablas específicas de despegue/aterrizaje si querés
-  // takeoffTable: [...]
-  // landingTable: [...]
+
+  /** ------------------------------------------------------------------
+   *  SERVICE CEILING
+   *  Maximum altitude where aircraft can maintain 100 fpm climb
+   *  ------------------------------------------------------------------*/
+  serviceCeiling: 15500, // ft pressure altitude
+
+  /** ------------------------------------------------------------------
+   *  TAKEOFF PERFORMANCE TABLE
+   *  Estimated based on Cessna 170 characteristics at gross weight (2,200 lbs)
+   *  145 hp Continental C145-2, paved level runway, zero wind
+   *  Note: Can operate from runways <1000ft at sea level
+   *  ------------------------------------------------------------------*/
+  takeoffTable: [
+    // Sea level
+    { altitude: 0, oat: 0, groundRoll: 640, over50ft: 1250 },
+    { altitude: 0, oat: 10, groundRoll: 670, over50ft: 1310 },
+    { altitude: 0, oat: 20, groundRoll: 705, over50ft: 1380 },
+    { altitude: 0, oat: 30, groundRoll: 745, over50ft: 1460 },
+    { altitude: 0, oat: 40, groundRoll: 790, over50ft: 1550 },
+
+    // 1,000 ft PA
+    { altitude: 1000, oat: 0, groundRoll: 675, over50ft: 1325 },
+    { altitude: 1000, oat: 10, groundRoll: 710, over50ft: 1395 },
+    { altitude: 1000, oat: 20, groundRoll: 750, over50ft: 1475 },
+    { altitude: 1000, oat: 30, groundRoll: 795, over50ft: 1565 },
+    { altitude: 1000, oat: 40, groundRoll: 845, over50ft: 1665 },
+
+    // 2,500 ft PA
+    { altitude: 2500, oat: 0, groundRoll: 740, over50ft: 1460 },
+    { altitude: 2500, oat: 10, groundRoll: 780, over50ft: 1540 },
+    { altitude: 2500, oat: 20, groundRoll: 825, over50ft: 1630 },
+    { altitude: 2500, oat: 30, groundRoll: 875, over50ft: 1735 },
+    { altitude: 2500, oat: 40, groundRoll: 930, over50ft: 1850 },
+
+    // 5,000 ft PA
+    { altitude: 5000, oat: 0, groundRoll: 860, over50ft: 1715 },
+    { altitude: 5000, oat: 10, groundRoll: 915, over50ft: 1825 },
+    { altitude: 5000, oat: 20, groundRoll: 975, over50ft: 1950 },
+    { altitude: 5000, oat: 30, groundRoll: 1040, over50ft: 2085 },
+    { altitude: 5000, oat: 40, groundRoll: 1115, over50ft: 2235 },
+
+    // 7,500 ft PA
+    { altitude: 7500, oat: 0, groundRoll: 1025, over50ft: 2065 },
+    { altitude: 7500, oat: 10, groundRoll: 1095, over50ft: 2205 },
+    { altitude: 7500, oat: 20, groundRoll: 1175, over50ft: 2370 },
+    { altitude: 7500, oat: 30, groundRoll: 1265, over50ft: 2555 },
+    { altitude: 7500, oat: 40, groundRoll: 1365, over50ft: 2760 },
+
+    // 10,000 ft PA
+    { altitude: 10000, oat: 0, groundRoll: 1260, over50ft: 2555 },
+    { altitude: 10000, oat: 10, groundRoll: 1360, over50ft: 2760 },
+    { altitude: 10000, oat: 20, groundRoll: 1475, over50ft: 2995 },
+  ],
 };

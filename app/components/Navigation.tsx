@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-type Page = "home" | "tas" | "course" | "leg" | "conversions" | "planning" | "distance" | "isa" | "climb" | "local-chart" | "my-planes";
+type Page = "home" | "tas" | "course" | "leg" | "conversions" | "planning" | "distance" | "isa" | "climb" | "vstall" | "local-chart" | "my-planes";
 
 interface NavigationProps {
   currentPage: Page;
@@ -185,6 +185,26 @@ const pages = [
           strokeLinecap="round"
           strokeLinejoin="round"
           d="M5 10l7-7m0 0l7 7m-7-7v18"
+        />
+      </svg>
+    ),
+  },
+  {
+    id: "vstall" as const,
+    name: "V-Stall",
+    href: "/vstall",
+    icon: (
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        strokeWidth={2}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
         />
       </svg>
     ),
