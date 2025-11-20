@@ -3,33 +3,14 @@
  * These tests use the old format (with standardWeight/maxWeight) to test backward compatibility
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import { serializeAircraft, deserializeAircraft, saveAircraft, loadCustomAircraft } from '../lib/aircraftStorage';
-import { AircraftPerformance } from '../lib/aircraft';
-
-// Legacy format for testing backward compatibility
-interface LegacyAircraftFormat {
-  name: string;
-  model: string;
-  standardWeight?: number;
-  maxWeight?: number;
-  climbTable?: Array<{
-    altitudeFrom: number;
-    altitudeTo: number;
-    rateOfClimb: number;
-    climbTAS: number;
-    fuelFlow: number;
-  }>;
-  deviationTable?: Array<{
-    forHeading: number;
-    steerHeading: number;
-  }>;
-}
+import { describe, it, expect } from 'vitest';
+import { serializeAircraft, deserializeAircraft } from '../lib/aircraftStorage';
+import { AircraftPerformance, LegacyAircraftPerformance, migrateAircraftToNewFormat } from '../lib/aircraft';
 
 describe('Aircraft Serialization (CBOR)', () => {
   describe('serializeAircraft', () => {
     it('should serialize aircraft with only name and model by default', () => {
-      const aircraft: LegacyAircraftFormat = {
+      const aircraft: LegacyAircraftPerformance = {
         name: 'Cessna 150',
         model: 'abc123',
         standardWeight: 1400,
@@ -44,7 +25,7 @@ describe('Aircraft Serialization (CBOR)', () => {
         ],
       };
 
-      const serialized = serializeAircraft(aircraft as any); // No options = only name + model
+      const serialized = serializeAircraft(migrateAircraftToNewFormat(aircraft)); // No options = only name + model
 
       expect(serialized).toBeTruthy();
       expect(serialized.length).toBeGreaterThan(0);
@@ -54,17 +35,18 @@ describe('Aircraft Serialization (CBOR)', () => {
       expect(serialized).not.toContain('='); // No padding
 
       // Verify it's compact (should be much smaller without all the data)
-      const deserialized: any = deserializeAircraft(serialized);
+      const deserialized: AircraftPerformance | null = deserializeAircraft(serialized);
       expect(deserialized?.name).toBe(aircraft.name);
       expect(deserialized?.model).toBe(aircraft.model);
-      expect(deserialized?.standardWeight).toBeUndefined();
-      expect(deserialized?.maxWeight).toBeUndefined();
-      expect(deserialized?.climbTable).toBeUndefined();
+      // Migration creates default values when weights are not serialized
+      expect(deserialized?.weights?.standardWeight).toBeUndefined();
+      expect(deserialized?.weights?.maxGrossWeight).toBe(2200); // Default: 2000 + 200
+      expect(deserialized?.climbTable).toEqual([]);
       expect(deserialized?.deviationTable).toBeUndefined();
     });
 
     it('should serialize aircraft with all fields when explicitly requested', () => {
-      const aircraft: LegacyAircraftFormat = {
+      const aircraft: LegacyAircraftPerformance = {
         name: 'Cessna 150',
         model: 'abc123',
         standardWeight: 1400,
@@ -79,7 +61,7 @@ describe('Aircraft Serialization (CBOR)', () => {
         ],
       };
 
-      const serialized = serializeAircraft(aircraft as any, {
+      const serialized = serializeAircraft(migrateAircraftToNewFormat(aircraft), {
         includeStandardWeight: true,
         includeMaxWeight: true,
         includeClimbTable: true,
@@ -95,19 +77,19 @@ describe('Aircraft Serialization (CBOR)', () => {
     });
 
     it('should serialize aircraft with only required fields', () => {
-      const aircraft: LegacyAircraftFormat = {
+      const aircraft: LegacyAircraftPerformance = {
         name: 'My Plane',
         model: 'C_xyz789',
       };
 
-      const serialized = serializeAircraft(aircraft as any);
+      const serialized = serializeAircraft(migrateAircraftToNewFormat(aircraft));
 
       expect(serialized).toBeTruthy();
       expect(serialized.length).toBeGreaterThan(0);
     });
 
     it('should serialize aircraft with only deviation table', () => {
-      const aircraft: LegacyAircraftFormat = {
+      const aircraft: LegacyAircraftPerformance = {
         name: 'Plane with Deviation',
         model: 'dev123',
         deviationTable: [
@@ -116,19 +98,19 @@ describe('Aircraft Serialization (CBOR)', () => {
         ],
       };
 
-      const serialized = serializeAircraft(aircraft as any, {
+      const serialized = serializeAircraft(migrateAircraftToNewFormat(aircraft), {
         includeDeviationTable: true,
       });
 
       expect(serialized).toBeTruthy();
       expect(serialized.length).toBeGreaterThan(0);
 
-      const deserialized: any = deserializeAircraft(serialized);
+      const deserialized: AircraftPerformance | null = deserializeAircraft(serialized);
       expect(deserialized?.deviationTable).toHaveLength(2);
     });
 
     it('should serialize aircraft with only climb table', () => {
-      const aircraft: LegacyAircraftFormat = {
+      const aircraft: LegacyAircraftPerformance = {
         name: 'Plane with Climb',
         model: 'clb123',
         climbTable: [
@@ -136,37 +118,37 @@ describe('Aircraft Serialization (CBOR)', () => {
         ],
       };
 
-      const serialized = serializeAircraft(aircraft as any, {
+      const serialized = serializeAircraft(migrateAircraftToNewFormat(aircraft), {
         includeClimbTable: true,
       });
 
       expect(serialized).toBeTruthy();
       expect(serialized.length).toBeGreaterThan(0);
 
-      const deserialized: any = deserializeAircraft(serialized);
+      const deserialized: AircraftPerformance | null = deserializeAircraft(serialized);
       expect(deserialized?.climbTable).toHaveLength(1);
     });
 
     it('should handle empty arrays', () => {
-      const aircraft: LegacyAircraftFormat = {
+      const aircraft: LegacyAircraftPerformance = {
         name: 'Empty Arrays',
         model: 'C_empty',
         climbTable: [],
         deviationTable: [],
       };
 
-      const serialized = serializeAircraft(aircraft as any);
+      const serialized = serializeAircraft(migrateAircraftToNewFormat(aircraft));
 
       expect(serialized).toBeTruthy();
     });
 
     it('should handle special characters in name', () => {
-      const aircraft: LegacyAircraftFormat = {
+      const aircraft: LegacyAircraftPerformance = {
         name: 'Cessna 150 José (2)',
         model: 'C_special',
       };
 
-      const serialized = serializeAircraft(aircraft as any);
+      const serialized = serializeAircraft(migrateAircraftToNewFormat(aircraft));
 
       expect(serialized).toBeTruthy();
     });
@@ -174,7 +156,7 @@ describe('Aircraft Serialization (CBOR)', () => {
 
   describe('deserializeAircraft', () => {
     it('should deserialize aircraft with all fields', () => {
-      const original: LegacyAircraftFormat = {
+      const original: LegacyAircraftPerformance = {
         name: 'Cessna 150',
         model: 'abc123',
         standardWeight: 1400,
@@ -187,38 +169,39 @@ describe('Aircraft Serialization (CBOR)', () => {
         ],
       };
 
-      const serialized = serializeAircraft(original as any, {
+      const serialized = serializeAircraft(migrateAircraftToNewFormat(original), {
         includeStandardWeight: true,
         includeMaxWeight: true,
         includeClimbTable: true,
         includeDeviationTable: true,
       });
-      const deserialized: any = deserializeAircraft(serialized);
+      const deserialized: AircraftPerformance | null = deserializeAircraft(serialized);
 
       expect(deserialized).not.toBeNull();
       expect(deserialized?.name).toBe(original.name);
       expect(deserialized?.model).toBe(original.model);
-      expect(deserialized?.standardWeight).toBe(original.standardWeight);
-      expect(deserialized?.maxWeight).toBe(original.maxWeight);
+      expect(deserialized?.weights?.standardWeight).toBe(original.standardWeight);
+      expect(deserialized?.weights?.maxGrossWeight).toBe(original.maxWeight);
       expect(deserialized?.climbTable).toHaveLength(1);
       expect(deserialized?.deviationTable).toHaveLength(1);
     });
 
     it('should deserialize aircraft with only required fields', () => {
-      const original: LegacyAircraftFormat = {
+      const original: LegacyAircraftPerformance = {
         name: 'Minimal Plane',
         model: 'C_min',
       };
 
-      const serialized = serializeAircraft(original as any);
-      const deserialized: any = deserializeAircraft(serialized);
+      const serialized = serializeAircraft(migrateAircraftToNewFormat(original));
+      const deserialized: AircraftPerformance | null = deserializeAircraft(serialized);
 
       expect(deserialized).not.toBeNull();
       expect(deserialized?.name).toBe(original.name);
       expect(deserialized?.model).toBe(original.model);
-      expect(deserialized?.standardWeight).toBeUndefined();
-      expect(deserialized?.maxWeight).toBeUndefined();
-      expect(deserialized?.climbTable).toBeUndefined();
+      // Migration creates default values for missing weights
+      expect(deserialized?.weights?.standardWeight).toBeUndefined();
+      expect(deserialized?.weights?.maxGrossWeight).toBe(2200); // Default: 2000 + 200
+      expect(deserialized?.climbTable).toEqual([]);
       expect(deserialized?.deviationTable).toBeUndefined();
     });
 
@@ -230,13 +213,13 @@ describe('Aircraft Serialization (CBOR)', () => {
 
     it('should handle legacy tilde-separated format', () => {
       const legacy = 'Test Plane~C_legacy~1500~1700~CLIMB~0,2000,670,70,6~DEV~0,2~30,28';
-      const deserialized: any = deserializeAircraft(legacy);
+      const deserialized: AircraftPerformance | null = deserializeAircraft(legacy);
 
       expect(deserialized).not.toBeNull();
       expect(deserialized?.name).toBe('Test Plane');
       expect(deserialized?.model).toBe('C_legacy');
-      expect(deserialized?.standardWeight).toBe(1500);
-      expect(deserialized?.maxWeight).toBe(1700);
+      expect(deserialized?.weights?.standardWeight).toBe(1500);
+      expect(deserialized?.weights?.maxGrossWeight).toBe(1700);
       expect(deserialized?.climbTable).toHaveLength(1);
       expect(deserialized?.deviationTable).toHaveLength(2);
     });
@@ -244,7 +227,7 @@ describe('Aircraft Serialization (CBOR)', () => {
 
   describe('Round-trip serialization', () => {
     it('should maintain data integrity through serialize -> deserialize', () => {
-      const original: LegacyAircraftFormat = {
+      const original: LegacyAircraftPerformance = {
         name: 'Round Trip Test',
         model: 'rt123',
         standardWeight: 1800,
@@ -262,19 +245,19 @@ describe('Aircraft Serialization (CBOR)', () => {
         ],
       };
 
-      const serialized = serializeAircraft(original as any, {
+      const serialized = serializeAircraft(migrateAircraftToNewFormat(original), {
         includeStandardWeight: true,
         includeMaxWeight: true,
         includeClimbTable: true,
         includeDeviationTable: true,
       });
-      const deserialized: any = deserializeAircraft(serialized);
+      const deserialized: AircraftPerformance | null = deserializeAircraft(serialized);
 
       expect(deserialized).not.toBeNull();
       expect(deserialized?.name).toBe(original.name);
       expect(deserialized?.model).toBe(original.model);
-      expect(deserialized?.standardWeight).toBe(original.standardWeight);
-      expect(deserialized?.maxWeight).toBe(original.maxWeight);
+      expect(deserialized?.weights?.standardWeight).toBe(original.standardWeight);
+      expect(deserialized?.weights?.maxGrossWeight).toBe(original.maxWeight);
 
       // Check climb table
       expect(deserialized?.climbTable).toHaveLength(original.climbTable!.length);
@@ -295,7 +278,7 @@ describe('Aircraft Serialization (CBOR)', () => {
     });
 
     it('should handle large datasets efficiently', () => {
-      const original: LegacyAircraftFormat = {
+      const original: LegacyAircraftPerformance = {
         name: 'Large Dataset Plane',
         model: 'large',
         standardWeight: 2000,
@@ -313,13 +296,13 @@ describe('Aircraft Serialization (CBOR)', () => {
         })),
       };
 
-      const serialized = serializeAircraft(original as any, {
+      const serialized = serializeAircraft(migrateAircraftToNewFormat(original), {
         includeStandardWeight: true,
         includeMaxWeight: true,
         includeClimbTable: true,
         includeDeviationTable: true,
       });
-      const deserialized: any = deserializeAircraft(serialized);
+      const deserialized: AircraftPerformance | null = deserializeAircraft(serialized);
 
       expect(deserialized).not.toBeNull();
       expect(deserialized?.climbTable).toHaveLength(20);
@@ -330,7 +313,7 @@ describe('Aircraft Serialization (CBOR)', () => {
     });
 
     it('should handle floating point numbers correctly', () => {
-      const original: LegacyAircraftFormat = {
+      const original: LegacyAircraftPerformance = {
         name: 'Float Test',
         model: 'float',
         standardWeight: 1499.5,
@@ -340,15 +323,15 @@ describe('Aircraft Serialization (CBOR)', () => {
         ],
       };
 
-      const serialized = serializeAircraft(original as any, {
+      const serialized = serializeAircraft(migrateAircraftToNewFormat(original), {
         includeStandardWeight: true,
         includeMaxWeight: true,
         includeClimbTable: true,
       });
-      const deserialized: any = deserializeAircraft(serialized);
+      const deserialized: AircraftPerformance | null = deserializeAircraft(serialized);
 
-      expect(deserialized?.standardWeight).toBeCloseTo(1499.5, 1);
-      expect(deserialized?.maxWeight).toBeCloseTo(1649.9, 1);
+      expect(deserialized?.weights?.standardWeight).toBeCloseTo(1499.5, 1);
+      expect(deserialized?.weights?.maxGrossWeight).toBeCloseTo(1649.9, 1);
       expect(deserialized?.climbTable?.[0].rateOfClimb).toBeCloseTo(670.5, 1);
       expect(deserialized?.climbTable?.[0].climbTAS).toBeCloseTo(70.2, 1);
       expect(deserialized?.climbTable?.[0].fuelFlow).toBeCloseTo(6.25, 2);
@@ -357,25 +340,26 @@ describe('Aircraft Serialization (CBOR)', () => {
 
   describe('Edge cases', () => {
     it('should handle undefined vs null correctly', () => {
-      const withUndefined: LegacyAircraftFormat = {
+      const withUndefined: LegacyAircraftPerformance = {
         name: 'Undefined Test',
         model: 'undef',
         standardWeight: undefined,
         maxWeight: undefined,
       };
 
-      const serialized = serializeAircraft(withUndefined as any, {
+      const serialized = serializeAircraft(migrateAircraftToNewFormat(withUndefined), {
         includeStandardWeight: true,
         includeMaxWeight: true,
       });
-      const deserialized: any = deserializeAircraft(serialized);
+      const deserialized: AircraftPerformance | null = deserializeAircraft(serialized);
 
-      expect(deserialized?.standardWeight).toBeUndefined();
-      expect(deserialized?.maxWeight).toBeUndefined();
+      // Migration preserves undefined standardWeight but calculates maxGrossWeight
+      expect(deserialized?.weights?.standardWeight).toBeUndefined();
+      expect(deserialized?.weights?.maxGrossWeight).toBe(2200); // Default: 2000 + 200
     });
 
     it('should handle zero values', () => {
-      const withZeros: LegacyAircraftFormat = {
+      const withZeros: LegacyAircraftPerformance = {
         name: 'Zero Test',
         model: 'zero',
         standardWeight: 0,
@@ -388,21 +372,22 @@ describe('Aircraft Serialization (CBOR)', () => {
         ],
       };
 
-      const serialized = serializeAircraft(withZeros as any, {
+      const serialized = serializeAircraft(migrateAircraftToNewFormat(withZeros), {
         includeStandardWeight: true,
         includeMaxWeight: true,
         includeClimbTable: true,
         includeDeviationTable: true,
       });
-      const deserialized: any = deserializeAircraft(serialized);
+      const deserialized: AircraftPerformance | null = deserializeAircraft(serialized);
 
-      expect(deserialized?.standardWeight).toBe(0);
-      expect(deserialized?.maxWeight).toBe(0);
+      expect(deserialized?.weights?.standardWeight).toBe(0);
+      // Migration treats 0 as falsy, so calculates default: 2000 + 200 = 2200
+      expect(deserialized?.weights?.maxGrossWeight).toBe(2200);
       expect(deserialized?.climbTable?.[0].rateOfClimb).toBe(0);
     });
 
     it('should handle negative values', () => {
-      const withNegatives: LegacyAircraftFormat = {
+      const withNegatives: LegacyAircraftPerformance = {
         name: 'Negative Test',
         model: 'neg',
         deviationTable: [
@@ -411,10 +396,10 @@ describe('Aircraft Serialization (CBOR)', () => {
         ],
       };
 
-      const serialized = serializeAircraft(withNegatives as any, {
+      const serialized = serializeAircraft(migrateAircraftToNewFormat(withNegatives), {
         includeDeviationTable: true,
       });
-      const deserialized: any = deserializeAircraft(serialized);
+      const deserialized: AircraftPerformance | null = deserializeAircraft(serialized);
 
       expect(deserialized?.deviationTable?.[0].steerHeading).toBe(-5);
       expect(deserialized?.deviationTable?.[1].steerHeading).toBe(-3);
@@ -423,7 +408,7 @@ describe('Aircraft Serialization (CBOR)', () => {
 
   describe('Compression efficiency', () => {
     it('should produce compact output', () => {
-      const aircraft: LegacyAircraftFormat = {
+      const aircraft: LegacyAircraftPerformance = {
         name: 'Compact Test',
         model: 'test',
         standardWeight: 1500,
@@ -437,7 +422,7 @@ describe('Aircraft Serialization (CBOR)', () => {
         ],
       };
 
-      const serialized = serializeAircraft(aircraft as any, {
+      const serialized = serializeAircraft(migrateAircraftToNewFormat(aircraft), {
         includeStandardWeight: true,
         includeMaxWeight: true,
         includeClimbTable: true,
@@ -450,7 +435,7 @@ describe('Aircraft Serialization (CBOR)', () => {
     });
 
     it('should produce minimal output with default options (name + model only)', () => {
-      const aircraft: LegacyAircraftFormat = {
+      const aircraft: LegacyAircraftPerformance = {
         name: 'Minimal Test',
         model: 'test',
         standardWeight: 1500,
@@ -463,8 +448,8 @@ describe('Aircraft Serialization (CBOR)', () => {
         ],
       };
 
-      const minimalSerialized = serializeAircraft(aircraft as any); // Default: only name + model
-      const fullSerialized = serializeAircraft(aircraft as any, {
+      const minimalSerialized = serializeAircraft(migrateAircraftToNewFormat(aircraft)); // Default: only name + model
+      const fullSerialized = serializeAircraft(migrateAircraftToNewFormat(aircraft), {
         includeStandardWeight: true,
         includeMaxWeight: true,
         includeClimbTable: true,

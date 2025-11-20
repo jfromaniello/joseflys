@@ -47,10 +47,14 @@ interface FlightPlanDetailClientProps {
 export function FlightPlanDetailClient({
   flightPlanId,
 }: FlightPlanDetailClientProps) {
+  // Start with null to avoid hydration mismatch (localStorage is client-only)
   const [flightPlan, setFlightPlan] = useState<FlightPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [shareSuccess, setShareSuccess] = useState(false);
 
+  // Load from localStorage after hydration (this is a valid use of useEffect)
+  // We're synchronizing with an external system (localStorage)
+  // This prevents hydration mismatch since localStorage is only available on client
   useEffect(() => {
     const plan = getFlightPlanById(flightPlanId);
     // eslint-disable-next-line react-hooks/set-state-in-effect

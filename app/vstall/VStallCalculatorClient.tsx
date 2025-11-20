@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { PageLayout } from "../components/PageLayout";
 import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
 import { Footer } from "../components/Footer";
 import { ShareButton } from "../components/ShareButton";
 import { Tooltip } from "../components/Tooltip";
+import { AtmosphericConditionsInputs, type AtmosphericConditionsData } from "../components/AtmosphericConditionsInputs";
+import { AircraftSearchSelector } from "../components/AircraftSearchSelector";
 import { PRESET_AIRCRAFT, ResolvedAircraftPerformance } from "@/lib/aircraft";
-import { calculateVStall, validateInputs, FlapConfiguration, ValidationError } from "@/lib/vstallCalculations";
-import { calculatePA, calculateDA, calculateISATemp } from "@/lib/isaCalculations";
+import { calculateVStall, validateInputs, ValidationError } from "@/lib/vstallCalculations";
 import { getAircraftByModel, loadCustomAircraft, resolveAircraft } from "@/lib/aircraftStorage";
 
 interface VStallCalculatorClientProps {
@@ -23,8 +24,6 @@ interface VStallCalculatorClientProps {
   initialBank: string;
 }
 
-type AltitudeMode = "pa" | "qnh" | "da";
-
 export function VStallCalculatorClient({
   initialAircraft,
   initialWeight,
@@ -37,99 +36,81 @@ export function VStallCalculatorClient({
   initialBank,
 }: VStallCalculatorClientProps) {
   // State for inputs
-  const [selectedAircraft, setSelectedAircraft] = useState<string>(initialAircraft);
+  const [selectedAircraft, setSelectedAircraft] = useState<ResolvedAircraftPerformance | null>(() => {
+    // Load initial aircraft from model code
+    return getAircraftByModel(initialAircraft) || null;
+  });
   const [weight, setWeight] = useState<string>(initialWeight);
-  const [pressureAlt, setPressureAlt] = useState<string>(initialPA);
-  const [altitude, setAltitude] = useState<string>(initialAlt);
-  const [qnh, setQnh] = useState<string>(initialQNH);
-  const [densityAlt, setDensityAlt] = useState<string>(initialDA);
-  const [oat, setOat] = useState<string>(initialOAT);
   const [flaps, setFlaps] = useState<string>(initialFlaps);
   const [bank, setBank] = useState<string>(initialBank);
+
+  // Atmospheric conditions data (from component)
+  const [atmosphericData, setAtmosphericData] = useState<AtmosphericConditionsData | null>(null);
 
   // Custom aircraft list
   const [customAircraft, setCustomAircraft] = useState<ResolvedAircraftPerformance[]>([]);
 
   // Load custom aircraft on mount
   useEffect(() => {
-    const loaded = loadCustomAircraft().map(ac => resolveAircraft(ac));
-    setCustomAircraft(loaded);
+    loadCustomAircraft().then(loaded => {
+      setCustomAircraft(loaded.map(ac => resolveAircraft(ac)));
+    });
   }, []);
 
-  // Altitude mode
-  const [altitudeMode, setAltitudeMode] = useState<AltitudeMode>(() => {
-    if (initialDA) return "da";
-    if (initialAlt && initialQNH) return "qnh";
-    return "pa";
-  });
+  // Determine initial altitude mode from URL params
+  const initialAltitudeMode = initialDA ? "da" : (initialAlt && initialQNH) ? "qnh" : "pa";
 
-  // Get aircraft data (from presets or custom)
-  const aircraft: ResolvedAircraftPerformance | undefined = getAircraftByModel(selectedAircraft);
+  // Callback for atmospheric conditions changes
+  const handleAtmosphericChange = useCallback((data: AtmosphericConditionsData) => {
+    setAtmosphericData(data);
+  }, []);
+
+  // Get aircraft data (from state)
+  const aircraft: ResolvedAircraftPerformance | undefined = selectedAircraft || undefined;
 
   // Set default weight to standard weight or max gross weight
   useEffect(() => {
     if (!weight && aircraft) {
       const defaultWeight = aircraft.weights.standardWeight || aircraft.weights.maxGrossWeight;
+      // Safe: Setting default value based on aircraft selection
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setWeight(defaultWeight.toString());
     }
   }, [aircraft, weight]);
 
   // Update URL when parameters change
   useEffect(() => {
+    if (!atmosphericData) return; // Wait for initial atmospheric data
+
     const params = new URLSearchParams();
-    if (selectedAircraft) params.set("aircraft", selectedAircraft);
+    if (selectedAircraft) params.set("aircraft", selectedAircraft.model);
     if (weight) params.set("weight", weight);
 
-    if (altitudeMode === "pa" && pressureAlt) {
-      params.set("pa", pressureAlt);
-    } else if (altitudeMode === "qnh" && altitude && qnh) {
-      params.set("alt", altitude);
-      params.set("qnh", qnh);
-    } else if (altitudeMode === "da" && densityAlt) {
-      params.set("da", densityAlt);
+    // Add atmospheric parameters based on mode
+    if (atmosphericData.altitudeMode === "pa" && atmosphericData.pressureAlt) {
+      params.set("pa", atmosphericData.pressureAlt);
+    } else if (atmosphericData.altitudeMode === "qnh" && atmosphericData.altitude && atmosphericData.qnh) {
+      params.set("alt", atmosphericData.altitude);
+      params.set("qnh", atmosphericData.qnh);
+    } else if (atmosphericData.altitudeMode === "da" && atmosphericData.densityAlt) {
+      params.set("da", atmosphericData.densityAlt);
     }
 
-    if (oat) params.set("oat", oat);
+    if (atmosphericData.oat) params.set("oat", atmosphericData.oat);
     if (flaps) params.set("flaps", flaps);
     if (bank) params.set("bank", bank);
 
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState(null, "", newUrl);
-  }, [selectedAircraft, weight, pressureAlt, altitude, qnh, densityAlt, oat, flaps, bank, altitudeMode]);
+  }, [selectedAircraft, weight, atmosphericData, flaps, bank]);
 
   // Parse values
   const weightVal = parseFloat(weight);
-  const paVal = parseFloat(pressureAlt);
-  const altVal = parseFloat(altitude);
-  const qnhVal = parseFloat(qnh);
-  const daVal = parseFloat(densityAlt);
-  const oatVal = parseFloat(oat);
   const bankVal = parseFloat(bank);
 
-  // Calculate actual PA and DA based on mode
-  let actualPA = 0;
-  let actualDA = 0;
-
-  if (altitudeMode === "pa" && !isNaN(paVal)) {
-    actualPA = paVal;
-    if (!isNaN(oatVal)) {
-      const isaTemp = calculateISATemp(paVal);
-      actualDA = calculateDA(paVal, oatVal, isaTemp);
-    } else {
-      actualDA = paVal; // Assume ISA conditions
-    }
-  } else if (altitudeMode === "qnh" && !isNaN(altVal) && !isNaN(qnhVal)) {
-    actualPA = calculatePA(altVal, qnhVal);
-    if (!isNaN(oatVal)) {
-      const isaTemp = calculateISATemp(actualPA);
-      actualDA = calculateDA(actualPA, oatVal, isaTemp);
-    } else {
-      actualDA = actualPA;
-    }
-  } else if (altitudeMode === "da" && !isNaN(daVal)) {
-    actualDA = daVal;
-    actualPA = daVal; // Approximate
-  }
+  // Get actual PA and DA from atmospheric data
+  const actualPA = atmosphericData?.actualPA || 0;
+  const actualDA = atmosphericData?.actualDA || 0;
 
   // Get stall speed reference based on flap configuration
   let vsRef = 0;
@@ -184,22 +165,23 @@ export function VStallCalculatorClient({
       (flaps === "takeoff" && !aircraft.limits.clMaxTakeoff) ||
       (flaps === "landing" && !aircraft.limits.clMaxLanding));
 
-  // Build share URL
-  const shareUrl = (() => {
-    if (typeof window === "undefined") return "";
+  // Load example data - demonstrates significant KIAS vs KTAS difference
+  const loadExample = () => {
+    // Use Cessna 172N at high weight, high altitude, hot temperature
+    // This creates a large difference between KIAS and KTAS
+    // PA: 10,000 ft, OAT: 25°C → DA: ~12,800 ft
+    // This will show ~15-17% difference between IAS and TAS
     const params = new URLSearchParams();
-    if (selectedAircraft) params.set("aircraft", selectedAircraft);
-    if (weight) params.set("weight", weight);
-    if (altitudeMode === "pa" && pressureAlt) params.set("pa", pressureAlt);
-    else if (altitudeMode === "qnh" && altitude && qnh) {
-      params.set("alt", altitude);
-      params.set("qnh", qnh);
-    } else if (altitudeMode === "da" && densityAlt) params.set("da", densityAlt);
-    if (oat) params.set("oat", oat);
-    if (flaps) params.set("flaps", flaps);
-    if (bank) params.set("bank", bank);
-    return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
-  })();
+    params.set("aircraft", "C172N");
+    params.set("weight", "2300"); // Max gross weight
+    params.set("flaps", "clean"); // Clean configuration for higher Vs
+    params.set("bank", "30"); // 30° bank for accelerated stall
+    params.set("pa", "10000"); // High pressure altitude
+    params.set("oat", "25"); // Hot temperature (ISA +30°C at 10,000 ft)
+
+    // Navigate to the example URL
+    window.location.href = `${window.location.pathname}?${params.toString()}`;
+  };
 
   return (
     <PageLayout currentPage="vstall">
@@ -212,53 +194,58 @@ export function VStallCalculatorClient({
         <div className="rounded-2xl p-6 sm:p-8 shadow-2xl bg-slate-800/50 backdrop-blur-sm border border-gray-700">
           {/* Aircraft Selection Section */}
           <div className="mb-8 pb-8 border-b border-gray-700/50">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-sky-500/20 to-blue-500/20 border border-sky-500/30">
-                <svg className="w-6 h-6" fill="none" stroke="oklch(0.7 0.15 230)" viewBox="0 0 24 24" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                </svg>
+            <div className="flex items-center justify-between gap-3 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-sky-500/20 to-blue-500/20 border border-sky-500/30">
+                  <svg className="w-6 h-6" fill="none" stroke="oklch(0.7 0.15 230)" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold" style={{ color: "white" }}>
+                    Aircraft Selection
+                  </h2>
+                  <p className="text-sm" style={{ color: "oklch(0.65 0.02 240)" }}>
+                    Choose your aircraft model
+                  </p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-2xl font-bold" style={{ color: "white" }}>
-                  Aircraft Selection
-                </h2>
-                <p className="text-sm" style={{ color: "oklch(0.65 0.02 240)" }}>
-                  Choose your aircraft model
-                </p>
+              {/* Example Button */}
+              <div className="relative group">
+                <button
+                  onClick={loadExample}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed border-gray-600 hover:border-purple-500/50 hover:bg-purple-500/10 transition-all text-sm font-medium cursor-pointer whitespace-nowrap"
+                  style={{ color: "oklch(0.75 0.15 300)" }}
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 10V3L4 14h7v7l9-11h-7z"
+                    />
+                  </svg>
+                  Example
+                </button>
+                {/* Custom Tooltip */}
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none whitespace-nowrap border border-gray-700 z-50">
+                  Load example showing significant KIAS vs KTAS difference at high altitude
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-slate-900"></div>
+                </div>
               </div>
             </div>
             <div className="space-y-4">
-              <div>
-                <label
-                  className="flex items-center text-sm font-medium mb-2"
-                  style={{ color: "oklch(0.72 0.015 240)" }}
-                >
-                  Aircraft Type
-                  <Tooltip content="Select the aircraft model from the database" />
-                </label>
-                <select
-                  value={selectedAircraft}
-                  onChange={(e) => setSelectedAircraft(e.target.value)}
-                  className="w-full h-[52px] pl-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 hover:border-gray-500 text-white cursor-pointer"
-                >
-                  <optgroup label="Preset Aircraft">
-                    {PRESET_AIRCRAFT.map((ac) => (
-                      <option key={ac.model} value={ac.model}>
-                        {ac.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                  {customAircraft.length > 0 && (
-                    <optgroup label="Custom Aircraft">
-                      {customAircraft.map((ac) => (
-                        <option key={ac.model} value={ac.model}>
-                          {ac.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-                </select>
-              </div>
+              <AircraftSearchSelector
+                selectedAircraft={selectedAircraft}
+                customAircraft={customAircraft}
+                onSelect={setSelectedAircraft}
+                onClear={() => setSelectedAircraft(null)}
+              />
               {aircraft && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div className="p-3 rounded-xl bg-slate-900/30 border border-gray-700/50">
@@ -366,204 +353,18 @@ export function VStallCalculatorClient({
             </div>
           </div>
 
-          {/* Altitude Section */}
-          <div className="mb-8 pb-8 border-b border-gray-700/50">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-cyan-500/20 to-teal-500/20 border border-cyan-500/30">
-                <svg className="w-6 h-6" fill="none" stroke="oklch(0.7 0.15 200)" viewBox="0 0 24 24" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
-                </svg>
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold" style={{ color: "white" }}>
-                  Altitude Parameters
-                </h2>
-                <p className="text-sm" style={{ color: "oklch(0.65 0.02 240)" }}>
-                  Choose input method and set altitude
-                </p>
-              </div>
-            </div>
-
-            {/* Altitude Mode Selection */}
-            <div className="mb-6">
-              <div className="inline-flex gap-2 p-1.5 rounded-xl bg-slate-900/50 border border-gray-700">
-                <button
-                  onClick={() => setAltitudeMode("pa")}
-                  className={`px-5 py-2.5 rounded-lg transition-all cursor-pointer font-medium ${
-                    altitudeMode === "pa"
-                      ? "bg-gradient-to-r from-cyan-500/30 to-teal-500/30 border border-cyan-500/50 shadow-lg"
-                      : "border border-transparent hover:bg-slate-800/50"
-                  }`}
-                  style={{ color: altitudeMode === "pa" ? "oklch(0.8 0.15 200)" : "oklch(0.65 0.02 240)" }}
-                >
-                  Pressure Altitude
-                </button>
-                <button
-                  onClick={() => setAltitudeMode("qnh")}
-                  className={`px-5 py-2.5 rounded-lg transition-all cursor-pointer font-medium ${
-                    altitudeMode === "qnh"
-                      ? "bg-gradient-to-r from-cyan-500/30 to-teal-500/30 border border-cyan-500/50 shadow-lg"
-                      : "border border-transparent hover:bg-slate-800/50"
-                  }`}
-                  style={{ color: altitudeMode === "qnh" ? "oklch(0.8 0.15 200)" : "oklch(0.65 0.02 240)" }}
-                >
-                  Altitude + QNH
-                </button>
-                <button
-                  onClick={() => setAltitudeMode("da")}
-                  className={`px-5 py-2.5 rounded-lg transition-all cursor-pointer font-medium ${
-                    altitudeMode === "da"
-                      ? "bg-gradient-to-r from-cyan-500/30 to-teal-500/30 border border-cyan-500/50 shadow-lg"
-                      : "border border-transparent hover:bg-slate-800/50"
-                  }`}
-                  style={{ color: altitudeMode === "da" ? "oklch(0.8 0.15 200)" : "oklch(0.65 0.02 240)" }}
-                >
-                  Density Altitude
-                </button>
-              </div>
-            </div>
-
-            {/* Altitude Inputs */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {altitudeMode === "pa" && (
-                <div>
-                  <label
-                    className="flex items-center text-sm font-medium mb-2"
-                    style={{ color: "oklch(0.72 0.015 240)" }}
-                  >
-                    Pressure Altitude
-                    <Tooltip content="Altitude when altimeter is set to standard pressure (29.92 inHg / 1013 hPa)" />
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      value={pressureAlt}
-                      onChange={(e) => setPressureAlt(e.target.value)}
-                      className="w-full h-[52px] px-4 pr-12 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
-                      placeholder="4000"
-                    />
-                    <span
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-                      style={{ color: "oklch(0.55 0.02 240)" }}
-                    >
-                      ft
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {altitudeMode === "qnh" && (
-                <>
-                  <div>
-                    <label
-                      className="flex items-center text-sm font-medium mb-2"
-                      style={{ color: "oklch(0.72 0.015 240)" }}
-                    >
-                      Altitude
-                      <Tooltip content="Altitude above mean sea level" />
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        value={altitude}
-                        onChange={(e) => setAltitude(e.target.value)}
-                        className="w-full h-[52px] px-4 pr-12 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
-                        placeholder="2000"
-                      />
-                      <span
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-                        style={{ color: "oklch(0.55 0.02 240)" }}
-                      >
-                        ft
-                      </span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label
-                      className="flex items-center text-sm font-medium mb-2"
-                      style={{ color: "oklch(0.72 0.015 240)" }}
-                    >
-                      QNH
-                      <Tooltip content="Current barometric pressure setting (hPa or inHg, auto-detected)" />
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={qnh}
-                        onChange={(e) => setQnh(e.target.value)}
-                        className="w-full h-[52px] px-4 pr-16 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
-                        placeholder="1013"
-                      />
-                      <span
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-                        style={{ color: "oklch(0.55 0.02 240)" }}
-                      >
-                        {!isNaN(qnhVal) && qnhVal >= 25 && qnhVal <= 35 ? "inHg" : "hPa"}
-                      </span>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {altitudeMode === "da" && (
-                <div>
-                  <label
-                    className="flex items-center text-sm font-medium mb-2"
-                    style={{ color: "oklch(0.72 0.015 240)" }}
-                  >
-                    Density Altitude
-                    <Tooltip content="Pressure altitude corrected for non-standard temperature" />
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      value={densityAlt}
-                      onChange={(e) => setDensityAlt(e.target.value)}
-                      className={`w-full h-[52px] px-4 pr-12 py-3 rounded-xl focus:outline-none focus:ring-2 transition-all text-lg bg-slate-900/50 border-2 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right ${
-                        errors.some(e => e.field === "densityAltitude")
-                          ? "border-red-500/60 focus:ring-red-500/50 hover:border-red-500/70"
-                          : "border-gray-600 focus:ring-sky-500/50"
-                      }`}
-                      placeholder="5000"
-                    />
-                    <span
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-                      style={{ color: "oklch(0.55 0.02 240)" }}
-                    >
-                      ft
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <label
-                  className="flex items-center text-sm font-medium mb-2"
-                  style={{ color: "oklch(0.72 0.015 240)" }}
-                >
-                  OAT (Optional)
-                  <Tooltip content="Outside Air Temperature in Celsius (used to calculate density altitude)" />
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={oat}
-                    onChange={(e) => setOat(e.target.value)}
-                    className="w-full h-[52px] px-4 pr-12 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
-                    placeholder="15"
-                  />
-                  <span
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-                    style={{ color: "oklch(0.55 0.02 240)" }}
-                  >
-                    °C
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* Atmospheric Conditions */}
+          <AtmosphericConditionsInputs
+            initialAltitudeMode={initialAltitudeMode}
+            initialPressureAlt={initialPA}
+            initialAltitude={initialAlt}
+            initialQNH={initialQNH}
+            initialDensityAlt={initialDA}
+            initialOAT={initialOAT}
+            onChange={handleAtmosphericChange}
+            showCalculatedValues={true}
+            errors={validationErrors}
+          />
 
           {/* Bank Angle Section */}
           <div className="mb-8">

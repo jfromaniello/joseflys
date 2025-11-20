@@ -69,6 +69,7 @@ interface InitialToLocation {
   lat: string;
   lon: string;
   name?: string;
+  isFlyOver?: boolean;
 }
 
 type MapMode = 'utm' | 'mercator';
@@ -131,7 +132,7 @@ export function LocalChartClient({
         searchResults: [],
         searching: false,
         showDropdown: false,
-        isFlyOver: (loc as any).isFlyOver || false,
+        isFlyOver: loc.isFlyOver || false,
       }));
     }
 
@@ -228,6 +229,7 @@ export function LocalChartClient({
     });
 
     return () => timers.forEach(timer => clearTimeout(timer));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toLocations.map(loc => loc.searchQuery).join(',')]);
 
   // Update URL when locations change
@@ -390,6 +392,7 @@ export function LocalChartClient({
 
   // Collect all valid locations for the map (only confirmed ones with name)
   // Use useMemo with a stable key based on actual confirmed data
+  /* eslint-disable react-hooks/exhaustive-deps */
   const validLocations = useMemo<Array<LocationData & { isFlyOver?: boolean }>>(() => {
     return [
       ...(fromLocation ? [{ ...fromLocation, isFlyOver: false }] : []),
@@ -406,9 +409,9 @@ export function LocalChartClient({
     fromLocation?.name,
     fromLocation?.lat,
     fromLocation?.lon,
-    // Only depend on the confirmed locations' essential data
     toLocations.map(loc => `${loc.name}|${loc.lat}|${loc.lon}|${loc.isFlyOver}`).join(',')
   ]);
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   const hasValidRoute = validLocations.length >= 2;
 

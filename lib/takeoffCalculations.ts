@@ -7,6 +7,7 @@
  */
 
 import type { ResolvedAircraftPerformance } from "./aircraft/types";
+import { calculateTAS } from "./tasCalculations";
 
 // ============================================================================
 // Types & Interfaces
@@ -90,12 +91,6 @@ const SLOPE_CORRECTION_FACTOR = 0.10; // 10% per 1% slope
 /** Vr is typically 1.2 × VS1 for most GA aircraft */
 const VR_MULTIPLIER = 1.2;
 
-/** Standard temperature lapse rate (°C per 1000 ft) */
-const STANDARD_LAPSE_RATE = 1.98; // °C per 1000 ft
-
-/** Sea level standard temperature (ISA) */
-const SEA_LEVEL_TEMP_ISA = 15; // °C
-
 /** Safety margin thresholds */
 const MARGINAL_THRESHOLD = 0.20; // 20%
 const UNSAFE_THRESHOLD = 0.0; // 0%
@@ -103,24 +98,6 @@ const UNSAFE_THRESHOLD = 0.0; // 0%
 // ============================================================================
 // Helper Functions
 // ============================================================================
-
-/**
- * Calculate ISA temperature at a given altitude
- */
-function calculateISATemp(altitudeFt: number): number {
-  return SEA_LEVEL_TEMP_ISA - (altitudeFt / 1000) * STANDARD_LAPSE_RATE;
-}
-
-/**
- * Calculate TAS from IAS using density altitude
- * Simplified formula: TAS ≈ IAS × √(ρ₀/ρ)
- * More accurate: TAS ≈ IAS × (1 + DA/1000 × 0.02)
- */
-function calculateTAS(ias: number, densityAltitudeFt: number): number {
-  // Use 2% increase per 1000 ft DA
-  const factor = 1 + (densityAltitudeFt / 1000) * 0.02;
-  return ias * factor;
-}
 
 /**
  * Calculate weight-adjusted stall speed
@@ -219,7 +196,7 @@ function interpolateTakeoffPerformance(
  */
 function estimateGroundRoll(
   vrTAS: number, // kt TAS
-  weightLbs: number,
+  _weightLbs: number,
   densityAltitudeFt: number
 ): number {
   // Convert Vr from kt to ft/s
@@ -281,19 +258,19 @@ export function calculateTakeoffPerformance(inputs: TakeoffInputs): TakeoffResul
 
   // Weight-adjusted VS1
   const vs1IAS = calculateWeightAdjustedVS(vs1Ref, inputs.weight, performanceRefWeight);
-  const vs1TAS = calculateTAS(vs1IAS, inputs.densityAltitude);
+  const vs1TAS = calculateTAS(vs1IAS, inputs.oat, inputs.pressureAltitude);
 
   // Vr = 1.2 × VS1
   const vrIAS = vs1IAS * VR_MULTIPLIER;
-  const vrTAS = calculateTAS(vrIAS, inputs.densityAltitude);
+  const vrTAS = calculateTAS(vrIAS, inputs.oat, inputs.pressureAltitude);
 
   // VX and VY (estimate based on VS1 since not typically in limits)
   // Typical values: Vx ≈ 1.25-1.3 × VS, Vy ≈ 1.35-1.45 × VS
   const vxIAS = vs1IAS * 1.3;
-  const vxTAS = calculateTAS(vxIAS, inputs.densityAltitude);
+  const vxTAS = calculateTAS(vxIAS, inputs.oat, inputs.pressureAltitude);
 
   const vyIAS = vs1IAS * 1.4;
-  const vyTAS = calculateTAS(vyIAS, inputs.densityAltitude);
+  const vyTAS = calculateTAS(vyIAS, inputs.oat, inputs.pressureAltitude);
 
   const vSpeeds: VSpeedResults = {
     vs1IAS,

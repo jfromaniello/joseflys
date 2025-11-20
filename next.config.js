@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const withSerwistInit = require("@serwist/next").default;
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const path = require("path");

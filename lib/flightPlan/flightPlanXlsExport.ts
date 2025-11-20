@@ -20,7 +20,6 @@ import { getFuelResultUnit, type FuelUnit } from "../fuelConversion";
 import { getSpeedUnitLabel, type SpeedUnit } from "../speedConversion";
 import {
   formatCourse,
-  formatAngle,
   formatCorrection,
   formatDeviation,
   formatWind,
@@ -84,9 +83,6 @@ export function generateFlightPlanXLS(flightPlan: FlightPlan): void {
   const data: any[][] = [];
 
   // Track row indices for styling
-  const titleRowIndex = 0;
-  const summaryHeaderRowIndex = 2;
-  const summaryDataStartRow = 3;
   const headerRowIndex = 6; // After title, blank, summary header, 2 summary rows, blank
 
   // Title
@@ -212,11 +208,6 @@ export function generateFlightPlanXLS(flightPlan: FlightPlan): void {
         let fuelPartial: string;
         let fuelTotal: string;
         let fuelRemaining: string;
-
-        // Determine previous leg index in the chain
-        const prevLegIndex = legIndex - 1;
-        const prevNextLeg = prevLegIndex < flightPlan.legs.length - 1 ? flightPlan.legs[prevLegIndex + 1] : null;
-        const prevNextLegIsAlternative = prevNextLeg ? alternativeLegs.has(prevNextLeg.id) : false;
 
         // If previous leg has waypoints and its next leg (current leg) is NOT alternative, use last waypoint
         if (lastWaypoint && !currentLegIsAlternative) {

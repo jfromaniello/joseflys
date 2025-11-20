@@ -46,7 +46,7 @@ function adjustROCForDA(baseROC: number, pressureAltitude: number, densityAltitu
  * Adjust TAS for altitude
  * TAS increases approximately 2% per 1000 ft
  */
-function adjustTASForAltitude(baseTAS: number, altitude: number): number {
+function _adjustTASForAltitude(baseTAS: number, altitude: number): number {
   return baseTAS * (1 + (altitude / 1000) * 0.02);
 }
 
@@ -65,7 +65,7 @@ function findPerformanceSegment(
 /**
  * Interpolate ROC between two segments
  */
-function interpolateROC(
+function _interpolateROC(
   lowerSegment: ClimbPerformanceData,
   upperSegment: ClimbPerformanceData,
   altitude: number

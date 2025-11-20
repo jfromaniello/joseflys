@@ -30,7 +30,10 @@ export function FlightPlansClient() {
   const [shareSuccessId, setShareSuccessId] = useState<string | null>(null);
 
   useEffect(() => {
+    // Safe: Synchronizing with external system (localStorage)
+    // Load flight plans on mount
     const plans = loadFlightPlans();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFlightPlans(plans);
     setLoading(false);
   }, []);
@@ -140,7 +143,7 @@ export function FlightPlansClient() {
                 className="text-sm mb-6"
                 style={{ color: "oklch(0.6 0.02 240)" }}
               >
-                Create a leg and click "Save to Flight Plan" to get started
+                Create a leg and click &ldquo;Save to Flight Plan&rdquo; to get started
               </p>
               <Link
                 href="/leg"

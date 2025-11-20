@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 // Common metadata configuration
 export const SITE_CONFIG = {
-  name: "José's Aviation Calculators",
+  name: "José's Aviation Tools",
   author: {
     name: "José Romaniello",
     twitter: "@jfroma",
@@ -92,9 +92,9 @@ export function createPageMetadata({
  */
 export function createRootMetadata(): Metadata {
   return {
-    title: "Aviation Calculators for Pilots | TAS, Course & Flight Planning",
+    title: "Aviation Tools for Flight Planning | TAS, Course & Performance",
     description:
-      "Aviation calculators for pilots. Calculate TAS, compass course, wind correction, distance & bearing, fuel consumption, leg planning. Based on ISA and WGS-84.",
+      "Aviation tools for flight planning, performance, and navigation. Calculate TAS, compass course, wind correction, distance & bearing, fuel consumption, leg planning. Based on ISA and WGS-84.",
     keywords: [
       "aviation calculator",
       "flight planning calculator",
@@ -145,9 +145,9 @@ export function createRootMetadata(): Metadata {
     },
     robots: COMMON_ROBOTS,
     openGraph: {
-      title: "Aviation Calculators for Pilots",
+      title: "Aviation Tools for Flight Planning",
       description:
-        "Calculators for pilots. Leg planner, TAS, compass course, wind correction, distance & bearing, fuel consumption. ISA & WGS-84 based.",
+        "Aviation tools for flight planning and performance. Leg planner, TAS, compass course, wind correction, distance & bearing, fuel consumption. ISA & WGS-84 based.",
       type: "website",
       url: SITE_CONFIG.baseUrl,
       siteName: SITE_CONFIG.name,
@@ -155,9 +155,9 @@ export function createRootMetadata(): Metadata {
     },
     twitter: {
       card: "summary_large_image",
-      title: "Aviation Calculators for Pilots",
+      title: "Aviation Tools for Flight Planning",
       description:
-        "Calculators: Leg planner, TAS, compass course, wind correction, distance & bearing, fuel consumption. ISA & WGS-84 based.",
+        "Aviation tools: Leg planner, TAS, compass course, wind correction, distance & bearing, fuel consumption. ISA & WGS-84 based.",
       creator: SITE_CONFIG.author.twitter,
       site: SITE_CONFIG.author.twitter,
     },
@@ -198,7 +198,7 @@ export function createStructuredData() {
       priceCurrency: "USD",
     },
     description:
-      "Professional aviation calculators for pilots and flight planners. Calculate true airspeed (TAS), compass course, wind correction, geodesic distance, fuel consumption, leg planning with waypoints, and more.",
+      "Professional aviation tools for flight planning, performance, and navigation. Calculate true airspeed (TAS), compass course, wind correction, geodesic distance, fuel consumption, leg planning with waypoints, and more.",
     url: SITE_CONFIG.baseUrl,
     author: {
       "@type": "Person",

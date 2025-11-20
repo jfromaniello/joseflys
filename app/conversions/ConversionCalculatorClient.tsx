@@ -76,12 +76,6 @@ export function ConversionCalculatorClient({
 
   const currentCategory = categories[category];
 
-  // Build OG image URL for download
-  const hasParams = category || value || fromUnit;
-  const ogImageUrl = hasParams
-    ? `/api/og-conversions?cat=${category}&val=${value}&from=${fromUnit}`
-    : undefined;
-
   return (
     <PageLayout currentPage="conversions">
       <CalculatorPageHeader

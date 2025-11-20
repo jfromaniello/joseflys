@@ -14,6 +14,12 @@ const Marker = dynamic(() => import("react-leaflet").then(mod => mod.Marker), { 
 const Polyline = dynamic(() => import("react-leaflet").then(mod => mod.Polyline), { ssr: false });
 const Popup = dynamic(() => import("react-leaflet").then(mod => mod.Popup), { ssr: false });
 
+// Import leaflet for icon creation
+let L: typeof import("leaflet") | null = null;
+if (typeof window !== 'undefined') {
+  import('leaflet').then(mod => { L = mod; });
+}
+
 interface LocationData {
   name: string;
   lat: number;
@@ -282,7 +288,7 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
     }
 
     // Draw waypoint markers (AFTER OSM features so they appear on top)
-    utmLocations.forEach((loc, index) => {
+    utmLocations.forEach((loc) => {
       const [x, y] = toCanvas(loc.utm.easting, loc.utm.northing);
 
       // Different style for fly-over waypoints
@@ -367,6 +373,7 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
     // Draw north indicator
     drawNorthIndicator(ctx, rect, centerLat, centerLon, utmZone);
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [osmData, loading, locations, utmZone, hemisphere, printScale]);
 
   // Draw UTM grid with labels
@@ -377,7 +384,7 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
     minN: number,
     maxN: number,
     toCanvas: (e: number, n: number) => [number, number],
-    rect: { width: number; height: number }
+    _rect: { width: number; height: number }
   ) {
     // Grid interval (10 NM for major, 1 NM for minor)
     // 1 NM = 1852 meters
@@ -474,7 +481,7 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
         drawPolygon(ctx, feature.geometry.coordinates[0], toUTM, toCanvas, CHART_STYLES.features.water);
       } else if (feature.geometry.type === 'MultiPolygon') {
         // Draw each polygon in the multipolygon
-        feature.geometry.coordinates.forEach((polygon: any) => {
+        feature.geometry.coordinates.forEach((polygon: number[][][]) => {
           drawPolygon(ctx, polygon[0], toUTM, toCanvas, CHART_STYLES.features.water);
         });
       } else if (feature.geometry.type === 'LineString') {
@@ -487,7 +494,7 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
       if (feature.geometry.type === 'Polygon') {
         drawPolygonWithPattern(ctx, feature.geometry.coordinates[0], toUTM, toCanvas, CHART_STYLES.features.wetland);
       } else if (feature.geometry.type === 'MultiPolygon') {
-        feature.geometry.coordinates.forEach((polygon: any) => {
+        feature.geometry.coordinates.forEach((polygon: number[][][]) => {
           drawPolygonWithPattern(ctx, polygon[0], toUTM, toCanvas, CHART_STYLES.features.wetland);
         });
       }
@@ -505,7 +512,7 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
       if (feature.geometry.type === 'Polygon') {
         drawPolygon(ctx, feature.geometry.coordinates[0], toUTM, toCanvas, CHART_STYLES.features.beach);
       } else if (feature.geometry.type === 'MultiPolygon') {
-        feature.geometry.coordinates.forEach((polygon: any) => {
+        feature.geometry.coordinates.forEach((polygon: number[][][]) => {
           drawPolygon(ctx, polygon[0], toUTM, toCanvas, CHART_STYLES.features.beach);
         });
       }
@@ -516,7 +523,7 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
       if (feature.geometry.type === 'Polygon') {
         drawPolygon(ctx, feature.geometry.coordinates[0], toUTM, toCanvas, CHART_STYLES.features.mud);
       } else if (feature.geometry.type === 'MultiPolygon') {
-        feature.geometry.coordinates.forEach((polygon: any) => {
+        feature.geometry.coordinates.forEach((polygon: number[][][]) => {
           drawPolygon(ctx, polygon[0], toUTM, toCanvas, CHART_STYLES.features.mud);
         });
       }
@@ -527,7 +534,7 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
       if (feature.geometry.type === 'Polygon') {
         drawPolygon(ctx, feature.geometry.coordinates[0], toUTM, toCanvas, CHART_STYLES.features.salt_pond);
       } else if (feature.geometry.type === 'MultiPolygon') {
-        feature.geometry.coordinates.forEach((polygon: any) => {
+        feature.geometry.coordinates.forEach((polygon: number[][][]) => {
           drawPolygon(ctx, polygon[0], toUTM, toCanvas, CHART_STYLES.features.salt_pond);
         });
       }
@@ -1024,6 +1031,8 @@ function MercatorMap({ locations }: { locations: LocationData[] }) {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    // Safe: Detecting client-side rendering for browser-only Leaflet library
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsClient(true);
   }, []);
 
@@ -1119,9 +1128,7 @@ function MercatorMap({ locations }: { locations: LocationData[] }) {
 
 // Create custom Leaflet icon for waypoints
 function createWaypointIcon(isFlyOver: boolean) {
-  if (typeof window === 'undefined') return undefined;
-
-  const L = require('leaflet');
+  if (typeof window === 'undefined' || !L) return undefined;
 
   const color = isFlyOver ? '#f59e0b' : CHART_STYLES.route.waypoint.fill;
   const shape = isFlyOver ? 'diamond' : 'circle';

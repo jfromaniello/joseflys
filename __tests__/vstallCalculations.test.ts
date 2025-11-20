@@ -3,10 +3,10 @@ import {
   calculateLoadFactor,
   calculateVsWeight,
   calculateVsLoadFactor,
-  calculateTASFromIAS,
   calculateVStall,
   validateInputs,
 } from "../lib/vstallCalculations";
+import { calculateTASFromIAS } from "../lib/tasCalculations";
 
 describe("vstallCalculations", () => {
   describe("calculateLoadFactor", () => {

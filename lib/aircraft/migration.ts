@@ -1,14 +1,15 @@
-import type { AircraftPerformance } from "./types";
+import type { AircraftPerformance, ClimbPerformance } from "./types";
 
 /**
  * Type representing the old aircraft format
+ * This is exported to allow type-safe handling of legacy data
  */
-interface LegacyAircraftPerformance {
+export interface LegacyAircraftPerformance {
   name: string;
   model: string;
   standardWeight?: number;
   maxWeight?: number;
-  climbTable?: any[];
+  climbTable?: ClimbPerformance[];
   deviationTable?: Array<{
     forHeading: number;
     steerHeading: number;
@@ -17,19 +18,22 @@ interface LegacyAircraftPerformance {
 
 /**
  * Checks if an aircraft is in the old format (missing new required fields)
+ * Type guard that narrows the type to LegacyAircraftPerformance
  */
-export function isLegacyAircraft(aircraft: any): boolean {
+export function isLegacyAircraft(
+  aircraft: AircraftPerformance | LegacyAircraftPerformance
+): aircraft is LegacyAircraftPerformance {
   // If aircraft has inheritance, it's NOT legacy (it inherits missing fields)
-  if (aircraft.inherit) {
+  if ('inherit' in aircraft && aircraft.inherit) {
     return false;
   }
 
   // Check if it's missing any of the new required fields
   return (
-    !aircraft.weights ||
-    !aircraft.engine ||
-    !aircraft.limits ||
-    !aircraft.cruiseTable
+    !('weights' in aircraft && aircraft.weights) ||
+    !('engine' in aircraft && aircraft.engine) ||
+    !('limits' in aircraft && aircraft.limits) ||
+    !('cruiseTable' in aircraft && aircraft.cruiseTable)
   );
 }
 

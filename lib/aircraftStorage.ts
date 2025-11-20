@@ -10,6 +10,7 @@ import {
   DeviationEntry,
   PRESET_AIRCRAFT,
   migrateAircraftToNewFormat,
+  LegacyAircraftPerformance,
 } from "./aircraft";
 import { encode, decode } from "cbor-x";
 
@@ -31,6 +32,7 @@ export interface SerializeOptions {
 
 /**
  * Serialize aircraft to compact URL format using CBOR with position-based arrays
+ * ALWAYS serializes in new AircraftPerformance format (legacy is migrated before serialization)
  *
  * Format: [name, model, sw, mw, ct_array, dt_array]
  * - Index 0: name (string)
@@ -42,10 +44,13 @@ export interface SerializeOptions {
  *
  * CBOR binary is then base64url encoded for URL safety
  *
- * @param aircraft - Aircraft to serialize
+ * @param aircraft - Aircraft to serialize (must be in new format)
  * @param options - Optional fields to include/exclude (null means "don't change existing data")
  */
-export function serializeAircraft(aircraft: AircraftPerformance, options?: SerializeOptions): string {
+export function serializeAircraft(
+  aircraft: AircraftPerformance,
+  options?: SerializeOptions
+): string {
   try {
     const opts = {
       includeStandardWeight: false,
@@ -55,9 +60,9 @@ export function serializeAircraft(aircraft: AircraftPerformance, options?: Seria
       ...options,
     };
 
-    // Support both old and new format for backward compatibility
-    const standardWeight = aircraft.weights?.standardWeight ?? (aircraft as any).standardWeight ?? null;
-    const maxWeight = aircraft.weights?.maxGrossWeight ?? (aircraft as any).maxWeight ?? null;
+    // Extract from new format only (legacy is migrated before serialization)
+    const standardWeight = aircraft.weights?.standardWeight ?? null;
+    const maxWeight = aircraft.weights?.maxGrossWeight ?? null;
 
     const compactArray = [
       aircraft.name,  // 0
@@ -103,6 +108,7 @@ export function serializeAircraft(aircraft: AircraftPerformance, options?: Seria
 /**
  * Deserialize aircraft from compact URL format
  * Supports CBOR arrays (current), and legacy tilde-separated formats for backward compatibility
+ * ALWAYS returns migrated AircraftPerformance (never returns legacy format)
  */
 export function deserializeAircraft(serialized: string): AircraftPerformance | null {
   try {
@@ -137,15 +143,15 @@ export function deserializeAircraft(serialized: string): AircraftPerformance | n
           throw new Error("Invalid CBOR structure");
         }
 
-        // Use 'as any' to support backward compatibility with old serialized format
-        const aircraft: any = {
-          name: decoded[0],
-          model: decoded[1],
+        // Deserialize to legacy format (for backward compatibility)
+        const aircraft: Partial<LegacyAircraftPerformance> = {
+          name: decoded[0] as string,
+          model: decoded[1] as string,
         };
 
         // Optional fields (old format for backward compatibility)
-        if (decoded[2] !== null) aircraft.standardWeight = decoded[2];
-        if (decoded[3] !== null) aircraft.maxWeight = decoded[3];
+        if (decoded[2] !== null) aircraft.standardWeight = decoded[2] as number;
+        if (decoded[3] !== null) aircraft.maxWeight = decoded[3] as number;
 
         // Climb table
         if (Array.isArray(decoded[4]) && decoded[4].length > 0) {
@@ -168,8 +174,9 @@ export function deserializeAircraft(serialized: string): AircraftPerformance | n
 
         if (!aircraft.name || !aircraft.model) return null;
 
-        return aircraft;
-      } catch (err) {
+        // Migrate legacy format to new format immediately
+        return migrateAircraftToNewFormat(aircraft as LegacyAircraftPerformance);
+      } catch {
         // Not CBOR format, fall through to legacy format
       }
     }
@@ -183,8 +190,8 @@ export function deserializeAircraft(serialized: string): AircraftPerformance | n
     const standardWeight = parts[2] ? parseFloat(parts[2]) : undefined;
     const maxWeight = parts[3] ? parseFloat(parts[3]) : undefined;
 
-    // Use 'as any' to support backward compatibility with old serialized format
-    const aircraft: any = {
+    // Deserialize legacy tilde-separated format
+    const aircraft: Partial<LegacyAircraftPerformance> = {
       name,
       model,
       standardWeight,
@@ -241,7 +248,8 @@ export function deserializeAircraft(serialized: string): AircraftPerformance | n
     // At least name and model are required
     if (!name || !model) return null;
 
-    return aircraft;
+    // Migrate legacy format to new format immediately
+    return migrateAircraftToNewFormat(aircraft as LegacyAircraftPerformance);
   } catch (error) {
     console.error("Failed to deserialize aircraft:", error);
     return null;
@@ -261,9 +269,9 @@ function hashAircraftData(aircraft: AircraftPerformance): string {
     `${dev.forHeading},${dev.steerHeading}`
   ).join("|") || "";
 
-  // Support both old and new format
-  const standardWeight = aircraft.weights?.standardWeight ?? (aircraft as any).standardWeight ?? "";
-  const maxWeight = aircraft.weights?.maxGrossWeight ?? (aircraft as any).maxWeight ?? "";
+  // Extract from new format only (legacy is migrated before hashing)
+  const standardWeight = aircraft.weights?.standardWeight ?? "";
+  const maxWeight = aircraft.weights?.maxGrossWeight ?? "";
   const dataString = `${standardWeight}|${maxWeight}|${climbData}|${devData}`;
 
   // Simple hash function
@@ -299,9 +307,9 @@ function generateShortId(): string {
  * Check if aircraft matches any preset (to avoid saving presets as custom)
  */
 function isPresetAircraft(aircraft: AircraftPerformance): boolean {
-  // Support both old and new format
-  const aircraftStandardWeight = aircraft.weights?.standardWeight ?? (aircraft as any).standardWeight;
-  const aircraftMaxWeight = aircraft.weights?.maxGrossWeight ?? (aircraft as any).maxWeight;
+  // Extract from new format only (legacy is migrated before checking)
+  const aircraftStandardWeight = aircraft.weights?.standardWeight;
+  const aircraftMaxWeight = aircraft.weights?.maxGrossWeight;
 
   return PRESET_AIRCRAFT.some(preset =>
     preset.model === aircraft.model &&
@@ -334,7 +342,7 @@ export function saveAircraft(aircraft: AircraftPerformance): AircraftPerformance
     return aircraft;
   }
 
-  const stored = loadCustomAircraft();
+  const stored = loadCustomAircraftSync();
   const aircraftHash = hashAircraftData(aircraft);
 
   // Check for exact match (same name and same data)
@@ -384,10 +392,10 @@ export function saveAircraft(aircraft: AircraftPerformance): AircraftPerformance
 }
 
 /**
- * Load all custom aircraft from localStorage
+ * Load all custom aircraft from localStorage (synchronous)
  * Automatically migrates old format to new format
  */
-export function loadCustomAircraft(): AircraftPerformance[] {
+function loadCustomAircraftSync(): AircraftPerformance[] {
   if (!isBrowser) return [];
 
   try {
@@ -413,12 +421,21 @@ export function loadCustomAircraft(): AircraftPerformance[] {
 }
 
 /**
+ * Load all custom aircraft from localStorage (async version for React components)
+ * Returns a Promise to avoid ESLint warnings in useEffect
+ * Future-proofs for async loading from external sources
+ */
+export async function loadCustomAircraft(): Promise<AircraftPerformance[]> {
+  return loadCustomAircraftSync();
+}
+
+/**
  * Delete custom aircraft by model ID
  */
 export function deleteCustomAircraft(model: string): void {
   if (!isBrowser) return;
 
-  const stored = loadCustomAircraft();
+  const stored = loadCustomAircraftSync();
   const filtered = stored.filter(ac => ac.model !== model);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
 }
@@ -433,7 +450,7 @@ export function getAircraftByModel(model: string): ResolvedAircraftPerformance |
   if (preset) return preset as ResolvedAircraftPerformance; // Presets are always complete
 
   // Check custom aircraft
-  const custom = loadCustomAircraft();
+  const custom = loadCustomAircraftSync();
   const aircraft = custom.find(ac => ac.model === model);
 
   // Resolve inheritance before returning
@@ -451,7 +468,7 @@ export function getRawAircraftByModel(model: string): AircraftPerformance | unde
   if (preset) return preset; // Presets are complete but return as-is
 
   // Check custom aircraft - return raw without resolving
-  const custom = loadCustomAircraft();
+  const custom = loadCustomAircraftSync();
   return custom.find(ac => ac.model === model);
 }
 
@@ -475,7 +492,7 @@ export function loadAircraftFromUrl(serialized: string | null): ResolvedAircraft
     return aircraftFromUrl as ResolvedAircraftPerformance;
   }
 
-  const stored = loadCustomAircraft();
+  const stored = loadCustomAircraftSync();
   const existing = stored.find(ac => ac.name === aircraftFromUrl.name);
 
   // Case 1: Aircraft exists with same name but no deviation table
@@ -520,7 +537,7 @@ export function updateAircraft(
 ): AircraftPerformance | null {
   if (!isBrowser) return null;
 
-  const stored = loadCustomAircraft();
+  const stored = loadCustomAircraftSync();
   const index = stored.findIndex(ac => ac.model === model);
 
   if (index === -1) {
@@ -560,16 +577,25 @@ export function updateAircraft(
  * Returns fully resolved aircraft with all required properties
  */
 export function resolveAircraft(aircraft: AircraftPerformance): ResolvedAircraftPerformance {
+  // Check if this is a custom aircraft (not in preset list)
+  const isCustom = !PRESET_AIRCRAFT.some(p => p.model === aircraft.model);
+
   // No inheritance, assume complete and cast
   if (!aircraft.inherit) {
-    return aircraft as ResolvedAircraftPerformance;
+    return {
+      ...aircraft,
+      isCustom,
+    } as ResolvedAircraftPerformance;
   }
 
   // Find parent preset
   const parent = PRESET_AIRCRAFT.find(ac => ac.model === aircraft.inherit);
   if (!parent) {
     console.warn(`Inherited aircraft "${aircraft.inherit}" not found, using aircraft as-is`);
-    return aircraft as ResolvedAircraftPerformance;
+    return {
+      ...aircraft,
+      isCustom,
+    } as ResolvedAircraftPerformance;
   }
 
   // Deep merge: parent properties overridden by aircraft properties
@@ -579,6 +605,7 @@ export function resolveAircraft(aircraft: AircraftPerformance): ResolvedAircraft
     // Basic fields - child overrides parent
     name: aircraft.name,
     model: aircraft.model,
+    isCustom,
 
     // Merge weights object (parent is a preset so weights is always defined)
     weights: {
@@ -634,8 +661,8 @@ export function forkAircraft(aircraft: AircraftPerformance): AircraftPerformance
   const resolved = resolveAircraft(aircraft);
 
   // Find unique name with (Copy) suffix
-  const stored = loadCustomAircraft();
-  let baseName = resolved.name;
+  const stored = loadCustomAircraftSync();
+  const baseName = resolved.name;
   let suffix = 1;
   let newName = `${baseName} (Copy)`;
 
@@ -650,7 +677,7 @@ export function forkAircraft(aircraft: AircraftPerformance): AircraftPerformance
   // Create minimal fork with inheritance
   const forked: Partial<AircraftPerformance> = {
     name: newName,
-    model: `CUSTOM_${generateShortId()}`,
+    model: generateShortId(),
   };
 
   // If forking from a preset, just set inherit
@@ -675,7 +702,7 @@ export function forkAircraft(aircraft: AircraftPerformance): AircraftPerformance
     // Copy everything except name and model
     Object.assign(forked, JSON.parse(JSON.stringify(resolved)));
     forked.name = newName;
-    forked.model = `CUSTOM_${generateShortId()}`;
+    forked.model = generateShortId();
   }
 
   // Save and return (saveAircraft expects AircraftPerformance, but we're using inheritance)

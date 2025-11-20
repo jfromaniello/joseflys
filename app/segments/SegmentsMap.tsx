@@ -66,7 +66,7 @@ function generateGreatCirclePoints(
   for (let i = 0; i <= numPoints; i++) {
     const distance = (totalDistance * i) / numPoints;
     const waypoint = line.Position(distance);
-    let lat = waypoint.lat2 ?? fromLat;
+    const lat = waypoint.lat2 ?? fromLat;
     let lon = waypoint.lon2 ?? fromLon;
 
     // Unwrap longitude to be continuous with previous point
@@ -131,7 +131,6 @@ export function SegmentsMap({
   toName,
   segments,
   orthodromicDistance,
-  totalDistance,
 }: SegmentsMapProps) {
   const fromPosition: [number, number] = [fromLat, fromLon];
 
@@ -144,8 +143,8 @@ export function SegmentsMap({
 
   // Normalize segments to use unwrapped longitudes
   const normalizedSegments = segments.map(seg => {
-    let startLon = normalizeLongitude(seg.startLon, fromLon);
-    let endLon = normalizeLongitude(seg.endLon, startLon);
+    const startLon = normalizeLongitude(seg.startLon, fromLon);
+    const endLon = normalizeLongitude(seg.endLon, startLon);
 
     return {
       ...seg,

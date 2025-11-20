@@ -12,11 +12,9 @@ import {
   calculateNavigationSegments,
   formatHeading,
   formatSegmentDistance,
-  type NavigationSegment,
   type SegmentCalculationResult,
 } from "@/lib/segmentCalculations";
 import { validateCoordinates } from "@/lib/distanceCalculations";
-import { formatCourse } from "@/lib/formatters";
 
 // Dynamically import map components (both use browser-only APIs)
 const SegmentsMap = dynamic(() => import("./SegmentsMap").then(mod => ({ default: mod.SegmentsMap })), {

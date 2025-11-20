@@ -131,7 +131,7 @@ export function IntermediateResults({ results, fuelUnit, trueCourse, magVar }: I
             <div><span className="font-semibold" style={{ color: "oklch(0.75 0.15 300)" }}>MC:</span> Magnetic Course</div>
             <div>
               <span className="font-semibold" style={{ color: "oklch(0.75 0.15 60)" }}>MH:</span> Magnetic Heading
-              <span className="text-[10px] italic block sm:inline sm:ml-1">(aka "True Heading")</span>
+              <span className="text-[10px] italic block sm:inline sm:ml-1">(aka &ldquo;True Heading&rdquo;)</span>
             </div>
             <div><span className="font-semibold" style={{ color: "oklch(0.7 0.15 150)" }}>CC:</span> Compass Course</div>
           </div>

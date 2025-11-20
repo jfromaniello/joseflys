@@ -43,5 +43,7 @@ export {
   migrateAircraftArray,
 } from "./migration";
 
+export type { LegacyAircraftPerformance } from "./migration";
+
 // Backward compatibility type alias
 export type { ClimbPerformance as ClimbPerformanceData } from "./types";

@@ -25,26 +25,33 @@ export default function MyPlanesClient() {
 
   useEffect(() => {
     // Load custom aircraft on mount
-    const loaded = loadCustomAircraft();
-    setCustomAircraft(loaded);
+    loadCustomAircraft().then(loaded => {
+      setCustomAircraft(loaded);
+    });
   }, []);
 
   // Reset page when search query or tab changes
   useEffect(() => {
+    // Safe: Resetting page state when filters change
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentPage(0);
   }, [searchQuery, selectedTab]);
 
   const handleDelete = (model: string) => {
     if (confirm("Are you sure you want to delete this aircraft?")) {
       deleteCustomAircraft(model);
-      setCustomAircraft(loadCustomAircraft());
+      loadCustomAircraft().then(loaded => {
+        setCustomAircraft(loaded);
+      });
     }
   };
 
   const handleFork = (aircraft: AircraftPerformance) => {
     const forked = forkAircraft(aircraft);
     // Reload custom aircraft list
-    setCustomAircraft(loadCustomAircraft());
+    loadCustomAircraft().then(loaded => {
+      setCustomAircraft(loaded);
+    });
     // Navigate to editor
     router.push(`/aircraft/${forked.model}`);
   };
@@ -79,7 +86,9 @@ export default function MyPlanesClient() {
       const content = e.target?.result as string;
       const imported = importAircraftFromJSON(content);
       if (imported) {
-        setCustomAircraft(loadCustomAircraft());
+        loadCustomAircraft().then(loaded => {
+          setCustomAircraft(loaded);
+        });
         alert(`Successfully imported "${imported.name}"`);
       } else {
         alert("Failed to import aircraft. Please check the JSON file.");
@@ -174,7 +183,7 @@ export default function MyPlanesClient() {
         className="hidden"
       />
 
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
         <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-2xl p-6 md:p-8">
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
@@ -199,7 +208,7 @@ export default function MyPlanesClient() {
               </div>
               <button
                 onClick={handleImportClick}
-                className="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer flex items-center gap-2 whitespace-nowrap"
+                className="px-4 py-2 bg-sky-600/30 hover:bg-sky-600/50 text-sky-300 hover:text-sky-200 border border-sky-500/30 rounded-lg text-sm font-medium transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -232,7 +241,7 @@ export default function MyPlanesClient() {
                       {searchQuery ? 'No aircraft match your search.' : 'No custom aircraft yet.'}
                     </p>
                     <p className="text-slate-500 text-sm mt-2">
-                      {searchQuery ? 'Try a different search term.' : 'Fork a preset aircraft or import a JSON file to get started.'}
+                      {searchQuery ? 'Try a different search term.' : 'Clone a preset aircraft or import a JSON file to get started.'}
                     </p>
                   </div>
                 ) : (
@@ -271,25 +280,25 @@ export default function MyPlanesClient() {
                                   <div className="flex gap-2 justify-end">
                                     <button
                                       onClick={() => handleEdit(plane.model)}
-                                      className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors cursor-pointer"
+                                      className="px-3 py-1 bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 hover:text-blue-200 border border-blue-500/30 rounded text-sm transition-all cursor-pointer"
                                     >
                                       Edit
                                     </button>
                                     <button
                                       onClick={() => handleFork(plane)}
-                                      className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded text-sm transition-colors cursor-pointer"
+                                      className="px-3 py-1 bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 hover:text-amber-200 border border-amber-500/30 rounded text-sm transition-all cursor-pointer"
                                     >
-                                      Fork
+                                      Clone
                                     </button>
                                     <button
                                       onClick={() => handleExport(plane)}
-                                      className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm transition-colors cursor-pointer"
+                                      className="px-3 py-1 bg-green-600/30 hover:bg-green-600/50 text-green-300 hover:text-green-200 border border-green-500/30 rounded text-sm transition-all cursor-pointer"
                                     >
                                       Export
                                     </button>
                                     <button
                                       onClick={() => handleDelete(plane.model)}
-                                      className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm transition-colors cursor-pointer"
+                                      className="px-3 py-1 bg-red-600/30 hover:bg-red-600/50 text-red-300 hover:text-red-200 border border-red-500/30 rounded text-sm transition-all cursor-pointer"
                                     >
                                       Delete
                                     </button>
@@ -354,14 +363,14 @@ export default function MyPlanesClient() {
                                 <div className="flex gap-2 justify-end">
                                   <button
                                     onClick={() => handleFork(plane)}
-                                    className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded text-sm transition-colors cursor-pointer"
+                                    className="px-3 py-1 bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 hover:text-amber-200 border border-amber-500/30 rounded text-sm transition-all cursor-pointer"
                                     title="Create a custom copy"
                                   >
-                                    Fork
+                                    Clone
                                   </button>
                                   <button
                                     onClick={() => handleExport(plane)}
-                                    className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm transition-colors cursor-pointer"
+                                    className="px-3 py-1 bg-green-600/30 hover:bg-green-600/50 text-green-300 hover:text-green-200 border border-green-500/30 rounded text-sm transition-all cursor-pointer"
                                     title="Export as JSON"
                                   >
                                     Export

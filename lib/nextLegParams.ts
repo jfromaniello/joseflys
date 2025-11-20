@@ -5,6 +5,7 @@
 
 import type { FlightPlanLeg } from "./flightPlan";
 import type { LegCalculatedResults } from "./flightPlan";
+import { quantizeCoordinate } from "./coordinateUrlParams";
 
 export interface NextLegParams {
   magVar?: string; // WMM convention (positive=E, negative=W)
@@ -69,8 +70,6 @@ export function buildNextLegUrl(params: NextLegParams): string {
 
   // Set "From" location from current leg's "To" location
   if (params.toPoint) {
-    // Use the quantizeCoordinate function from coordinateUrlParams for consistency
-    const { quantizeCoordinate } = require("@/lib/coordinateUrlParams");
     const fromCompact = `${quantizeCoordinate(params.toPoint.lat)}~${quantizeCoordinate(params.toPoint.lon)}~${params.toPoint.name}`;
     urlParams.set("from", fromCompact);
   }

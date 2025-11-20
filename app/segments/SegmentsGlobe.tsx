@@ -28,8 +28,8 @@ export function SegmentsGlobe({
   totalDistance,
 }: SegmentsGlobeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const viewerRef = useRef<any>(null);
-  const cesiumRef = useRef<any>(null);
+  const viewerRef = useRef<import("cesium").Viewer | null>(null);
+  const cesiumRef = useRef<typeof import("cesium") | null>(null);
   const isInitialLoadRef = useRef<boolean>(true);
   const lastRouteRef = useRef<string>("");
   const [viewerReady, setViewerReady] = useState(false);
@@ -47,7 +47,7 @@ export function SegmentsGlobe({
       cesiumRef.current = Cesium;
 
       // Configure Cesium asset paths
-      (window as any).CESIUM_BASE_URL = "/cesium";
+      (window as { CESIUM_BASE_URL?: string }).CESIUM_BASE_URL = "/cesium";
 
       // Create the viewer
       const viewer = new Cesium.Viewer(containerRef.current!, {
@@ -323,13 +323,13 @@ function generateGreatCirclePoints(
   toLat: number,
   toLon: number,
   numPoints: number,
-  Cesium: any
-): any[] {
+  Cesium: typeof import("cesium")
+): import("cesium").Cartesian3[] {
   const line = Geodesic.WGS84.InverseLine(fromLat, fromLon, toLat, toLon);
   const inverse = Geodesic.WGS84.Inverse(fromLat, fromLon, toLat, toLon);
   const totalDistance = inverse.s12 ?? 0;
 
-  const positions: any[] = [];
+  const positions: number[] = [];
 
   for (let i = 0; i <= numPoints; i++) {
     const distance = (totalDistance * i) / numPoints;
@@ -344,7 +344,7 @@ function generateGreatCirclePoints(
 }
 
 // Generate color gradient for segments (cyan to purple)
-function getSegmentColor(index: number, total: number, Cesium: any): any {
+function getSegmentColor(index: number, total: number, Cesium: typeof import("cesium")): import("cesium").Color {
   const hue = 180 + (280 - 180) * (index / Math.max(total - 1, 1));
   const color = hslToRgb(hue / 360, 0.7, 0.5);
   return Cesium.Color.fromBytes(color.r, color.g, color.b, 255);

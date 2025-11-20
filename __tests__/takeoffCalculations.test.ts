@@ -33,6 +33,133 @@ describe("takeoffCalculations", () => {
       expect(results.vSpeeds.vs1IAS).toBeCloseTo(testAircraft.limits.vs, 1);
     });
 
+    it("should use actual OAT for TAS calculations, not ISA temperature", () => {
+      const baseInputs: TakeoffInputs = {
+        aircraft: testAircraft,
+        weight: 1670,
+        pressureAltitude: 5000,
+        densityAltitude: 5000,
+        oat: 15, // ISA temperature at sea level
+        runwayLength: 3000,
+        surfaceType: "dry-asphalt",
+        runwaySlope: 0,
+        headwindComponent: 0,
+        obstacleHeight: 50,
+      };
+
+      // Hot day (ISA + 15°C)
+      const hotDay: TakeoffInputs = {
+        ...baseInputs,
+        oat: 20, // Much hotter than ISA at 5000ft
+        densityAltitude: 7500, // Higher DA due to hot temp
+      };
+
+      // Cold day (ISA - 15°C)
+      const coldDay: TakeoffInputs = {
+        ...baseInputs,
+        oat: -10, // Much colder than ISA at 5000ft
+        densityAltitude: 2500, // Lower DA due to cold temp
+      };
+
+      const hotResults = calculateTakeoffPerformance(hotDay);
+      const coldResults = calculateTakeoffPerformance(coldDay);
+
+      // Hot day should have higher TAS than cold day at same pressure altitude
+      // because air is less dense (higher temperature)
+      expect(hotResults.vSpeeds.vrTAS).toBeGreaterThan(coldResults.vSpeeds.vrTAS);
+      expect(hotResults.vSpeeds.vxTAS).toBeGreaterThan(coldResults.vSpeeds.vxTAS);
+      expect(hotResults.vSpeeds.vyTAS).toBeGreaterThan(coldResults.vSpeeds.vyTAS);
+
+      // IAS should be the same (only depends on weight)
+      expect(hotResults.vSpeeds.vrIAS).toBeCloseTo(coldResults.vSpeeds.vrIAS, 1);
+    });
+
+    it("should calculate accurate TAS on hot day at altitude", () => {
+      const inputs: TakeoffInputs = {
+        aircraft: testAircraft,
+        weight: 1670,
+        pressureAltitude: 8000,
+        densityAltitude: 12000, // Hot day: DA much higher than PA
+        oat: 30, // Very hot
+        runwayLength: 5000,
+        surfaceType: "dry-asphalt",
+        runwaySlope: 0,
+        headwindComponent: 0,
+        obstacleHeight: 50,
+      };
+
+      const results = calculateTakeoffPerformance(inputs);
+
+      // On a hot day at 8000 ft PA with 30°C OAT, TAS should be significantly higher than IAS
+      const tasIncrease = ((results.vSpeeds.vrTAS - results.vSpeeds.vrIAS) / results.vSpeeds.vrIAS) * 100;
+
+      // At 8000 ft PA with hot temp, expect at least 18% TAS increase
+      expect(tasIncrease).toBeGreaterThan(18);
+      expect(results.vSpeeds.vrTAS).toBeGreaterThan(results.vSpeeds.vrIAS * 1.18);
+    });
+
+    it("should calculate accurate TAS on cold day at altitude", () => {
+      const inputs: TakeoffInputs = {
+        aircraft: testAircraft,
+        weight: 1670,
+        pressureAltitude: 8000,
+        densityAltitude: 5000, // Cold day: DA lower than PA
+        oat: -20, // Very cold
+        runwayLength: 5000,
+        surfaceType: "dry-asphalt",
+        runwaySlope: 0,
+        headwindComponent: 0,
+        obstacleHeight: 50,
+      };
+
+      const results = calculateTakeoffPerformance(inputs);
+
+      // On a cold day, TAS increase should be less than hot day at same PA
+      const tasIncrease = ((results.vSpeeds.vrTAS - results.vSpeeds.vrIAS) / results.vSpeeds.vrIAS) * 100;
+
+      // At 8000 ft PA with cold temp, expect around 10-15% TAS increase (less than hot day)
+      expect(tasIncrease).toBeGreaterThan(8);
+      expect(tasIncrease).toBeLessThan(18);
+    });
+
+    it("should show different TAS at same density altitude with different OAT", () => {
+      // Two scenarios with same DA but achieved differently
+
+      // Scenario 1: High PA, cold temperature (ISA-10)
+      const highPACold: TakeoffInputs = {
+        aircraft: testAircraft,
+        weight: 1670,
+        pressureAltitude: 8000,
+        densityAltitude: 6000, // Cold reduces DA
+        oat: -12, // Cold day (ISA is -2°C at 8000 ft)
+        runwayLength: 5000,
+        surfaceType: "dry-asphalt",
+        runwaySlope: 0,
+        headwindComponent: 0,
+        obstacleHeight: 50,
+      };
+
+      // Scenario 2: Low PA, hot temperature (same DA)
+      const lowPAHot: TakeoffInputs = {
+        ...highPACold,
+        pressureAltitude: 4000,
+        densityAltitude: 6000, // Same DA
+        oat: 18, // Hot day at low altitude creates same DA (ISA is 7°C at 4000 ft)
+      };
+
+      const highPAColdResults = calculateTakeoffPerformance(highPACold);
+      const lowPAHotResults = calculateTakeoffPerformance(lowPAHot);
+
+      // Even though DA is the same (6000 ft), TAS should differ because PA and temperature differ
+      // Higher PA (with colder temp) should have higher TAS than lower PA (with hotter temp)
+      // because TAS is primarily driven by pressure altitude
+      expect(highPAColdResults.vSpeeds.vrTAS).toBeGreaterThan(lowPAHotResults.vSpeeds.vrTAS);
+
+      // This proves we're using actual OAT and PA, not just density altitude for TAS
+      const tasDifference = highPAColdResults.vSpeeds.vrTAS - lowPAHotResults.vSpeeds.vrTAS;
+      expect(tasDifference).toBeGreaterThan(0.5); // Should be noticeable difference
+    });
+
     it("should calculate higher VS1 at heavier weight", () => {
       const lightWeight: TakeoffInputs = {
         aircraft: testAircraft,

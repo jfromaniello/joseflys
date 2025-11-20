@@ -176,7 +176,7 @@ export function RouteCalculatorClient({
       showDropdown: false,
     }];
   });
-  const [showCopiedMessages, setShowCopiedMessages] = useState<Record<string, { distance: boolean; bearing: boolean }>>({});
+  const [_showCopiedMessages, setShowCopiedMessages] = useState<Record<string, { distance: boolean; bearing: boolean }>>({});
   const [showCopiedWaypoints, setShowCopiedWaypoints] = useState(false);
 
   // Debounced search for "from" location
@@ -251,6 +251,7 @@ export function RouteCalculatorClient({
     });
 
     return () => timers.forEach(timer => clearTimeout(timer));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toLocations.map(loc => loc.searchQuery).join(','), inputMode]);
 
   // Update URL when locations change
@@ -326,7 +327,7 @@ export function RouteCalculatorClient({
       : null;
 
     // Calculate magnetic heading from true heading - declination
-    // Aviation mnemonics: "East is Least, West is Best"
+    // Aviation mnemonics: 'East is Least, West is Best'
     // WMM Convention: positive = East, negative = West
     // Formula: magneticHeading = trueHeading - declination
     // Example: TH=12°, VAR=7.5°W(-7.5): MH = 12 - (-7.5) = 19.5° ✓
@@ -420,7 +421,7 @@ export function RouteCalculatorClient({
     ));
   }, []);
 
-  const handleCopyDistance = async (id: string, distance: number) => {
+  const _handleCopyDistance = async (id: string, distance: number) => {
     try {
       await navigator.clipboard.writeText(Math.round(distance).toString());
       setShowCopiedMessages(prev => ({ ...prev, [id]: { ...prev[id], distance: true } }));
@@ -432,7 +433,7 @@ export function RouteCalculatorClient({
     }
   };
 
-  const handleCopyBearing = async (id: string, bearing: number) => {
+  const _handleCopyBearing = async (id: string, bearing: number) => {
     try {
       await navigator.clipboard.writeText(Math.round(bearing).toString().padStart(3, '0'));
       setShowCopiedMessages(prev => ({ ...prev, [id]: { ...prev[id], bearing: true } }));
@@ -463,7 +464,7 @@ export function RouteCalculatorClient({
   };
 
   // Build share URL (using first destination for simplicity)
-  const shareUrl = (() => {
+  const _shareUrl = (() => {
     if (typeof window === "undefined") return "";
     const params = new URLSearchParams();
     if (fromLat) params.set("fromLat", fromLat);
@@ -1110,8 +1111,8 @@ export function RouteCalculatorClient({
               style={{ color: "oklch(0.6 0.02 240)" }}
             >
               <span className="font-semibold">Note:</span> This calculator uses
-              the WGS-84 geodesic algorithm (Karney's method via GeographicLib) to compute
-              precise distances on Earth's ellipsoid. This is more accurate than the Haversine
+              the WGS-84 geodesic algorithm (Karney&apos;s method via GeographicLib) to compute
+              precise distances on Earth&apos;s ellipsoid. This is more accurate than the Haversine
               formula, especially for long distances and polar routes. The
               initial bearing is accurate at the departure point. For longer routes, consider
               that the bearing will change continuously along the geodesic
