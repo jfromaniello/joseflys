@@ -14,10 +14,12 @@ interface PlanningPageProps {
     th?: string;
     tm?: string;
     ff?: string;
-    fu?: string;
+    fused?: string;
     fth?: string;
     ftm?: string;
     fa?: string;
+    su?: string;
+    funit?: string;
   }>;
 }
 
@@ -47,10 +49,12 @@ export default async function PlanningPage({ searchParams }: PlanningPageProps) 
         initialTh={params.th}
         initialTm={params.tm}
         initialFf={params.ff}
-        initialFu={params.fu}
+        initialFu={params.fused}
         initialFth={params.fth}
         initialFtm={params.ftm}
         initialFa={params.fa}
+        initialSpeedUnit={params.su}
+        initialFuelUnit={params.funit}
       />
     </Suspense>
   );

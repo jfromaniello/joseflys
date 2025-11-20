@@ -59,6 +59,12 @@ select {
   background-size: 1.25rem 1.25rem;
 }
 
+/* Select without arrow - for compact unit selectors */
+select.select-no-arrow {
+  background-image: none !important;
+  padding-right: 0.75rem !important;
+}
+
 /* Toast notification animation */
 @keyframes slide-up {
   from {
