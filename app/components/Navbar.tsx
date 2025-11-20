@@ -183,8 +183,8 @@ export function Navbar({ currentPage }: NavbarProps) {
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-gray-800 print:hidden">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-14">
+        <div className="max-w-4xl mx-auto px-3 sm:px-6">
+          <div className="flex items-center justify-between h-14 gap-2">
             {/* Logo / Brand */}
             <Link href="/" className="flex items-center gap-2.5 group shrink-0 cursor-pointer">
               <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-sky-500/20 border border-sky-500/30 group-hover:bg-sky-500/30 transition-colors">
@@ -387,11 +387,11 @@ export function Navbar({ currentPage }: NavbarProps) {
             {/* Mobile menu button */}
             <button
               onClick={() => setIsMobileMenuOpen(true)}
-              className="md:hidden flex items-center gap-2 px-3 py-1.5 rounded-lg text-gray-300 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer"
+              className="md:hidden flex items-center justify-center p-1.5 rounded-lg text-gray-300 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer shrink-0"
+              aria-label="Open menu"
             >
-              <span className="text-sm font-medium">{currentPageData?.name || 'Menu'}</span>
               <svg
-                className="w-5 h-5"
+                className="w-6 h-6"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
