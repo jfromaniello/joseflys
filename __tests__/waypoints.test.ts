@@ -372,6 +372,7 @@ describe("calculateWaypoints", () => {
 
   // ===== Descent Phase =====
   describe("Waypoints with descent phase", () => {
+    // @ts-expect-error: Testing with descentPhase
     const descentPhase: CourseCalculations["descentPhase"] = {
       distance: 10,
       groundSpeed: 90,

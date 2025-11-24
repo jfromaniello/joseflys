@@ -143,7 +143,8 @@ export function calculateLegWaypoints(
 
   if (leg.from && leg.to && leg.checkpoints && leg.checkpoints.length > 0) {
     // We have checkpoints with coordinates - convert to waypoint format
-    waypoints = convertCheckpointsToWaypoints(leg.from, leg.checkpoints, leg.to);
+    // Pass leg.dist so the last waypoint uses the manual distance value
+    waypoints = convertCheckpointsToWaypoints(leg.from, leg.checkpoints, leg.to, leg.dist);
   }
 
   if (waypoints.length === 0) return [];
@@ -186,7 +187,8 @@ export function calculateLegWaypoints(
 function convertCheckpointsToWaypoints(
   from: { lat?: number; lon?: number; name: string },
   checkpoints: Array<{ lat?: number; lon?: number; name: string }>,
-  to: { lat?: number; lon?: number; name: string }
+  to: { lat?: number; lon?: number; name: string },
+  manualDistance?: number
 ): Array<{ name: string; distance: number }> {
   if (!from.lat || !from.lon || !to.lat || !to.lon) {
     return [];
@@ -215,12 +217,15 @@ function convertCheckpointsToWaypoints(
   }
 
   // Add final destination as last waypoint
+  // If user has specified a manual distance value, use that for the last waypoint
+  // Otherwise, use the geodesic cumulative distance
   const finalSegmentDist = calculateHaversineDistance(prevLat, prevLon, to.lat, to.lon);
   cumulativeDistance += finalSegmentDist;
 
+  const finalDistance = manualDistance && manualDistance > 0 ? manualDistance : cumulativeDistance;
   waypoints.push({
     name: to.name,
-    distance: cumulativeDistance,
+    distance: finalDistance,
   });
 
   return waypoints;
