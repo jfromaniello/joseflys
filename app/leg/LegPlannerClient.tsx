@@ -632,7 +632,7 @@ export function LegPlannerClient({
     }
 
     // Get last checkpoint distance (excluding destination)
-    const checkpointsOnly = waypointsForCalculation.filter((wp, idx) =>
+    const checkpointsOnly = waypointsForCalculation.filter((_wp, idx) =>
       idx < waypointsForCalculation.length - 1
     );
     const lastCheckpoint = checkpointsOnly.length > 0

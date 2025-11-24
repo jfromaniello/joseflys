@@ -33,12 +33,6 @@ describe("Climb and Descent Navigation Parameters", () => {
 
     // Magnetic heading should be different from cruise MH due to different WCA
     expect(result.climbPhase!.magneticHeading).not.toBe(result.magneticHeading);
-
-    console.log("Climb Phase Navigation:");
-    console.log(`  WCA: ${result.climbPhase!.windCorrectionAngle.toFixed(1)}°`);
-    console.log(`  MH: ${Math.round(result.climbPhase!.magneticHeading)}°`);
-    console.log(`  Dev: ${result.climbPhase!.compassDeviation.toFixed(1)}°`);
-    console.log(`  CC: ${Math.round(result.climbPhase!.compassCourse)}°`);
   });
 
   it("should calculate WCA, MH, Dev, CC for descent phase with wind", () => {
@@ -72,12 +66,6 @@ describe("Climb and Descent Navigation Parameters", () => {
 
     // Magnetic heading should be different from cruise MH due to different WCA
     expect(result.descentPhase!.magneticHeading).not.toBe(result.magneticHeading);
-
-    console.log("Descent Phase Navigation:");
-    console.log(`  WCA: ${result.descentPhase!.windCorrectionAngle.toFixed(1)}°`);
-    console.log(`  MH: ${Math.round(result.descentPhase!.magneticHeading)}°`);
-    console.log(`  Dev: ${result.descentPhase!.compassDeviation.toFixed(1)}°`);
-    console.log(`  CC: ${Math.round(result.descentPhase!.compassCourse)}°`);
   });
 
   it("should have zero WCA when no wind in climb phase", () => {
@@ -192,16 +180,5 @@ describe("Climb and Descent Navigation Parameters", () => {
     expect(result.climbPhase!.windCorrectionAngle).not.toBe(result.windCorrectionAngle);
     expect(result.descentPhase!.windCorrectionAngle).not.toBe(result.windCorrectionAngle);
     expect(result.climbPhase!.windCorrectionAngle).not.toBe(result.descentPhase!.windCorrectionAngle);
-
-    console.log("\nMulti-Phase Navigation:");
-    console.log("Climb Phase:");
-    console.log(`  WCA: ${result.climbPhase!.windCorrectionAngle.toFixed(1)}°`);
-    console.log(`  MH: ${Math.round(result.climbPhase!.magneticHeading)}°`);
-    console.log("Cruise Phase:");
-    console.log(`  WCA: ${result.windCorrectionAngle.toFixed(1)}°`);
-    console.log(`  MH: ${Math.round(result.magneticHeading)}°`);
-    console.log("Descent Phase:");
-    console.log(`  WCA: ${result.descentPhase!.windCorrectionAngle.toFixed(1)}°`);
-    console.log(`  MH: ${Math.round(result.descentPhase!.magneticHeading)}°`);
   });
 });
