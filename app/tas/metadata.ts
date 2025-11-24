@@ -1,26 +1,7 @@
 import type { Metadata } from "next";
 import { createPageMetadata } from "@/lib/metadata";
 
-interface TASPageProps {
-  searchParams: Promise<{
-    cas?: string;
-    oat?: string;
-    alt?: string;
-  }>;
-}
-
-export async function generateMetadata({ searchParams }: TASPageProps): Promise<Metadata> {
-  const params = await searchParams;
-  const cas = params.cas || "";
-  const oat = params.oat || "";
-  const alt = params.alt || "";
-
-  // Build dynamic OG image URL with query params
-  const hasParams = cas || oat || alt;
-  const ogImageUrl = hasParams
-    ? `/api/og-tas?cas=${cas}&oat=${oat}&alt=${alt}`
-    : undefined;
-
+export async function generateMetadata(): Promise<Metadata> {
   return createPageMetadata({
     title: "TAS Calculator | True Airspeed from CAS, OAT & Altitude",
     description: "Calculate True Airspeed (TAS) from Calibrated Airspeed, Outside Air Temperature, and Pressure Altitude. ISA-based calculator for pilots.",
@@ -45,6 +26,6 @@ export async function generateMetadata({ searchParams }: TASPageProps): Promise<
       "E6B calculator",
     ],
     path: "/tas",
-    ogImage: ogImageUrl,
+    // ogImage auto-detected from opengraph-image.tsx
   });
 }

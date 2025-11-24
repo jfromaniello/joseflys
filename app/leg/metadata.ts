@@ -23,20 +23,7 @@ interface LegPageProps {
 
 export async function generateMetadata({ searchParams }: LegPageProps): Promise<Metadata> {
   const params = await searchParams;
-  const wd = params.wd || "";
-  const ws = params.ws || "";
-  const th = params.th || "";
-  const tas = params.tas || "";
-  const md = params.md || "";
-  const dist = params.dist || "";
-  const ff = params.ff || "";
   const desc = params.desc || "";
-
-  // Build dynamic OG image URL with query params
-  const hasParams = wd || ws || th || tas;
-  const ogImageUrl = hasParams
-    ? `/api/og-course?wd=${wd}&ws=${ws}&th=${th}&tas=${tas}&md=${md}&dist=${dist}&ff=${ff}${desc ? `&desc=${encodeURIComponent(desc)}` : ""}`
-    : undefined;
 
   const title = desc
     ? `${desc} | ${SITE_CONFIG.name}`
@@ -68,6 +55,6 @@ export async function generateMetadata({ searchParams }: LegPageProps): Promise<
       "flight computer",
     ],
     path: "/leg",
-    ogImage: ogImageUrl,
+    // ogImage auto-detected from opengraph-image.tsx
   });
 }

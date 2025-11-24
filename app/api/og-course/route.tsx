@@ -1,8 +1,5 @@
 import { ImageResponse } from 'next/og';
 import { NextRequest } from 'next/server';
-import { calculateCourse } from '@/lib/courseCalculations';
-import { calculateCompassCourse } from '@/lib/compassDeviation';
-import { decompressFromUrl } from '@/lib/urlCompression';
 
 export const runtime = 'edge';
 

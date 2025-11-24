@@ -136,10 +136,11 @@ export function AircraftSearchSelector({
     }
   }, [selectedIndex]);
 
-  // Reset selected index when search query changes
-  useEffect(() => {
-    setSelectedIndex(-1);
-  }, [searchQuery]);
+  // // Reset selected index when search query changes
+  // useEffect(() => {
+  //   // eslint-disable-next-line react-hooks/set-state-in-effect
+  //   setSelectedIndex(-1);
+  // }, [searchQuery]);
 
   return (
     <div>
@@ -200,7 +201,7 @@ export function AircraftSearchSelector({
                     <div className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-400 bg-slate-800 sticky top-0 z-10">
                       Preset Aircraft
                     </div>
-                    {filteredPresets.map((ac, idx) => {
+                    {filteredPresets.map((ac) => {
                       const globalIndex = filteredAircraft.indexOf(ac);
                       const isSelected = globalIndex === selectedIndex;
                       return (
@@ -231,7 +232,7 @@ export function AircraftSearchSelector({
                     <div className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-400 bg-slate-800 sticky top-0 z-10">
                       Custom Aircraft
                     </div>
-                    {filteredCustoms.map((ac, idx) => {
+                    {filteredCustoms.map((ac) => {
                       const globalIndex = filteredAircraft.indexOf(ac);
                       const isSelected = globalIndex === selectedIndex;
                       return (

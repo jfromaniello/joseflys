@@ -8,7 +8,7 @@ import { ShareButton } from "../components/ShareButton";
 import { Tooltip } from "../components/Tooltip";
 import { AtmosphericConditionsInputs, type AtmosphericConditionsData } from "../components/AtmosphericConditionsInputs";
 import { AircraftSearchSelector } from "../components/AircraftSearchSelector";
-import { PRESET_AIRCRAFT, ResolvedAircraftPerformance } from "@/lib/aircraft";
+import { ResolvedAircraftPerformance } from "@/lib/aircraft";
 import { calculateVStall, validateInputs, ValidationError } from "@/lib/vstallCalculations";
 import { getAircraftByModel, loadCustomAircraft, resolveAircraft } from "@/lib/aircraftStorage";
 

@@ -18,7 +18,7 @@ import {
 import { loadAircraftFromUrl, serializeAircraft, getAircraftByModel, loadCustomAircraft, resolveAircraft } from "@/lib/aircraftStorage";
 import { formatDistance } from "@/lib/formatters";
 import { TakeoffVisualization } from "./TakeoffVisualization";
-import { TAKEOFF_EXAMPLES, type TakeoffExample } from "@/lib/takeoffExamples";
+import { TAKEOFF_EXAMPLES } from "@/lib/takeoffExamples";
 
 interface TakeoffCalculatorClientProps {
   initialAircraft: string;

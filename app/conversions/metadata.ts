@@ -13,14 +13,6 @@ interface ConversionsPageProps {
 export async function generateMetadata({ searchParams }: ConversionsPageProps): Promise<Metadata> {
   const params = await searchParams;
   const category = (params.cat || "distance") as Category;
-  const value = params.val || "";
-  const fromUnit = params.from || "";
-
-  // Build dynamic OG image URL with query params
-  const hasParams = category || value || fromUnit;
-  const ogImageUrl = hasParams
-    ? `/api/og-conversions?cat=${category}&val=${value}&from=${fromUnit}`
-    : undefined;
 
   const categoryName = categories[category as Category]?.name || "Unit";
 
@@ -60,6 +52,6 @@ export async function generateMetadata({ searchParams }: ConversionsPageProps): 
       "flight computer",
     ],
     path: "/conversions",
-    ogImage: ogImageUrl,
+    // ogImage auto-detected from opengraph-image.tsx
   });
 }

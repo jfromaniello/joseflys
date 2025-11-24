@@ -23,24 +23,14 @@ interface CoursePageProps {
 
 export async function generateMetadata({ searchParams }: CoursePageProps): Promise<Metadata> {
   const params = await searchParams;
-  const wd = params.wd || "";
-  const ws = params.ws || "";
-  const th = params.th || "";
-  const tas = params.tas || "";
-  const md = params.md || "";
-  const dist = params.dist || "";
-  const ff = params.ff || "";
   const desc = params.desc || "";
-
-  // Build dynamic OG image URL with query params
-  const hasParams = wd || ws || th || tas;
-  const ogImageUrl = hasParams
-    ? `/api/og-course?wd=${wd}&ws=${ws}&th=${th}&tas=${tas}&md=${md}&dist=${dist}&ff=${ff}${desc ? `&desc=${encodeURIComponent(desc)}` : ""}`
-    : undefined;
 
   const title = desc
     ? `${desc} | ${SITE_CONFIG.name}`
     : "Course Calculator - Compass Course & Ground Speed | José's Aviation Calculators";
+
+  // Only use dynamic OG image if there's a custom description
+  const ogImageUrl = desc ? `/api/og-course?desc=${encodeURIComponent(desc)}` : undefined;
 
   return createPageMetadata({
     title,
@@ -71,6 +61,6 @@ export async function generateMetadata({ searchParams }: CoursePageProps): Promi
       "flight computer",
     ],
     path: "/course",
-    ogImage: ogImageUrl,
+    ogImage: ogImageUrl, // undefined = auto-detect opengraph-image.tsx
   });
 }
