@@ -577,6 +577,102 @@ describe("calculateWaypoints", () => {
       const topOfDescent = results.find(r => r.name === "Top of Descent");
       expect(topOfDescent?.distance).toBe(60);
     });
+
+    it("should handle multiple checkpoints before descent (real user case)", () => {
+      // Real case from user:
+      // - Total: 119.4 NM
+      // - Descent: 15 NM (starts at 104.4)
+      // - Descent Fuel: 1.2 GAL
+      // - Cruise GS: ~95 kt, Fuel: 5.7 GPH
+      // - 3 checkpoints before descent start
+      const waypoints: Waypoint[] = [
+        { name: "Checkpoint 1", distance: 35 },
+        { name: "Checkpoint 2", distance: 70 },
+        { name: "Checkpoint 3", distance: 95 },
+      ];
+
+      const descentPhaseReal: CourseCalculations["descentPhase"] = {
+        distance: 15,
+        groundSpeed: 93,
+        time: 0.1613, // 15 / 93 hours
+        fuelUsed: 1.2,
+      };
+
+      const results = calculateWaypoints(waypoints, 95, 5.7, undefined, 119.4, undefined, undefined, descentPhaseReal);
+
+      // Should have: CP1, CP2, CP3, Descent Started, Landed
+      expect(results).toHaveLength(5);
+
+      const descentStarted = results.find(r => r.name === "Descent Started");
+      expect(descentStarted).toBeDefined();
+      expect(descentStarted!.distance).toBeCloseTo(104.4, 1); // 119.4 - 15
+
+      const landed = results.find(r => r.name === "Landed");
+      expect(landed).toBeDefined();
+      expect(landed!.distance).toBeCloseTo(119.4, 1);
+
+      // CRITICAL: distanceSinceLast should be exactly 15 NM (descent distance)
+      expect(landed!.distanceSinceLast).toBeCloseTo(15, 1);
+
+      // CRITICAL: fuelSinceLast should be exactly 1.2 GAL (descent fuel)
+      expect(landed!.fuelSinceLast).toBeCloseTo(1.2, 1);
+    });
+
+    it("should handle descent with elapsedDistance (multi-leg flight)", () => {
+      // Test if elapsedDistance causes the +1 NM bug
+      const waypoints: Waypoint[] = [
+        { name: "Checkpoint 3", distance: 95 },
+      ];
+
+      const descentPhaseReal: CourseCalculations["descentPhase"] = {
+        distance: 15,
+        groundSpeed: 93,
+        time: 0.1613,
+        fuelUsed: 1.2,
+      };
+
+      const flightParams = {
+        elapsedDistance: 158, // From user URL: prevElapsed
+        previousFuelUsed: 11.3,
+        departureTime: "1000",
+        elapsedTime: 113,
+      };
+
+      const results = calculateWaypoints(waypoints, 95, 5.7, flightParams, 119.4, undefined, undefined, descentPhaseReal);
+
+      const landed = results.find(r => r.name === "Landed");
+      expect(landed).toBeDefined();
+
+      // These should still be correct even with elapsedDistance
+      expect(landed!.distanceSinceLast).toBeCloseTo(15, 1);
+      expect(landed!.fuelSinceLast).toBeCloseTo(1.2, 1);
+    });
+
+    it("should handle manual waypoint at destination using exact totalDistance", () => {
+      // When manual waypoint is exactly at totalDistance (as controlled by LegPlannerClient)
+      const waypoints: Waypoint[] = [
+        { name: "Checkpoint 1", distance: 35 },
+        { name: "Checkpoint 2", distance: 70 },
+        { name: "Checkpoint 3", distance: 95 },
+        { name: "SACD", distance: 119.4 }, // Exactly at totalDistance
+      ];
+
+      const descentPhaseReal: CourseCalculations["descentPhase"] = {
+        distance: 15,
+        groundSpeed: 93,
+        time: 0.1613,
+        fuelUsed: 1.2,
+      };
+
+      const results = calculateWaypoints(waypoints, 95, 5.7, undefined, 119.4, undefined, undefined, descentPhaseReal);
+
+      const sacd = results.find(r => r.name === "SACD");
+      expect(sacd).toBeDefined();
+
+      // Should use exact descent values
+      expect(sacd!.distanceSinceLast).toBeCloseTo(15, 1);
+      expect(sacd!.fuelSinceLast).toBeCloseTo(1.2, 1);
+    });
   });
 
   // ===== Edge Cases =====

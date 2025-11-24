@@ -612,17 +612,61 @@ export function LegPlannerClient({
       }
 
       // Add end point
+      // If user has specified a manual distance value, use that for the last waypoint
+      // Otherwise, use the geodesic cumulative distance
       const finalSegmentDist = calculateHaversineDistance(prevLat, prevLon, toPoint.lat, toPoint.lon);
       cumulativeDistance += finalSegmentDist;
-      converted.push({ name: toPoint.name, distance: cumulativeDistance });
+
+      const finalDistance = dist && dist > 0 ? dist : cumulativeDistance;
+      converted.push({ name: toPoint.name, distance: finalDistance });
 
       return converted;
     }
     return waypoints;
-  }, [fromPoint, toPoint, checkpoints, waypoints]);
+  }, [fromPoint, toPoint, checkpoints, waypoints, dist]);
+
+  // Validation: Check for invalid distance configurations
+  const distanceValidationError = useMemo(() => {
+    if (!dist || dist <= 0) {
+      return null; // No validation if distance is not set
+    }
+
+    // Get last checkpoint distance (excluding destination)
+    const checkpointsOnly = waypointsForCalculation.filter((wp, idx) =>
+      idx < waypointsForCalculation.length - 1
+    );
+    const lastCheckpoint = checkpointsOnly.length > 0
+      ? checkpointsOnly[checkpointsOnly.length - 1]
+      : null;
+
+    // Validation 1: Distance must be greater than last checkpoint
+    if (lastCheckpoint && dist <= lastCheckpoint.distance) {
+      return `Distance must be greater than last checkpoint (${lastCheckpoint.distance.toFixed(1)} NM)`;
+    }
+
+    // Validation 2: If descent phase exists, descent start must be after last checkpoint
+    const descentDist = descentDistance ? parseFloat(descentDistance) : undefined;
+    if (lastCheckpoint && dist && descentDist && descentDist > 0) {
+      const descentStart = dist - descentDist;
+      if (descentStart <= lastCheckpoint.distance) {
+        const minDist = lastCheckpoint.distance + descentDist;
+        return `Distance too short for descent phase. Minimum ${minDist.toFixed(1)} NM required (last checkpoint at ${lastCheckpoint.distance.toFixed(1)} NM + descent ${descentDist.toFixed(1)} NM)`;
+      }
+    }
+
+    // Validation 3: No checkpoint should be beyond total distance
+    const checkpointBeyondDistance = waypointsForCalculation.find(
+      (wp, idx) => idx < waypointsForCalculation.length - 1 && wp.distance > dist
+    );
+    if (checkpointBeyondDistance) {
+      return `Checkpoint "${checkpointBeyondDistance.name}" (${checkpointBeyondDistance.distance.toFixed(1)} NM) is beyond total distance (${dist.toFixed(1)} NM)`;
+    }
+
+    return null;
+  }, [dist, waypointsForCalculation, descentDistance]);
 
   const waypointResults =
-    results && dist !== undefined
+    results && dist !== undefined && !distanceValidationError
       ? calculateWaypoints(waypointsForCalculation, results.groundSpeed, ff, flightParams, dist, results.climbPhase, ff, results.descentPhase)
       : [];
 
@@ -912,7 +956,11 @@ export function LegPlannerClient({
                     type="number"
                     value={distance}
                     onChange={(e) => setDistance(e.target.value)}
-                    className="w-full px-4 pr-10 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white text-right"
+                    className={`w-full px-4 pr-10 py-3 rounded-xl focus:outline-none transition-all text-lg bg-slate-900/50 border-2 text-white text-right ${
+                      distanceValidationError
+                        ? "border-red-500 focus:ring-2 focus:ring-red-500/50"
+                        : "border-gray-600 focus:ring-2 focus:ring-sky-500/50"
+                    }`}
                     placeholder="0.0"
                     min="0"
                     step="0.1"
@@ -923,6 +971,11 @@ export function LegPlannerClient({
                   >
                     NM
                   </span>
+                  {distanceValidationError && (
+                    <p className="text-red-400 text-sm mt-1">
+                      {distanceValidationError}
+                    </p>
+                  )}
                 </div>
 
                 {/* Gap */}
@@ -1071,7 +1124,7 @@ export function LegPlannerClient({
           </div>
 
           {/* Results */}
-          {results !== null && (
+          {results !== null && !distanceValidationError && (
             <div className="space-y-6 print:space-y-3">
               {/* Intermediate Results */}
               <IntermediateResults
