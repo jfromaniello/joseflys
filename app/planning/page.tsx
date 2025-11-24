@@ -20,6 +20,8 @@ interface PlanningPageProps {
     fa?: string;
     su?: string;
     funit?: string;
+    tu?: string;
+    ftu?: string;
   }>;
 }
 
@@ -55,6 +57,8 @@ export default async function PlanningPage({ searchParams }: PlanningPageProps) 
         initialFa={params.fa}
         initialSpeedUnit={params.su}
         initialFuelUnit={params.funit}
+        initialTimeUnit={params.tu}
+        initialFuelTimeUnit={params.ftu}
       />
     </Suspense>
   );

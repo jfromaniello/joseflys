@@ -20,6 +20,7 @@ import {
 } from "@/lib/speedConversion";
 import { FuelUnit, getFuelUnitLabel, getFuelResultUnit } from "@/lib/fuelConversion";
 import { convert } from "@/lib/unitConversions";
+import { TimeUnit, getTimeUnitLabel, toMinutes, fromMinutes } from "@/lib/timeConversion";
 
 type CalculatorMode = "time-speed-distance" | "fuel";
 
@@ -36,6 +37,8 @@ interface PlanningCalculatorClientProps {
   initialFa?: string;
   initialSpeedUnit?: string;
   initialFuelUnit?: string;
+  initialTimeUnit?: string;
+  initialFuelTimeUnit?: string;
 }
 
 export function PlanningCalculatorClient({
@@ -51,6 +54,8 @@ export function PlanningCalculatorClient({
   initialFa = "",
   initialSpeedUnit = "kt",
   initialFuelUnit = "gph",
+  initialTimeUnit = "hrs",
+  initialFuelTimeUnit = "hrs",
 }: PlanningCalculatorClientProps) {
   // Mode selection
   const [mode, setMode] = useState<CalculatorMode>(initialMode);
@@ -61,15 +66,21 @@ export function PlanningCalculatorClient({
   // Fuel unit
   const [fuelUnit, setFuelUnit] = useState<FuelUnit>(initialFuelUnit as FuelUnit);
 
+  // Time units
+  const [timeUnit, setTimeUnit] = useState<TimeUnit>(initialTimeUnit as TimeUnit);
+  const [fuelTimeUnit, setFuelTimeUnit] = useState<TimeUnit>(initialFuelTimeUnit as TimeUnit);
+
   // Time-Speed-Distance inputs
   const [groundSpeed, setGroundSpeed] = useState<string>(initialGs);
   const [distance, setDistance] = useState<string>(initialDist);
   const [timeHours, setTimeHours] = useState<string>(initialTh);
   const [timeMinutes, setTimeMinutes] = useState<string>(initialTm);
-  const [timeDecimal, setTimeDecimal] = useState<string>(() => {
+  const [timeValue, setTimeValue] = useState<string>(() => {
     const th = parseFloat(initialTh) || 0;
     const tm = parseFloat(initialTm) || 0;
-    return th > 0 || tm > 0 ? ((th * 60 + tm) / 60).toString() : "";
+    const totalMinutes = th * 60 + tm;
+    if (totalMinutes === 0) return "";
+    return fromMinutes(totalMinutes, initialTimeUnit as TimeUnit).toString();
   });
 
   // Fuel inputs
@@ -77,10 +88,12 @@ export function PlanningCalculatorClient({
   const [fuelUsed, setFuelUsed] = useState<string>(initialFu);
   const [fuelTimeHours, setFuelTimeHours] = useState<string>(initialFth);
   const [fuelTimeMinutes, setFuelTimeMinutes] = useState<string>(initialFtm);
-  const [fuelTimeDecimal, setFuelTimeDecimal] = useState<string>(() => {
+  const [fuelTimeValue, setFuelTimeValue] = useState<string>(() => {
     const fth = parseFloat(initialFth) || 0;
     const ftm = parseFloat(initialFtm) || 0;
-    return fth > 0 || ftm > 0 ? ((fth * 60 + ftm) / 60).toString() : "";
+    const totalMinutes = fth * 60 + ftm;
+    if (totalMinutes === 0) return "";
+    return fromMinutes(totalMinutes, initialFuelTimeUnit as TimeUnit).toString();
   });
   const [fuelAvailable, setFuelAvailable] = useState<string>(initialFa);
 
@@ -90,6 +103,8 @@ export function PlanningCalculatorClient({
     params.set("mode", mode);
     if (speedUnit !== "kt") params.set("su", speedUnit);
     if (fuelUnit !== "gph") params.set("funit", fuelUnit);
+    if (timeUnit !== "hrs") params.set("tu", timeUnit);
+    if (fuelTimeUnit !== "hrs") params.set("ftu", fuelTimeUnit);
 
     if (mode === "time-speed-distance") {
       if (groundSpeed) params.set("gs", groundSpeed);
@@ -111,6 +126,8 @@ export function PlanningCalculatorClient({
     mode,
     speedUnit,
     fuelUnit,
+    timeUnit,
+    fuelTimeUnit,
     groundSpeed,
     distance,
     timeHours,
@@ -322,34 +339,45 @@ export function PlanningCalculatorClient({
                       style={{ color: "oklch(0.72 0.015 240)" }}
                     >
                       Time
-                      <Tooltip content="Time in decimal hours (e.g., 1.5 for 1 hour 30 minutes)" />
+                      <Tooltip content="Time for the leg. Select your preferred units." />
                     </label>
-                    <div className="relative">
+                    <div className="grid grid-cols-[1fr_auto] gap-x-3">
                       <input
                         type="number"
-                        value={timeDecimal}
+                        value={timeValue}
                         onChange={(e) => {
-                          setTimeDecimal(e.target.value);
+                          setTimeValue(e.target.value);
                           if (e.target.value === "") {
                             setTimeHours("");
                             setTimeMinutes("");
                           } else {
-                            const hours = parseFloat(e.target.value) || 0;
-                            const totalMinutes = hours * 60;
+                            const value = parseFloat(e.target.value) || 0;
+                            const totalMinutes = toMinutes(value, timeUnit);
                             setTimeHours(Math.floor(totalMinutes / 60).toString());
                             setTimeMinutes(Math.round(totalMinutes % 60).toString());
                           }
                         }}
-                        className="w-full px-4 py-3 pr-16 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
-                        placeholder="1.5"
+                        className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
+                        placeholder={timeUnit === "hrs" ? "1.5" : "90"}
                         step="any"
                       />
-                      <span
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-                        style={{ color: "oklch(0.55 0.02 240)" }}
+                      <select
+                        value={timeUnit}
+                        onChange={(e) => {
+                          const newUnit = e.target.value as TimeUnit;
+                          setTimeUnit(newUnit);
+                          // Convert current value to new unit
+                          if (timeValue) {
+                            const totalMinutes = toMinutes(parseFloat(timeValue), timeUnit);
+                            const newValue = fromMinutes(totalMinutes, newUnit);
+                            setTimeValue(newValue.toString());
+                          }
+                        }}
+                        className="select-no-arrow w-22 px-3 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white cursor-pointer"
                       >
-                        HRS
-                      </span>
+                        <option value="hrs">HRS</option>
+                        <option value="min">MIN</option>
+                      </select>
                     </div>
                   </div>
                 </div>
@@ -527,34 +555,45 @@ export function PlanningCalculatorClient({
                       style={{ color: "oklch(0.72 0.015 240)" }}
                     >
                       Time
-                      <Tooltip content="Time in decimal hours (e.g., 1.5 for 1 hour 30 minutes)" />
+                      <Tooltip content="Time for fuel consumption. Select your preferred units." />
                     </label>
-                    <div className="relative">
+                    <div className="grid grid-cols-[1fr_auto] gap-x-3">
                       <input
                         type="number"
-                        value={fuelTimeDecimal}
+                        value={fuelTimeValue}
                         onChange={(e) => {
-                          setFuelTimeDecimal(e.target.value);
+                          setFuelTimeValue(e.target.value);
                           if (e.target.value === "") {
                             setFuelTimeHours("");
                             setFuelTimeMinutes("");
                           } else {
-                            const hours = parseFloat(e.target.value) || 0;
-                            const totalMinutes = hours * 60;
+                            const value = parseFloat(e.target.value) || 0;
+                            const totalMinutes = toMinutes(value, fuelTimeUnit);
                             setFuelTimeHours(Math.floor(totalMinutes / 60).toString());
                             setFuelTimeMinutes(Math.round(totalMinutes % 60).toString());
                           }
                         }}
-                        className="w-full px-4 py-3 pr-16 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
-                        placeholder="1.5"
+                        className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
+                        placeholder={fuelTimeUnit === "hrs" ? "1.5" : "90"}
                         step="any"
                       />
-                      <span
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-                        style={{ color: "oklch(0.55 0.02 240)" }}
+                      <select
+                        value={fuelTimeUnit}
+                        onChange={(e) => {
+                          const newUnit = e.target.value as TimeUnit;
+                          setFuelTimeUnit(newUnit);
+                          // Convert current value to new unit
+                          if (fuelTimeValue) {
+                            const totalMinutes = toMinutes(parseFloat(fuelTimeValue), fuelTimeUnit);
+                            const newValue = fromMinutes(totalMinutes, newUnit);
+                            setFuelTimeValue(newValue.toString());
+                          }
+                        }}
+                        className="select-no-arrow w-22 px-3 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white cursor-pointer"
                       >
-                        HRS
-                      </span>
+                        <option value="hrs">HRS</option>
+                        <option value="min">MIN</option>
+                      </select>
                     </div>
                   </div>
                 </div>
