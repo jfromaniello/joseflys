@@ -1,6 +1,6 @@
 import { WaypointResult } from "@/lib/courseCalculations";
 import { FuelUnit, getFuelResultUnit } from "@/lib/fuelConversion";
-import { formatDistance, formatFuel } from "@/lib/formatters";
+import { formatDistance, formatFuel, MAX_FUEL_PRECISION, MAX_DISTANCE_PRECISION } from "@/lib/formatters";
 
 interface WaypointsCompactProps {
   waypointResults: WaypointResult[];
@@ -48,6 +48,9 @@ export function WaypointsCompact({
               <span
                 className="text-xs font-mono whitespace-nowrap"
                 style={{ color: "oklch(0.7 0.12 230)" }}
+                title={waypoint.distanceSinceLast !== undefined
+                  ? `${formatDistance(waypoint.distanceSinceLast, MAX_DISTANCE_PRECISION)} → ${formatDistance(waypoint.distance, MAX_DISTANCE_PRECISION)} NM`
+                  : `${formatDistance(waypoint.distance, MAX_DISTANCE_PRECISION)} NM`}
               >
                 {formatValue(waypoint.distanceSinceLast, waypoint.distance)} NM
               </span>
@@ -75,6 +78,9 @@ export function WaypointsCompact({
                 <span
                   className="text-xs font-mono whitespace-nowrap"
                   style={{ color: "oklch(0.7 0.12 50)" }}
+                  title={waypoint.fuelSinceLast !== undefined
+                    ? `${formatFuel(waypoint.fuelSinceLast, getFuelResultUnit(fuelUnit), MAX_FUEL_PRECISION)} → ${formatFuel(waypoint.fuelUsed, getFuelResultUnit(fuelUnit), MAX_FUEL_PRECISION)}`
+                    : formatFuel(waypoint.fuelUsed, getFuelResultUnit(fuelUnit), MAX_FUEL_PRECISION)}
                 >
                   {waypoint.fuelSinceLast !== undefined
                     ? `${formatFuel(waypoint.fuelSinceLast, getFuelResultUnit(fuelUnit))} → ${formatFuel(waypoint.fuelUsed, getFuelResultUnit(fuelUnit))}`
@@ -113,7 +119,11 @@ export function WaypointsCompact({
                 <div className="text-xs uppercase tracking-wide" style={{ color: "oklch(0.5 0.15 230)" }}>
                   Dist Leg
                 </div>
-                <div className="text-sm font-mono mt-0.5" style={{ color: "oklch(0.7 0.12 230)" }}>
+                <div
+                  className="text-sm font-mono mt-0.5"
+                  style={{ color: "oklch(0.7 0.12 230)" }}
+                  title={`${formatDistance(waypoint.distanceSinceLast, MAX_DISTANCE_PRECISION)} NM`}
+                >
                   {formatDistance(waypoint.distanceSinceLast)} NM
                 </div>
               </div>
@@ -123,7 +133,11 @@ export function WaypointsCompact({
                 <div className="text-xs uppercase tracking-wide" style={{ color: "oklch(0.5 0.15 230)" }}>
                   Dist Total
                 </div>
-                <div className="text-sm font-mono font-semibold mt-0.5" style={{ color: "oklch(0.75 0.15 230)" }}>
+                <div
+                  className="text-sm font-mono font-semibold mt-0.5"
+                  style={{ color: "oklch(0.75 0.15 230)" }}
+                  title={`${formatDistance(waypoint.distance, MAX_DISTANCE_PRECISION)} NM`}
+                >
                   {formatDistance(waypoint.distance)} NM
                 </div>
               </div>
@@ -154,7 +168,13 @@ export function WaypointsCompact({
                   <div className="text-xs uppercase tracking-wide" style={{ color: "oklch(0.5 0.15 50)" }}>
                     Fuel Leg
                   </div>
-                  <div className="text-sm font-mono mt-0.5" style={{ color: "oklch(0.7 0.12 50)" }}>
+                  <div
+                    className="text-sm font-mono mt-0.5"
+                    style={{ color: "oklch(0.7 0.12 50)" }}
+                    title={waypoint.fuelSinceLast !== undefined
+                      ? formatFuel(waypoint.fuelSinceLast, getFuelResultUnit(fuelUnit), MAX_FUEL_PRECISION)
+                      : undefined}
+                  >
                     {waypoint.fuelSinceLast !== undefined
                       ? formatFuel(waypoint.fuelSinceLast, getFuelResultUnit(fuelUnit))
                       : "—"}
@@ -168,7 +188,11 @@ export function WaypointsCompact({
                   <div className="text-xs uppercase tracking-wide" style={{ color: "oklch(0.5 0.15 50)" }}>
                     Fuel Total
                   </div>
-                  <div className="text-sm font-mono font-semibold mt-0.5" style={{ color: "oklch(0.75 0.15 50)" }}>
+                  <div
+                    className="text-sm font-mono font-semibold mt-0.5"
+                    style={{ color: "oklch(0.75 0.15 50)" }}
+                    title={formatFuel(waypoint.fuelUsed, getFuelResultUnit(fuelUnit), MAX_FUEL_PRECISION)}
+                  >
                     {formatFuel(waypoint.fuelUsed, getFuelResultUnit(fuelUnit))}
                   </div>
                 </div>

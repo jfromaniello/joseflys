@@ -1,7 +1,7 @@
 import { Tooltip } from "@/app/components/Tooltip";
 import { WaypointResult } from "@/lib/courseCalculations";
 import { FuelUnit, getFuelResultUnit } from "@/lib/fuelConversion";
-import { formatDistance, formatFuel } from "@/lib/formatters";
+import { formatDistance, formatFuel, MAX_FUEL_PRECISION, MAX_DISTANCE_PRECISION } from "@/lib/formatters";
 
 interface WaypointsResultsProps {
   waypointResults: WaypointResult[];
@@ -146,6 +146,7 @@ export function WaypointsResults({
                 <td
                   className="py-3 px-4 text-right font-mono border-l border-gray-700/50"
                   style={{ color: "oklch(0.7 0.12 230)" }}
+                  title={`${formatDistance(waypoint.distanceSinceLast, MAX_DISTANCE_PRECISION)} NM`}
                 >
                   {formatDistance(waypoint.distanceSinceLast)} NM
                 </td>
@@ -153,6 +154,7 @@ export function WaypointsResults({
                 <td
                   className="py-3 px-4 text-right font-mono font-semibold"
                   style={{ color: "oklch(0.75 0.15 230)" }}
+                  title={`${formatDistance(waypoint.distance, MAX_DISTANCE_PRECISION)} NM`}
                 >
                   {formatDistance(waypoint.distance)} NM
                 </td>
@@ -178,6 +180,9 @@ export function WaypointsResults({
                     <td
                       className="py-3 px-4 text-right font-mono border-l border-gray-700/50"
                       style={{ color: "oklch(0.7 0.12 50)" }}
+                      title={waypoint.fuelSinceLast !== undefined
+                        ? formatFuel(waypoint.fuelSinceLast, getFuelResultUnit(fuelUnit), MAX_FUEL_PRECISION)
+                        : undefined}
                     >
                       {waypoint.fuelSinceLast !== undefined
                         ? formatFuel(waypoint.fuelSinceLast, getFuelResultUnit(fuelUnit))
@@ -187,6 +192,9 @@ export function WaypointsResults({
                     <td
                       className="py-3 px-4 text-right font-mono font-semibold"
                       style={{ color: "oklch(0.75 0.15 50)" }}
+                      title={waypoint.fuelUsed !== undefined
+                        ? formatFuel(waypoint.fuelUsed, getFuelResultUnit(fuelUnit), MAX_FUEL_PRECISION)
+                        : undefined}
                     >
                       {waypoint.fuelUsed !== undefined
                         ? formatFuel(waypoint.fuelUsed, getFuelResultUnit(fuelUnit))

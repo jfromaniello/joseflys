@@ -8,6 +8,7 @@ import { calculateCompassCourse, calculateDeviation } from "../compassDeviation"
 import { loadAircraftFromUrl } from "../aircraftStorage";
 import { getFuelResultUnit, type FuelUnit } from "../fuelConversion";
 import { calculateHaversineDistance } from "../distanceCalculations";
+import { formatFuel as formatFuelCore, MAX_FUEL_PRECISION } from "../formatters";
 import type { FlightPlanLeg } from "./flightPlanStorage";
 
 export interface LegCalculatedResults {
@@ -245,11 +246,15 @@ export function formatTimeHHMM(timeHHMM: string): string {
 
 /**
  * Format fuel with appropriate unit label
+ * Wrapper around the core formatFuel function with optional decimal precision
  */
-export function formatFuel(fuel: number, fuelFlowUnit: string): string {
+export function formatFuel(fuel: number, fuelFlowUnit: string, decimals: number = 1): string {
   const consumptionUnit = getFuelResultUnit(fuelFlowUnit as FuelUnit);
-  return `${fuel.toFixed(1)} ${consumptionUnit}`;
+  return formatFuelCore(fuel, consumptionUnit, decimals);
 }
+
+// Re-export MAX_FUEL_PRECISION for convenience
+export { MAX_FUEL_PRECISION };
 
 /**
  * Check if a leg has descent data

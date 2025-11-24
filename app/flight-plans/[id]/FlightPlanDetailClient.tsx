@@ -21,6 +21,7 @@ import {
   type LegCalculatedResults,
   generateShareUrl,
   buildLocalChartUrl,
+  MAX_FUEL_PRECISION,
 } from "@/lib/flightPlan";
 import { FuelUnit, getFuelResultUnit } from "@/lib/fuelConversion";
 import { Tooltip } from "@/app/components/Tooltip";
@@ -599,7 +600,11 @@ export function FlightPlanDetailClient({
                               {leg.prevFuel !== undefined && leg.prevFuel > 0 && (
                                 <div className="flex justify-between items-center">
                                   <span className="text-sm" style={{ color: "oklch(0.65 0.05 240)" }}>Fuel Used Before</span>
-                                  <span className="text-base font-bold" style={{ color: "oklch(0.85 0.15 230)" }}>
+                                  <span
+                                    className="text-base font-bold"
+                                    style={{ color: "oklch(0.85 0.15 230)" }}
+                                    title={formatFuel(leg.prevFuel, leg.fuelUnit, MAX_FUEL_PRECISION)}
+                                  >
                                     {formatFuel(leg.prevFuel, leg.fuelUnit)}
                                   </span>
                                 </div>
@@ -701,7 +706,11 @@ export function FlightPlanDetailClient({
                                 {leg.additionalFuel !== undefined && leg.additionalFuel > 0 && leg.ff && (
                                   <div className="flex justify-between items-center">
                                     <span className="text-sm" style={{ color: "oklch(0.7 0.08 160)" }}>Reserve Fuel</span>
-                                    <span className="text-base font-bold" style={{ color: "oklch(0.85 0.15 160)" }}>
+                                    <span
+                                      className="text-base font-bold"
+                                      style={{ color: "oklch(0.85 0.15 160)" }}
+                                      title={formatFuel((leg.additionalFuel / 60) * leg.ff, leg.fuelUnit, MAX_FUEL_PRECISION)}
+                                    >
                                       {formatFuel((leg.additionalFuel / 60) * leg.ff, leg.fuelUnit)}
                                     </span>
                                   </div>
@@ -715,7 +724,11 @@ export function FlightPlanDetailClient({
                                 </div>
                                 <div className="flex justify-between items-center">
                                   <span className="text-sm font-semibold" style={{ color: "oklch(0.75 0.1 160)" }}>Leg Fuel</span>
-                                  <span className="text-lg font-bold" style={{ color: "oklch(0.9 0.18 160)" }}>
+                                  <span
+                                    className="text-lg font-bold"
+                                    style={{ color: "oklch(0.9 0.18 160)" }}
+                                    title={formatFuel(result.fuelUsed, leg.fuelUnit, MAX_FUEL_PRECISION)}
+                                  >
                                     {formatFuel(result.fuelUsed, leg.fuelUnit)}
                                   </span>
                                 </div>
@@ -732,7 +745,11 @@ export function FlightPlanDetailClient({
                                 )}
                                 <div className="flex justify-between items-center">
                                   <span className="text-sm font-semibold" style={{ color: "oklch(0.75 0.1 160)" }}>Total Fuel</span>
-                                  <span className="text-lg font-bold" style={{ color: "oklch(0.9 0.18 160)" }}>
+                                  <span
+                                    className="text-lg font-bold"
+                                    style={{ color: "oklch(0.9 0.18 160)" }}
+                                    title={formatFuel(result.totalFuel, leg.fuelUnit, MAX_FUEL_PRECISION)}
+                                  >
                                     {formatFuel(result.totalFuel, leg.fuelUnit)}
                                   </span>
                                 </div>

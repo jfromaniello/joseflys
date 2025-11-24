@@ -7,6 +7,18 @@
  */
 
 /**
+ * Maximum precision for fuel values (number of decimal places)
+ * Used for tooltips and high-precision displays
+ */
+export const MAX_FUEL_PRECISION = 5;
+
+/**
+ * Maximum precision for distance values (number of decimal places)
+ * Used for tooltips and high-precision displays
+ */
+export const MAX_DISTANCE_PRECISION = 2;
+
+/**
  * Format a course or heading to 3-digit format with degree symbol
  * Examples: 5° → 005°, 20° → 020°, 350° → 350°
  *
@@ -115,13 +127,14 @@ export function formatTime(hours: number | null | undefined): string {
  *
  * @param fuel - Fuel quantity
  * @param unit - Fuel unit (GAL, L, etc.)
+ * @param decimals - Number of decimal places (default: 1)
  * @returns Formatted string like "12.5 GAL"
  */
-export function formatFuel(fuel: number | null | undefined, unit: string): string {
+export function formatFuel(fuel: number | null | undefined, unit: string, decimals: number = 1): string {
   if (fuel === null || fuel === undefined || isNaN(fuel)) {
     return "-";
   }
-  return `${fuel.toFixed(1)} ${unit}`;
+  return `${fuel.toFixed(decimals)} ${unit}`;
 }
 
 /**
