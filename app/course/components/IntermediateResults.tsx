@@ -181,6 +181,40 @@ export function IntermediateResults({ results, fuelUnit, trueCourse, magVar }: I
                       {results.climbPhase!.fuelUsed.toFixed(1)} {getFuelResultUnit(fuelUnit)}
                     </span>
                   </div>
+                  {/* Show navigation parameters only if different from cruise (i.e., has wind) */}
+                  {results.climbPhase!.windCorrectionAngle !== 0 && (
+                    <>
+                      <div className="border-t border-gray-700 my-2 pt-2"></div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs" style={{ color: "oklch(0.65 0.02 240)" }}>WCA:</span>
+                        <span className="text-sm font-bold" style={{ color: "white" }}>
+                          {formatCorrection(results.climbPhase!.windCorrectionAngle, 0)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs" style={{ color: "oklch(0.65 0.02 240)" }}>MH:</span>
+                        <span className="text-sm font-bold" style={{ color: "white" }}>
+                          {formatCourse(results.climbPhase!.magneticHeading)}
+                        </span>
+                      </div>
+                      {results.climbPhase!.compassDeviation !== 0 && (
+                        <>
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs" style={{ color: "oklch(0.65 0.02 240)" }}>Dev:</span>
+                            <span className="text-sm font-bold" style={{ color: "white" }}>
+                              {formatCorrection(results.climbPhase!.compassDeviation, 0)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs" style={{ color: "oklch(0.65 0.02 240)" }}>CC:</span>
+                            <span className="text-sm font-bold" style={{ color: "white" }}>
+                              {formatCourse(results.climbPhase!.compassCourse)}
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
             )}
@@ -251,6 +285,40 @@ export function IntermediateResults({ results, fuelUnit, trueCourse, magVar }: I
                       {results.descentPhase!.fuelUsed.toFixed(1)} {getFuelResultUnit(fuelUnit)}
                     </span>
                   </div>
+                  {/* Show navigation parameters only if different from cruise (i.e., has wind) */}
+                  {results.descentPhase!.windCorrectionAngle !== 0 && (
+                    <>
+                      <div className="border-t border-gray-700 my-2 pt-2"></div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs" style={{ color: "oklch(0.65 0.02 240)" }}>WCA:</span>
+                        <span className="text-sm font-bold" style={{ color: "white" }}>
+                          {formatCorrection(results.descentPhase!.windCorrectionAngle, 0)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs" style={{ color: "oklch(0.65 0.02 240)" }}>MH:</span>
+                        <span className="text-sm font-bold" style={{ color: "white" }}>
+                          {formatCourse(results.descentPhase!.magneticHeading)}
+                        </span>
+                      </div>
+                      {results.descentPhase!.compassDeviation !== 0 && (
+                        <>
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs" style={{ color: "oklch(0.65 0.02 240)" }}>Dev:</span>
+                            <span className="text-sm font-bold" style={{ color: "white" }}>
+                              {formatCorrection(results.descentPhase!.compassDeviation, 0)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs" style={{ color: "oklch(0.65 0.02 240)" }}>CC:</span>
+                            <span className="text-sm font-bold" style={{ color: "white" }}>
+                              {formatCourse(results.descentPhase!.compassCourse)}
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
             )}

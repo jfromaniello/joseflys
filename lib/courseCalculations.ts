@@ -100,6 +100,14 @@ export interface CourseCalculations {
     time: number;
     /** Fuel used during climb (as provided by user) */
     fuelUsed: number;
+    /** Wind correction angle during climb in degrees */
+    windCorrectionAngle: number;
+    /** Magnetic heading during climb in degrees (MC + WCA) */
+    magneticHeading: number;
+    /** Compass deviation during climb in degrees */
+    compassDeviation: number;
+    /** Compass course during climb in degrees (MH + Dev) */
+    compassCourse: number;
   };
   /** Cruise phase calculations (if climb data provided) */
   cruisePhase?: {
@@ -120,6 +128,14 @@ export interface CourseCalculations {
     time: number;
     /** Fuel used during descent (as provided by user) */
     fuelUsed: number;
+    /** Wind correction angle during descent in degrees */
+    windCorrectionAngle: number;
+    /** Magnetic heading during descent in degrees (MC + WCA) */
+    magneticHeading: number;
+    /** Compass deviation during descent in degrees */
+    compassDeviation: number;
+    /** Compass course during descent in degrees (MH + Dev) */
+    compassCourse: number;
   };
 }
 
@@ -340,11 +356,36 @@ export function calculateCourse(input: CourseCalculationInput): CourseCalculatio
         actualClimbDist = climbDistance!;
         climbTime = actualClimbDist / climbGroundSpeed;
 
+        // Calculate navigation parameters for climb phase (MH, Dev, CC)
+        // Note: MC is the same for all phases (based on true course)
+        const climbMagneticHeading = normalize(trueCourse + climbWca - magDevWMM);
+
+        // Calculate compass course and deviation for climb phase
+        let climbCompassCourse: number = climbMagneticHeading;
+        let climbCompassDeviation = 0;
+        if (plane) {
+          const aircraft = loadAircraftFromUrl(plane);
+          if (aircraft?.deviationTable && aircraft.deviationTable.length >= 2) {
+            const calculated = calculateCompassCourse(climbMagneticHeading, aircraft.deviationTable);
+            if (calculated !== null) {
+              climbCompassCourse = calculated;
+              // Calculate deviation (handle angle wrapping)
+              climbCompassDeviation = climbCompassCourse - climbMagneticHeading;
+              if (climbCompassDeviation > 180) climbCompassDeviation -= 360;
+              if (climbCompassDeviation < -180) climbCompassDeviation += 360;
+            }
+          }
+        }
+
         climbPhase = {
           distance: actualClimbDist,
           groundSpeed: climbGroundSpeed,
           time: climbTime,
           fuelUsed: climbFuelUsed!,
+          windCorrectionAngle: climbWca,
+          magneticHeading: climbMagneticHeading,
+          compassDeviation: climbCompassDeviation,
+          compassCourse: climbCompassCourse,
         };
       }
 
@@ -374,11 +415,36 @@ export function calculateCourse(input: CourseCalculationInput): CourseCalculatio
         actualDescentDist = descentDistance!;
         descentTime = actualDescentDist / descentGroundSpeed;
 
+        // Calculate navigation parameters for descent phase (MH, Dev, CC)
+        // Note: MC is the same for all phases (based on true course)
+        const descentMagneticHeading = normalize(trueCourse + descentWca - magDevWMM);
+
+        // Calculate compass course and deviation for descent phase
+        let descentCompassCourse: number = descentMagneticHeading;
+        let descentCompassDeviation = 0;
+        if (plane) {
+          const aircraft = loadAircraftFromUrl(plane);
+          if (aircraft?.deviationTable && aircraft.deviationTable.length >= 2) {
+            const calculated = calculateCompassCourse(descentMagneticHeading, aircraft.deviationTable);
+            if (calculated !== null) {
+              descentCompassCourse = calculated;
+              // Calculate deviation (handle angle wrapping)
+              descentCompassDeviation = descentCompassCourse - descentMagneticHeading;
+              if (descentCompassDeviation > 180) descentCompassDeviation -= 360;
+              if (descentCompassDeviation < -180) descentCompassDeviation += 360;
+            }
+          }
+        }
+
         descentPhase = {
           distance: actualDescentDist,
           groundSpeed: descentGroundSpeed,
           time: descentTime,
           fuelUsed: descentFuelUsed!,
+          windCorrectionAngle: descentWca,
+          magneticHeading: descentMagneticHeading,
+          compassDeviation: descentCompassDeviation,
+          compassCourse: descentCompassCourse,
         };
       }
 
