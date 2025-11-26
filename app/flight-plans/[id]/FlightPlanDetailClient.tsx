@@ -20,7 +20,6 @@ import {
   calculateTotalFuelWithAlternatives,
   type LegCalculatedResults,
   generateShareUrl,
-  buildLocalChartUrl,
   MAX_FUEL_PRECISION,
 } from "@/lib/flightPlan";
 import { FuelUnit, getFuelResultUnit } from "@/lib/fuelConversion";
@@ -319,16 +318,14 @@ export function FlightPlanDetailClient({
                     </>
                   )}
                 </button>
-                {buildLocalChartUrl(flightPlan) && (
-                  <Link
-                    href={buildLocalChartUrl(flightPlan)!}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-                    title="View flight plan on local chart"
-                  >
-                    <MapIcon className="w-4 h-4" />
-                    <span className="hidden sm:inline">View on Map</span>
-                  </Link>
-                )}
+                <Link
+                  href={`/flight-plans/${flightPlan.id}/map`}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 cursor-pointer"
+                  title="View flight plan on map"
+                >
+                  <MapIcon className="w-4 h-4" />
+                  <span className="hidden sm:inline">View on Map</span>
+                </Link>
                 <Link
                   href={`/leg?fp=${flightPlan.id}`}
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"

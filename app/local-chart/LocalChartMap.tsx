@@ -25,16 +25,38 @@ interface LocationData {
   lat: number;
   lon: number;
   isFlyOver?: boolean; // If true, shown on map but skipped in route line
+  distance?: number; // Cumulative NM from start (for display on map)
+  cumulativeTime?: number; // Cumulative time in minutes from start
+}
+
+interface RouteSegment {
+  fromLat: number;
+  fromLon: number;
+  toLat: number;
+  toLon: number;
+  isAlternative: boolean;
+  groundSpeed?: number; // knots - for time-based tick marks
+  // Leg info for labels
+  trueCourse?: number; // degrees
+  magneticHeading?: number; // degrees
+  climbMagneticHeading?: number; // degrees (if different during climb)
+  descentMagneticHeading?: number; // degrees (if different during descent)
+  distance?: number; // NM
+  fuelRemaining?: number; // quantity remaining after this leg
+  fuelUnit?: string; // GAL, L, lb, kg
 }
 
 type MapMode = 'utm' | 'mercator';
 
 interface LocalChartMapProps {
   locations: LocationData[];
+  routeSegments?: RouteSegment[]; // Optional: explicit route segments with alternative marking
   utmZone: number;
   hemisphere: 'N' | 'S';
   mapMode: MapMode;
   printScale?: number; // e.g., 50000 for 1:50,000
+  tickIntervalNM?: number; // Distance interval for tick marks on route (e.g., 10, 50, 100 NM)
+  timeTickIntervalMin?: number; // Time interval for time-based tick marks (e.g., 10, 15, 20, 30 min)
 }
 
 export interface LocalChartMapHandle {
@@ -55,14 +77,14 @@ const CHART_STYLES = {
   },
   features: {
     road: {
-      motorway: { color: '#ef4444', width: 3 },
-      trunk: { color: '#f97316', width: 2.5 },
-      primary: { color: '#eab308', width: 2 },
-      secondary: { color: '#facc15', width: 1.5 },
+      motorway: { color: '#374151', width: 3 }, // gray-700 (dark gray)
+      trunk: { color: '#4b5563', width: 2.5 }, // gray-600
+      primary: { color: '#6b7280', width: 2 }, // gray-500
+      secondary: { color: '#9ca3af', width: 1.5 }, // gray-400
     },
-    water: { fill: '#93c5fd', stroke: '#3b82f6', width: 1 },
-    wetland: { fill: '#bfdbfe', stroke: '#3b82f6', width: 1, pattern: true }, // Lighter blue with pattern
-    coastline: { color: '#0284c7', width: 2 }, // Dark blue for coastlines
+    water: { fill: '#bfdbfe', stroke: '#93c5fd', width: 1 }, // blue-200 fill, blue-300 stroke (más suave)
+    wetland: { fill: '#dbeafe', stroke: '#93c5fd', width: 1, pattern: true }, // blue-100 (más suave)
+    coastline: { color: '#60a5fa', width: 2 }, // blue-400 (más suave)
     beach: { fill: '#fef3c7', stroke: '#f59e0b', width: 1 }, // Sand yellow
     mud: { fill: '#a8a29e', stroke: '#78716c', width: 1 }, // Gray-brown for mud
     salt_pond: { fill: '#e0e7ff', stroke: '#818cf8', width: 1 }, // Light purple for salt
@@ -80,10 +102,13 @@ const CHART_STYLES = {
 export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>(
   function LocalChartMap({
     locations,
+    routeSegments,
     utmZone,
     hemisphere,
     mapMode,
     printScale = 100000, // Default 1:100,000
+    tickIntervalNM = 10, // Default 10 NM tick marks
+    timeTickIntervalMin = 0, // Default 0 = disabled
   }, ref) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [osmData, setOsmData] = useState<OSMData | null>(null);
@@ -270,21 +295,124 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
     );
     drawOSMFeatures(ctx, osmData, toUTM, toCanvas, waypointNames);
 
-    // Draw route line (skip fly-over waypoints)
-    const routeWaypoints = utmLocations.filter(loc => !loc.isFlyOver);
-    if (routeWaypoints.length >= 2) {
-      ctx.strokeStyle = CHART_STYLES.route.line.color;
-      ctx.lineWidth = CHART_STYLES.route.line.width;
-      ctx.beginPath();
-      routeWaypoints.forEach((loc, i) => {
-        const [x, y] = toCanvas(loc.utm.easting, loc.utm.northing);
-        if (i === 0) {
-          ctx.moveTo(x, y);
-        } else {
-          ctx.lineTo(x, y);
+    // Draw route lines with distance tick marks
+    if (routeSegments && routeSegments.length > 0) {
+      // Draw using explicit segments (supports alternative routes with different colors)
+      routeSegments.forEach(segment => {
+        const fromUTM = toUTM(segment.fromLat, segment.fromLon);
+        const toUTMCoord = toUTM(segment.toLat, segment.toLon);
+        const [x1, y1] = toCanvas(fromUTM.easting, fromUTM.northing);
+        const [x2, y2] = toCanvas(toUTMCoord.easting, toUTMCoord.northing);
+
+        // Draw main route line
+        ctx.strokeStyle = segment.isAlternative ? '#fb923c' : CHART_STYLES.route.line.color; // orange-400 (softer) for alternatives
+        ctx.lineWidth = CHART_STYLES.route.line.width;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        // Calculate distance in NM for this segment (in UTM space)
+        const dx = toUTMCoord.easting - fromUTM.easting;
+        const dy = toUTMCoord.northing - fromUTM.northing;
+        const distanceMeters = Math.sqrt(dx * dx + dy * dy);
+        const distanceNM = distanceMeters / 1852;
+
+        // Calculate angle in canvas space (not UTM space) for correct perpendicular
+        const dxCanvas = x2 - x1;
+        const dyCanvas = y2 - y1;
+        const lineAngleCanvas = Math.atan2(dyCanvas, dxCanvas);
+
+        // Draw tick marks at configured interval
+        const numTicks = Math.floor(distanceNM / tickIntervalNM);
+
+        if (numTicks > 0) {
+          const tickLength = 8; // pixels
+          const perpAngleCanvas = lineAngleCanvas + Math.PI / 2;
+
+          ctx.strokeStyle = segment.isAlternative ? '#fb923c' : CHART_STYLES.route.line.color;
+          ctx.lineWidth = 2;
+
+          for (let i = 1; i <= numTicks; i++) {
+            const fraction = (i * tickIntervalNM) / distanceNM;
+            const tickUTM = {
+              easting: fromUTM.easting + dx * fraction,
+              northing: fromUTM.northing + dy * fraction,
+            };
+            const [tickX, tickY] = toCanvas(tickUTM.easting, tickUTM.northing);
+
+            // Draw perpendicular tick mark using canvas-space angle
+            const dx1 = Math.cos(perpAngleCanvas) * tickLength;
+            const dy1 = Math.sin(perpAngleCanvas) * tickLength;
+            ctx.beginPath();
+            ctx.moveTo(tickX - dx1, tickY - dy1);
+            ctx.lineTo(tickX + dx1, tickY + dy1);
+            ctx.stroke();
+          }
+        }
+
+        // Draw time-based tick marks (if enabled and groundSpeed is available)
+        if (timeTickIntervalMin > 0 && segment.groundSpeed && segment.groundSpeed > 0) {
+          const groundSpeedKnots = segment.groundSpeed;
+
+          // Calculate how many time ticks fit in this segment
+          const legDurationHours = distanceNM / groundSpeedKnots;
+          const legDurationMinutes = legDurationHours * 60;
+          const numTimeTicks = Math.floor(legDurationMinutes / timeTickIntervalMin);
+
+          if (numTimeTicks > 0) {
+            const timeTickLength = 8; // pixels (same as distance ticks)
+
+            // Use 45-degree angle RELATIVE to the route line in canvas space
+            // This makes time ticks distinguishable from distance ticks while still being correctly oriented
+            const timeTickAngle = lineAngleCanvas + Math.PI / 4; // +45 degrees from route line
+
+            ctx.strokeStyle = segment.isAlternative ? '#fbbf24' : '#a855f7'; // amber-400 or purple-500
+            ctx.lineWidth = 2;
+
+            for (let i = 1; i <= numTimeTicks; i++) {
+              // Calculate position based on time
+              const timeElapsed = i * timeTickIntervalMin; // minutes
+              const distanceTraveled = (timeElapsed / 60) * groundSpeedKnots; // NM
+              const fraction = distanceTraveled / distanceNM;
+
+              // Skip if fraction exceeds segment length
+              if (fraction > 1) break;
+
+              const tickUTM = {
+                easting: fromUTM.easting + dx * fraction,
+                northing: fromUTM.northing + dy * fraction,
+              };
+              const [tickX, tickY] = toCanvas(tickUTM.easting, tickUTM.northing);
+
+              // Draw time tick mark at 45-degree angle from perpendicular
+              const dx1 = Math.cos(timeTickAngle) * timeTickLength;
+              const dy1 = Math.sin(timeTickAngle) * timeTickLength;
+              ctx.beginPath();
+              ctx.moveTo(tickX - dx1, tickY - dy1);
+              ctx.lineTo(tickX + dx1, tickY + dy1);
+              ctx.stroke();
+            }
+          }
         }
       });
-      ctx.stroke();
+    } else {
+      // Fallback: Draw route line connecting non-flyover waypoints
+      const routeWaypoints = utmLocations.filter(loc => !loc.isFlyOver);
+      if (routeWaypoints.length >= 2) {
+        ctx.strokeStyle = CHART_STYLES.route.line.color;
+        ctx.lineWidth = CHART_STYLES.route.line.width;
+        ctx.beginPath();
+        routeWaypoints.forEach((loc, i) => {
+          const [x, y] = toCanvas(loc.utm.easting, loc.utm.northing);
+          if (i === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        });
+        ctx.stroke();
+      }
     }
 
     // Draw waypoint markers (AFTER OSM features so they appear on top)
@@ -293,7 +421,7 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
 
       // Different style for fly-over waypoints
       if (loc.isFlyOver) {
-        // Fly-over: Diamond shape with purple color (para que no se mezcle con carreteras)
+        // Fly-over: Diamond shape with purple color
         ctx.fillStyle = '#a855f7'; // purple-500
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 2;
@@ -340,15 +468,36 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
       });
       if (currentLine) lines.push(currentLine);
 
+      // Add cumulative distance and time lines if available
+      const distanceLine = loc.distance !== undefined
+        ? `${loc.distance.toFixed(1)} NM`
+        : null;
+
+      // Format cumulative time
+      const formatTime = (minutes?: number): string | null => {
+        if (minutes === undefined || minutes === null) return null;
+        const hours = Math.floor(minutes / 60);
+        const mins = Math.round(minutes % 60);
+        return hours > 0 ? `${hours} h ${mins} min` : `${mins} min`;
+      };
+      const timeLine = formatTime(loc.cumulativeTime);
+
       // Measure text to create background box
       const lineHeight = 14; // Approximate height for 12px font
-      const maxWidth = Math.max(...lines.map(line => ctx.measureText(line).width));
-      const totalHeight = lineHeight * lines.length;
+      const infoLineHeight = 12; // Smaller font for distance/time
+      ctx.font = 'bold 12px sans-serif';
+      const nameLinesWidth = Math.max(...lines.map(line => ctx.measureText(line).width));
+      ctx.font = 'bold 10px sans-serif';
+      const distanceWidth = distanceLine ? ctx.measureText(distanceLine).width : 0;
+      const timeWidth = timeLine ? ctx.measureText(timeLine).width : 0;
+      const maxWidth = Math.max(nameLinesWidth, distanceWidth, timeWidth);
+      const infoLines = [distanceLine, timeLine].filter(Boolean).length;
+      const totalHeight = lineHeight * lines.length + infoLineHeight * infoLines;
       const padding = 3;
-      const labelY = y + 18;
+      const labelY = y + 22; // Increased offset to move labels further below waypoint marker
 
-      // Draw semi-transparent background
-      ctx.fillStyle = 'rgba(248, 250, 252, 0.85)'; // slate-50 with opacity
+      // Draw semi-transparent background (more transparent for better map visibility)
+      ctx.fillStyle = 'rgba(248, 250, 252, 0.7)'; // slate-50 with lower opacity
       ctx.fillRect(
         x - maxWidth / 2 - padding,
         labelY - padding,
@@ -356,15 +505,38 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
         totalHeight + padding * 2
       );
 
-      // Draw text (centered, multiple lines)
+      // Draw name text (centered, multiple lines)
+      ctx.font = 'bold 12px sans-serif';
       ctx.fillStyle = '#1e293b';
       lines.forEach((line, i) => {
         ctx.fillText(line, x, labelY + i * lineHeight);
       });
+
+      let currentInfoY = labelY + lines.length * lineHeight;
+
+      // Draw distance text (centered, below name, in blue - matches distance ticks)
+      if (distanceLine) {
+        ctx.font = 'bold 10px sans-serif';
+        ctx.fillStyle = '#0ea5e9'; // sky-500 - matches distance tick color
+        ctx.fillText(distanceLine, x, currentInfoY);
+        currentInfoY += infoLineHeight;
+      }
+
+      // Draw time text (centered, below distance, in purple - matches time ticks)
+      if (timeLine) {
+        ctx.font = 'bold 10px sans-serif';
+        ctx.fillStyle = '#a855f7'; // purple-500 - matches time tick color
+        ctx.fillText(timeLine, x, currentInfoY);
+      }
     });
 
+    // Draw leg info labels (before scale bar so labels don't overlap it)
+    if (routeSegments && routeSegments.length > 0) {
+      drawLegInfoLabels(ctx, routeSegments, toUTM, toCanvas);
+    }
+
     // Draw scale bar
-    drawScaleBar(ctx, scale, rect, printScale);
+    drawScaleBar(ctx, scale, rect, printScale, tickIntervalNM, timeTickIntervalMin);
 
     // Calculate center of map in geographic coordinates for grid convergence
     const centerLat = locations.reduce((sum, loc) => sum + loc.lat, 0) / locations.length;
@@ -374,7 +546,7 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
     drawNorthIndicator(ctx, rect, centerLat, centerLon, utmZone);
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [osmData, loading, locations, utmZone, hemisphere, printScale]);
+  }, [osmData, loading, locations, utmZone, hemisphere, printScale, tickIntervalNM, timeTickIntervalMin, routeSegments]);
 
   // Draw UTM grid with labels
   function drawUTMGrid(
@@ -585,8 +757,55 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
       }
     });
 
-    // Cities
-    byType.city.forEach(feature => {
+    // Cities - filter by population and always draw labels
+    // Filter by population >= 3000, always include cities regardless of population
+    const filteredCities = byType.city.filter(feature => {
+      const place = feature.properties.place || '';
+      const population = parseInt(feature.properties.population) || 0;
+
+      // Always include cities
+      if (place === 'city') return true;
+
+      // For towns and villages, require population >= 3000
+      return population >= 3000;
+    });
+
+    // Sort by importance: cities first, then by population within each category
+    const sortedCities = filteredCities.sort((a, b) => {
+      const placeA = a.properties.place || '';
+      const placeB = b.properties.place || '';
+      const popA = parseInt(a.properties.population) || 0;
+      const popB = parseInt(b.properties.population) || 0;
+
+      // Priority order: city > town > village
+      const priority: Record<string, number> = { city: 0, town: 1, village: 2 };
+      const priorityA = priority[placeA] ?? 99;
+      const priorityB = priority[placeB] ?? 99;
+
+      // First sort by type (city/town/village)
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB;
+      }
+
+      // Within same type, sort by population (descending)
+      return popB - popA;
+    });
+
+    // Collect existing city labels and markers for collision detection
+    const cityLabels: Array<{ x: number; y: number; width: number; height: number }> = [];
+    const cityMarkers: Array<{ x: number; y: number; radius: number }> = [];
+
+    // Collect major road lines for collision detection (motorway and trunk only)
+    const majorRoadLines: Array<{ coordinates: number[][] }> = [];
+    byType.road.forEach(feature => {
+      const highway = feature.properties.highway || 'secondary';
+      if ((highway === 'motorway' || highway === 'trunk') && feature.geometry.type === 'LineString') {
+        majorRoadLines.push({ coordinates: feature.geometry.coordinates });
+      }
+    });
+
+    // Draw all cities - try multiple positions but ALWAYS draw
+    sortedCities.forEach(feature => {
       if (feature.geometry.type === 'Point') {
         const [lon, lat] = feature.geometry.coordinates;
         const utm = toUTM(lat, lon);
@@ -609,13 +828,122 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
         ctx.arc(x, y, 3, 0, Math.PI * 2);
         ctx.fill();
 
-        // Draw city name
+        // Store marker for collision detection
+        cityMarkers.push({ x, y, radius: 8 });
+
+        // Draw city name - try multiple positions, always draw
         if (feature.properties.name) {
-          ctx.fillStyle = CHART_STYLES.features.city.color;
           ctx.font = `${CHART_STYLES.features.city.size}px sans-serif`;
+          const textWidth = ctx.measureText(feature.properties.name).width;
+          const textHeight = CHART_STYLES.features.city.size;
+
+          // Try 8 positions: right, left, top, bottom, and 4 diagonals
+          const positions = [
+            { x: x + 6, y: y - textHeight / 2 }, // right
+            { x: x - textWidth - 6, y: y - textHeight / 2 }, // left
+            { x: x - textWidth / 2, y: y - textHeight - 6 }, // top
+            { x: x - textWidth / 2, y: y + 6 }, // bottom
+            { x: x + 6, y: y - textHeight - 6 }, // top-right
+            { x: x - textWidth - 6, y: y - textHeight - 6 }, // top-left
+            { x: x + 6, y: y + 6 }, // bottom-right
+            { x: x - textWidth - 6, y: y + 6 }, // bottom-left
+          ];
+
+          let bestPosition = positions[0]; // Default to right
+          let bestScore = Infinity;
+
+          // Score each position (lower is better)
+          for (const pos of positions) {
+            const labelX = pos.x;
+            const labelY = pos.y;
+            let score = 0;
+
+            // Check collision with existing city labels
+            cityLabels.forEach(existing => {
+              const overlaps = !(
+                labelX + textWidth < existing.x ||
+                labelX > existing.x + existing.width ||
+                labelY + textHeight < existing.y ||
+                labelY > existing.y + existing.height
+              );
+              if (overlaps) score += 100; // Heavy penalty for label overlap
+            });
+
+            // Check collision with other city markers (excluding current one)
+            cityMarkers.forEach(marker => {
+              if (marker.x === x && marker.y === y) return; // Skip current marker
+
+              // Rectangle-circle collision
+              const closestX = Math.max(labelX, Math.min(marker.x, labelX + textWidth));
+              const closestY = Math.max(labelY, Math.min(marker.y, labelY + textHeight));
+              const dx = marker.x - closestX;
+              const dy = marker.y - closestY;
+              const distanceSquared = dx * dx + dy * dy;
+
+              if (distanceSquared < (marker.radius * marker.radius)) {
+                score += 50; // Penalty for marker overlap
+              }
+            });
+
+            // Check collision with major roads (motorway, trunk)
+            majorRoadLines.forEach(road => {
+              const roadUTM = road.coordinates.map(coord => {
+                const utm = toUTM(coord[1], coord[0]);
+                return toCanvas(utm.easting, utm.northing);
+              });
+
+              // Check if any road segment intersects with label rectangle
+              for (let i = 0; i < roadUTM.length - 1; i++) {
+                const [x1, y1] = roadUTM[i];
+                const [x2, y2] = roadUTM[i + 1];
+
+                // Simple check: does line segment come close to label rectangle?
+                const labelCenterX = labelX + textWidth / 2;
+                const labelCenterY = labelY + textHeight / 2;
+
+                // Distance from line segment to label center
+                const lineLengthSquared = (x2 - x1) ** 2 + (y2 - y1) ** 2;
+                if (lineLengthSquared === 0) continue;
+
+                const t = Math.max(0, Math.min(1, ((labelCenterX - x1) * (x2 - x1) + (labelCenterY - y1) * (y2 - y1)) / lineLengthSquared));
+                const projX = x1 + t * (x2 - x1);
+                const projY = y1 + t * (y2 - y1);
+                const dist = Math.sqrt((labelCenterX - projX) ** 2 + (labelCenterY - projY) ** 2);
+
+                if (dist < 15) { // Within 15px of major road
+                  score += 30; // Penalty for major road proximity
+                }
+              }
+            });
+
+            if (score < bestScore) {
+              bestScore = score;
+              bestPosition = pos;
+            }
+          }
+
+          // Always draw at best position found
+          const finalX = bestPosition.x;
+          const finalY = bestPosition.y;
+          const padding = 2;
+
+          // Draw semi-transparent background (light gray for city labels)
+          ctx.fillStyle = 'rgba(241, 245, 249, 0.85)'; // slate-100 with transparency
+          ctx.fillRect(
+            finalX - padding,
+            finalY - padding,
+            textWidth + padding * 2,
+            textHeight + padding * 2
+          );
+
+          // Draw city name text
+          ctx.fillStyle = CHART_STYLES.features.city.color;
           ctx.textAlign = 'left';
           ctx.textBaseline = 'middle';
-          ctx.fillText(feature.properties.name, x + 6, y);
+          ctx.fillText(feature.properties.name, finalX, finalY + textHeight / 2);
+
+          // Store label bounds for future collision detection
+          cityLabels.push({ x: finalX, y: finalY, width: textWidth, height: textHeight });
         }
       }
     });
@@ -748,7 +1076,233 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
     ctx.stroke();
   }
 
-  function drawScaleBar(ctx: CanvasRenderingContext2D, scale: number, rect: { width: number; height: number }, printScale: number) {
+  // Draw leg information labels at midpoint of each segment
+  function drawLegInfoLabels(
+    ctx: CanvasRenderingContext2D,
+    segments: RouteSegment[],
+    toUTM: (lat: number, lon: number) => UTMCoordinate,
+    toCanvas: (e: number, n: number) => [number, number]
+  ) {
+    const labels: Array<{ x: number; y: number; lines: string[]; width: number; height: number }> = [];
+
+    // Pre-calculate all waypoint positions (markers) and label bounding boxes for collision detection
+    const waypointMarkers = locations.map(loc => {
+      const utm = toUTM(loc.lat, loc.lon);
+      const [x, y] = toCanvas(utm.easting, utm.northing);
+      return { x, y, radius: 20 }; // Marker + some padding
+    });
+
+    const waypointLabelBoxes = locations.map(loc => {
+      const utm = toUTM(loc.lat, loc.lon);
+      const [x, y] = toCanvas(utm.easting, utm.northing);
+
+      // Calculate waypoint label dimensions (same logic as in waypoint drawing)
+      const label = loc.name.split(',')[0];
+      ctx.font = 'bold 12px sans-serif';
+      const maxCharsPerLine = 12;
+      const words = label.split(' ');
+      const lines: string[] = [];
+      let currentLine = '';
+      words.forEach(word => {
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+        if (testLine.length <= maxCharsPerLine) {
+          currentLine = testLine;
+        } else {
+          if (currentLine) lines.push(currentLine);
+          currentLine = word;
+        }
+      });
+      if (currentLine) lines.push(currentLine);
+
+      const lineHeight = 14;
+      const infoLineHeight = 12;
+      const nameLinesWidth = Math.max(...lines.map(line => ctx.measureText(line).width));
+
+      ctx.font = 'bold 10px sans-serif';
+      const distanceLine = loc.distance !== undefined ? `${loc.distance.toFixed(1)} NM` : null;
+      const timeLine = loc.cumulativeTime !== undefined ? formatCumulativeTime(loc.cumulativeTime) : null;
+      const distanceWidth = distanceLine ? ctx.measureText(distanceLine).width : 0;
+      const timeWidth = timeLine ? ctx.measureText(timeLine).width : 0;
+      const maxWidth = Math.max(nameLinesWidth, distanceWidth, timeWidth);
+      const infoLines = [distanceLine, timeLine].filter(Boolean).length;
+      const totalHeight = lineHeight * lines.length + infoLineHeight * infoLines;
+      const padding = 3;
+      const labelY = y + 22;
+
+      return {
+        x: x - maxWidth / 2 - padding,
+        y: labelY - padding,
+        width: maxWidth + padding * 2,
+        height: totalHeight + padding * 2,
+      };
+    });
+
+    // Helper function to format time (same as waypoint rendering)
+    function formatCumulativeTime(minutes?: number): string | null {
+      if (minutes === undefined || minutes === null) return null;
+      const hours = Math.floor(minutes / 60);
+      const mins = Math.round(minutes % 60);
+      return hours > 0 ? `${hours} h ${mins} min` : `${mins} min`;
+    }
+
+    let legNumber = 1; // Counter for leg numbering
+    segments.forEach((segment) => {
+      // Skip alternative legs (but don't increment counter)
+      if (segment.isAlternative) return;
+
+      // Skip if no data available
+      if (!segment.magneticHeading || !segment.distance) {
+        legNumber++; // Still increment even if skipped
+        return;
+      }
+
+      // Calculate midpoint in UTM
+      const fromUTM = toUTM(segment.fromLat, segment.fromLon);
+      const toUTMCoord = toUTM(segment.toLat, segment.toLon);
+      const midUTM = {
+        easting: (fromUTM.easting + toUTMCoord.easting) / 2,
+        northing: (fromUTM.northing + toUTMCoord.northing) / 2,
+      };
+      const [midX, midY] = toCanvas(midUTM.easting, midUTM.northing);
+
+      // Build label lines
+      const lines: string[] = [];
+
+      // Title: Leg number
+      lines.push(`Leg ${legNumber}`);
+
+      // TC (True Course)
+      if (segment.trueCourse !== undefined) {
+        lines.push(`TC ${Math.round(segment.trueCourse).toString().padStart(3, '0')}°`);
+      }
+
+      // MH (Magnetic Heading)
+      lines.push(`MH ${Math.round(segment.magneticHeading).toString().padStart(3, '0')}°`);
+
+      // MH (climb) if different
+      if (segment.climbMagneticHeading !== undefined &&
+          Math.abs(segment.climbMagneticHeading - segment.magneticHeading) > 0.5) {
+        lines.push(`MH↑ ${Math.round(segment.climbMagneticHeading).toString().padStart(3, '0')}°`);
+      }
+
+      // MH (descent) if different
+      if (segment.descentMagneticHeading !== undefined &&
+          Math.abs(segment.descentMagneticHeading - segment.magneticHeading) > 0.5) {
+        lines.push(`MH↓ ${Math.round(segment.descentMagneticHeading).toString().padStart(3, '0')}°`);
+      }
+
+      // Distance
+      lines.push(`Dist: ${segment.distance.toFixed(1)} NM`);
+
+      // Fuel remaining
+      if (segment.fuelRemaining !== undefined && segment.fuelUnit) {
+        lines.push(`Left: ${segment.fuelRemaining.toFixed(1)} ${segment.fuelUnit}`);
+      }
+
+      // Measure label dimensions
+      ctx.font = 'bold 10px sans-serif';
+      const lineHeight = 12;
+      const maxWidth = Math.max(...lines.map(line => ctx.measureText(line).width));
+      const padding = 4;
+      const labelWidth = maxWidth + padding * 2;
+      const labelHeight = lines.length * lineHeight + padding * 2;
+
+      // Offset label from line center (try placing it to the side)
+      const offsetDistance = 30; // pixels away from line center
+      let labelX = midX + offsetDistance;
+      let labelY = midY - labelHeight / 2;
+
+      // Simple collision avoidance: check if overlaps with existing labels
+      let attempts = 0;
+      const maxAttempts = 8;
+      const offsets = [
+        { x: offsetDistance, y: 0 },           // right
+        { x: -offsetDistance, y: 0 },          // left
+        { x: 0, y: -offsetDistance },          // top
+        { x: 0, y: offsetDistance },           // bottom
+        { x: offsetDistance, y: -offsetDistance }, // top-right
+        { x: -offsetDistance, y: -offsetDistance }, // top-left
+        { x: offsetDistance, y: offsetDistance }, // bottom-right
+        { x: -offsetDistance, y: offsetDistance }, // bottom-left
+      ];
+
+      while (attempts < maxAttempts) {
+        const offset = offsets[attempts];
+        labelX = midX + offset.x;
+        labelY = midY + offset.y - labelHeight / 2;
+
+        // Check collision with existing labels
+        const labelCollision = labels.some(existing => {
+          return !(
+            labelX + labelWidth < existing.x ||
+            labelX > existing.x + existing.width ||
+            labelY + labelHeight < existing.y ||
+            labelY > existing.y + existing.height
+          );
+        });
+
+        // Check collision with waypoint labels (using actual bounding boxes)
+        const waypointLabelCollision = waypointLabelBoxes.some(wpBox => {
+          return !(
+            labelX + labelWidth < wpBox.x ||
+            labelX > wpBox.x + wpBox.width ||
+            labelY + labelHeight < wpBox.y ||
+            labelY > wpBox.y + wpBox.height
+          );
+        });
+
+        // Check collision with waypoint markers (circles/diamonds)
+        const waypointMarkerCollision = waypointMarkers.some(marker => {
+          // Check if any corner of the label is too close to the marker
+          const corners = [
+            { x: labelX, y: labelY },
+            { x: labelX + labelWidth, y: labelY },
+            { x: labelX, y: labelY + labelHeight },
+            { x: labelX + labelWidth, y: labelY + labelHeight },
+          ];
+          return corners.some(corner => {
+            const distance = Math.sqrt(
+              Math.pow(corner.x - marker.x, 2) + Math.pow(corner.y - marker.y, 2)
+            );
+            return distance < marker.radius;
+          });
+        });
+
+        if (!labelCollision && !waypointLabelCollision && !waypointMarkerCollision) break;
+        attempts++;
+      }
+
+      // Store label position for collision detection
+      labels.push({ x: labelX, y: labelY, lines, width: labelWidth, height: labelHeight });
+
+      // Draw label background
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.strokeStyle = '#0ea5e9'; // sky-500 border
+      ctx.lineWidth = 2;
+      ctx.fillRect(labelX, labelY, labelWidth, labelHeight);
+      ctx.strokeRect(labelX, labelY, labelWidth, labelHeight);
+
+      // Draw label text
+      ctx.fillStyle = '#1e293b'; // slate-800
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+
+      lines.forEach((line, i) => {
+        // First line (Leg X) in bold and slightly larger
+        if (i === 0) {
+          ctx.font = 'bold 11px sans-serif';
+        } else {
+          ctx.font = 'bold 10px sans-serif';
+        }
+        ctx.fillText(line, labelX + padding, labelY + padding + i * lineHeight);
+      });
+
+      // Increment leg number for next segment
+      legNumber++;
+    });
+  }
+
+  function drawScaleBar(ctx: CanvasRenderingContext2D, scale: number, rect: { width: number; height: number }, printScale: number, tickIntervalNM: number, timeTickIntervalMin: number) {
     const x = 20;
     const y = rect.height - 40;
 
@@ -772,8 +1326,8 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
     const bgWidth = Math.max(barWidth, scaleTextWidth) + bgPadding * 2;
     const bgHeight = 45;
 
-    // Draw semi-transparent gray background
-    ctx.fillStyle = 'rgba(248, 250, 252, 0.85)'; // slate-50 with opacity
+    // Draw semi-transparent gray background (more transparent to allow waypoint labels to be visible)
+    ctx.fillStyle = 'rgba(248, 250, 252, 0.6)'; // slate-50 with lower opacity
     ctx.fillRect(x - bgPadding, y - bgPadding - 5, bgWidth, bgHeight);
 
     // Draw scale name at top
@@ -804,6 +1358,66 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
     ctx.textBaseline = 'top';
     ctx.fillText('0', x, y + 22);
     ctx.fillText(`${lengthNM} NM`, x + barWidth, y + 22);
+
+    // Draw distance reference legend (next to scale bar)
+    const legendX = x + bgWidth + 20; // 20px gap between scale bar and legend
+    const legendY = y - bgPadding - 5;
+
+    // Measure reference text (using same font size as scale bar labels)
+    ctx.font = 'bold 12px sans-serif';
+    const refTitle = 'Distance Marks';
+    const refText = `⊥ = ${tickIntervalNM} NM`;
+    const refTitleWidth = ctx.measureText(refTitle).width;
+    const refTextWidth = ctx.measureText(refText).width;
+    const legendWidth = Math.max(refTitleWidth, refTextWidth) + bgPadding * 2;
+    const legendHeight = 42;
+
+    // Draw legend background
+    ctx.fillStyle = 'rgba(248, 250, 252, 0.6)';
+    ctx.fillRect(legendX, legendY, legendWidth, legendHeight);
+
+    // Draw legend title
+    ctx.fillStyle = '#1e293b';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(refTitle, legendX + bgPadding, legendY + bgPadding);
+
+    // Draw reference symbol and text (same size as scale bar)
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillStyle = '#0ea5e9'; // sky-500 (same as route line color)
+    ctx.fillText(refText, legendX + bgPadding, legendY + bgPadding + 16);
+
+    // Draw time tick reference (if enabled) - positioned to the right of distance marks
+    if (timeTickIntervalMin > 0) {
+      const timeLegendX = legendX + legendWidth + 20; // 20px gap to the right of distance legend
+      const timeLegendY = legendY; // Same Y position as distance legend
+
+      // Measure time reference text
+      ctx.font = 'bold 12px sans-serif';
+      const timeRefTitle = 'Time Marks';
+      const timeRefText = `/ = ${timeTickIntervalMin} min`;
+      const timeRefTitleWidth = ctx.measureText(timeRefTitle).width;
+      const timeRefTextWidth = ctx.measureText(timeRefText).width;
+      const timeLegendWidth = Math.max(timeRefTitleWidth, timeRefTextWidth) + bgPadding * 2;
+      const timeLegendHeight = 42;
+
+      // Draw time legend background
+      ctx.fillStyle = 'rgba(248, 250, 252, 0.6)';
+      ctx.fillRect(timeLegendX, timeLegendY, timeLegendWidth, timeLegendHeight);
+
+      // Draw time legend title
+      ctx.fillStyle = '#1e293b';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText(timeRefTitle, timeLegendX + bgPadding, timeLegendY + bgPadding);
+
+      // Draw time reference symbol and text
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillStyle = '#a855f7'; // purple-500 (same as time tick color)
+      ctx.fillText(timeRefText, timeLegendX + bgPadding, timeLegendY + bgPadding + 16);
+    }
   }
 
   /**

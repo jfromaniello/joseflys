@@ -104,7 +104,9 @@ function buildOverpassQuery(bbox: BoundingBox): string {
       relation["aeroway"="aerodrome"](${bboxStr});
 
       // Cities, towns, and villages
-      node["place"~"^(city|town|village)$"](${bboxStr});
+      // Filter by population >= 3000 to reduce clutter
+      node["place"~"^(city|town|village)$"]["population"](${bboxStr});
+      node["place"="city"](${bboxStr}); // Always include cities even without population data
 
       // Railways
       way["railway"="rail"](${bboxStr});
