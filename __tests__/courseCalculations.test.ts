@@ -515,6 +515,7 @@ describe("courseCalculations", () => {
           10, // Cruise fuel flow (GPH)
           undefined,
           undefined,
+          // @ts-expect-error Testing with climbPhase
           climbPhase
         );
 

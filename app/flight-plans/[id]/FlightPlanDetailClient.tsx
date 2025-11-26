@@ -19,13 +19,13 @@ import {
   calculateMainRouteTotals,
   calculateTotalFuelWithAlternatives,
   type LegCalculatedResults,
-  generateShareUrl,
   MAX_FUEL_PRECISION,
 } from "@/lib/flightPlan";
 import { FuelUnit, getFuelResultUnit } from "@/lib/fuelConversion";
 import { Tooltip } from "@/app/components/Tooltip";
 import { WaypointsCompact } from "@/app/course/components/WaypointsCompact";
 import { DownloadDropdownButton } from "@/app/components/DownloadDropdownButton";
+import { ShareDropdownButton } from "@/app/components/ShareDropdownButton";
 import {
   ArrowLeftIcon,
   TrashIcon,
@@ -33,8 +33,6 @@ import {
   CalendarIcon,
   ClockIcon,
   PlusIcon,
-  ShareIcon,
-  CheckIcon,
   MapIcon,
 } from "@heroicons/react/24/outline";
 import { compressForUrl } from "@/lib/urlCompression";
@@ -50,7 +48,6 @@ export function FlightPlanDetailClient({
   // Start with null to avoid hydration mismatch (localStorage is client-only)
   const [flightPlan, setFlightPlan] = useState<FlightPlan | null>(null);
   const [loading, setLoading] = useState(true);
-  const [shareSuccess, setShareSuccess] = useState(false);
 
   // Load from localStorage after hydration (this is a valid use of useEffect)
   // We're synchronizing with an external system (localStorage)
@@ -116,31 +113,6 @@ export function FlightPlanDetailClient({
       if (updatedPlan) {
         setFlightPlan(updatedPlan);
       }
-    }
-  };
-
-  const handleShare = async () => {
-    if (!flightPlan) return;
-
-    try {
-      const shareUrl = generateShareUrl(flightPlan);
-
-      // Try to use Web Share API if available
-      if (navigator.share) {
-        await navigator.share({
-          title: `Flight Plan: ${flightPlan.name}`,
-          text: `Check out this flight plan with ${flightPlan.legs.length} leg${flightPlan.legs.length !== 1 ? "s" : ""}`,
-          url: shareUrl,
-        });
-      } else {
-        // Fallback to copying to clipboard
-        await navigator.clipboard.writeText(shareUrl);
-        setShareSuccess(true);
-        setTimeout(() => setShareSuccess(false), 2000);
-      }
-    } catch (error) {
-      // User cancelled share or clipboard failed
-      console.error("Share failed:", error);
     }
   };
 
@@ -301,23 +273,7 @@ export function FlightPlanDetailClient({
                   size="md"
                   showText={false}
                 />
-                <button
-                  onClick={handleShare}
-                  className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 cursor-pointer"
-                  title="Share flight plan"
-                >
-                  {shareSuccess ? (
-                    <>
-                      <CheckIcon className="w-4 h-4" />
-                      <span className="hidden sm:inline">Copied!</span>
-                    </>
-                  ) : (
-                    <>
-                      <ShareIcon className="w-4 h-4" />
-                      <span className="hidden sm:inline">Share</span>
-                    </>
-                  )}
-                </button>
+                <ShareDropdownButton flightPlan={flightPlan} />
                 <Link
                   href={`/flight-plans/${flightPlan.id}/map`}
                   className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 cursor-pointer"

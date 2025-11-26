@@ -6,12 +6,12 @@ import { PageLayout } from "../components/PageLayout";
 import { Footer } from "../components/Footer";
 import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
 import { DownloadDropdownButton } from "../components/DownloadDropdownButton";
+import { ShareDropdownButton } from "../components/ShareDropdownButton";
 import {
   loadFlightPlans,
   deleteFlightPlan,
   type FlightPlan,
   buildLocalChartUrl,
-  generateShareUrl,
 } from "@/lib/flightPlan";
 import {
   TrashIcon,
@@ -20,14 +20,11 @@ import {
   ClockIcon,
   CalendarIcon,
   MapIcon,
-  ShareIcon,
-  CheckIcon,
 } from "@heroicons/react/24/outline";
 
 export function FlightPlansClient() {
   const [flightPlans, setFlightPlans] = useState<FlightPlan[]>([]);
   const [loading, setLoading] = useState(true);
-  const [shareSuccessId, setShareSuccessId] = useState<string | null>(null);
 
   useEffect(() => {
     // Safe: Synchronizing with external system (localStorage)
@@ -44,29 +41,6 @@ export function FlightPlansClient() {
       if (success) {
         setFlightPlans(flightPlans.filter((p) => p.id !== planId));
       }
-    }
-  };
-
-  const handleShare = async (plan: FlightPlan) => {
-    try {
-      const shareUrl = generateShareUrl(plan);
-
-      // Try to use Web Share API if available
-      if (navigator.share) {
-        await navigator.share({
-          title: `Flight Plan: ${plan.name}`,
-          text: `Check out this flight plan with ${plan.legs.length} leg${plan.legs.length !== 1 ? "s" : ""}`,
-          url: shareUrl,
-        });
-      } else {
-        // Fallback to copying to clipboard
-        await navigator.clipboard.writeText(shareUrl);
-        setShareSuccessId(plan.id);
-        setTimeout(() => setShareSuccessId(null), 2000);
-      }
-    } catch (error) {
-      // User cancelled share or clipboard failed
-      console.error("Share failed:", error);
     }
   };
 
@@ -194,17 +168,7 @@ export function FlightPlansClient() {
                         size="sm"
                         showText={false}
                       />
-                      <button
-                        onClick={() => handleShare(plan)}
-                        className="p-2 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 rounded-lg transition-colors cursor-pointer"
-                        title="Share flight plan"
-                      >
-                        {shareSuccessId === plan.id ? (
-                          <CheckIcon className="w-5 h-5" />
-                        ) : (
-                          <ShareIcon className="w-5 h-5" />
-                        )}
-                      </button>
+                      <ShareDropdownButton flightPlan={plan} compact />
                       {buildLocalChartUrl(plan) && (
                         <Link
                           href={buildLocalChartUrl(plan)!}
@@ -232,22 +196,30 @@ export function FlightPlansClient() {
                   </div>
 
                   {/* Legs Summary */}
-                  <div
-                    className="text-sm"
-                    style={{ color: "oklch(0.7 0.02 240)" }}
-                  >
-                    <span className="font-medium">
+                  <div className="text-sm">
+                    <span className="font-medium" style={{ color: "oklch(0.7 0.02 240)" }}>
                       {plan.legs.length} leg{plan.legs.length !== 1 ? "s" : ""}
                     </span>
                     {plan.legs.length > 0 && (
-                      <span className="ml-2">
-                        {plan.legs.map((leg, i) => (
-                          <span key={leg.id}>
-                            {i > 0 && " → "}
-                            {leg.desc || `Leg ${i + 1}`}
-                          </span>
-                        ))}
-                      </span>
+                      <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                        {plan.legs.map((leg, i) => {
+                          // Priority: desc > from.name > fromCity > "Leg N"
+                          const legName = leg.desc
+                            || leg.from?.name?.split(",")[0]
+                            || leg.fromCity?.split(",")[0]
+                            || `Leg ${i + 1}`;
+                          return (
+                            <span key={leg.id} className="flex items-center gap-1.5">
+                              {i > 0 && (
+                                <span style={{ color: "oklch(0.5 0.02 240)" }}>→</span>
+                              )}
+                              <span className="px-2 py-0.5 bg-sky-500/20 text-sky-300 rounded text-xs font-medium border border-sky-500/30">
+                                {legName}
+                              </span>
+                            </span>
+                          );
+                        })}
+                      </div>
                     )}
                   </div>
                 </div>

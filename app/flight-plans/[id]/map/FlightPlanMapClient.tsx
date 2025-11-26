@@ -11,7 +11,7 @@ import { ShareButtonSimple } from "../../../components/ShareButtonSimple";
 import { getFlightPlanById, type FlightPlan } from "@/lib/flightPlan/flightPlanStorage";
 import { calculateLegResults, calculateLegWaypoints, detectAlternativeLegs } from "@/lib/flightPlan/flightPlanCalculations";
 import { validateUTMRoute, type UTMValidationResult, type Location } from "@/lib/utmValidation";
-import { getFuelResultUnit } from "@/lib/fuelConversion";
+import { getFuelResultUnit, type FuelUnit } from "@/lib/fuelConversion";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import type { LocalChartMapHandle } from "../../../local-chart/LocalChartMap";
 
@@ -164,11 +164,11 @@ export function FlightPlanMapClient({ flightPlanId }: FlightPlanMapClientProps) 
         groundSpeed: legResult?.groundSpeed,
         trueCourse: leg.th, // True course from leg data
         magneticHeading: legResult?.compassCourse ?? undefined, // Use compass course if available, otherwise magnetic heading
-        climbMagneticHeading: leg.climbTas ? legResult?.compassCourse : undefined, // If there's climb data
-        descentMagneticHeading: leg.descentTas ? legResult?.compassCourse : undefined, // If there's descent data
+        climbMagneticHeading: leg.climbTas ? (legResult?.compassCourse ?? undefined) : undefined, // If there's climb data
+        descentMagneticHeading: leg.descentTas ? (legResult?.compassCourse ?? undefined) : undefined, // If there's descent data
         distance: leg.dist,
         fuelRemaining: fuelRemaining > 0 ? fuelRemaining : 0,
-        fuelUnit: getFuelResultUnit(leg.fuelUnit || "GPH"),
+        fuelUnit: getFuelResultUnit((leg.fuelUnit || "gph") as FuelUnit),
       });
     });
 

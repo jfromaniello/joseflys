@@ -10,6 +10,7 @@ import {
   createFlightPlan,
   getFlightPlanById,
   addOrUpdateLeg,
+  findDuplicateFlightPlan,
 } from "@/lib/flightPlan";
 import Link from "next/link";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
@@ -22,7 +23,7 @@ export function ImportFlightPlanClient({
   serializedPlan,
 }: ImportFlightPlanClientProps) {
   const router = useRouter();
-  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
+  const [status, setStatus] = useState<"loading" | "success" | "existing" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [flightPlanId, setFlightPlanId] = useState<string>("");
 
@@ -40,8 +41,20 @@ export function ImportFlightPlanClient({
       // Deserialize the flight plan
       const deserialized = deserializeFlightPlan(serializedPlan);
 
-      // Check if a flight plan with this name already exists
-      // We'll create a new one or update if it exists
+      // Check if an identical flight plan already exists
+      const existingPlan = findDuplicateFlightPlan(deserialized);
+      if (existingPlan) {
+        // Found duplicate - redirect to existing plan
+        setFlightPlanId(existingPlan.id);
+        setStatus("existing");
+
+        setTimeout(() => {
+          router.push(`/flight-plans/${existingPlan.id}`);
+        }, 1500);
+        return;
+      }
+
+      // No duplicate found - create new plan
       let flightPlan = createFlightPlan(deserialized.name, deserialized.date);
 
       // Add all legs
@@ -104,6 +117,34 @@ export function ImportFlightPlanClient({
                 style={{ color: "oklch(0.6 0.02 240)" }}
               >
                 Redirecting to flight plan...
+              </p>
+              {flightPlanId && (
+                <Link
+                  href={`/flight-plans/${flightPlanId}`}
+                  className="inline-flex px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  View Flight Plan
+                </Link>
+              )}
+            </div>
+          )}
+
+          {status === "existing" && (
+            <div className="text-center py-12">
+              <div
+                className="text-5xl mb-4"
+                style={{ color: "oklch(0.7 0.15 230)" }}
+              >
+                ✓
+              </div>
+              <p className="text-lg text-white mb-2">
+                Flight plan already exists!
+              </p>
+              <p
+                className="text-sm mb-6"
+                style={{ color: "oklch(0.6 0.02 240)" }}
+              >
+                Opening existing flight plan...
               </p>
               {flightPlanId && (
                 <Link

@@ -386,6 +386,90 @@ export function generateShortId(): string {
 }
 
 /**
+ * Generate a content hash for a flight plan (excludes id and timestamps)
+ * Used to detect duplicate plans
+ */
+export function generateFlightPlanContentHash(plan: {
+  name: string;
+  date?: string;
+  legs: Array<Omit<FlightPlanLeg, "id" | "index">>;
+}): string {
+  // Create a normalized representation of the plan content
+  const content = {
+    name: plan.name,
+    date: plan.date || "",
+    legs: plan.legs.map((leg) => ({
+      th: leg.th,
+      tas: leg.tas,
+      wd: leg.wd,
+      ws: leg.ws,
+      md: leg.md,
+      var: leg.var,
+      dist: leg.dist,
+      ff: leg.ff,
+      fuelUnit: leg.fuelUnit,
+      unit: leg.unit,
+      desc: leg.desc || "",
+      plane: leg.plane || "",
+      from: leg.from,
+      to: leg.to,
+      checkpoints: leg.checkpoints,
+      climbTas: leg.climbTas,
+      climbDist: leg.climbDist,
+      climbFuel: leg.climbFuel,
+      climbWd: leg.climbWd,
+      climbWs: leg.climbWs,
+      descentTas: leg.descentTas,
+      descentDist: leg.descentDist,
+      descentFuel: leg.descentFuel,
+      descentWd: leg.descentWd,
+      descentWs: leg.descentWs,
+      additionalFuel: leg.additionalFuel,
+      approachLandingFuel: leg.approachLandingFuel,
+    })),
+  };
+
+  const jsonStr = JSON.stringify(content);
+
+  // Simple hash function
+  let hash = 0;
+  for (let i = 0; i < jsonStr.length; i++) {
+    const char = jsonStr.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+
+  return Math.abs(hash).toString(36);
+}
+
+/**
+ * Find an existing flight plan that matches the content of a deserialized plan
+ * Returns the matching plan if found, null otherwise
+ */
+export function findDuplicateFlightPlan(deserializedPlan: {
+  name: string;
+  date?: string;
+  legs: Array<Omit<FlightPlanLeg, "id" | "index">>;
+}): FlightPlan | null {
+  const plans = loadFlightPlans();
+  const targetHash = generateFlightPlanContentHash(deserializedPlan);
+
+  for (const plan of plans) {
+    const planHash = generateFlightPlanContentHash({
+      name: plan.name,
+      date: plan.date,
+      legs: plan.legs,
+    });
+
+    if (planHash === targetHash) {
+      return plan;
+    }
+  }
+
+  return null;
+}
+
+/**
  * Load all flight plans from localStorage
  */
 export function loadFlightPlans(): FlightPlan[] {
