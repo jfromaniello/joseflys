@@ -40,6 +40,7 @@ export function ImportAndRedirect({ flightPlan, redirectTo }: ImportAndRedirectP
       targetId = newPlan.id;
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStatus("redirecting");
 
     // Redirect to the appropriate page

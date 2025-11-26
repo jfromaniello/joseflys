@@ -8,6 +8,7 @@ import { CalculatorPageHeader } from "../../components/CalculatorPageHeader";
 import {
   getFlightPlanById,
   removeLeg,
+  updateFlightPlan,
   type FlightPlan,
   type FlightPlanLeg,
   calculateLegResults,
@@ -34,6 +35,8 @@ import {
   ClockIcon,
   PlusIcon,
   MapIcon,
+  CheckIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { compressForUrl } from "@/lib/urlCompression";
 import { formatCourse, formatWind, formatDistance } from "@/lib/formatters";
@@ -48,6 +51,8 @@ export function FlightPlanDetailClient({
   // Start with null to avoid hydration mismatch (localStorage is client-only)
   const [flightPlan, setFlightPlan] = useState<FlightPlan | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState("");
 
   // Load from localStorage after hydration (this is a valid use of useEffect)
   // We're synchronizing with an external system (localStorage)
@@ -113,6 +118,34 @@ export function FlightPlanDetailClient({
       if (updatedPlan) {
         setFlightPlan(updatedPlan);
       }
+    }
+  };
+
+  const handleStartEditName = () => {
+    if (!flightPlan) return;
+    setEditedName(flightPlan.name);
+    setIsEditingName(true);
+  };
+
+  const handleSaveName = () => {
+    if (!flightPlan || !editedName.trim()) return;
+    const updatedPlan = updateFlightPlan(flightPlan.id, { name: editedName.trim() });
+    if (updatedPlan) {
+      setFlightPlan(updatedPlan);
+    }
+    setIsEditingName(false);
+  };
+
+  const handleCancelEditName = () => {
+    setIsEditingName(false);
+    setEditedName("");
+  };
+
+  const handleNameKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSaveName();
+    } else if (e.key === "Escape") {
+      handleCancelEditName();
     }
   };
 
@@ -259,12 +292,48 @@ export function FlightPlanDetailClient({
                   <ArrowLeftIcon className="w-4 h-4" />
                   Back to Flight Plans
                 </Link>
-                <h2
-                  className="text-xl sm:text-2xl font-bold"
-                  style={{ color: "white" }}
-                >
-                  {flightPlan.name}
-                </h2>
+                {isEditingName ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={editedName}
+                      onChange={(e) => setEditedName(e.target.value)}
+                      onKeyDown={handleNameKeyDown}
+                      autoFocus
+                      className="text-xl sm:text-2xl font-bold bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-1 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <button
+                      onClick={handleSaveName}
+                      className="p-2 bg-green-600/30 hover:bg-green-600/50 text-green-300 hover:text-green-200 rounded-lg transition-colors cursor-pointer"
+                      title="Save"
+                    >
+                      <CheckIcon className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={handleCancelEditName}
+                      className="p-2 bg-red-600/30 hover:bg-red-600/50 text-red-300 hover:text-red-200 rounded-lg transition-colors cursor-pointer"
+                      title="Cancel"
+                    >
+                      <XMarkIcon className="w-5 h-5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 group">
+                    <h2
+                      className="text-xl sm:text-2xl font-bold"
+                      style={{ color: "white" }}
+                    >
+                      {flightPlan.name}
+                    </h2>
+                    <button
+                      onClick={handleStartEditName}
+                      className="p-1.5 text-slate-500 hover:text-blue-400 hover:bg-blue-600/20 rounded-lg transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
+                      title="Edit name"
+                    >
+                      <PencilIcon className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
               <div className="flex gap-2">
                 <DownloadDropdownButton

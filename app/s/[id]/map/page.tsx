@@ -1,4 +1,4 @@
-import { redirect, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import { getSharedFlightPlan } from "@/lib/redis";
 import { ImportAndRedirect } from "./ImportAndRedirect";
 import type { FlightPlan } from "@/lib/flightPlan";
