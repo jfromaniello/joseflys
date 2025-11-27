@@ -13,7 +13,7 @@ import { calculateLegResults, calculateLegWaypoints, detectAlternativeLegs } fro
 import { validateUTMRoute, type UTMValidationResult, type Location } from "@/lib/utmValidation";
 import { getFuelResultUnit, type FuelUnit } from "@/lib/fuelConversion";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
-import type { LocalChartMapHandle } from "../../../local-chart/LocalChartMap";
+import type { LocalChartMapHandle, AerodromeData } from "../../../local-chart/LocalChartMap";
 
 // Dynamic import for LocalChartMap to avoid SSR issues with Leaflet
 const LocalChartMap = dynamic(
@@ -100,6 +100,11 @@ export function FlightPlanMapClient({ flightPlanId }: FlightPlanMapClientProps) 
   const [showTimeLabels, setShowTimeLabels] = useState<boolean>(
     searchParams.get("timeLabels") === "1"
   );
+  const [showAerodromes, setShowAerodromes] = useState<boolean>(
+    searchParams.get("adLad") === "1"
+  );
+  const [aerodromes, setAerodromes] = useState<AerodromeData[]>([]);
+  const [aerodromesLoading, setAerodromesLoading] = useState(false);
 
   // Load from localStorage after hydration
   useEffect(() => {
@@ -118,9 +123,10 @@ export function FlightPlanMapClient({ flightPlanId }: FlightPlanMapClientProps) 
     params.set("timeTick", timeTickIntervalMin.toString());
     if (showDistanceLabels) params.set("distLabels", "1");
     if (showTimeLabels) params.set("timeLabels", "1");
+    if (showAerodromes) params.set("adLad", "1");
 
     router.replace(`/flight-plans/${flightPlanId}/map?${params.toString()}`, { scroll: false });
-  }, [mapMode, printScale, tickIntervalNM, timeTickIntervalMin, showDistanceLabels, showTimeLabels, flightPlanId, router]);
+  }, [mapMode, printScale, tickIntervalNM, timeTickIntervalMin, showDistanceLabels, showTimeLabels, showAerodromes, flightPlanId, router]);
 
   // Calculate leg results for all legs (same as FlightPlanDetailClient)
   const legResults = useMemo(() => {
@@ -282,6 +288,34 @@ export function FlightPlanMapClient({ flightPlanId }: FlightPlanMapClientProps) 
 
     return validateUTMRoute(allLocations);
   }, [locations]);
+
+  // Load aerodromes when toggle is enabled
+  useEffect(() => {
+    if (!showAerodromes || locations.length === 0) {
+      setAerodromes([]);
+      return;
+    }
+
+    // Calculate bounding box from locations with some padding
+    const lats = locations.map(l => l.lat);
+    const lons = locations.map(l => l.lon);
+    const minLat = Math.min(...lats) - 0.5; // ~30 NM padding
+    const maxLat = Math.max(...lats) + 0.5;
+    const minLon = Math.min(...lons) - 0.5;
+    const maxLon = Math.max(...lons) + 0.5;
+
+    setAerodromesLoading(true);
+    fetch(`/api/aerodromes?minLat=${minLat}&maxLat=${maxLat}&minLon=${minLon}&maxLon=${maxLon}`)
+      .then(res => res.json())
+      .then(data => {
+        setAerodromes(data.data || []);
+        setAerodromesLoading(false);
+      })
+      .catch(() => {
+        setAerodromes([]);
+        setAerodromesLoading(false);
+      });
+  }, [showAerodromes, locations]);
 
   if (loading) {
     return (
@@ -502,6 +536,30 @@ export function FlightPlanMapClient({ flightPlanId }: FlightPlanMapClientProps) 
                 </div>
               </div>
 
+              {/* Show AD/LAD Toggle */}
+              <div className="flex items-center justify-between p-4 rounded-xl bg-slate-900/30 border border-gray-700">
+                <div>
+                  <p className="text-sm font-semibold text-white mb-1">Show AD / LAD</p>
+                  <p className="text-xs text-gray-400">
+                    {aerodromesLoading ? "Loading..." : showAerodromes && aerodromes.length > 0
+                      ? `${aerodromes.filter(a => a.type === 'AD').length} AD, ${aerodromes.filter(a => a.type === 'LAD').length} LAD`
+                      : "Aerodromes and Landing Sites (Argentina)"}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowAerodromes(!showAerodromes)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${
+                    showAerodromes ? "bg-sky-500" : "bg-gray-600"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      showAerodromes ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              </div>
+
               {/* Print Scale Selector (only for UTM mode) */}
               {mapMode === "utm" && (
                 <>
@@ -685,6 +743,7 @@ export function FlightPlanMapClient({ flightPlanId }: FlightPlanMapClientProps) 
                 timeTickIntervalMin={timeTickIntervalMin}
                 showDistanceLabels={showDistanceLabels}
                 showTimeLabels={showTimeLabels}
+                aerodromes={showAerodromes ? aerodromes : []}
               />
             </div>
           )}

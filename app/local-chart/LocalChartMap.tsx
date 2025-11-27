@@ -48,6 +48,17 @@ interface RouteSegment {
 
 type MapMode = 'utm' | 'mercator';
 
+export interface AerodromeData {
+  type: "AD" | "LAD";
+  code: string | null;
+  shortCode: string | null;
+  name: string;
+  lat: number;
+  lon: number;
+  province: string | null;
+  fir: string | null;
+}
+
 interface LocalChartMapProps {
   locations: LocationData[];
   routeSegments?: RouteSegment[]; // Optional: explicit route segments with alternative marking
@@ -59,6 +70,7 @@ interface LocalChartMapProps {
   timeTickIntervalMin?: number; // Time interval for time-based tick marks (e.g., 10, 15, 20, 30 min)
   showDistanceLabels?: boolean; // Show cumulative distance labels on distance ticks
   showTimeLabels?: boolean; // Show cumulative time labels on time ticks
+  aerodromes?: AerodromeData[]; // Optional: AD/LAD to show on map
 }
 
 export interface LocalChartMapHandle {
@@ -113,6 +125,7 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
     timeTickIntervalMin = 0, // Default 0 = disabled
     showDistanceLabels = false,
     showTimeLabels = false,
+    aerodromes = [],
   }, ref) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [osmData, setOsmData] = useState<OSMData | null>(null);
@@ -388,6 +401,11 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
       // NOTE: Waypoint markers and leg info labels are drawn in the TICK LAYER
       // so they appear on top of tick labels (waypoints are more important)
 
+      // Draw aerodromes (AD/LAD) as small squares
+      if (aerodromes && aerodromes.length > 0) {
+        drawAerodromes(offscreenCtx, aerodromes, toUTM, toCanvasFunc);
+      }
+
       // Draw scale bar BASE (without tick legends - those go in tick layer)
       drawScaleBarBase(offscreenCtx, scale, rect, printScale);
 
@@ -404,7 +422,7 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
     return () => clearTimeout(timeoutId);
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [osmData, loading, locations, utmZone, hemisphere, printScale, routeSegments]);
+  }, [osmData, loading, locations, utmZone, hemisphere, printScale, routeSegments, aerodromes]);
 
   // Render TICK LAYER - fast operation that runs when tick params change
   // Copies base layer and draws ticks on top
@@ -818,10 +836,15 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
     // Draw tick legends
     drawTickLegends(ctx, rect, tickIntervalNM, timeTickIntervalMin);
 
+    // Draw aerodromes legend (if any aerodromes are shown)
+    if (aerodromes && aerodromes.length > 0) {
+      drawAerodromesLegend(ctx, rect, aerodromes);
+    }
+
     ctx.restore();
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tickIntervalNM, timeTickIntervalMin, routeSegments, loading, baseLayerVersion, showDistanceLabels, showTimeLabels, locations]);
+  }, [tickIntervalNM, timeTickIntervalMin, routeSegments, loading, baseLayerVersion, showDistanceLabels, showTimeLabels, locations, aerodromes]);
 
   // Draw UTM grid with labels
   function drawUTMGrid(
@@ -1577,6 +1600,32 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
     });
   }
 
+  // Draw aerodromes (AD/LAD) as small squares
+  function drawAerodromes(
+    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+    aerodromes: AerodromeData[],
+    toUTM: (lat: number, lon: number) => UTMCoordinate,
+    toCanvas: (easting: number, northing: number) => [number, number]
+  ) {
+    const AD_COLOR = '#0288D1'; // Blue for aerodromes
+    const LAD_COLOR = '#D32F2F'; // Red for LAD
+    const SQUARE_SIZE = 6;
+
+    aerodromes.forEach((aerodrome) => {
+      const utm = toUTM(aerodrome.lat, aerodrome.lon);
+      const [x, y] = toCanvas(utm.easting, utm.northing);
+
+      // Draw filled square
+      ctx.fillStyle = aerodrome.type === 'AD' ? AD_COLOR : LAD_COLOR;
+      ctx.fillRect(x - SQUARE_SIZE / 2, y - SQUARE_SIZE / 2, SQUARE_SIZE, SQUARE_SIZE);
+
+      // Draw border
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x - SQUARE_SIZE / 2, y - SQUARE_SIZE / 2, SQUARE_SIZE, SQUARE_SIZE);
+    });
+  }
+
   // Draw scale bar BASE (without tick legends)
   function drawScaleBarBase(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, scale: number, rect: { width: number; height: number }, printScale: number) {
     const x = 20;
@@ -1712,6 +1761,71 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
       ctx.fillStyle = '#a855f7';
       ctx.fillText(timeRefText, timeLegendX + bgPadding, timeLegendY + bgPadding + 16);
     }
+  }
+
+  // Draw aerodromes legend in the top-right corner
+  function drawAerodromesLegend(
+    ctx: CanvasRenderingContext2D,
+    rect: { width: number; height: number },
+    aerodromes: AerodromeData[]
+  ) {
+    const AD_COLOR = '#0288D1';
+    const LAD_COLOR = '#D32F2F';
+    const bgPadding = 8;
+    const squareSize = 10;
+    const lineHeight = 20;
+
+    // Count AD and LAD
+    const adCount = aerodromes.filter(a => a.type === 'AD').length;
+    const ladCount = aerodromes.filter(a => a.type === 'LAD').length;
+
+    // Prepare texts
+    const lines: { color: string; label: string }[] = [];
+    if (adCount > 0) {
+      lines.push({ color: AD_COLOR, label: `AD (${adCount})` });
+    }
+    if (ladCount > 0) {
+      lines.push({ color: LAD_COLOR, label: `LAD (${ladCount})` });
+    }
+
+    if (lines.length === 0) return;
+
+    // Calculate dimensions
+    ctx.font = 'bold 12px sans-serif';
+    const maxTextWidth = Math.max(...lines.map(l => ctx.measureText(l.label).width));
+    const legendWidth = squareSize + 8 + maxTextWidth + bgPadding * 2;
+    const legendHeight = lines.length * lineHeight + bgPadding * 2;
+
+    // Position in bottom-right corner
+    const legendX = rect.width - legendWidth - 20;
+    const legendY = rect.height - legendHeight - 20;
+
+    // Draw background
+    ctx.fillStyle = 'rgba(248, 250, 252, 0.9)';
+    ctx.fillRect(legendX, legendY, legendWidth, legendHeight);
+    ctx.strokeStyle = '#94a3b8';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(legendX, legendY, legendWidth, legendHeight);
+
+    // Draw legend items
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+
+    lines.forEach((line, i) => {
+      const itemY = legendY + bgPadding + i * lineHeight + lineHeight / 2;
+
+      // Draw colored square
+      ctx.fillStyle = line.color;
+      ctx.fillRect(legendX + bgPadding, itemY - squareSize / 2, squareSize, squareSize);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(legendX + bgPadding, itemY - squareSize / 2, squareSize, squareSize);
+
+      // Draw label
+      ctx.fillStyle = '#1e293b';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText(line.label, legendX + bgPadding + squareSize + 8, itemY);
+    });
   }
 
   /**
@@ -1883,7 +1997,7 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
 
   // Mercator mode rendering
   if (mapMode === 'mercator') {
-    return <MercatorMap locations={locations} />;
+    return <MercatorMap locations={locations} aerodromes={aerodromes} />;
   }
 
   // UTM mode rendering - show loading only when waiting for OSM data
@@ -1947,7 +2061,7 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
 });
 
 // Mercator Map Component (Web Mercator with Leaflet + OSM tiles)
-function MercatorMap({ locations }: { locations: LocationData[] }) {
+function MercatorMap({ locations, aerodromes = [] }: { locations: LocationData[]; aerodromes?: AerodromeData[] }) {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -1982,6 +2096,10 @@ function MercatorMap({ locations }: { locations: LocationData[] }) {
       .map(loc => [loc.lat, loc.lon] as [number, number]);
   }, [locations]);
 
+  // Count aerodromes by type
+  const adCount = aerodromes.filter(a => a.type === 'AD').length;
+  const ladCount = aerodromes.filter(a => a.type === 'LAD').length;
+
   if (!isClient) {
     return (
       <div className="w-full h-[600px] rounded-xl bg-slate-800/50 border-2 border-gray-700 flex items-center justify-center">
@@ -2004,6 +2122,39 @@ function MercatorMap({ locations }: { locations: LocationData[] }) {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+
+        {/* Aerodrome markers */}
+        {aerodromes.map((aerodrome, index) => (
+          <Marker
+            key={`aerodrome-${index}`}
+            position={[aerodrome.lat, aerodrome.lon]}
+            icon={createAerodromeIcon(aerodrome.type)}
+          >
+            <Popup>
+              <div className="min-w-[200px]">
+                <div className="font-bold text-sm mb-1">{aerodrome.name}</div>
+                <div className="text-xs space-y-0.5">
+                  <div className="flex items-center gap-1">
+                    <span
+                      className="inline-block w-2 h-2 rounded-sm"
+                      style={{ backgroundColor: aerodrome.type === 'AD' ? '#0288D1' : '#D32F2F' }}
+                    />
+                    <span className="font-medium">{aerodrome.type === 'AD' ? 'Aerodrome' : 'LAD'}</span>
+                  </div>
+                  {aerodrome.code && (
+                    <div><span className="text-gray-500">ICAO:</span> {aerodrome.code}</div>
+                  )}
+                  {aerodrome.province && (
+                    <div><span className="text-gray-500">Province:</span> {aerodrome.province}</div>
+                  )}
+                  <div className="text-gray-500 mt-1">
+                    {aerodrome.lat.toFixed(4)}, {aerodrome.lon.toFixed(4)}
+                  </div>
+                </div>
+              </div>
+            </Popup>
+          </Marker>
+        ))}
 
         {/* Route line (skip fly-over waypoints) */}
         {routePoints.length >= 2 && (
@@ -2042,6 +2193,26 @@ function MercatorMap({ locations }: { locations: LocationData[] }) {
           Web Mercator • WGS-84 • OSM Tiles
         </p>
       </div>
+
+      {/* Aerodromes legend */}
+      {aerodromes.length > 0 && (
+        <div className="absolute bottom-4 right-4 bg-slate-900/90 backdrop-blur-sm px-3 py-2 rounded-lg border border-gray-600 z-[1000]">
+          <div className="text-xs space-y-1">
+            {adCount > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="inline-block w-3 h-3 rounded-sm" style={{ backgroundColor: '#0288D1' }} />
+                <span className="text-white">AD ({adCount})</span>
+              </div>
+            )}
+            {ladCount > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="inline-block w-3 h-3 rounded-sm" style={{ backgroundColor: '#D32F2F' }} />
+                <span className="text-white">LAD ({ladCount})</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -2067,5 +2238,27 @@ function createWaypointIcon(isFlyOver: boolean) {
     className: '',
     iconSize: [32, 32],
     iconAnchor: [16, 16],
+  });
+}
+
+// Create custom Leaflet icon for aerodromes
+function createAerodromeIcon(type: 'AD' | 'LAD') {
+  if (typeof window === 'undefined' || !L) return undefined;
+
+  const color = type === 'AD' ? '#0288D1' : '#D32F2F';
+
+  // Square icon with airplane symbol
+  const svg = `
+    <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <rect x="2" y="2" width="20" height="20" rx="2" fill="${color}" stroke="#ffffff" stroke-width="2"/>
+      <path d="M12 6 L12 18 M8 10 L16 10 M9 16 L15 16" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+  `;
+
+  return L.divIcon({
+    html: svg,
+    className: '',
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
   });
 }
