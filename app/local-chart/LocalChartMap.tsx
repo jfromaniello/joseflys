@@ -117,6 +117,22 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
     const actualScaleRef = useRef<number>(1); // Store the actual scale used for rendering
     const [isRendering, setIsRendering] = useState(false);
 
+    // OffscreenCanvas for base layer caching (OSM, routes, waypoints - everything except ticks)
+    const baseLayerCanvasRef = useRef<OffscreenCanvas | null>(null);
+    // Counter to trigger tick layer re-render when base layer changes
+    const [baseLayerVersion, setBaseLayerVersion] = useState(0);
+    // Store render context for tick drawing
+    const renderContextRef = useRef<{
+      rect: { width: number; height: number };
+      scale: number;
+      boundsMinE: number;
+      boundsMinN: number;
+      offsetX: number;
+      offsetY: number;
+      toCanvas: (easting: number, northing: number) => [number, number];
+      toUTM: (lat: number, lon: number) => UTMCoordinate;
+    } | null>(null);
+
     // Download canvas as PNG image with correct DPI metadata
     const handleDownloadChart = async () => {
     if (!canvasRef.current) return;
@@ -223,7 +239,8 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
     loadOSMData();
   }, [locations, mapMode]);
 
-  // Render chart on canvas
+  // Render BASE LAYER to OffscreenCanvas (OSM, routes, waypoints - everything except ticks)
+  // This is the expensive operation that only runs when map data changes
   useEffect(() => {
     if (!canvasRef.current || !osmData || loading) return;
 
@@ -234,110 +251,301 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
       if (!canvasRef.current) return;
 
       const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        setIsRendering(false);
-        return;
-      }
 
       // Set canvas size (high DPI) - fixed size for screen display
       const dpr = window.devicePixelRatio || 1;
       const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+
+      // Create or resize OffscreenCanvas for base layer
+      if (!baseLayerCanvasRef.current ||
+          baseLayerCanvasRef.current.width !== canvas.width ||
+          baseLayerCanvasRef.current.height !== canvas.height) {
+        baseLayerCanvasRef.current = new OffscreenCanvas(canvas.width, canvas.height);
+      } else {
+        // Reset the canvas if reusing (clear transforms)
+        baseLayerCanvasRef.current.width = canvas.width;
+      }
+
+      const offscreenCtx = baseLayerCanvasRef.current.getContext('2d');
+      if (!offscreenCtx) {
+        setIsRendering(false);
+        return;
+      }
+
+      // Scale for high DPI
+      offscreenCtx.scale(dpr, dpr);
+
+      // Convert all locations to UTM
+      const utmLocations = locations.map(loc => ({
+        ...loc,
+        utm: toUTM(loc.lat, loc.lon),
+      }));
+
+      // Calculate bounds in UTM coordinates with 10NM padding
+      const paddingMeters = 10 * 1852; // 10 NM = 18,520 meters
+      const eastings = utmLocations.map(l => l.utm.easting);
+      const northings = utmLocations.map(l => l.utm.northing);
+      const minEasting = Math.min(...eastings) - paddingMeters;
+      const maxEasting = Math.max(...eastings) + paddingMeters;
+      const minNorthing = Math.min(...northings) - paddingMeters;
+      const maxNorthing = Math.max(...northings) + paddingMeters;
+
+      const boundsMinE = minEasting;
+      const boundsMaxE = maxEasting;
+      const boundsMinN = minNorthing;
+      const boundsMaxN = maxNorthing;
+
+      const boundsWidth = boundsMaxE - boundsMinE;
+      const boundsHeight = boundsMaxN - boundsMinN;
+
+      // Calculate scale to fit content in the canvas
+      const scaleX = rect.width / boundsWidth;
+      const scaleY = rect.height / boundsHeight;
+      const scale = Math.min(scaleX, scaleY) * 0.95; // 95% to add margin
+
+      // Store the actual scale used for DPI calculation
+      actualScaleRef.current = scale;
+
+      // Calculate centered offset
+      const contentWidth = boundsWidth * scale;
+      const contentHeight = boundsHeight * scale;
+      const offsetX = (rect.width - contentWidth) / 2;
+      const offsetY = (rect.height - contentHeight) / 2;
+
+      // Transform UTM coordinates to canvas coordinates (centered)
+      const toCanvasFunc = (easting: number, northing: number): [number, number] => {
+        const x = (easting - boundsMinE) * scale + offsetX;
+        const y = rect.height - ((northing - boundsMinN) * scale + offsetY); // Flip Y axis
+        return [x, y];
+      };
+
+      // Store render context for tick drawing
+      renderContextRef.current = {
+        rect,
+        scale,
+        boundsMinE,
+        boundsMinN,
+        offsetX,
+        offsetY,
+        toCanvas: toCanvasFunc,
+        toUTM,
+      };
+
+      // Clear offscreen canvas
+      offscreenCtx.fillStyle = CHART_STYLES.background;
+      offscreenCtx.fillRect(0, 0, rect.width, rect.height);
+
+      // Draw UTM grid
+      drawUTMGrid(offscreenCtx, boundsMinE, boundsMaxE, boundsMinN, boundsMaxN, toCanvasFunc, rect);
+
+      // Draw OSM features (pass waypoint names to avoid duplicates)
+      const waypointNames = utmLocations.map(loc =>
+        loc.name.split(',')[0].trim().toLowerCase()
+      );
+      drawOSMFeatures(offscreenCtx, osmData, toUTM, toCanvasFunc, waypointNames);
+
+      // Draw route lines (WITHOUT tick marks - those go in the tick layer)
+      if (routeSegments && routeSegments.length > 0) {
+        routeSegments.forEach(segment => {
+          const fromUTM = toUTM(segment.fromLat, segment.fromLon);
+          const toUTMCoord = toUTM(segment.toLat, segment.toLon);
+          const [x1, y1] = toCanvasFunc(fromUTM.easting, fromUTM.northing);
+          const [x2, y2] = toCanvasFunc(toUTMCoord.easting, toUTMCoord.northing);
+
+          // Draw main route line
+          offscreenCtx.strokeStyle = segment.isAlternative ? '#fb923c' : CHART_STYLES.route.line.color;
+          offscreenCtx.lineWidth = CHART_STYLES.route.line.width;
+          offscreenCtx.beginPath();
+          offscreenCtx.moveTo(x1, y1);
+          offscreenCtx.lineTo(x2, y2);
+          offscreenCtx.stroke();
+        });
+      } else {
+        // Fallback: Draw route line connecting non-flyover waypoints
+        const routeWaypoints = utmLocations.filter(loc => !loc.isFlyOver);
+        if (routeWaypoints.length >= 2) {
+          offscreenCtx.strokeStyle = CHART_STYLES.route.line.color;
+          offscreenCtx.lineWidth = CHART_STYLES.route.line.width;
+          offscreenCtx.beginPath();
+          routeWaypoints.forEach((loc, i) => {
+            const [x, y] = toCanvasFunc(loc.utm.easting, loc.utm.northing);
+            if (i === 0) {
+              offscreenCtx.moveTo(x, y);
+            } else {
+              offscreenCtx.lineTo(x, y);
+            }
+          });
+          offscreenCtx.stroke();
+        }
+      }
+
+      // Draw waypoint markers (AFTER OSM features so they appear on top)
+      utmLocations.forEach((loc) => {
+        const [x, y] = toCanvasFunc(loc.utm.easting, loc.utm.northing);
+
+        // Different style for fly-over waypoints
+        if (loc.isFlyOver) {
+          offscreenCtx.fillStyle = '#a855f7';
+          offscreenCtx.strokeStyle = '#ffffff';
+          offscreenCtx.lineWidth = 2;
+          offscreenCtx.beginPath();
+          const size = CHART_STYLES.route.waypoint.size;
+          offscreenCtx.moveTo(x, y - size);
+          offscreenCtx.lineTo(x + size, y);
+          offscreenCtx.lineTo(x, y + size);
+          offscreenCtx.lineTo(x - size, y);
+          offscreenCtx.closePath();
+          offscreenCtx.fill();
+          offscreenCtx.stroke();
+        } else {
+          offscreenCtx.fillStyle = CHART_STYLES.route.waypoint.fill;
+          offscreenCtx.strokeStyle = CHART_STYLES.route.waypoint.stroke;
+          offscreenCtx.lineWidth = 2;
+          offscreenCtx.beginPath();
+          offscreenCtx.arc(x, y, CHART_STYLES.route.waypoint.size, 0, Math.PI * 2);
+          offscreenCtx.fill();
+          offscreenCtx.stroke();
+        }
+
+        // Label with background and word wrap
+        const label = loc.name.split(',')[0];
+        offscreenCtx.font = 'bold 12px sans-serif';
+        offscreenCtx.textAlign = 'center';
+        offscreenCtx.textBaseline = 'top';
+
+        const maxCharsPerLine = 12;
+        const words = label.split(' ');
+        const lines: string[] = [];
+        let currentLine = '';
+
+        words.forEach(word => {
+          const testLine = currentLine ? `${currentLine} ${word}` : word;
+          if (testLine.length <= maxCharsPerLine) {
+            currentLine = testLine;
+          } else {
+            if (currentLine) lines.push(currentLine);
+            currentLine = word;
+          }
+        });
+        if (currentLine) lines.push(currentLine);
+
+        const distanceLine = loc.distance !== undefined ? `${loc.distance.toFixed(1)} NM` : null;
+        const formatTime = (minutes?: number): string | null => {
+          if (minutes === undefined || minutes === null) return null;
+          const hours = Math.floor(minutes / 60);
+          const mins = Math.round(minutes % 60);
+          return hours > 0 ? `${hours} h ${mins} min` : `${mins} min`;
+        };
+        const timeLine = formatTime(loc.cumulativeTime);
+
+        const lineHeight = 14;
+        const infoLineHeight = 12;
+        offscreenCtx.font = 'bold 12px sans-serif';
+        const nameLinesWidth = Math.max(...lines.map(line => offscreenCtx.measureText(line).width));
+        offscreenCtx.font = 'bold 10px sans-serif';
+        const distanceWidth = distanceLine ? offscreenCtx.measureText(distanceLine).width : 0;
+        const timeWidth = timeLine ? offscreenCtx.measureText(timeLine).width : 0;
+        const maxWidth = Math.max(nameLinesWidth, distanceWidth, timeWidth);
+        const infoLines = [distanceLine, timeLine].filter(Boolean).length;
+        const totalHeight = lineHeight * lines.length + infoLineHeight * infoLines;
+        const padding = 3;
+        const labelY = y + 22;
+
+        offscreenCtx.fillStyle = 'rgba(248, 250, 252, 0.7)';
+        offscreenCtx.fillRect(
+          x - maxWidth / 2 - padding,
+          labelY - padding,
+          maxWidth + padding * 2,
+          totalHeight + padding * 2
+        );
+
+        offscreenCtx.font = 'bold 12px sans-serif';
+        offscreenCtx.fillStyle = '#1e293b';
+        lines.forEach((line, i) => {
+          offscreenCtx.fillText(line, x, labelY + i * lineHeight);
+        });
+
+        let currentInfoY = labelY + lines.length * lineHeight;
+
+        if (distanceLine) {
+          offscreenCtx.font = 'bold 10px sans-serif';
+          offscreenCtx.fillStyle = '#0ea5e9';
+          offscreenCtx.fillText(distanceLine, x, currentInfoY);
+          currentInfoY += infoLineHeight;
+        }
+
+        if (timeLine) {
+          offscreenCtx.font = 'bold 10px sans-serif';
+          offscreenCtx.fillStyle = '#a855f7';
+          offscreenCtx.fillText(timeLine, x, currentInfoY);
+        }
+      });
+
+      // Draw leg info labels
+      if (routeSegments && routeSegments.length > 0) {
+        drawLegInfoLabels(offscreenCtx, routeSegments, toUTM, toCanvasFunc);
+      }
+
+      // Draw scale bar BASE (without tick legends - those go in tick layer)
+      drawScaleBarBase(offscreenCtx, scale, rect, printScale);
+
+      // Draw north indicator
+      const centerLat = locations.reduce((sum, loc) => sum + loc.lat, 0) / locations.length;
+      const centerLon = locations.reduce((sum, loc) => sum + loc.lon, 0) / locations.length;
+      drawNorthIndicator(offscreenCtx, rect, centerLat, centerLon, utmZone);
+
+      // Base layer is ready - trigger tick layer render
+      setBaseLayerVersion(v => v + 1);
+      setIsRendering(false);
+    }, 10);
+
+    return () => clearTimeout(timeoutId);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [osmData, loading, locations, utmZone, hemisphere, printScale, routeSegments]);
+
+  // Render TICK LAYER - fast operation that runs when tick params change
+  // Copies base layer and draws ticks on top
+  useEffect(() => {
+    if (!canvasRef.current || !baseLayerCanvasRef.current || !renderContextRef.current || loading) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const { rect, toCanvas, toUTM } = renderContextRef.current;
+    const dpr = window.devicePixelRatio || 1;
+
+    // Copy base layer to visible canvas (very fast)
+    ctx.drawImage(baseLayerCanvasRef.current, 0, 0);
+
+    // Scale for drawing ticks
+    ctx.save();
     ctx.scale(dpr, dpr);
 
-    // Convert all locations to UTM
-    const utmLocations = locations.map(loc => ({
-      ...loc,
-      utm: toUTM(loc.lat, loc.lon),
-    }));
-
-    // Calculate bounds in UTM coordinates with 10NM padding
-    const paddingMeters = 10 * 1852; // 10 NM = 18,520 meters
-    const eastings = utmLocations.map(l => l.utm.easting);
-    const northings = utmLocations.map(l => l.utm.northing);
-    const minEasting = Math.min(...eastings) - paddingMeters;
-    const maxEasting = Math.max(...eastings) + paddingMeters;
-    const minNorthing = Math.min(...northings) - paddingMeters;
-    const maxNorthing = Math.max(...northings) + paddingMeters;
-
-    const boundsMinE = minEasting;
-    const boundsMaxE = maxEasting;
-    const boundsMinN = minNorthing;
-    const boundsMaxN = maxNorthing;
-
-    const boundsWidth = boundsMaxE - boundsMinE;
-    const boundsHeight = boundsMaxN - boundsMinN;
-
-    // Calculate scale to fit content in the canvas
-    // The scale should make the content fit the canvas, regardless of printScale
-    const scaleX = rect.width / boundsWidth;
-    const scaleY = rect.height / boundsHeight;
-    const scale = Math.min(scaleX, scaleY) * 0.95; // 95% to add margin
-
-    // Store the actual scale used for DPI calculation
-    actualScaleRef.current = scale;
-
-    // Calculate centered offset
-    const contentWidth = boundsWidth * scale;
-    const contentHeight = boundsHeight * scale;
-    const offsetX = (rect.width - contentWidth) / 2;
-    const offsetY = (rect.height - contentHeight) / 2;
-
-    // Transform UTM coordinates to canvas coordinates (centered)
-    const toCanvas = (easting: number, northing: number): [number, number] => {
-      const x = (easting - boundsMinE) * scale + offsetX;
-      const y = rect.height - ((northing - boundsMinN) * scale + offsetY); // Flip Y axis
-      return [x, y];
-    };
-
-    // Clear canvas
-    ctx.fillStyle = CHART_STYLES.background;
-    ctx.fillRect(0, 0, rect.width, rect.height);
-
-    // Draw UTM grid
-    drawUTMGrid(ctx, boundsMinE, boundsMaxE, boundsMinN, boundsMaxN, toCanvas, rect);
-
-    // Draw OSM features (pass waypoint names to avoid duplicates)
-    const waypointNames = utmLocations.map(loc =>
-      loc.name.split(',')[0].trim().toLowerCase()
-    );
-    drawOSMFeatures(ctx, osmData, toUTM, toCanvas, waypointNames);
-
-    // Draw route lines with distance tick marks
+    // Draw tick marks on route segments
     if (routeSegments && routeSegments.length > 0) {
-      // Draw using explicit segments (supports alternative routes with different colors)
       routeSegments.forEach(segment => {
         const fromUTM = toUTM(segment.fromLat, segment.fromLon);
         const toUTMCoord = toUTM(segment.toLat, segment.toLon);
         const [x1, y1] = toCanvas(fromUTM.easting, fromUTM.northing);
         const [x2, y2] = toCanvas(toUTMCoord.easting, toUTMCoord.northing);
 
-        // Draw main route line
-        ctx.strokeStyle = segment.isAlternative ? '#fb923c' : CHART_STYLES.route.line.color; // orange-400 (softer) for alternatives
-        ctx.lineWidth = CHART_STYLES.route.line.width;
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.stroke();
-
-        // Calculate distance in NM for this segment (in UTM space)
         const dx = toUTMCoord.easting - fromUTM.easting;
         const dy = toUTMCoord.northing - fromUTM.northing;
         const distanceMeters = Math.sqrt(dx * dx + dy * dy);
         const distanceNM = distanceMeters / 1852;
 
-        // Calculate angle in canvas space (not UTM space) for correct perpendicular
         const dxCanvas = x2 - x1;
         const dyCanvas = y2 - y1;
         const lineAngleCanvas = Math.atan2(dyCanvas, dxCanvas);
 
-        // Draw tick marks at configured interval
+        // Draw distance tick marks
         const numTicks = Math.floor(distanceNM / tickIntervalNM);
-
         if (numTicks > 0) {
-          const tickLength = 8; // pixels
+          const tickLength = 8;
           const perpAngleCanvas = lineAngleCanvas + Math.PI / 2;
 
           ctx.strokeStyle = segment.isAlternative ? '#fb923c' : CHART_STYLES.route.line.color;
@@ -351,7 +559,6 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
             };
             const [tickX, tickY] = toCanvas(tickUTM.easting, tickUTM.northing);
 
-            // Draw perpendicular tick mark using canvas-space angle
             const dx1 = Math.cos(perpAngleCanvas) * tickLength;
             const dy1 = Math.sin(perpAngleCanvas) * tickLength;
             ctx.beginPath();
@@ -361,32 +568,25 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
           }
         }
 
-        // Draw time-based tick marks (if enabled and groundSpeed is available)
+        // Draw time tick marks
         if (timeTickIntervalMin > 0 && segment.groundSpeed && segment.groundSpeed > 0) {
           const groundSpeedKnots = segment.groundSpeed;
-
-          // Calculate how many time ticks fit in this segment
           const legDurationHours = distanceNM / groundSpeedKnots;
           const legDurationMinutes = legDurationHours * 60;
           const numTimeTicks = Math.floor(legDurationMinutes / timeTickIntervalMin);
 
           if (numTimeTicks > 0) {
-            const timeTickLength = 8; // pixels (same as distance ticks)
+            const timeTickLength = 8;
+            const timeTickAngle = lineAngleCanvas + Math.PI / 4;
 
-            // Use 45-degree angle RELATIVE to the route line in canvas space
-            // This makes time ticks distinguishable from distance ticks while still being correctly oriented
-            const timeTickAngle = lineAngleCanvas + Math.PI / 4; // +45 degrees from route line
-
-            ctx.strokeStyle = segment.isAlternative ? '#fbbf24' : '#a855f7'; // amber-400 or purple-500
+            ctx.strokeStyle = segment.isAlternative ? '#fbbf24' : '#a855f7';
             ctx.lineWidth = 2;
 
             for (let i = 1; i <= numTimeTicks; i++) {
-              // Calculate position based on time
-              const timeElapsed = i * timeTickIntervalMin; // minutes
-              const distanceTraveled = (timeElapsed / 60) * groundSpeedKnots; // NM
+              const timeElapsed = i * timeTickIntervalMin;
+              const distanceTraveled = (timeElapsed / 60) * groundSpeedKnots;
               const fraction = distanceTraveled / distanceNM;
 
-              // Skip if fraction exceeds segment length
               if (fraction > 1) break;
 
               const tickUTM = {
@@ -395,7 +595,6 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
               };
               const [tickX, tickY] = toCanvas(tickUTM.easting, tickUTM.northing);
 
-              // Draw time tick mark at 45-degree angle from perpendicular
               const dx1 = Math.cos(timeTickAngle) * timeTickLength;
               const dy1 = Math.sin(timeTickAngle) * timeTickLength;
               ctx.beginPath();
@@ -406,167 +605,19 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
           }
         }
       });
-    } else {
-      // Fallback: Draw route line connecting non-flyover waypoints
-      const routeWaypoints = utmLocations.filter(loc => !loc.isFlyOver);
-      if (routeWaypoints.length >= 2) {
-        ctx.strokeStyle = CHART_STYLES.route.line.color;
-        ctx.lineWidth = CHART_STYLES.route.line.width;
-        ctx.beginPath();
-        routeWaypoints.forEach((loc, i) => {
-          const [x, y] = toCanvas(loc.utm.easting, loc.utm.northing);
-          if (i === 0) {
-            ctx.moveTo(x, y);
-          } else {
-            ctx.lineTo(x, y);
-          }
-        });
-        ctx.stroke();
-      }
     }
 
-    // Draw waypoint markers (AFTER OSM features so they appear on top)
-    utmLocations.forEach((loc) => {
-      const [x, y] = toCanvas(loc.utm.easting, loc.utm.northing);
+    // Draw tick legends
+    drawTickLegends(ctx, rect, tickIntervalNM, timeTickIntervalMin);
 
-      // Different style for fly-over waypoints
-      if (loc.isFlyOver) {
-        // Fly-over: Diamond shape with purple color
-        ctx.fillStyle = '#a855f7'; // purple-500
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        const size = CHART_STYLES.route.waypoint.size;
-        ctx.moveTo(x, y - size); // top
-        ctx.lineTo(x + size, y); // right
-        ctx.lineTo(x, y + size); // bottom
-        ctx.lineTo(x - size, y); // left
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-      } else {
-        // Regular waypoint: Circle
-        ctx.fillStyle = CHART_STYLES.route.waypoint.fill;
-        ctx.strokeStyle = CHART_STYLES.route.waypoint.stroke;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(x, y, CHART_STYLES.route.waypoint.size, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-      }
-
-      // Label with background and word wrap
-      const label = loc.name.split(',')[0];
-      ctx.font = 'bold 12px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-
-      // Word wrap at ~12 characters
-      const maxCharsPerLine = 12;
-      const words = label.split(' ');
-      const lines: string[] = [];
-      let currentLine = '';
-
-      words.forEach(word => {
-        const testLine = currentLine ? `${currentLine} ${word}` : word;
-        if (testLine.length <= maxCharsPerLine) {
-          currentLine = testLine;
-        } else {
-          if (currentLine) lines.push(currentLine);
-          currentLine = word;
-        }
-      });
-      if (currentLine) lines.push(currentLine);
-
-      // Add cumulative distance and time lines if available
-      const distanceLine = loc.distance !== undefined
-        ? `${loc.distance.toFixed(1)} NM`
-        : null;
-
-      // Format cumulative time
-      const formatTime = (minutes?: number): string | null => {
-        if (minutes === undefined || minutes === null) return null;
-        const hours = Math.floor(minutes / 60);
-        const mins = Math.round(minutes % 60);
-        return hours > 0 ? `${hours} h ${mins} min` : `${mins} min`;
-      };
-      const timeLine = formatTime(loc.cumulativeTime);
-
-      // Measure text to create background box
-      const lineHeight = 14; // Approximate height for 12px font
-      const infoLineHeight = 12; // Smaller font for distance/time
-      ctx.font = 'bold 12px sans-serif';
-      const nameLinesWidth = Math.max(...lines.map(line => ctx.measureText(line).width));
-      ctx.font = 'bold 10px sans-serif';
-      const distanceWidth = distanceLine ? ctx.measureText(distanceLine).width : 0;
-      const timeWidth = timeLine ? ctx.measureText(timeLine).width : 0;
-      const maxWidth = Math.max(nameLinesWidth, distanceWidth, timeWidth);
-      const infoLines = [distanceLine, timeLine].filter(Boolean).length;
-      const totalHeight = lineHeight * lines.length + infoLineHeight * infoLines;
-      const padding = 3;
-      const labelY = y + 22; // Increased offset to move labels further below waypoint marker
-
-      // Draw semi-transparent background (more transparent for better map visibility)
-      ctx.fillStyle = 'rgba(248, 250, 252, 0.7)'; // slate-50 with lower opacity
-      ctx.fillRect(
-        x - maxWidth / 2 - padding,
-        labelY - padding,
-        maxWidth + padding * 2,
-        totalHeight + padding * 2
-      );
-
-      // Draw name text (centered, multiple lines)
-      ctx.font = 'bold 12px sans-serif';
-      ctx.fillStyle = '#1e293b';
-      lines.forEach((line, i) => {
-        ctx.fillText(line, x, labelY + i * lineHeight);
-      });
-
-      let currentInfoY = labelY + lines.length * lineHeight;
-
-      // Draw distance text (centered, below name, in blue - matches distance ticks)
-      if (distanceLine) {
-        ctx.font = 'bold 10px sans-serif';
-        ctx.fillStyle = '#0ea5e9'; // sky-500 - matches distance tick color
-        ctx.fillText(distanceLine, x, currentInfoY);
-        currentInfoY += infoLineHeight;
-      }
-
-      // Draw time text (centered, below distance, in purple - matches time ticks)
-      if (timeLine) {
-        ctx.font = 'bold 10px sans-serif';
-        ctx.fillStyle = '#a855f7'; // purple-500 - matches time tick color
-        ctx.fillText(timeLine, x, currentInfoY);
-      }
-    });
-
-    // Draw leg info labels (before scale bar so labels don't overlap it)
-    if (routeSegments && routeSegments.length > 0) {
-      drawLegInfoLabels(ctx, routeSegments, toUTM, toCanvas);
-    }
-
-    // Draw scale bar
-    drawScaleBar(ctx, scale, rect, printScale, tickIntervalNM, timeTickIntervalMin);
-
-    // Calculate center of map in geographic coordinates for grid convergence
-    const centerLat = locations.reduce((sum, loc) => sum + loc.lat, 0) / locations.length;
-    const centerLon = locations.reduce((sum, loc) => sum + loc.lon, 0) / locations.length;
-
-    // Draw north indicator
-    drawNorthIndicator(ctx, rect, centerLat, centerLon, utmZone);
-
-    // Done rendering
-    setIsRendering(false);
-    }, 10); // Small delay to let React paint the rendering overlay
-
-    return () => clearTimeout(timeoutId);
+    ctx.restore();
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [osmData, loading, locations, utmZone, hemisphere, printScale, tickIntervalNM, timeTickIntervalMin, routeSegments]);
+  }, [tickIntervalNM, timeTickIntervalMin, routeSegments, loading, baseLayerVersion]);
 
   // Draw UTM grid with labels
   function drawUTMGrid(
-    ctx: CanvasRenderingContext2D,
+    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
     minE: number,
     maxE: number,
     minN: number,
@@ -636,7 +687,7 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
 
   // Draw OSM features
   function drawOSMFeatures(
-    ctx: CanvasRenderingContext2D,
+    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
     data: OSMData,
     toUTM: (lat: number, lon: number) => UTMCoordinate,
     toCanvas: (e: number, n: number) => [number, number],
@@ -966,7 +1017,7 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
   }
 
   function drawLineString(
-    ctx: CanvasRenderingContext2D,
+    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
     coords: number[][],
     toUTM: (lat: number, lon: number) => UTMCoordinate,
     toCanvas: (e: number, n: number) => [number, number],
@@ -996,7 +1047,7 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
   }
 
   function drawPolygon(
-    ctx: CanvasRenderingContext2D,
+    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
     coords: number[][],
     toUTM: (lat: number, lon: number) => UTMCoordinate,
     toCanvas: (e: number, n: number) => [number, number],
@@ -1021,7 +1072,7 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
   }
 
   function drawPolygonWithPattern(
-    ctx: CanvasRenderingContext2D,
+    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
     coords: number[][],
     toUTM: (lat: number, lon: number) => UTMCoordinate,
     toCanvas: (e: number, n: number) => [number, number],
@@ -1094,7 +1145,7 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
 
   // Draw leg information labels at midpoint of each segment
   function drawLegInfoLabels(
-    ctx: CanvasRenderingContext2D,
+    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
     segments: RouteSegment[],
     toUTM: (lat: number, lon: number) => UTMCoordinate,
     toCanvas: (e: number, n: number) => [number, number]
@@ -1318,7 +1369,8 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
     });
   }
 
-  function drawScaleBar(ctx: CanvasRenderingContext2D, scale: number, rect: { width: number; height: number }, printScale: number, tickIntervalNM: number, timeTickIntervalMin: number) {
+  // Draw scale bar BASE (without tick legends)
+  function drawScaleBarBase(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, scale: number, rect: { width: number; height: number }, printScale: number) {
     const x = 20;
     const y = rect.height - 40;
 
@@ -1342,8 +1394,8 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
     const bgWidth = Math.max(barWidth, scaleTextWidth) + bgPadding * 2;
     const bgHeight = 45;
 
-    // Draw semi-transparent gray background (more transparent to allow waypoint labels to be visible)
-    ctx.fillStyle = 'rgba(248, 250, 252, 0.6)'; // slate-50 with lower opacity
+    // Draw semi-transparent gray background
+    ctx.fillStyle = 'rgba(248, 250, 252, 0.6)';
     ctx.fillRect(x - bgPadding, y - bgPadding - 5, bgWidth, bgHeight);
 
     // Draw scale name at top
@@ -1374,12 +1426,31 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
     ctx.textBaseline = 'top';
     ctx.fillText('0', x, y + 22);
     ctx.fillText(`${lengthNM} NM`, x + barWidth, y + 22);
+  }
+
+  // Draw tick legends (distance and time marks legends)
+  function drawTickLegends(ctx: CanvasRenderingContext2D, rect: { width: number; height: number }, tickIntervalNM: number, timeTickIntervalMin: number) {
+    const scale = actualScaleRef.current;
+    const x = 20;
+    const y = rect.height - 40;
+    const bgPadding = 6;
+
+    // Calculate scale bar width to position legends
+    const nmLengths = [1, 5, 10, 20, 50];
+    const lengths = nmLengths.map(nm => nm * 1852);
+    const targetPixels = 150;
+    const lengthIndex = lengths.findIndex(l => l * scale > targetPixels);
+    const lengthMeters = lengths[lengthIndex] || lengths[0];
+    const barWidth = lengthMeters * scale;
+
+    ctx.font = 'bold 12px sans-serif';
+    const scaleTextWidth = ctx.measureText('WAC').width; // Use longer name for consistent width
+    const scaleBgWidth = Math.max(barWidth, scaleTextWidth) + bgPadding * 2;
 
     // Draw distance reference legend (next to scale bar)
-    const legendX = x + bgWidth + 20; // 20px gap between scale bar and legend
+    const legendX = x + scaleBgWidth + 20;
     const legendY = y - bgPadding - 5;
 
-    // Measure reference text (using same font size as scale bar labels)
     ctx.font = 'bold 12px sans-serif';
     const refTitle = 'Distance Marks';
     const refText = `⊥ = ${tickIntervalNM} NM`;
@@ -1399,17 +1470,16 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
     ctx.textBaseline = 'top';
     ctx.fillText(refTitle, legendX + bgPadding, legendY + bgPadding);
 
-    // Draw reference symbol and text (same size as scale bar)
+    // Draw reference symbol and text
     ctx.font = 'bold 12px sans-serif';
-    ctx.fillStyle = '#0ea5e9'; // sky-500 (same as route line color)
+    ctx.fillStyle = '#0ea5e9';
     ctx.fillText(refText, legendX + bgPadding, legendY + bgPadding + 16);
 
-    // Draw time tick reference (if enabled) - positioned to the right of distance marks
+    // Draw time tick reference (if enabled)
     if (timeTickIntervalMin > 0) {
-      const timeLegendX = legendX + legendWidth + 20; // 20px gap to the right of distance legend
-      const timeLegendY = legendY; // Same Y position as distance legend
+      const timeLegendX = legendX + legendWidth + 20;
+      const timeLegendY = legendY;
 
-      // Measure time reference text
       ctx.font = 'bold 12px sans-serif';
       const timeRefTitle = 'Time Marks';
       const timeRefText = `/ = ${timeTickIntervalMin} min`;
@@ -1431,7 +1501,7 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
 
       // Draw time reference symbol and text
       ctx.font = 'bold 12px sans-serif';
-      ctx.fillStyle = '#a855f7'; // purple-500 (same as time tick color)
+      ctx.fillStyle = '#a855f7';
       ctx.fillText(timeRefText, timeLegendX + bgPadding, timeLegendY + bgPadding + 16);
     }
   }
@@ -1457,7 +1527,7 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
    * Draw north indicator showing grid north, true north, and magnetic north
    */
   function drawNorthIndicator(
-    ctx: CanvasRenderingContext2D,
+    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
     rect: { width: number; height: number },
     centerLat: number,
     centerLon: number,
