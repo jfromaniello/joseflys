@@ -14,6 +14,8 @@ import { validateUTMRoute, type UTMValidationResult, type Location } from "@/lib
 import { getFuelResultUnit, type FuelUnit } from "@/lib/fuelConversion";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import type { LocalChartMapHandle, AerodromeData } from "../../../local-chart/LocalChartMap";
+import { RouteWaypointsList } from "./RouteWaypointsList";
+import { MapControls } from "./MapControls";
 
 // Dynamic import for LocalChartMap to avoid SSR issues with Leaflet
 const LocalChartMap = dynamic(
@@ -58,20 +60,6 @@ type MapMode = "utm" | "mercator";
 
 interface FlightPlanMapClientProps {
   flightPlanId: string;
-}
-
-// Format cumulative time: "[X h] Y min" without zero padding
-function formatCumulativeTime(minutes?: number): string | null {
-  if (minutes === undefined || minutes === null) return null;
-
-  const hours = Math.floor(minutes / 60);
-  const mins = Math.round(minutes % 60);
-
-  if (hours > 0) {
-    return `${hours} h ${mins} min`;
-  } else {
-    return `${mins} min`;
-  }
 }
 
 export function FlightPlanMapClient({ flightPlanId }: FlightPlanMapClientProps) {
@@ -403,62 +391,7 @@ export function FlightPlanMapClient({ flightPlanId }: FlightPlanMapClientProps) 
           </Link>
 
           {/* Waypoint List */}
-          <div className="mb-6 p-4 rounded-xl bg-slate-900/30 border border-gray-700 print:mb-3 print:p-3">
-            <h3
-              className="text-sm font-semibold uppercase tracking-wide mb-3 print:mb-2"
-              style={{ color: "oklch(0.65 0.15 230)" }}
-            >
-              Route Waypoints ({locations.length})
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 print:grid-cols-3 print:gap-2">
-              {locations.map((loc, index) => (
-                <div
-                  key={index}
-                  className={`p-3 rounded-lg border print:p-2 ${
-                    loc.isFlyOver
-                      ? "bg-purple-900/20 border-purple-500/30"
-                      : "bg-slate-800/50 border-slate-700/50"
-                  }`}
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <div
-                      className="flex items-center justify-center w-6 h-6 rounded-full font-bold text-xs text-white print:w-5 print:h-5"
-                      style={{
-                        backgroundColor: loc.isFlyOver ? "#a855f7" : "oklch(0.5 0.15 230)"
-                      }}
-                    >
-                      {index + 1}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <span className="text-sm font-semibold text-white truncate block print:text-xs">
-                        {loc.name.split(",")[0]}
-                      </span>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {loc.distance !== undefined && (
-                          <span className="text-xs font-medium text-emerald-400 print:text-[10px]">
-                            {loc.distance.toFixed(1)} NM
-                          </span>
-                        )}
-                        {formatCumulativeTime(loc.cumulativeTime) && (
-                          <span className="text-xs font-medium text-sky-400 print:text-[10px]">
-                            {formatCumulativeTime(loc.cumulativeTime)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    {loc.isFlyOver && (
-                      <span className="text-xs px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 print:hidden shrink-0">
-                        Ref
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-xs print:text-[10px]" style={{ color: "oklch(0.6 0.02 240)" }}>
-                    {loc.lat.toFixed(4)}, {loc.lon.toFixed(4)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <RouteWaypointsList locations={locations} />
 
           {/* UTM Validation Warning */}
           {utmValidation && !utmValidation.isValid && (
@@ -484,248 +417,41 @@ export function FlightPlanMapClient({ flightPlanId }: FlightPlanMapClientProps) 
             </div>
           )}
 
-          {/* UTM Info + Map Mode Toggle */}
+          {/* UTM Info + Map Controls */}
           {utmValidation && utmValidation.isValid && (
-            <div className="mb-6 space-y-4 print:hidden">
-              <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
-                <div className="flex items-start gap-3">
-                  <svg className="w-6 h-6 text-emerald-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <>
+              {/* UTM Valid Banner */}
+              <div className="mb-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 print:hidden">
+                <div className="flex items-center gap-2 text-sm">
+                  <svg className="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <div>
-                    <p className="text-sm font-semibold text-emerald-400 mb-1">
-                      Route Valid for UTM Projection
-                    </p>
-                    <p className="text-sm text-emerald-200">
-                      Zone: {utmValidation.zone}{utmValidation.hemisphere} (EPSG:{utmValidation.epsgCode}) •
-                      East-West Span: {Math.round(utmValidation.maxEastWestSpan!)} km
-                    </p>
-                  </div>
+                  <span className="text-emerald-300">
+                    UTM Zone {utmValidation.zone}{utmValidation.hemisphere} • E-W: {Math.round(utmValidation.maxEastWestSpan!)} km
+                  </span>
                 </div>
               </div>
 
-              {/* Map Mode Toggle */}
-              <div className="flex items-center justify-between p-4 rounded-xl bg-slate-900/30 border border-gray-700">
-                <div>
-                  <p className="text-sm font-semibold text-white mb-1">Map Projection</p>
-                  <p className="text-xs text-gray-400">
-                    {mapMode === "utm" ? "UTM: Fixed scale for printing" : "Web Mercator: OSM tiles with context"}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 bg-slate-900/50 rounded-lg p-1">
-                  <button
-                    onClick={() => setMapMode("utm")}
-                    className={`px-3 py-1.5 rounded text-sm font-medium transition-all cursor-pointer ${
-                      mapMode === "utm"
-                        ? "bg-sky-500/20 text-sky-400"
-                        : "text-gray-400 hover:text-gray-300"
-                    }`}
-                  >
-                    UTM
-                  </button>
-                  <button
-                    onClick={() => setMapMode("mercator")}
-                    className={`px-3 py-1.5 rounded text-sm font-medium transition-all cursor-pointer ${
-                      mapMode === "mercator"
-                        ? "bg-sky-500/20 text-sky-400"
-                        : "text-gray-400 hover:text-gray-300"
-                    }`}
-                  >
-                    Mercator
-                  </button>
-                </div>
-              </div>
-
-              {/* Show AD/LAD Toggle */}
-              <div className="flex items-center justify-between p-4 rounded-xl bg-slate-900/30 border border-gray-700">
-                <div>
-                  <p className="text-sm font-semibold text-white mb-1">Show AD / LAD</p>
-                  <p className="text-xs text-gray-400">
-                    {aerodromesLoading ? "Loading..." : showAerodromes && aerodromes.length > 0
-                      ? `${aerodromes.filter(a => a.type === 'AD').length} AD, ${aerodromes.filter(a => a.type === 'LAD').length} LAD`
-                      : "Aerodromes and Landing Sites (Argentina)"}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowAerodromes(!showAerodromes)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${
-                    showAerodromes ? "bg-sky-500" : "bg-gray-600"
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      showAerodromes ? "translate-x-6" : "translate-x-1"
-                    }`}
-                  />
-                </button>
-              </div>
-
-              {/* Print Scale Selector (only for UTM mode) */}
-              {mapMode === "utm" && (
-                <>
-                  <div className="flex items-center justify-between p-4 rounded-xl bg-slate-900/30 border border-gray-700">
-                    <div>
-                      <p className="text-sm font-semibold text-white mb-1">Print Scale</p>
-                      <p className="text-xs text-gray-400">
-                        Chart scale for printing with plotter/ruler
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 bg-slate-900/50 rounded-lg p-1">
-                      <button
-                        onClick={() => setPrintScale(500000)}
-                        className={`px-3 py-1.5 rounded text-sm font-medium transition-all cursor-pointer ${
-                          printScale === 500000
-                            ? "bg-sky-500/20 text-sky-400"
-                            : "text-gray-400 hover:text-gray-300"
-                        }`}
-                      >
-                        1:500,000
-                        <span className="block text-xs opacity-70">Sectional</span>
-                      </button>
-                      <button
-                        onClick={() => setPrintScale(1000000)}
-                        className={`px-3 py-1.5 rounded text-sm font-medium transition-all cursor-pointer ${
-                          printScale === 1000000
-                            ? "bg-sky-500/20 text-sky-400"
-                            : "text-gray-400 hover:text-gray-300"
-                        }`}
-                      >
-                        1:1,000,000
-                        <span className="block text-xs opacity-70">WAC</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Distance Tick Marks Interval Selector (only for UTM mode) */}
-                  <div className="flex items-center justify-between p-4 rounded-xl bg-slate-900/30 border border-gray-700">
-                    <div>
-                      <p className="text-sm font-semibold text-white mb-1">Distance Marks</p>
-                      <p className="text-xs text-gray-400">
-                        Tick mark interval on route lines
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={showDistanceLabels}
-                          onChange={(e) => setShowDistanceLabels(e.target.checked)}
-                          className="w-4 h-4 rounded border-gray-600 bg-slate-800 text-sky-500 focus:ring-sky-500 focus:ring-offset-0 cursor-pointer"
-                        />
-                        <span className="text-xs text-gray-400">Labels</span>
-                      </label>
-                      <div className="flex items-center gap-2 bg-slate-900/50 rounded-lg p-1">
-                        <button
-                          onClick={() => setTickIntervalNM(10)}
-                          className={`px-3 py-1.5 rounded text-sm font-medium transition-all cursor-pointer ${
-                            tickIntervalNM === 10
-                              ? "bg-sky-500/20 text-sky-400"
-                              : "text-gray-400 hover:text-gray-300"
-                          }`}
-                        >
-                          10 NM
-                        </button>
-                        <button
-                          onClick={() => setTickIntervalNM(50)}
-                          className={`px-3 py-1.5 rounded text-sm font-medium transition-all cursor-pointer ${
-                            tickIntervalNM === 50
-                              ? "bg-sky-500/20 text-sky-400"
-                              : "text-gray-400 hover:text-gray-300"
-                          }`}
-                        >
-                          50 NM
-                        </button>
-                        <button
-                          onClick={() => setTickIntervalNM(100)}
-                          className={`px-3 py-1.5 rounded text-sm font-medium transition-all cursor-pointer ${
-                            tickIntervalNM === 100
-                              ? "bg-sky-500/20 text-sky-400"
-                              : "text-gray-400 hover:text-gray-300"
-                          }`}
-                        >
-                          100 NM
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Time Tick Marks Interval Selector (only for UTM mode) */}
-                  <div className="flex items-center justify-between p-4 rounded-xl bg-slate-900/30 border border-gray-700">
-                    <div>
-                      <p className="text-sm font-semibold text-white mb-1">Time Marks</p>
-                      <p className="text-xs text-gray-400">
-                        Time-based tick marks using ground speed
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      {timeTickIntervalMin > 0 && (
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={showTimeLabels}
-                            onChange={(e) => setShowTimeLabels(e.target.checked)}
-                            className="w-4 h-4 rounded border-gray-600 bg-slate-800 text-purple-500 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"
-                          />
-                          <span className="text-xs text-gray-400">Labels</span>
-                        </label>
-                      )}
-                      <div className="flex items-center gap-2 bg-slate-900/50 rounded-lg p-1">
-                        <button
-                          onClick={() => setTimeTickIntervalMin(0)}
-                          className={`px-3 py-1.5 rounded text-sm font-medium transition-all cursor-pointer ${
-                            timeTickIntervalMin === 0
-                              ? "bg-sky-500/20 text-sky-400"
-                              : "text-gray-400 hover:text-gray-300"
-                          }`}
-                        >
-                          Off
-                        </button>
-                        <button
-                          onClick={() => setTimeTickIntervalMin(10)}
-                          className={`px-3 py-1.5 rounded text-sm font-medium transition-all cursor-pointer ${
-                            timeTickIntervalMin === 10
-                              ? "bg-purple-500/20 text-purple-400"
-                              : "text-gray-400 hover:text-gray-300"
-                          }`}
-                        >
-                          10 min
-                        </button>
-                        <button
-                          onClick={() => setTimeTickIntervalMin(15)}
-                          className={`px-3 py-1.5 rounded text-sm font-medium transition-all cursor-pointer ${
-                            timeTickIntervalMin === 15
-                              ? "bg-purple-500/20 text-purple-400"
-                              : "text-gray-400 hover:text-gray-300"
-                          }`}
-                        >
-                          15 min
-                        </button>
-                        <button
-                          onClick={() => setTimeTickIntervalMin(20)}
-                          className={`px-3 py-1.5 rounded text-sm font-medium transition-all cursor-pointer ${
-                            timeTickIntervalMin === 20
-                              ? "bg-purple-500/20 text-purple-400"
-                              : "text-gray-400 hover:text-gray-300"
-                          }`}
-                        >
-                          20 min
-                        </button>
-                        <button
-                          onClick={() => setTimeTickIntervalMin(30)}
-                          className={`px-3 py-1.5 rounded text-sm font-medium transition-all cursor-pointer ${
-                            timeTickIntervalMin === 30
-                              ? "bg-purple-500/20 text-purple-400"
-                              : "text-gray-400 hover:text-gray-300"
-                          }`}
-                        >
-                          30 min
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+              {/* Map Controls */}
+              <MapControls
+                mapMode={mapMode}
+                setMapMode={setMapMode}
+                showAerodromes={showAerodromes}
+                setShowAerodromes={setShowAerodromes}
+                aerodromesLoading={aerodromesLoading}
+                aerodromes={aerodromes}
+                printScale={printScale}
+                setPrintScale={setPrintScale}
+                tickIntervalNM={tickIntervalNM}
+                setTickIntervalNM={setTickIntervalNM}
+                timeTickIntervalMin={timeTickIntervalMin}
+                setTimeTickIntervalMin={setTimeTickIntervalMin}
+                showDistanceLabels={showDistanceLabels}
+                setShowDistanceLabels={setShowDistanceLabels}
+                showTimeLabels={showTimeLabels}
+                setShowTimeLabels={setShowTimeLabels}
+              />
+            </>
           )}
 
           {/* Map */}
