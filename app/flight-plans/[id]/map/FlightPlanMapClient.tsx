@@ -94,6 +94,12 @@ export function FlightPlanMapClient({ flightPlanId }: FlightPlanMapClientProps) 
   const [timeTickIntervalMin, setTimeTickIntervalMin] = useState<number>(
     parseInt(searchParams.get("timeTick") || "0")
   );
+  const [showDistanceLabels, setShowDistanceLabels] = useState<boolean>(
+    searchParams.get("distLabels") === "1"
+  );
+  const [showTimeLabels, setShowTimeLabels] = useState<boolean>(
+    searchParams.get("timeLabels") === "1"
+  );
 
   // Load from localStorage after hydration
   useEffect(() => {
@@ -110,9 +116,11 @@ export function FlightPlanMapClient({ flightPlanId }: FlightPlanMapClientProps) 
     params.set("scale", printScale.toString());
     params.set("distTick", tickIntervalNM.toString());
     params.set("timeTick", timeTickIntervalMin.toString());
+    if (showDistanceLabels) params.set("distLabels", "1");
+    if (showTimeLabels) params.set("timeLabels", "1");
 
     router.replace(`/flight-plans/${flightPlanId}/map?${params.toString()}`, { scroll: false });
-  }, [mapMode, printScale, tickIntervalNM, timeTickIntervalMin, flightPlanId, router]);
+  }, [mapMode, printScale, tickIntervalNM, timeTickIntervalMin, showDistanceLabels, showTimeLabels, flightPlanId, router]);
 
   // Calculate leg results for all legs (same as FlightPlanDetailClient)
   const legResults = useMemo(() => {
@@ -538,37 +546,48 @@ export function FlightPlanMapClient({ flightPlanId }: FlightPlanMapClientProps) 
                         Tick mark interval on route lines
                       </p>
                     </div>
-                    <div className="flex items-center gap-2 bg-slate-900/50 rounded-lg p-1">
-                      <button
-                        onClick={() => setTickIntervalNM(10)}
-                        className={`px-3 py-1.5 rounded text-sm font-medium transition-all cursor-pointer ${
-                          tickIntervalNM === 10
-                            ? "bg-sky-500/20 text-sky-400"
-                            : "text-gray-400 hover:text-gray-300"
-                        }`}
-                      >
-                        10 NM
-                      </button>
-                      <button
-                        onClick={() => setTickIntervalNM(50)}
-                        className={`px-3 py-1.5 rounded text-sm font-medium transition-all cursor-pointer ${
-                          tickIntervalNM === 50
-                            ? "bg-sky-500/20 text-sky-400"
-                            : "text-gray-400 hover:text-gray-300"
-                        }`}
-                      >
-                        50 NM
-                      </button>
-                      <button
-                        onClick={() => setTickIntervalNM(100)}
-                        className={`px-3 py-1.5 rounded text-sm font-medium transition-all cursor-pointer ${
-                          tickIntervalNM === 100
-                            ? "bg-sky-500/20 text-sky-400"
-                            : "text-gray-400 hover:text-gray-300"
-                        }`}
-                      >
-                        100 NM
-                      </button>
+                    <div className="flex items-center gap-3">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={showDistanceLabels}
+                          onChange={(e) => setShowDistanceLabels(e.target.checked)}
+                          className="w-4 h-4 rounded border-gray-600 bg-slate-800 text-sky-500 focus:ring-sky-500 focus:ring-offset-0 cursor-pointer"
+                        />
+                        <span className="text-xs text-gray-400">Labels</span>
+                      </label>
+                      <div className="flex items-center gap-2 bg-slate-900/50 rounded-lg p-1">
+                        <button
+                          onClick={() => setTickIntervalNM(10)}
+                          className={`px-3 py-1.5 rounded text-sm font-medium transition-all cursor-pointer ${
+                            tickIntervalNM === 10
+                              ? "bg-sky-500/20 text-sky-400"
+                              : "text-gray-400 hover:text-gray-300"
+                          }`}
+                        >
+                          10 NM
+                        </button>
+                        <button
+                          onClick={() => setTickIntervalNM(50)}
+                          className={`px-3 py-1.5 rounded text-sm font-medium transition-all cursor-pointer ${
+                            tickIntervalNM === 50
+                              ? "bg-sky-500/20 text-sky-400"
+                              : "text-gray-400 hover:text-gray-300"
+                          }`}
+                        >
+                          50 NM
+                        </button>
+                        <button
+                          onClick={() => setTickIntervalNM(100)}
+                          className={`px-3 py-1.5 rounded text-sm font-medium transition-all cursor-pointer ${
+                            tickIntervalNM === 100
+                              ? "bg-sky-500/20 text-sky-400"
+                              : "text-gray-400 hover:text-gray-300"
+                          }`}
+                        >
+                          100 NM
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -580,57 +599,70 @@ export function FlightPlanMapClient({ flightPlanId }: FlightPlanMapClientProps) 
                         Time-based tick marks using ground speed
                       </p>
                     </div>
-                    <div className="flex items-center gap-2 bg-slate-900/50 rounded-lg p-1">
-                      <button
-                        onClick={() => setTimeTickIntervalMin(0)}
-                        className={`px-3 py-1.5 rounded text-sm font-medium transition-all cursor-pointer ${
-                          timeTickIntervalMin === 0
-                            ? "bg-sky-500/20 text-sky-400"
-                            : "text-gray-400 hover:text-gray-300"
-                        }`}
-                      >
-                        Off
-                      </button>
-                      <button
-                        onClick={() => setTimeTickIntervalMin(10)}
-                        className={`px-3 py-1.5 rounded text-sm font-medium transition-all cursor-pointer ${
-                          timeTickIntervalMin === 10
-                            ? "bg-purple-500/20 text-purple-400"
-                            : "text-gray-400 hover:text-gray-300"
-                        }`}
-                      >
-                        10 min
-                      </button>
-                      <button
-                        onClick={() => setTimeTickIntervalMin(15)}
-                        className={`px-3 py-1.5 rounded text-sm font-medium transition-all cursor-pointer ${
-                          timeTickIntervalMin === 15
-                            ? "bg-purple-500/20 text-purple-400"
-                            : "text-gray-400 hover:text-gray-300"
-                        }`}
-                      >
-                        15 min
-                      </button>
-                      <button
-                        onClick={() => setTimeTickIntervalMin(20)}
-                        className={`px-3 py-1.5 rounded text-sm font-medium transition-all cursor-pointer ${
-                          timeTickIntervalMin === 20
-                            ? "bg-purple-500/20 text-purple-400"
-                            : "text-gray-400 hover:text-gray-300"
-                        }`}
-                      >
-                        20 min
-                      </button>
-                      <button
-                        onClick={() => setTimeTickIntervalMin(30)}
-                        className={`px-3 py-1.5 rounded text-sm font-medium transition-all cursor-pointer ${
-                          timeTickIntervalMin === 30
-                            ? "bg-purple-500/20 text-purple-400"
-                            : "text-gray-400 hover:text-gray-300"
-                        }`}
-                      >
-                        30 min
-                      </button>
+                    <div className="flex items-center gap-3">
+                      {timeTickIntervalMin > 0 && (
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={showTimeLabels}
+                            onChange={(e) => setShowTimeLabels(e.target.checked)}
+                            className="w-4 h-4 rounded border-gray-600 bg-slate-800 text-purple-500 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"
+                          />
+                          <span className="text-xs text-gray-400">Labels</span>
+                        </label>
+                      )}
+                      <div className="flex items-center gap-2 bg-slate-900/50 rounded-lg p-1">
+                        <button
+                          onClick={() => setTimeTickIntervalMin(0)}
+                          className={`px-3 py-1.5 rounded text-sm font-medium transition-all cursor-pointer ${
+                            timeTickIntervalMin === 0
+                              ? "bg-sky-500/20 text-sky-400"
+                              : "text-gray-400 hover:text-gray-300"
+                          }`}
+                        >
+                          Off
+                        </button>
+                        <button
+                          onClick={() => setTimeTickIntervalMin(10)}
+                          className={`px-3 py-1.5 rounded text-sm font-medium transition-all cursor-pointer ${
+                            timeTickIntervalMin === 10
+                              ? "bg-purple-500/20 text-purple-400"
+                              : "text-gray-400 hover:text-gray-300"
+                          }`}
+                        >
+                          10 min
+                        </button>
+                        <button
+                          onClick={() => setTimeTickIntervalMin(15)}
+                          className={`px-3 py-1.5 rounded text-sm font-medium transition-all cursor-pointer ${
+                            timeTickIntervalMin === 15
+                              ? "bg-purple-500/20 text-purple-400"
+                              : "text-gray-400 hover:text-gray-300"
+                          }`}
+                        >
+                          15 min
+                        </button>
+                        <button
+                          onClick={() => setTimeTickIntervalMin(20)}
+                          className={`px-3 py-1.5 rounded text-sm font-medium transition-all cursor-pointer ${
+                            timeTickIntervalMin === 20
+                              ? "bg-purple-500/20 text-purple-400"
+                              : "text-gray-400 hover:text-gray-300"
+                          }`}
+                        >
+                          20 min
+                        </button>
+                        <button
+                          onClick={() => setTimeTickIntervalMin(30)}
+                          className={`px-3 py-1.5 rounded text-sm font-medium transition-all cursor-pointer ${
+                            timeTickIntervalMin === 30
+                              ? "bg-purple-500/20 text-purple-400"
+                              : "text-gray-400 hover:text-gray-300"
+                          }`}
+                        >
+                          30 min
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </>
@@ -651,6 +683,8 @@ export function FlightPlanMapClient({ flightPlanId }: FlightPlanMapClientProps) 
                 printScale={printScale}
                 tickIntervalNM={tickIntervalNM}
                 timeTickIntervalMin={timeTickIntervalMin}
+                showDistanceLabels={showDistanceLabels}
+                showTimeLabels={showTimeLabels}
               />
             </div>
           )}
