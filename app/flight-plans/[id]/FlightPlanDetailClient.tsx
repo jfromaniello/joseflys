@@ -40,6 +40,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { compressForUrl } from "@/lib/urlCompression";
 import { formatCourse, formatWind, formatDistance } from "@/lib/formatters";
+import { LegAlternates } from "@/app/components/LegAlternates";
 
 interface FlightPlanDetailClientProps {
   flightPlanId: string;
@@ -594,6 +595,16 @@ export function FlightPlanDetailClient({
                                 {leg.to.name.split(",")[0]}
                               </span>
                             </div>
+
+                            {/* Nearby Alternates */}
+                            {leg.from.lat !== undefined && leg.from.lon !== undefined &&
+                             leg.to.lat !== undefined && leg.to.lon !== undefined && (
+                              <LegAlternates
+                                from={{ lat: leg.from.lat, lon: leg.from.lon }}
+                                to={{ lat: leg.to.lat, lon: leg.to.lon }}
+                                elapsedDistanceNM={leg.elapsedDist || 0}
+                              />
+                            )}
                           </div>
                         )}
 
