@@ -57,6 +57,20 @@ interface LocalChartMapProps {
   printScale?: number; // e.g., 50000 for 1:50,000
   tickIntervalNM?: number; // Distance interval for tick marks on route (e.g., 10, 50, 100 NM)
   timeTickIntervalMin?: number; // Time interval for time-based tick marks (e.g., 10, 15, 20, 30 min)
+  contentHash?: string; // Hash of flight plan content for caching
+}
+
+import {
+  generateMapCacheKey,
+  saveMapToCache,
+  loadMapFromCache,
+  revokeMapCacheUrl,
+  initMapCache,
+} from '@/lib/mapCache';
+
+// Pre-initialize IndexedDB as early as possible
+if (typeof window !== 'undefined') {
+  initMapCache();
 }
 
 export interface LocalChartMapHandle {
@@ -109,12 +123,70 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
     printScale = 100000, // Default 1:100,000
     tickIntervalNM = 10, // Default 10 NM tick marks
     timeTickIntervalMin = 0, // Default 0 = disabled
+    contentHash,
   }, ref) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [osmData, setOsmData] = useState<OSMData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const actualScaleRef = useRef<number>(1); // Store the actual scale used for rendering
+    const [cachedImage, setCachedImage] = useState<string | null>(null);
+    const [cacheChecked, setCacheChecked] = useState(false);
+    const cachedImageRef = useRef<string | null>(null);
+    const [isRendering, setIsRendering] = useState(false);
+
+    // Generate cache key
+    const cacheKey = useMemo(() => {
+      if (!contentHash) return null;
+      return generateMapCacheKey(contentHash, mapMode, printScale, tickIntervalNM, timeTickIntervalMin);
+    }, [contentHash, mapMode, printScale, tickIntervalNM, timeTickIntervalMin]);
+
+    // Load cached image only on initial mount (not when params change)
+    // Cache is only useful when we don't have osmData yet
+    const initialLoadDone = useRef(false);
+
+    useEffect(() => {
+      // Skip cache lookup if we already have OSM data (just re-render canvas)
+      if (osmData) {
+        console.log('[MapCache] Skipping cache lookup - osmData exists');
+        setCacheChecked(true);
+        return;
+      }
+
+      // Only load from cache on initial mount
+      if (initialLoadDone.current) {
+        console.log('[MapCache] Skipping cache lookup - initial load done');
+        setCacheChecked(true);
+        return;
+      }
+
+      setCacheChecked(false);
+      console.log('[MapCache] Loading from cache...');
+
+      if (cacheKey && mapMode === 'utm') {
+        initialLoadDone.current = true;
+        loadMapFromCache(cacheKey).then((cached) => {
+          if (cached) {
+            cachedImageRef.current = cached;
+            setCachedImage(cached);
+          } else {
+            setCachedImage(null);
+          }
+          setCacheChecked(true);
+        });
+      } else {
+        setCacheChecked(true);
+      }
+
+      // Cleanup: revoke object URL when component unmounts
+      return () => {
+        if (cachedImageRef.current) {
+          revokeMapCacheUrl(cachedImageRef.current);
+          cachedImageRef.current = null;
+        }
+      };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [cacheKey, mapMode, osmData]);
 
     // Download canvas as PNG image with correct DPI metadata
     const handleDownloadChart = async () => {
@@ -226,13 +298,22 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
   useEffect(() => {
     if (!canvasRef.current || !osmData || loading) return;
 
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    // Show rendering indicator and give React time to paint it
+    setIsRendering(true);
 
-    // Set canvas size (high DPI) - fixed size for screen display
-    const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
+    const timeoutId = setTimeout(() => {
+      if (!canvasRef.current) return;
+
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        setIsRendering(false);
+        return;
+      }
+
+      // Set canvas size (high DPI) - fixed size for screen display
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
     canvas.width = rect.width * dpr;
     canvas.height = rect.height * dpr;
     ctx.scale(dpr, dpr);
@@ -545,8 +626,34 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
     // Draw north indicator
     drawNorthIndicator(ctx, rect, centerLat, centerLon, utmZone);
 
+    // Done rendering
+    setIsRendering(false);
+
+    // Cache the rendered map image as WebP to IndexedDB
+    // Only save to cache if this is a fresh render (not just parameter change)
+    // This avoids blocking the UI with toBlob() on every parameter tweak
+    if (cacheKey && !cachedImageRef.current) {
+      // Use requestAnimationFrame to ensure canvas is fully rendered
+      requestAnimationFrame(() => {
+        if (canvasRef.current) {
+          canvasRef.current.toBlob(
+            (blob) => {
+              if (blob) {
+                saveMapToCache(cacheKey, blob);
+              }
+            },
+            'image/webp',
+            0.85
+          );
+        }
+      });
+    }
+    }, 10); // Small delay to let React paint the rendering overlay
+
+    return () => clearTimeout(timeoutId);
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [osmData, loading, locations, utmZone, hemisphere, printScale, tickIntervalNM, timeTickIntervalMin, routeSegments]);
+  }, [osmData, loading, locations, utmZone, hemisphere, printScale, tickIntervalNM, timeTickIntervalMin, routeSegments, cacheKey]);
 
   // Draw UTM grid with labels
   function drawUTMGrid(
@@ -1592,8 +1699,56 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
     return <MercatorMap locations={locations} />;
   }
 
-  // UTM mode rendering
-  if (loading) {
+  // UTM mode rendering - show loading only when waiting for OSM data
+  if (loading && !osmData) {
+    // Wait for cache check to complete before deciding what to show
+    if (!cacheChecked) {
+      return (
+        <div className="w-full h-[600px] rounded-xl bg-slate-800/50 border-2 border-gray-700 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500 mx-auto mb-4"></div>
+            <p className="text-gray-400">Loading...</p>
+          </div>
+        </div>
+      );
+    }
+
+    // Show cached image while loading OSM data
+    if (cachedImage) {
+      return (
+        <div className="relative">
+          <img
+            src={cachedImage}
+            alt="Cached flight plan map"
+            className="w-full h-[600px] rounded-xl border-2 border-gray-700 print:h-[800px] print:border print:border-gray-400 object-contain bg-slate-100"
+            style={{ imageRendering: 'crisp-edges' }}
+          />
+          {/* Loading indicator overlay */}
+          <div className="absolute inset-0 flex items-center justify-center bg-slate-900/30 rounded-xl">
+            <div className="bg-slate-900/90 backdrop-blur-sm px-4 py-3 rounded-lg border border-gray-600">
+              <div className="flex items-center gap-3">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-sky-500"></div>
+                <p className="text-sm text-gray-300">Updating map...</p>
+              </div>
+            </div>
+          </div>
+          {/* Info overlay */}
+          <div className="absolute top-4 left-4 bg-slate-900/90 backdrop-blur-sm px-4 py-2 rounded-lg border border-gray-600 pointer-events-none">
+            <p className="text-xs font-mono text-white">
+              UTM Zone {utmZone}{hemisphere} • WGS-84
+            </p>
+            <p className="text-xs text-gray-400 mt-1">
+              Grid: 10 NM major, 1 NM minor
+            </p>
+            <p className="text-xs font-bold text-sky-400 mt-1">
+              Scale: 1:{(printScale / 1000).toFixed(0)},000 {printScale === 500000 ? '(Sectional)' : '(WAC)'}
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    // No cache available, show loading spinner
     return (
       <div className="w-full h-[600px] rounded-xl bg-slate-800/50 border-2 border-gray-700 flex items-center justify-center">
         <div className="text-center">
@@ -1622,6 +1777,18 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
         className="w-full h-[600px] rounded-xl border-2 border-gray-700 print:h-[800px] print:border print:border-gray-400"
         style={{ imageRendering: 'crisp-edges' }}
       />
+
+      {/* Rendering overlay */}
+      {isRendering && (
+        <div className="absolute inset-0 flex items-center justify-center bg-slate-900/30 rounded-xl pointer-events-none">
+          <div className="bg-slate-900/90 backdrop-blur-sm px-4 py-3 rounded-lg border border-gray-600">
+            <div className="flex items-center gap-3">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-sky-500"></div>
+              <p className="text-sm text-gray-300">Rendering...</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Info overlay */}
       <div className="absolute top-4 left-4 bg-slate-900/90 backdrop-blur-sm px-4 py-2 rounded-lg border border-gray-600 pointer-events-none">
