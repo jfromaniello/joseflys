@@ -70,7 +70,8 @@ interface LocalChartMapProps {
   timeTickIntervalMin?: number; // Time interval for time-based tick marks (e.g., 10, 15, 20, 30 min)
   showDistanceLabels?: boolean; // Show cumulative distance labels on distance ticks
   showTimeLabels?: boolean; // Show cumulative time labels on time ticks
-  aerodromes?: AerodromeData[]; // Optional: AD/LAD to show on map
+  aerodromes?: AerodromeData[]; // Optional: AD/LAD data (preloaded)
+  showAerodromes?: boolean; // Toggle visibility of aerodromes
 }
 
 export interface LocalChartMapHandle {
@@ -126,6 +127,7 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
     showDistanceLabels = false,
     showTimeLabels = false,
     aerodromes = [],
+    showAerodromes = false,
   }, ref) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [osmData, setOsmData] = useState<OSMData | null>(null);
@@ -401,13 +403,8 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
       // NOTE: Waypoint markers and leg info labels are drawn in the TICK LAYER
       // so they appear on top of tick labels (waypoints are more important)
 
-      // Draw aerodromes (AD/LAD) as small squares
-      if (aerodromes && aerodromes.length > 0) {
-        drawAerodromes(offscreenCtx, aerodromes, toUTM, toCanvasFunc);
-      }
-
-      // Draw scale bar BASE (without tick legends - those go in tick layer)
-      drawScaleBarBase(offscreenCtx, scale, rect, printScale);
+      // NOTE: Aerodromes moved to tick layer so toggle doesn't trigger full re-render
+      // NOTE: Scale bar moved to tick layer so printScale changes don't trigger full re-render
 
       // Draw north indicator
       const centerLat = locations.reduce((sum, loc) => sum + loc.lat, 0) / locations.length;
@@ -422,7 +419,7 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
     return () => clearTimeout(timeoutId);
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [osmData, loading, locations, utmZone, hemisphere, printScale, routeSegments, aerodromes]);
+  }, [osmData, loading, locations, utmZone, hemisphere, routeSegments]);
 
   // Render TICK LAYER - fast operation that runs when tick params change
   // Copies base layer and draws ticks on top
@@ -433,7 +430,7 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const { rect, toCanvas, toUTM } = renderContextRef.current;
+    const { rect, scale, toCanvas, toUTM } = renderContextRef.current;
     const dpr = window.devicePixelRatio || 1;
 
     // Copy base layer to visible canvas (very fast)
@@ -828,23 +825,31 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
       }
     });
 
+    // Draw aerodromes (AD/LAD) if enabled (before waypoints so waypoints appear on top)
+    if (showAerodromes && aerodromes && aerodromes.length > 0) {
+      drawAerodromes(ctx, aerodromes, toUTM, toCanvas);
+    }
+
     // Draw leg info labels (AFTER ticks so they appear on top)
     if (routeSegments && routeSegments.length > 0) {
       drawLegInfoLabels(ctx, routeSegments, toUTM, toCanvas);
     }
 
+    // Draw scale bar (moved here from base layer so printScale changes are fast)
+    drawScaleBarBase(ctx, scale, rect, printScale);
+
     // Draw tick legends
     drawTickLegends(ctx, rect, tickIntervalNM, timeTickIntervalMin);
 
-    // Draw aerodromes legend (if any aerodromes are shown)
-    if (aerodromes && aerodromes.length > 0) {
+    // Draw aerodromes legend (if aerodromes are shown)
+    if (showAerodromes && aerodromes && aerodromes.length > 0) {
       drawAerodromesLegend(ctx, rect, aerodromes);
     }
 
     ctx.restore();
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tickIntervalNM, timeTickIntervalMin, routeSegments, loading, baseLayerVersion, showDistanceLabels, showTimeLabels, locations, aerodromes]);
+    // eslint-disable-next-line react-hooks-exhaustive-deps
+  }, [tickIntervalNM, timeTickIntervalMin, routeSegments, loading, baseLayerVersion, showDistanceLabels, showTimeLabels, locations, printScale, showAerodromes, aerodromes]);
 
   // Draw UTM grid with labels
   function drawUTMGrid(

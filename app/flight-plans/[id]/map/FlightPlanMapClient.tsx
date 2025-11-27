@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { PageLayout } from "../../../components/PageLayout";
 import { Footer } from "../../../components/Footer";
@@ -75,7 +75,6 @@ function formatCumulativeTime(minutes?: number): string | null {
 }
 
 export function FlightPlanMapClient({ flightPlanId }: FlightPlanMapClientProps) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [flightPlan, setFlightPlan] = useState<FlightPlan | null>(null);
   const [loading, setLoading] = useState(true);
@@ -114,7 +113,7 @@ export function FlightPlanMapClient({ flightPlanId }: FlightPlanMapClientProps) 
     setLoading(false);
   }, [flightPlanId]);
 
-  // Update URL when settings change
+  // Update URL when settings change (using replaceState to avoid Next.js re-renders)
   useEffect(() => {
     const params = new URLSearchParams();
     params.set("mode", mapMode);
@@ -125,8 +124,9 @@ export function FlightPlanMapClient({ flightPlanId }: FlightPlanMapClientProps) 
     if (showTimeLabels) params.set("timeLabels", "1");
     if (showAerodromes) params.set("adLad", "1");
 
-    router.replace(`/flight-plans/${flightPlanId}/map?${params.toString()}`, { scroll: false });
-  }, [mapMode, printScale, tickIntervalNM, timeTickIntervalMin, showDistanceLabels, showTimeLabels, showAerodromes, flightPlanId, router]);
+    // Use replaceState instead of router.replace to avoid triggering Next.js re-renders
+    window.history.replaceState(null, "", `/flight-plans/${flightPlanId}/map?${params.toString()}`);
+  }, [mapMode, printScale, tickIntervalNM, timeTickIntervalMin, showDistanceLabels, showTimeLabels, showAerodromes, flightPlanId]);
 
   // Calculate leg results for all legs (same as FlightPlanDetailClient)
   const legResults = useMemo(() => {
@@ -289,9 +289,9 @@ export function FlightPlanMapClient({ flightPlanId }: FlightPlanMapClientProps) 
     return validateUTMRoute(allLocations);
   }, [locations]);
 
-  // Load aerodromes when toggle is enabled
+  // Preload aerodromes when locations are available (toggle only controls visibility)
   useEffect(() => {
-    if (!showAerodromes || locations.length === 0) {
+    if (locations.length === 0) {
       setAerodromes([]);
       return;
     }
@@ -315,7 +315,7 @@ export function FlightPlanMapClient({ flightPlanId }: FlightPlanMapClientProps) 
         setAerodromes([]);
         setAerodromesLoading(false);
       });
-  }, [showAerodromes, locations]);
+  }, [locations]);
 
   if (loading) {
     return (
@@ -743,7 +743,8 @@ export function FlightPlanMapClient({ flightPlanId }: FlightPlanMapClientProps) 
                 timeTickIntervalMin={timeTickIntervalMin}
                 showDistanceLabels={showDistanceLabels}
                 showTimeLabels={showTimeLabels}
-                aerodromes={showAerodromes ? aerodromes : []}
+                aerodromes={aerodromes}
+                showAerodromes={showAerodromes}
               />
             </div>
           )}
