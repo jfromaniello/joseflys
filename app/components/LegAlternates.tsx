@@ -98,15 +98,41 @@ export function LegAlternates({
             <div className="space-y-1.5">
               {/* Copy button */}
               <button
-                onClick={() => {
-                  const text = alternates
-                    .map((alt) => {
-                      const totalDist = Math.round((elapsedDistanceNM + alt.distanceFromStart) * 10) / 10;
-                      return `${alt.type}\t${alt.side}\t${alt.code || "-"}\t${alt.name}\t@${totalDist} NM\t${alt.distanceFromRoute} NM ${alt.side}`;
-                    })
-                    .join("\n");
-                  const header = "Type\tSide\tICAO\tName\tDistance\tOff Route";
-                  navigator.clipboard.writeText(header + "\n" + text);
+                onClick={async () => {
+                  const rows = alternates.map((alt) => {
+                    const totalDist = Math.round((elapsedDistanceNM + alt.distanceFromStart) * 10) / 10;
+                    return {
+                      type: alt.type,
+                      side: alt.side,
+                      icao: alt.code || "-",
+                      name: alt.name,
+                      dist: `@${totalDist} NM`,
+                      offRoute: `${alt.distanceFromRoute} NM ${alt.side}`,
+                    };
+                  });
+
+                  // Plain text (tab-separated)
+                  const textRows = rows.map(r => `${r.type}\t${r.side}\t${r.icao}\t${r.name}\t${r.dist}\t${r.offRoute}`).join("\n");
+                  const plainText = "Type\tSide\tICAO\tName\tDistance\tOff Route\n" + textRows;
+
+                  // HTML table (for Word)
+                  const htmlRows = rows.map(r =>
+                    `<tr><td>${r.type}</td><td>${r.side}</td><td>${r.icao}</td><td>${r.name}</td><td>${r.dist}</td><td>${r.offRoute}</td></tr>`
+                  ).join("");
+                  const html = `<table border="1"><tr><th>Type</th><th>Side</th><th>ICAO</th><th>Name</th><th>Distance</th><th>Off Route</th></tr>${htmlRows}</table>`;
+
+                  // Copy both formats
+                  try {
+                    await navigator.clipboard.write([
+                      new ClipboardItem({
+                        "text/plain": new Blob([plainText], { type: "text/plain" }),
+                        "text/html": new Blob([html], { type: "text/html" }),
+                      }),
+                    ]);
+                  } catch {
+                    // Fallback to plain text
+                    await navigator.clipboard.writeText(plainText);
+                  }
                 }}
                 className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-slate-700/50 hover:bg-slate-600/50 text-gray-400 hover:text-white transition-colors cursor-pointer mb-2"
               >
