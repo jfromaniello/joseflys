@@ -20,7 +20,7 @@ import {
 } from "@/lib/speedConversion";
 import { FuelUnit, getFuelUnitLabel, getFuelResultUnit } from "@/lib/fuelConversion";
 import { convert } from "@/lib/unitConversions";
-import { TimeUnit, getTimeUnitLabel, toMinutes, fromMinutes } from "@/lib/timeConversion";
+import { TimeUnit, toMinutes, fromMinutes } from "@/lib/timeConversion";
 
 type CalculatorMode = "time-speed-distance" | "fuel";
 

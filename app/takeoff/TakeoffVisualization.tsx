@@ -116,7 +116,6 @@ export function TakeoffVisualization({ results, runwayLength, obstacleHeight }: 
     const groundRollEndX = paddingLeft + results.distances.groundRoll * scaleX;
     const obstacleX = paddingLeft + runwayLength * scaleX;
     const clearanceX = paddingLeft + results.distances.obstacleDistance * scaleX;
-    const clearanceY = groundY - obstacleHeight * scaleY;
 
     // Ground roll indicator line (red)
     ctx.strokeStyle = "#dc2626";
@@ -370,7 +369,7 @@ function drawClouds(ctx: CanvasRenderingContext2D, width: number) {
 /**
  * Draw grass texture lines
  */
-function drawGrassTexture(ctx: CanvasRenderingContext2D, width: number, height: number, groundY: number) {
+function drawGrassTexture(ctx: CanvasRenderingContext2D, width: number, _height: number, groundY: number) {
   ctx.strokeStyle = "#5a8f2a";
   ctx.lineWidth = 1;
 

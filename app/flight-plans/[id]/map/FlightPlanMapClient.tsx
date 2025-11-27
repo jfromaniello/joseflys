@@ -8,18 +8,12 @@ import { PageLayout } from "../../../components/PageLayout";
 import { Footer } from "../../../components/Footer";
 import { CalculatorPageHeader } from "../../../components/CalculatorPageHeader";
 import { ShareButtonSimple } from "../../../components/ShareButtonSimple";
-import { getFlightPlanById, generateFlightPlanContentHash, type FlightPlan } from "@/lib/flightPlan/flightPlanStorage";
+import { getFlightPlanById, type FlightPlan } from "@/lib/flightPlan/flightPlanStorage";
 import { calculateLegResults, calculateLegWaypoints, detectAlternativeLegs } from "@/lib/flightPlan/flightPlanCalculations";
 import { validateUTMRoute, type UTMValidationResult, type Location } from "@/lib/utmValidation";
 import { getFuelResultUnit, type FuelUnit } from "@/lib/fuelConversion";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import type { LocalChartMapHandle } from "../../../local-chart/LocalChartMap";
-import { initMapCache } from "@/lib/mapCache";
-
-// Pre-initialize IndexedDB as early as possible for faster cache loading
-if (typeof window !== 'undefined') {
-  initMapCache();
-}
 
 // Dynamic import for LocalChartMap to avoid SSR issues with Leaflet
 const LocalChartMap = dynamic(
@@ -119,12 +113,6 @@ export function FlightPlanMapClient({ flightPlanId }: FlightPlanMapClientProps) 
 
     router.replace(`/flight-plans/${flightPlanId}/map?${params.toString()}`, { scroll: false });
   }, [mapMode, printScale, tickIntervalNM, timeTickIntervalMin, flightPlanId, router]);
-
-  // Generate content hash for caching
-  const contentHash = useMemo(() => {
-    if (!flightPlan) return null;
-    return generateFlightPlanContentHash(flightPlan);
-  }, [flightPlan]);
 
   // Calculate leg results for all legs (same as FlightPlanDetailClient)
   const legResults = useMemo(() => {
@@ -663,7 +651,6 @@ export function FlightPlanMapClient({ flightPlanId }: FlightPlanMapClientProps) 
                 printScale={printScale}
                 tickIntervalNM={tickIntervalNM}
                 timeTickIntervalMin={timeTickIntervalMin}
-                contentHash={contentHash ?? undefined}
               />
             </div>
           )}
