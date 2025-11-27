@@ -19,262 +19,232 @@ export function TakeoffVisualization({ results, runwayLength, obstacleHeight }: 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Set canvas size
+    // Set canvas size with DPR for sharp rendering
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
     canvas.width = rect.width * dpr;
     canvas.height = rect.height * dpr;
     ctx.scale(dpr, dpr);
 
-    // Clear canvas
-    ctx.clearRect(0, 0, rect.width, rect.height);
+    const width = rect.width;
+    const height = rect.height;
 
-    // Constants for drawing
-    const padding = 40;
-    const drawWidth = rect.width - padding * 2;
-    const drawHeight = rect.height - padding * 2;
+    // Clear canvas with sky gradient
+    const skyGradient = ctx.createLinearGradient(0, 0, 0, height * 0.7);
+    skyGradient.addColorStop(0, "#87CEEB");
+    skyGradient.addColorStop(0.5, "#B0E0E6");
+    skyGradient.addColorStop(1, "#E0F4FF");
+    ctx.fillStyle = skyGradient;
+    ctx.fillRect(0, 0, width, height);
 
-    // Calculate scale (pixels per foot)
-    const maxDistance = Math.max(runwayLength, results.distances.obstacleDistance);
-    const scaleX = drawWidth / maxDistance;
+    // Ground level
+    const groundY = height * 0.75;
 
-    // Vertical scale (for obstacle height)
-    const maxHeight = Math.max(obstacleHeight + 50, 150); // At least 150 ft for better proportions
-    const scaleY = (drawHeight * 0.4) / maxHeight; // Use 40% of height for vertical scale
+    // Layout constants
+    const paddingLeft = 80; // Space for control tower
+    const paddingRight = 100; // Space for aircraft after obstacle
+    const drawableWidth = width - paddingLeft - paddingRight;
 
-    // Base line (ground level)
-    const groundY = rect.height - padding - 20;
+    // Calculate scale - ensure everything fits
+    // The visualization spans from runway start to just past the obstacle/clearance point
+    const visualizationEnd = Math.max(runwayLength, results.distances.obstacleDistance);
+    const scaleX = drawableWidth / visualizationEnd;
 
-    // Colors
-    const runwayColor = "#4a5568";
-    const grassColor = "#2d5016";
-    const groundRollColor = "#fbbf24";
-    const climbColor = "#60a5fa";
-    const runwayAvailableColor = results.safetyMargin >= 0.2 ? "#10b981" : results.safetyMargin >= 0 ? "#f59e0b" : "#ef4444";
+    // Max height for vertical scale
+    const maxHeight = Math.max(obstacleHeight * 2, 150);
+    const scaleY = (height * 0.35) / maxHeight;
 
-    // Draw background (grass/ground)
-    ctx.fillStyle = grassColor;
-    ctx.fillRect(0, groundY - 40, rect.width, 60);
+    // Draw distant mountains
+    drawMountains(ctx, width, groundY);
+
+    // Draw city skyline
+    drawCitySkyline(ctx, width, groundY);
+
+    // Draw clouds
+    drawClouds(ctx, width);
+
+    // Draw ground/grass
+    const groundGradient = ctx.createLinearGradient(0, groundY, 0, height);
+    groundGradient.addColorStop(0, "#4a7c23");
+    groundGradient.addColorStop(0.3, "#3d6b1e");
+    groundGradient.addColorStop(1, "#2d5016");
+    ctx.fillStyle = groundGradient;
+    ctx.fillRect(0, groundY, width, height - groundY);
+
+    // Draw grass texture
+    drawGrassTexture(ctx, width, height, groundY);
 
     // Draw runway
-    ctx.fillStyle = runwayColor;
-    const runwayWidth = 30;
-    ctx.fillRect(padding, groundY - runwayWidth / 2, drawWidth, runwayWidth);
+    const runwayStartX = paddingLeft;
+    const runwayEndX = paddingLeft + runwayLength * scaleX;
+    const runwayHeight = 12;
 
-    // Draw runway markings (centerline)
+    // Runway base (asphalt)
+    ctx.fillStyle = "#2d2d2d";
+    ctx.fillRect(runwayStartX, groundY - runwayHeight / 2, runwayLength * scaleX, runwayHeight);
+
+    // Runway edge lines
     ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = 1;
-    ctx.setLineDash([10, 10]);
-    ctx.beginPath();
-    ctx.moveTo(padding, groundY);
-    ctx.lineTo(padding + drawWidth, groundY);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Draw runway available distance
-    ctx.fillStyle = runwayAvailableColor + "30";
-    ctx.fillRect(padding, groundY - runwayWidth / 2 - 5, runwayLength * scaleX, runwayWidth + 10);
-
-    // Draw ground roll distance
-    ctx.fillStyle = groundRollColor + "40";
-    ctx.fillRect(padding, groundY - 50, results.distances.groundRoll * scaleX, 70);
-
-    // Draw ground roll label
-    ctx.fillStyle = groundRollColor;
-    ctx.font = "bold 11px sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText(
-      `Ground Roll: ${Math.round(results.distances.groundRoll)} ft`,
-      padding + (results.distances.groundRoll * scaleX) / 2,
-      groundY - 55
-    );
-
-    // Obstacle is at a FIXED position (typically at the end of available runway)
-    // User can specify obstacle distance, but default is at runway end
-    const obstacleX = padding + runwayLength * scaleX;
-    const obstacleBaseY = groundY;
-    const obstacleTopY = groundY - obstacleHeight * scaleY;
-
-    // Draw climb path
-    const climbStartX = padding + results.distances.groundRoll * scaleX;
-
-    // Calculate where airplane reaches obstacle height
-    const climbEndX = padding + results.distances.obstacleDistance * scaleX;
-    const climbEndY = groundY - obstacleHeight * scaleY;
-
-    // Draw full climb path to obstacle height
-    ctx.strokeStyle = climbColor;
-    ctx.lineWidth = 3;
-    ctx.setLineDash([5, 5]);
-    ctx.beginPath();
-    ctx.moveTo(climbStartX, groundY);
-    ctx.lineTo(climbEndX, climbEndY);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // If airplane clears before obstacle, draw continuation to obstacle position
-    if (climbEndX < obstacleX) {
-      // Continue climb path to show clearing
-      ctx.strokeStyle = "#10b981";
-      ctx.lineWidth = 2;
-      ctx.setLineDash([2, 4]);
-      ctx.beginPath();
-      ctx.moveTo(climbEndX, climbEndY);
-      // Calculate height at obstacle position (continuing same climb gradient)
-      const climbGradient = obstacleHeight / results.distances.climbDistance;
-      const additionalDistance = (obstacleX - climbEndX) / scaleX;
-      const heightAtObstacle = obstacleHeight + (climbGradient * additionalDistance);
-      const yAtObstacle = groundY - heightAtObstacle * scaleY;
-      ctx.lineTo(obstacleX, yAtObstacle);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-
-    // Draw airplane at takeoff position
-    drawAirplane(ctx, padding + 10, groundY, 0, "#3b82f6");
-
-    // Draw airplane at rotation point
-    drawAirplane(ctx, climbStartX - 15, groundY, 5, "#60a5fa");
-
-    // Draw airplane at obstacle clearance point
-    drawAirplane(ctx, climbEndX - 15, climbEndY, 15, "#10b981");
-
-    // Draw obstacle at FIXED position (end of runway)
-    if (obstacleHeight > 0) {
-
-      // Determine obstacle color based on clearance
-      const obstacleCleared = climbEndX <= obstacleX;
-      const obstacleColor = obstacleCleared ? "#15803d" : "#dc2626";
-
-      // Draw tree/obstacle
-      ctx.fillStyle = obstacleColor;
-      ctx.beginPath();
-      ctx.moveTo(obstacleX - 8, obstacleBaseY);
-      ctx.lineTo(obstacleX, obstacleTopY);
-      ctx.lineTo(obstacleX + 8, obstacleBaseY);
-      ctx.closePath();
-      ctx.fill();
-
-      // Obstacle height label
-      ctx.fillStyle = obstacleColor;
-      ctx.font = "bold 10px sans-serif";
-      ctx.textAlign = "left";
-      ctx.fillText(`${obstacleHeight} ft`, obstacleX + 12, obstacleTopY + 5);
-
-      // Draw horizontal line for obstacle height reference
-      ctx.strokeStyle = obstacleColor;
-      ctx.lineWidth = 1;
-      ctx.setLineDash([3, 3]);
-      ctx.beginPath();
-      ctx.moveTo(padding, obstacleTopY);
-      ctx.lineTo(obstacleX - 10, obstacleTopY);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      // Warning if obstacle not cleared
-      if (!obstacleCleared) {
-        ctx.fillStyle = "#dc2626";
-        ctx.font = "bold 12px sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText("⚠ OBSTACLE NOT CLEARED", obstacleX, obstacleTopY - 15);
-      }
-    }
-
-    // Draw distance markers
-    ctx.strokeStyle = "#94a3b8";
-    ctx.lineWidth = 1;
-    ctx.font = "10px sans-serif";
-    ctx.fillStyle = "#94a3b8";
-    ctx.textAlign = "center";
-
-    // Ground roll marker
-    ctx.setLineDash([2, 2]);
-    ctx.beginPath();
-    ctx.moveTo(climbStartX, groundY + 25);
-    ctx.lineTo(climbStartX, groundY + 35);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Clearance point marker (where plane reaches obstacle height)
-    ctx.setLineDash([2, 2]);
-    ctx.beginPath();
-    ctx.moveTo(climbEndX, groundY + 25);
-    ctx.lineTo(climbEndX, groundY + 35);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Obstacle position marker
-    ctx.strokeStyle = obstacleHeight > 0 ? "#15803d" : "#94a3b8";
-    ctx.setLineDash([2, 2]);
-    ctx.beginPath();
-    ctx.moveTo(obstacleX, groundY + 25);
-    ctx.lineTo(obstacleX, groundY + 35);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Distance scale line (from start to clearance point)
-    ctx.strokeStyle = "#cbd5e1";
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(padding, groundY + 30);
-    ctx.lineTo(climbEndX, groundY + 30);
+    ctx.moveTo(runwayStartX, groundY - runwayHeight / 2);
+    ctx.lineTo(runwayEndX, groundY - runwayHeight / 2);
+    ctx.moveTo(runwayStartX, groundY + runwayHeight / 2);
+    ctx.lineTo(runwayEndX, groundY + runwayHeight / 2);
     ctx.stroke();
 
-    // Required distance label
-    ctx.fillStyle = climbColor;
-    ctx.font = "bold 11px sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText(
-      `Required: ${Math.round(results.distances.obstacleDistance)} ft`,
-      padding + (results.distances.obstacleDistance * scaleX) / 2,
-      groundY + 45
-    );
+    // Runway centerline dashes
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([15, 10]);
+    ctx.beginPath();
+    ctx.moveTo(runwayStartX + 20, groundY);
+    ctx.lineTo(runwayEndX - 20, groundY);
+    ctx.stroke();
+    ctx.setLineDash([]);
 
-    // Runway available comparison
-    const runwayEndX = padding + runwayLength * scaleX;
-    if (runwayEndX > climbEndX) {
-      // Draw runway remaining (clearance successful)
-      ctx.fillStyle = runwayAvailableColor + "20";
-      ctx.fillRect(climbEndX, groundY - 50, (runwayEndX - climbEndX), 70);
-
-      // Draw end marker
-      ctx.strokeStyle = runwayAvailableColor;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(runwayEndX, groundY - 25);
-      ctx.lineTo(runwayEndX, groundY + 25);
-      ctx.stroke();
-
-      // Margin label
-      ctx.fillStyle = runwayAvailableColor;
-      ctx.font = "bold 10px sans-serif";
-      ctx.textAlign = "center";
-      const marginText = `Margin: ${Math.round(results.safetyMargin * 100)}%`;
-      ctx.fillText(marginText, (climbEndX + runwayEndX) / 2, groundY + 15);
-    } else {
-      // Insufficient runway - clearance NOT achieved
-      ctx.strokeStyle = "#ef4444";
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(runwayEndX, groundY - 25);
-      ctx.lineTo(runwayEndX, groundY + 25);
-      ctx.stroke();
-
-      ctx.fillStyle = "#ef4444";
-      ctx.font = "bold 11px sans-serif";
-      ctx.textAlign = "left";
-      ctx.fillText("⚠ Insufficient", runwayEndX + 5, groundY - 10);
+    // Runway threshold markings
+    ctx.fillStyle = "#ffffff";
+    for (let i = 0; i < 4; i++) {
+      ctx.fillRect(runwayStartX + 10, groundY - 5 + (i * 3), 25, 2);
     }
 
-    // Draw scale reference at bottom
-    ctx.fillStyle = "#64748b";
-    ctx.font = "9px sans-serif";
-    ctx.textAlign = "left";
-    ctx.fillText(`0 ft`, padding, rect.height - 5);
+    // Draw control tower
+    drawControlTower(ctx, runwayStartX - 30, groundY);
+
+    // Calculate key positions
+    const groundRollEndX = paddingLeft + results.distances.groundRoll * scaleX;
+    const obstacleX = paddingLeft + runwayLength * scaleX;
+    const clearanceX = paddingLeft + results.distances.obstacleDistance * scaleX;
+    const clearanceY = groundY - obstacleHeight * scaleY;
+
+    // Ground roll indicator line (red)
+    ctx.strokeStyle = "#dc2626";
+    ctx.lineWidth = 4;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(runwayStartX, groundY);
+    ctx.lineTo(groundRollEndX, groundY);
+    ctx.stroke();
+
+    // Determine if obstacle is cleared
+    const isCleared = results.distances.obstacleDistance <= runwayLength;
+
+    // Calculate climb gradient (height per horizontal distance)
+    const climbDistance = results.distances.climbDistance;
+    const climbGradientPx = (obstacleHeight * scaleY) / (climbDistance * scaleX);
+
+    // Calculate climb angle for aircraft rotation
+    const climbAngle = Math.atan(climbGradientPx) * 180 / Math.PI;
+
+    // Define where the climb path ends (at the right edge of drawable area)
+    const climbPathEndX = width - paddingRight;
+
+    // Calculate height at the end of climb path
+    const distanceFromLiftoff = (climbPathEndX - groundRollEndX) / scaleX;
+    const heightAtEnd = (distanceFromLiftoff / climbDistance) * obstacleHeight;
+    const climbPathEndY = Math.max(40, groundY - heightAtEnd * scaleY);
+
+    // Draw climb path - solid line from liftoff to obstacle position
+    ctx.strokeStyle = "#2563eb";
+    ctx.lineWidth = 4;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(groundRollEndX, groundY);
+
+    // Draw to obstacle position or end of drawable area, whichever is smaller
+    const solidLineEndX = Math.min(obstacleX, climbPathEndX);
+    const solidLineEndY = groundY - ((solidLineEndX - groundRollEndX) / scaleX / climbDistance * obstacleHeight * scaleY);
+    ctx.lineTo(solidLineEndX, Math.max(40, solidLineEndY));
+    ctx.stroke();
+
+    // Continue with dashed line past obstacle if cleared
+    if (isCleared && solidLineEndX < climbPathEndX) {
+      ctx.setLineDash([8, 6]);
+      ctx.beginPath();
+      ctx.moveTo(solidLineEndX, Math.max(40, solidLineEndY));
+      ctx.lineTo(climbPathEndX, climbPathEndY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Draw trees at obstacle position (runway end)
+    if (obstacleHeight > 0) {
+      const treeHeight = obstacleHeight * scaleY;
+      drawTreeGroup(ctx, obstacleX, groundY, treeHeight, isCleared);
+    }
+
+    // Limit climb angle to realistic values (max ~15° pitch for visualization)
+    const displayClimbAngle = Math.min(15, Math.max(0, climbAngle));
+
+    // Helper function to get Y position on climb line at any X
+    const getClimbY = (x: number): number => {
+      if (x <= groundRollEndX) return groundY;
+      // Linear interpolation from liftoff point to end of climb path
+      const t = (x - groundRollEndX) / (climbPathEndX - groundRollEndX);
+      return groundY + t * (climbPathEndY - groundY);
+    };
+
+    // Draw aircraft
+    if (isCleared) {
+      // Success: draw aircraft at end of climb path
+      // Aircraft nose (propeller) is ~35px ahead of center, so position center back from line end
+      const aircraftX = climbPathEndX - 15;
+      const aircraftY = getClimbY(aircraftX);
+      drawAircraft(ctx, aircraftX, aircraftY, -displayClimbAngle, "#6b7280", 1);
+    } else {
+      // Failure: draw aircraft at the obstacle (impact)
+      const treeHeight = obstacleHeight * scaleY;
+      const aircraftY = groundY - treeHeight * 0.6;
+      const aircraftX = obstacleX - 25;
+      drawAircraft(ctx, aircraftX, aircraftY, -displayClimbAngle * 0.4, "#dc2626", 1);
+    }
+
+    // Labels
+    ctx.font = "bold 12px system-ui, sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText(`${Math.round(maxDistance / 2)} ft`, padding + drawWidth / 2, rect.height - 5);
-    ctx.textAlign = "right";
-    ctx.fillText(`${Math.round(maxDistance)} ft`, padding + drawWidth, rect.height - 5);
+
+    // Ground roll label
+    ctx.fillStyle = "#dc2626";
+    ctx.fillText(
+      `Ground Roll: ${Math.round(results.distances.groundRoll)} ft`,
+      (runwayStartX + groundRollEndX) / 2,
+      groundY + 30
+    );
+
+    // Total distance to clear obstacle label
+    ctx.fillStyle = "#2563eb";
+    ctx.fillText(
+      `Takeoff Distance: ${Math.round(results.distances.obstacleDistance)} ft`,
+      (runwayStartX + clearanceX) / 2,
+      groundY + 50
+    );
+
+    // Status indicator
+    ctx.font = "bold 14px system-ui, sans-serif";
+    if (isCleared) {
+      ctx.fillStyle = "#15803d";
+      ctx.fillText(
+        `✓ Runway margin: ${Math.round(runwayLength - results.distances.obstacleDistance)} ft (${Math.round(results.safetyMargin * 100)}%)`,
+        width / 2,
+        35
+      );
+    } else {
+      ctx.fillStyle = "#dc2626";
+      ctx.fillText(
+        `⚠ Insufficient runway: need ${Math.round(results.distances.obstacleDistance - runwayLength)} ft more`,
+        width / 2,
+        35
+      );
+    }
+
+    // Obstacle height label if present
+    if (obstacleHeight > 0) {
+      ctx.fillStyle = "#15803d";
+      ctx.font = "11px system-ui, sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText(`Obstacle: ${obstacleHeight} ft`, obstacleX + 25, groundY - obstacleHeight * scaleY + 10);
+    }
 
   }, [results, runwayLength, obstacleHeight]);
 
@@ -282,56 +252,324 @@ export function TakeoffVisualization({ results, runwayLength, obstacleHeight }: 
     <div className="relative w-full">
       <canvas
         ref={canvasRef}
-        className="w-full"
-        style={{ height: "300px" }}
+        className="w-full rounded-lg shadow-md"
+        style={{ height: "320px" }}
       />
     </div>
   );
 }
 
 /**
- * Draw a simple airplane icon
+ * Draw distant mountain range
  */
-function drawAirplane(
+function drawMountains(ctx: CanvasRenderingContext2D, width: number, groundY: number) {
+  // Far mountains (lighter)
+  ctx.fillStyle = "#a8c4d4";
+  ctx.beginPath();
+  ctx.moveTo(0, groundY);
+
+  const farPeaks = [
+    { x: 0.05, h: 0.12 },
+    { x: 0.15, h: 0.18 },
+    { x: 0.25, h: 0.14 },
+    { x: 0.35, h: 0.22 },
+    { x: 0.45, h: 0.16 },
+    { x: 0.55, h: 0.20 },
+    { x: 0.65, h: 0.15 },
+    { x: 0.75, h: 0.19 },
+    { x: 0.85, h: 0.13 },
+    { x: 0.95, h: 0.17 },
+  ];
+
+  for (const peak of farPeaks) {
+    ctx.lineTo(width * peak.x, groundY - groundY * peak.h);
+  }
+  ctx.lineTo(width, groundY);
+  ctx.closePath();
+  ctx.fill();
+
+  // Near mountains (darker)
+  ctx.fillStyle = "#8fb3a8";
+  ctx.beginPath();
+  ctx.moveTo(0, groundY);
+
+  const nearPeaks = [
+    { x: 0.0, h: 0.08 },
+    { x: 0.1, h: 0.12 },
+    { x: 0.2, h: 0.09 },
+    { x: 0.3, h: 0.15 },
+    { x: 0.4, h: 0.10 },
+    { x: 0.5, h: 0.14 },
+    { x: 0.6, h: 0.11 },
+    { x: 0.7, h: 0.13 },
+    { x: 0.8, h: 0.09 },
+    { x: 0.9, h: 0.12 },
+    { x: 1.0, h: 0.08 },
+  ];
+
+  for (const peak of nearPeaks) {
+    ctx.lineTo(width * peak.x, groundY - groundY * peak.h);
+  }
+  ctx.lineTo(width, groundY);
+  ctx.closePath();
+  ctx.fill();
+}
+
+/**
+ * Draw city skyline silhouette
+ */
+function drawCitySkyline(ctx: CanvasRenderingContext2D, width: number, groundY: number) {
+  ctx.fillStyle = "#c9d6df";
+
+  const buildings = [
+    { x: 0.02, w: 0.03, h: 0.06 },
+    { x: 0.06, w: 0.025, h: 0.08 },
+    { x: 0.09, w: 0.02, h: 0.05 },
+    { x: 0.12, w: 0.035, h: 0.10 },
+    { x: 0.16, w: 0.02, h: 0.07 },
+    { x: 0.19, w: 0.03, h: 0.09 },
+    { x: 0.23, w: 0.025, h: 0.06 },
+    { x: 0.26, w: 0.02, h: 0.08 },
+    { x: 0.29, w: 0.03, h: 0.05 },
+    { x: 0.33, w: 0.025, h: 0.07 },
+  ];
+
+  for (const b of buildings) {
+    const x = width * b.x;
+    const w = width * b.w;
+    const h = groundY * b.h;
+    ctx.fillRect(x, groundY - h, w, h);
+  }
+}
+
+/**
+ * Draw decorative clouds
+ */
+function drawClouds(ctx: CanvasRenderingContext2D, width: number) {
+  ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+
+  const clouds = [
+    { x: 0.15, y: 50, size: 25 },
+    { x: 0.35, y: 70, size: 20 },
+    { x: 0.55, y: 45, size: 30 },
+    { x: 0.75, y: 65, size: 22 },
+  ];
+
+  for (const cloud of clouds) {
+    const x = width * cloud.x;
+    // Draw cloud as overlapping circles
+    ctx.beginPath();
+    ctx.arc(x, cloud.y, cloud.size, 0, Math.PI * 2);
+    ctx.arc(x + cloud.size * 0.8, cloud.y - 5, cloud.size * 0.7, 0, Math.PI * 2);
+    ctx.arc(x + cloud.size * 1.4, cloud.y, cloud.size * 0.8, 0, Math.PI * 2);
+    ctx.arc(x + cloud.size * 0.5, cloud.y + 5, cloud.size * 0.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+/**
+ * Draw grass texture lines
+ */
+function drawGrassTexture(ctx: CanvasRenderingContext2D, width: number, height: number, groundY: number) {
+  ctx.strokeStyle = "#5a8f2a";
+  ctx.lineWidth = 1;
+
+  for (let x = 0; x < width; x += 8) {
+    const grassHeight = 3 + Math.random() * 4;
+    ctx.beginPath();
+    ctx.moveTo(x, groundY);
+    ctx.lineTo(x + 1, groundY - grassHeight);
+    ctx.stroke();
+  }
+}
+
+/**
+ * Draw control tower
+ */
+function drawControlTower(ctx: CanvasRenderingContext2D, x: number, groundY: number) {
+  // Tower base
+  ctx.fillStyle = "#4a5568";
+  ctx.fillRect(x - 4, groundY - 50, 8, 50);
+
+  // Tower cab
+  ctx.fillStyle = "#2d3748";
+  ctx.fillRect(x - 10, groundY - 65, 20, 15);
+
+  // Windows
+  ctx.fillStyle = "#63b3ed";
+  ctx.fillRect(x - 8, groundY - 62, 16, 8);
+
+  // Antenna
+  ctx.strokeStyle = "#4a5568";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x, groundY - 65);
+  ctx.lineTo(x, groundY - 80);
+  ctx.stroke();
+
+  // Antenna light
+  ctx.fillStyle = "#48bb78";
+  ctx.beginPath();
+  ctx.arc(x, groundY - 80, 3, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+/**
+ * Draw a group of trees
+ */
+function drawTreeGroup(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  groundY: number,
+  height: number,
+  cleared: boolean
+) {
+  // Use darker/different tones to contrast with aircraft
+  // Cleared: dark forest green, Not cleared: dark maroon/brown-red
+  const treeColor = cleared ? "#1a4d2e" : "#7f1d1d";
+  const trunkColor = "#8B4513";
+
+  // Draw 3 trees in a group
+  const positions = [-15, 0, 15];
+  const sizes = [0.8, 1, 0.85];
+
+  for (let i = 0; i < positions.length; i++) {
+    const treeX = x + positions[i];
+    const treeHeight = height * sizes[i];
+    const treeWidth = treeHeight * 0.6;
+
+    // Trunk
+    ctx.fillStyle = trunkColor;
+    ctx.fillRect(treeX - 3, groundY - treeHeight * 0.3, 6, treeHeight * 0.3);
+
+    // Foliage (layered triangles for pine tree effect)
+    ctx.fillStyle = treeColor;
+
+    // Bottom layer
+    ctx.beginPath();
+    ctx.moveTo(treeX - treeWidth / 2, groundY - treeHeight * 0.25);
+    ctx.lineTo(treeX, groundY - treeHeight * 0.6);
+    ctx.lineTo(treeX + treeWidth / 2, groundY - treeHeight * 0.25);
+    ctx.closePath();
+    ctx.fill();
+
+    // Middle layer
+    ctx.beginPath();
+    ctx.moveTo(treeX - treeWidth / 2.5, groundY - treeHeight * 0.5);
+    ctx.lineTo(treeX, groundY - treeHeight * 0.85);
+    ctx.lineTo(treeX + treeWidth / 2.5, groundY - treeHeight * 0.5);
+    ctx.closePath();
+    ctx.fill();
+
+    // Top layer
+    ctx.beginPath();
+    ctx.moveTo(treeX - treeWidth / 4, groundY - treeHeight * 0.75);
+    ctx.lineTo(treeX, groundY - treeHeight);
+    ctx.lineTo(treeX + treeWidth / 4, groundY - treeHeight * 0.75);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+/**
+ * Draw aircraft silhouette - SIDE VIEW (profile)
+ * Similar to the reference image - viewed from the side
+ */
+function drawAircraft(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
   angle: number,
-  color: string
+  color: string,
+  scale: number
 ) {
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate((angle * Math.PI) / 180);
+  ctx.scale(scale, scale);
 
-  // Fuselage
   ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.ellipse(0, 0, 12, 3, 0, 0, Math.PI * 2);
-  ctx.fill();
 
-  // Wings
-  ctx.fillStyle = color;
+  // Fuselage (side view - elongated body)
   ctx.beginPath();
-  ctx.moveTo(-8, -1);
-  ctx.lineTo(-8, -8);
-  ctx.lineTo(8, -8);
-  ctx.lineTo(8, -1);
+  ctx.moveTo(30, 0);  // Nose tip
+  ctx.quadraticCurveTo(25, -4, 15, -5);  // Nose curve up to cabin
+  ctx.lineTo(-5, -5);  // Top of cabin
+  ctx.quadraticCurveTo(-15, -5, -25, -3);  // Taper to tail
+  ctx.lineTo(-30, -3);  // Tail
+  ctx.lineTo(-30, 3);  // Tail bottom
+  ctx.quadraticCurveTo(-20, 5, -5, 5);  // Bottom rear
+  ctx.lineTo(15, 5);  // Bottom front
+  ctx.quadraticCurveTo(25, 4, 30, 0);  // Nose bottom curve
   ctx.closePath();
   ctx.fill();
 
-  // Tail
+  // Cockpit window (side view)
+  ctx.fillStyle = "#87CEEB";
   ctx.beginPath();
-  ctx.moveTo(-10, 0);
-  ctx.lineTo(-12, -5);
-  ctx.lineTo(-8, -5);
+  ctx.moveTo(20, -3);
+  ctx.quadraticCurveTo(15, -6, 8, -5);
+  ctx.lineTo(8, -3);
+  ctx.lineTo(20, -3);
   ctx.closePath();
   ctx.fill();
 
-  // Cockpit window
-  ctx.fillStyle = "#1e293b";
+  // Wing (side view - single wing visible as a thick line/shape)
+  ctx.fillStyle = color;
   ctx.beginPath();
-  ctx.ellipse(5, 0, 3, 1.5, 0, 0, Math.PI * 2);
+  ctx.moveTo(5, 0);
+  ctx.lineTo(-5, -2);
+  ctx.lineTo(-10, -2);
+  ctx.lineTo(-10, 2);
+  ctx.lineTo(-5, 2);
+  ctx.lineTo(5, 0);
+  ctx.closePath();
   ctx.fill();
+
+  // Vertical stabilizer (tail fin - prominent in side view)
+  ctx.beginPath();
+  ctx.moveTo(-25, -3);
+  ctx.lineTo(-30, -18);  // Top of tail
+  ctx.lineTo(-35, -18);
+  ctx.lineTo(-32, -3);
+  ctx.closePath();
+  ctx.fill();
+
+  // Horizontal stabilizer (small in side view)
+  ctx.beginPath();
+  ctx.moveTo(-28, -2);
+  ctx.lineTo(-35, -4);
+  ctx.lineTo(-35, 0);
+  ctx.lineTo(-28, 2);
+  ctx.closePath();
+  ctx.fill();
+
+  // Engine cowling (nose)
+  ctx.fillStyle = color === "#6b7280" ? "#4b5563" : "#1f2937";
+  ctx.beginPath();
+  ctx.ellipse(30, 0, 4, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Propeller (side view - disc/blur)
+  ctx.fillStyle = "rgba(100, 100, 100, 0.5)";
+  ctx.beginPath();
+  ctx.ellipse(33, 0, 2, 8, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Landing gear (if on ground - angle near 0)
+  if (Math.abs(angle) < 5) {
+    ctx.fillStyle = "#374151";
+    // Main gear
+    ctx.fillRect(0, 5, 3, 8);
+    ctx.beginPath();
+    ctx.arc(1.5, 14, 3, 0, Math.PI * 2);
+    ctx.fill();
+    // Nose gear
+    ctx.fillRect(18, 5, 2, 6);
+    ctx.beginPath();
+    ctx.arc(19, 12, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   ctx.restore();
 }

@@ -22,38 +22,38 @@ export interface TakeoffExample {
 }
 
 /**
- * Example 1: NO GO - Hot day, marginal runway, tailwind, poor surface
+ * Example 1: NO GO - High altitude, short runway, poor surface, upslope
  * This should trigger multiple errors/warnings
  */
 export const TAKEOFF_EXAMPLE_NO_GO: TakeoffExample = {
   name: "NO GO Scenario",
-  description: "Hot day, marginal runway with tailwind and poor surface - DANGEROUS!",
+  description: "High altitude, short runway with wet grass and upslope - DANGEROUS!",
   aircraft: "C172N",
   weight: "2300", // Max gross weight
-  pa: "2000", // Moderate altitude
-  oat: "30", // Very hot (ISA +25°C)
-  runway: "2400", // Marginal runway length
-  surface: "dry-grass", // Poor surface
-  slope: "1.5", // Upslope
-  wind: "-5", // 5 kt tailwind (negative headwind)
+  pa: "6000", // High altitude
+  oat: "15", // Standard temp
+  runway: "2530", // Short runway
+  surface: "wet-grass", // Poor surface
+  slope: "2", // Significant upslope
+  wind: "0", // No wind
   obstacle: "50", // 50 ft obstacle
 };
 
 /**
- * Example 2: Complicated - Challenging but doable
- * Moderate altitude, reasonable runway, some headwind
+ * Example 2: Complicated - Challenging but doable (MARGINAL)
+ * High altitude, warm day, short runway
  */
 export const TAKEOFF_EXAMPLE_COMPLICATED: TakeoffExample = {
   name: "Challenging Takeoff",
-  description: "Moderate altitude, warm day, adequate runway - requires careful planning",
+  description: "High altitude, warm day, marginal runway - requires careful planning",
   aircraft: "C172N",
-  weight: "2200", // Near max weight
-  pa: "5000", // Moderate altitude
-  oat: "20", // Warm (ISA +10°C)
-  runway: "2500", // Adequate runway
-  surface: "dry-asphalt", // Good surface
-  slope: "0.5", // Slight upslope
-  wind: "8", // 8 kt headwind
+  weight: "2250", // Near max weight
+  pa: "6000", // High altitude
+  oat: "25", // Warm
+  runway: "2800", // Marginal runway
+  surface: "dry-grass", // Grass surface
+  slope: "1", // Slight upslope
+  wind: "5", // Light headwind
   obstacle: "50", // 50 ft obstacle
 };
 

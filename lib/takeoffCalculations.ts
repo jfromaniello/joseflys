@@ -82,8 +82,12 @@ const SURFACE_CORRECTIONS: Record<SurfaceType, number> = {
   "wet-grass": 1.30,
 };
 
-/** Wind correction: % increase/decrease per knot (9% per kt is typical) */
-const WIND_CORRECTION_FACTOR = 0.09; // 9% per knot
+/** Wind correction factors
+ * POH typically shows ~10% reduction per 9 knots headwind (~1.1% per knot)
+ * Tailwind is more penalizing (~10% per 2 knots, or ~5% per knot, but we use 3% conservatively)
+ */
+const HEADWIND_FACTOR_PER_KT = 0.011; // ~1.1% reduction per kt headwind
+const TAILWIND_FACTOR_PER_KT = 0.03;  // ~3% increase per kt tailwind (more penalizing)
 
 /** Slope correction: % increase per 1% uphill slope */
 const SLOPE_CORRECTION_FACTOR = 0.10; // 10% per 1% slope
@@ -241,9 +245,8 @@ export function calculateTakeoffPerformance(inputs: TakeoffInputs): TakeoffResul
     errors.push("Runway length must be greater than zero");
   }
 
-  if (inputs.densityAltitude < inputs.pressureAltitude) {
-    errors.push("Density altitude cannot be below pressure altitude");
-  }
+  // Note: DA CAN be below PA when temperature is colder than ISA standard
+  // This is normal and favorable for performance (denser air)
 
   if (!inputs.aircraft.limits?.vs) {
     errors.push("Aircraft missing VS (clean stall speed) data");
@@ -319,8 +322,19 @@ export function calculateTakeoffPerformance(inputs: TakeoffInputs): TakeoffResul
   const surfaceFactor = SURFACE_CORRECTIONS[inputs.surfaceType];
   groundRoll *= surfaceFactor;
 
-  // Wind correction (9% per knot headwind decreases, tailwind increases)
-  const windFactor = 1 - inputs.headwindComponent * WIND_CORRECTION_FACTOR;
+  // Wind correction: headwind decreases ground roll, tailwind increases it
+  // Asymmetric correction - tailwind is more penalizing than headwind is helpful
+  let windFactor: number;
+  if (inputs.headwindComponent >= 0) {
+    // Headwind: reduces distance, with limit
+    const corr = inputs.headwindComponent * HEADWIND_FACTOR_PER_KT;
+    windFactor = Math.max(0.6, 1 - corr); // Max 40% reduction
+  } else {
+    // Tailwind: increases distance, more penalizing
+    const tail = Math.abs(inputs.headwindComponent);
+    const corr = tail * TAILWIND_FACTOR_PER_KT;
+    windFactor = Math.min(1.6, 1 + corr); // Max 60% increase
+  }
   groundRoll *= windFactor;
 
   // Slope correction (10% per 1% uphill)
