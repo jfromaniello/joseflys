@@ -1,18 +1,27 @@
 /**
  * Map Cache Module
  *
- * Caches rendered map images in IndexedDB using WebP format.
- * Used to show instant previews while OSM data loads.
+ * Caches rendered map images and OSM data in IndexedDB.
+ * - Map images: WebP format for instant previews
+ * - OSM data: JSON for faster map rendering
  */
 
 const DB_NAME = 'flightPlanMaps';
-const DB_VERSION = 1;
-const STORE_NAME = 'mapImages';
-const MAX_CACHE_ENTRIES = 10;
-const MAX_CACHE_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const DB_VERSION = 2; // Incremented to add osmData store
+const MAP_STORE_NAME = 'mapImages';
+const OSM_STORE_NAME = 'osmData';
+const MAX_MAP_CACHE_ENTRIES = 10;
+const MAX_OSM_CACHE_ENTRIES = 20;
+const MAX_MAP_CACHE_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const MAX_OSM_CACHE_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-interface CacheEntry {
+interface MapCacheEntry {
   blob: Blob;
+  timestamp: number;
+}
+
+interface OSMCacheEntry {
+  data: unknown;
   timestamp: number;
 }
 
@@ -23,11 +32,9 @@ let dbPromise: Promise<IDBDatabase> | null = null;
  */
 function getDB(): Promise<IDBDatabase> {
   if (dbPromise) {
-    console.log('[MapCache] Reusing existing DB connection');
     return dbPromise;
   }
 
-  console.log('[MapCache] Opening new DB connection...');
   dbPromise = new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
@@ -41,8 +48,13 @@ function getDB(): Promise<IDBDatabase> {
 
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME);
+      // Map images store
+      if (!db.objectStoreNames.contains(MAP_STORE_NAME)) {
+        db.createObjectStore(MAP_STORE_NAME);
+      }
+      // OSM data store
+      if (!db.objectStoreNames.contains(OSM_STORE_NAME)) {
+        db.createObjectStore(OSM_STORE_NAME);
       }
     };
   });
@@ -79,20 +91,20 @@ export function generateMapCacheKey(
 export async function saveMapToCache(key: string, blob: Blob): Promise<void> {
   try {
     const db = await getDB();
-    const entry: CacheEntry = {
+    const entry: MapCacheEntry = {
       blob,
       timestamp: Date.now(),
     };
 
     return new Promise((resolve, reject) => {
-      const transaction = db.transaction(STORE_NAME, 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
+      const transaction = db.transaction(MAP_STORE_NAME, 'readwrite');
+      const store = transaction.objectStore(MAP_STORE_NAME);
       const request = store.put(entry, key);
 
       request.onsuccess = () => {
         resolve();
         // Cleanup old entries in background
-        cleanupOldCaches().catch(() => {});
+        cleanupOldMapCaches().catch(() => {});
       };
 
       request.onerror = () => {
@@ -110,36 +122,29 @@ export async function saveMapToCache(key: string, blob: Blob): Promise<void> {
  */
 export async function loadMapFromCache(key: string): Promise<string | null> {
   try {
-    console.time('[MapCache] getDB');
     const db = await getDB();
-    console.timeEnd('[MapCache] getDB');
 
     return new Promise((resolve) => {
-      console.time('[MapCache] transaction');
-      const transaction = db.transaction(STORE_NAME, 'readonly');
-      const store = transaction.objectStore(STORE_NAME);
+      const transaction = db.transaction(MAP_STORE_NAME, 'readonly');
+      const store = transaction.objectStore(MAP_STORE_NAME);
       const request = store.get(key);
 
       request.onsuccess = () => {
-        console.timeEnd('[MapCache] transaction');
-        const entry = request.result as CacheEntry | undefined;
+        const entry = request.result as MapCacheEntry | undefined;
         if (entry && entry.blob) {
           // Check if cache is still valid (not too old)
-          if (Date.now() - entry.timestamp < MAX_CACHE_AGE_MS) {
+          if (Date.now() - entry.timestamp < MAX_MAP_CACHE_AGE_MS) {
             const objectUrl = URL.createObjectURL(entry.blob);
-            console.log('[MapCache] Loaded, size:', Math.round(entry.blob.size / 1024), 'KB');
             resolve(objectUrl);
           } else {
             resolve(null);
           }
         } else {
-          console.log('[MapCache] Not found');
           resolve(null);
         }
       };
 
       request.onerror = () => {
-        console.timeEnd('[MapCache] transaction');
         resolve(null);
       };
     });
@@ -149,16 +154,33 @@ export async function loadMapFromCache(key: string): Promise<string | null> {
 }
 
 /**
- * Clean up old cache entries
- * Keeps only the most recent MAX_CACHE_ENTRIES and removes entries older than MAX_CACHE_AGE_MS
+ * Clean up old map cache entries
  */
-async function cleanupOldCaches(): Promise<void> {
+async function cleanupOldMapCaches(): Promise<void> {
+  await cleanupStore(MAP_STORE_NAME, MAX_MAP_CACHE_ENTRIES, MAX_MAP_CACHE_AGE_MS);
+}
+
+/**
+ * Clean up old OSM cache entries
+ */
+async function cleanupOldOSMCaches(): Promise<void> {
+  await cleanupStore(OSM_STORE_NAME, MAX_OSM_CACHE_ENTRIES, MAX_OSM_CACHE_AGE_MS);
+}
+
+/**
+ * Generic cleanup function for any store
+ */
+async function cleanupStore(
+  storeName: string,
+  maxEntries: number,
+  maxAgeMs: number
+): Promise<void> {
   try {
     const db = await getDB();
 
     return new Promise((resolve) => {
-      const transaction = db.transaction(STORE_NAME, 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
+      const transaction = db.transaction(storeName, 'readwrite');
+      const store = transaction.objectStore(storeName);
       const request = store.openCursor();
 
       const entries: Array<{ key: string; timestamp: number }> = [];
@@ -166,7 +188,7 @@ async function cleanupOldCaches(): Promise<void> {
       request.onsuccess = (event) => {
         const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
         if (cursor) {
-          const entry = cursor.value as CacheEntry;
+          const entry = cursor.value as { timestamp: number };
           entries.push({ key: cursor.key as string, timestamp: entry.timestamp });
           cursor.continue();
         } else {
@@ -179,8 +201,8 @@ async function cleanupOldCaches(): Promise<void> {
           // Find entries to delete (old or excess)
           const toDelete: string[] = [];
           entries.forEach((entry, index) => {
-            const isOld = now - entry.timestamp > MAX_CACHE_AGE_MS;
-            const isExcess = index >= MAX_CACHE_ENTRIES;
+            const isOld = now - entry.timestamp > maxAgeMs;
+            const isExcess = index >= maxEntries;
             if (isOld || isExcess) {
               toDelete.push(entry.key);
             }
@@ -188,8 +210,8 @@ async function cleanupOldCaches(): Promise<void> {
 
           // Delete them
           if (toDelete.length > 0) {
-            const deleteTransaction = db.transaction(STORE_NAME, 'readwrite');
-            const deleteStore = deleteTransaction.objectStore(STORE_NAME);
+            const deleteTransaction = db.transaction(storeName, 'readwrite');
+            const deleteStore = deleteTransaction.objectStore(storeName);
             toDelete.forEach((key) => {
               deleteStore.delete(key);
             });
@@ -214,4 +236,74 @@ async function cleanupOldCaches(): Promise<void> {
  */
 export function revokeMapCacheUrl(objectUrl: string): void {
   URL.revokeObjectURL(objectUrl);
+}
+
+// =============================================================================
+// OSM Data Cache Functions
+// =============================================================================
+
+/**
+ * Save OSM data to IndexedDB cache
+ */
+export async function saveOSMDataToCache(key: string, data: unknown): Promise<void> {
+  try {
+    const db = await getDB();
+    const entry: OSMCacheEntry = {
+      data,
+      timestamp: Date.now(),
+    };
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(OSM_STORE_NAME, 'readwrite');
+      const store = transaction.objectStore(OSM_STORE_NAME);
+      const request = store.put(entry, key);
+
+      request.onsuccess = () => {
+        resolve();
+        // Cleanup old entries in background
+        cleanupOldOSMCaches().catch(() => {});
+      };
+
+      request.onerror = () => {
+        reject(request.error);
+      };
+    });
+  } catch {
+    // Ignore save errors
+  }
+}
+
+/**
+ * Load OSM data from IndexedDB cache
+ */
+export async function loadOSMDataFromCache(key: string): Promise<unknown | null> {
+  try {
+    const db = await getDB();
+
+    return new Promise((resolve) => {
+      const transaction = db.transaction(OSM_STORE_NAME, 'readonly');
+      const store = transaction.objectStore(OSM_STORE_NAME);
+      const request = store.get(key);
+
+      request.onsuccess = () => {
+        const entry = request.result as OSMCacheEntry | undefined;
+        if (entry && entry.data) {
+          // Check if cache is still valid (not too old)
+          if (Date.now() - entry.timestamp < MAX_OSM_CACHE_AGE_MS) {
+            resolve(entry.data);
+          } else {
+            resolve(null);
+          }
+        } else {
+          resolve(null);
+        }
+      };
+
+      request.onerror = () => {
+        resolve(null);
+      };
+    });
+  } catch {
+    return null;
+  }
 }

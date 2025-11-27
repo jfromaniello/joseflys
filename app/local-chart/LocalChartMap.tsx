@@ -148,20 +148,17 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
     useEffect(() => {
       // Skip cache lookup if we already have OSM data (just re-render canvas)
       if (osmData) {
-        console.log('[MapCache] Skipping cache lookup - osmData exists');
         setCacheChecked(true);
         return;
       }
 
       // Only load from cache on initial mount
       if (initialLoadDone.current) {
-        console.log('[MapCache] Skipping cache lookup - initial load done');
         setCacheChecked(true);
         return;
       }
 
       setCacheChecked(false);
-      console.log('[MapCache] Loading from cache...');
 
       if (cacheKey && mapMode === 'utm') {
         initialLoadDone.current = true;

@@ -5,6 +5,8 @@
  * Fetches GeoJSON data from OpenStreetMap for rendering local charts
  */
 
+import { saveOSMDataToCache, loadOSMDataFromCache } from './mapCache';
+
 export interface OSMFeature {
   type: 'Feature';
   geometry: {
@@ -313,40 +315,18 @@ function getCacheKey(bbox: BoundingBox): string {
 }
 
 /**
- * Get cached OSM data from localStorage
+ * Get cached OSM data from IndexedDB
  */
-function getCachedData(cacheKey: string): OSMData | null {
-  try {
-    const cached = localStorage.getItem(cacheKey);
-    if (!cached) return null;
-
-    const data = JSON.parse(cached);
-    // Cache expires after 24 hours
-    const age = Date.now() - data.timestamp;
-    if (age > 24 * 60 * 60 * 1000) {
-      localStorage.removeItem(cacheKey);
-      return null;
-    }
-
-    return data.osmData;
-  } catch {
-    return null;
-  }
+async function getCachedData(cacheKey: string): Promise<OSMData | null> {
+  const data = await loadOSMDataFromCache(cacheKey);
+  return data as OSMData | null;
 }
 
 /**
- * Save OSM data to localStorage cache
+ * Save OSM data to IndexedDB cache
  */
-function setCachedData(cacheKey: string, osmData: OSMData): void {
-  try {
-    const data = {
-      timestamp: Date.now(),
-      osmData,
-    };
-    localStorage.setItem(cacheKey, JSON.stringify(data));
-  } catch (error) {
-    console.warn('Failed to cache OSM data:', error);
-  }
+async function setCachedData(cacheKey: string, osmData: OSMData): Promise<void> {
+  await saveOSMDataToCache(cacheKey, osmData);
 }
 
 /**
@@ -359,7 +339,7 @@ export async function fetchOSMData(
   const cacheKey = getCacheKey(bbox);
 
   // Try cache first
-  const cachedData = getCachedData(cacheKey);
+  const cachedData = await getCachedData(cacheKey);
   if (cachedData) {
     console.log('Using cached OSM data');
     return cachedData;
@@ -418,8 +398,8 @@ export async function fetchOSMData(
         features,
       };
 
-      // Cache the data
-      setCachedData(cacheKey, osmData);
+      // Cache the data (don't await, do it in background)
+      setCachedData(cacheKey, osmData).catch(() => {});
 
       return osmData;
     } catch (error) {
