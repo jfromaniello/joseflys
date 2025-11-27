@@ -427,8 +427,8 @@ export function Navbar({ currentPage }: NavbarProps) {
             <div className="fixed inset-0 bg-black/80" />
           </TransitionChild>
 
-          <div className="fixed inset-0">
-            <div className="flex min-h-full items-start justify-end">
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full justify-end">
               <TransitionChild
                 as={Fragment}
                 enter="ease-out duration-300"
@@ -438,7 +438,7 @@ export function Navbar({ currentPage }: NavbarProps) {
                 leaveFrom="translate-x-0"
                 leaveTo="translate-x-full"
               >
-                <DialogPanel className="w-full max-w-sm h-full bg-slate-900 shadow-xl overflow-y-auto">
+                <DialogPanel className="w-full max-w-sm min-h-full bg-slate-900 shadow-xl">
                   {/* Mobile menu header */}
                   <div className="flex items-center justify-between p-4 border-b border-gray-800 sticky top-0 bg-slate-900 z-10">
                     <div className="flex items-center gap-3">
