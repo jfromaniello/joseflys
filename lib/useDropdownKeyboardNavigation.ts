@@ -31,6 +31,7 @@ export function useDropdownKeyboardNavigation<T>({
   // Reset selected index when dropdown closes or items change
   useEffect(() => {
     if (!isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedIndex(-1);
     }
   }, [isOpen]);

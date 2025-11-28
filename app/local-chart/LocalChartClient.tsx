@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
 import { Tooltip } from "../components/Tooltip";
-import { LocationSearchInput, LocationResult } from "../components/LocationSearchInput";
+import { LocationSearchInput } from "../components/LocationSearchInput";
 import { PageLayout } from "../components/PageLayout";
 import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
 import { Footer } from "../components/Footer";
@@ -21,25 +21,6 @@ const LocalChartMap = dynamic(() => import("./LocalChartMap").then((mod) => mod.
     </div>
   ),
 });
-
-// Helper function to parse coordinate string (e.g., "-30.7505058,-62.8236677")
-function parseCoordinates(text: string): { lat: number; lon: number } | null {
-  // Match pattern: lat,lon (with optional spaces and signs)
-  const coordPattern = /^([-+]?\d+\.?\d*)\s*,\s*([-+]?\d+\.?\d*)$/;
-  const match = text.trim().match(coordPattern);
-
-  if (!match) return null;
-
-  const lat = parseFloat(match[1]);
-  const lon = parseFloat(match[2]);
-
-  // Validate coordinates are within valid ranges
-  if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
-    return null;
-  }
-
-  return { lat, lon };
-}
 
 interface LocationData {
   name: string;
@@ -102,8 +83,8 @@ export function LocalChartClient({
   const [printScale, setPrintScale] = useState<number>(initialPrintScale);
 
   // From location (origin)
-  const [fromSearchQuery, setFromSearchQuery] = useState("");
-  const [fromSearchResults, setFromSearchResults] = useState<GeocodingResult[]>([]);
+  const [fromSearchQuery] = useState("");
+  const [, setFromSearchResults] = useState<GeocodingResult[]>([]);
   const [fromLocation, setFromLocation] = useState<LocationData | null>(
     initialFromLat && initialFromLon && initialFromName
       ? {
@@ -115,8 +96,8 @@ export function LocalChartClient({
   );
   const [fromLat, setFromLat] = useState(initialFromLat || "");
   const [fromLon, setFromLon] = useState(initialFromLon || "");
-  const [fromSearching, setFromSearching] = useState(false);
-  const [fromShowDropdown, setFromShowDropdown] = useState(false);
+  const [, setFromSearching] = useState(false);
+  const [, setFromShowDropdown] = useState(false);
 
   // To locations (waypoints/destinations)
   const [toLocations, setToLocations] = useState<RouteLocation[]>(() => {
@@ -311,36 +292,6 @@ export function LocalChartClient({
     }
   }, [fromLat, fromLon, toLocations]);
 
-  // Handle location selection
-  const handleFromLocationSelect = useCallback((result: GeocodingResult) => {
-    setFromLocation({
-      name: result.name,
-      lat: result.lat,
-      lon: result.lon,
-    });
-    setFromLat(result.lat.toFixed(6));
-    setFromLon(result.lon.toFixed(6));
-    setFromSearchQuery("");
-    setFromSearchResults([]);
-    setFromShowDropdown(false);
-  }, []);
-
-  const handleToLocationSelect = useCallback((index: number, result: GeocodingResult) => {
-    setToLocations(prev => prev.map((loc, i) =>
-      i === index ? {
-        ...loc,
-        name: result.name,
-        lat: result.lat,
-        lon: result.lon,
-        lat_str: result.lat.toFixed(6),
-        lon_str: result.lon.toFixed(6),
-        searchQuery: "",
-        searchResults: [],
-        showDropdown: false,
-      } : loc
-    ));
-  }, []);
-
   const handleAddDestination = useCallback(() => {
     setToLocations(prev => [...prev, {
       id: crypto.randomUUID(),
@@ -383,12 +334,6 @@ export function LocalChartClient({
 
   const handleRemoveDestination = useCallback((index: number) => {
     setToLocations(prev => prev.filter((_, i) => i !== index));
-  }, []);
-
-  const handleUpdateToSearchQuery = useCallback((index: number, query: string) => {
-    setToLocations(prev => prev.map((loc, i) =>
-      i === index ? { ...loc, searchQuery: query } : loc
-    ));
   }, []);
 
   // Collect all valid locations for the map (only confirmed ones with name)

@@ -280,6 +280,7 @@ export function FlightPlanMapClient({ flightPlanId }: FlightPlanMapClientProps) 
   // Preload aerodromes when locations are available (toggle only controls visibility)
   useEffect(() => {
     if (locations.length === 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAerodromes([]);
       return;
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, Fragment } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { Dialog, Transition, TransitionChild, DialogPanel, DialogTitle } from "@headlessui/react";
 import {
   calculateHaversineDistance,
@@ -46,22 +46,22 @@ export function DistanceCalculatorModal({
   const [inputMode, setInputMode] = useState<InputMode>("search");
 
   // From location
-  const [fromSearchQuery, setFromSearchQuery] = useState("");
-  const [fromSearchResults, setFromSearchResults] = useState<GeocodingResult[]>([]);
+  const [fromSearchQuery] = useState("");
+  const [, setFromSearchResults] = useState<GeocodingResult[]>([]);
   const [fromLocation, setFromLocation] = useState<Location | null>(null);
   const [fromLat, setFromLat] = useState("");
   const [fromLon, setFromLon] = useState("");
-  const [fromSearching, setFromSearching] = useState(false);
-  const [fromShowDropdown, setFromShowDropdown] = useState(false);
+  const [, setFromSearching] = useState(false);
+  const [, setFromShowDropdown] = useState(false);
 
   // To location
-  const [toSearchQuery, setToSearchQuery] = useState("");
-  const [toSearchResults, setToSearchResults] = useState<GeocodingResult[]>([]);
+  const [toSearchQuery] = useState("");
+  const [, setToSearchResults] = useState<GeocodingResult[]>([]);
   const [toLocation, setToLocation] = useState<Location | null>(null);
   const [toLat, setToLat] = useState("");
   const [toLon, setToLon] = useState("");
-  const [toSearching, setToSearching] = useState(false);
-  const [toShowDropdown, setToShowDropdown] = useState(false);
+  const [, setToSearching] = useState(false);
+  const [, setToShowDropdown] = useState(false);
 
   // Debounced search for "from" location
   useEffect(() => {
@@ -142,33 +142,6 @@ export function DistanceCalculatorModal({
   const bearing = validCoordinates
     ? calculateInitialBearing(fromLatNum, fromLonNum, toLatNum, toLonNum)
     : null;
-
-  // Handle location selection
-  const handleFromLocationSelect = useCallback((result: GeocodingResult) => {
-    setFromLocation({
-      name: result.name,
-      lat: result.lat,
-      lon: result.lon,
-    });
-    setFromLat(result.lat.toFixed(6));
-    setFromLon(result.lon.toFixed(6));
-    setFromSearchQuery("");
-    setFromSearchResults([]);
-    setFromShowDropdown(false);
-  }, []);
-
-  const handleToLocationSelect = useCallback((result: GeocodingResult) => {
-    setToLocation({
-      name: result.name,
-      lat: result.lat,
-      lon: result.lon,
-    });
-    setToLat(result.lat.toFixed(6));
-    setToLon(result.lon.toFixed(6));
-    setToSearchQuery("");
-    setToSearchResults([]);
-    setToShowDropdown(false);
-  }, []);
 
   const handleApply = () => {
     if (distance !== null && bearing !== null && fromLocation && toLocation) {

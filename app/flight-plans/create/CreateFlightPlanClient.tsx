@@ -17,14 +17,13 @@ import {
   createFlightPlan,
   addOrUpdateLeg,
   getFlightPlanById,
-  type LegPoint,
   type FlightPlanLeg,
 } from "@/lib/flightPlan";
 import { getCruisePerformance } from "@/lib/flightPlan/flightPlanningCalculations";
 import { calculateHaversineDistance, calculateInitialBearing } from "@/lib/distanceCalculations";
 import { calculateClimbPerformance } from "@/lib/climbCalculations";
-import { ResolvedAircraftPerformance, PRESET_AIRCRAFT } from "@/lib/aircraft";
-import { resolveAircraft, serializeAircraft, getAircraftByModel } from "@/lib/aircraftStorage";
+import { ResolvedAircraftPerformance } from "@/lib/aircraft";
+import { serializeAircraft, getAircraftByModel } from "@/lib/aircraftStorage";
 import { magvar } from "magvar";
 import { ChevronLeftIcon, PaperAirplaneIcon } from "@heroicons/react/24/outline";
 
@@ -41,8 +40,9 @@ export function CreateFlightPlanClient() {
 
   // Aircraft selection
   const [isAircraftModalOpen, setIsAircraftModalOpen] = useState(false);
+
   const [selectedAircraft, setSelectedAircraft] = useState<ResolvedAircraftPerformance | null>(
-    null
+    getAircraftByModel("C172N")!
   );
 
   // Cruise settings
@@ -65,17 +65,12 @@ export function CreateFlightPlanClient() {
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load default aircraft on mount
-  useEffect(() => {
-    const defaultAircraft = getAircraftByModel("C172N");
-    if (defaultAircraft) {
-      setSelectedAircraft(defaultAircraft);
-    }
-  }, []);
+
 
   // Update cruise performance when aircraft or settings change
   useEffect(() => {
     if (!selectedAircraft) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCruisePerf(null);
       return;
     }

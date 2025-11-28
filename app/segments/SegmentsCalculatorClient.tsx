@@ -36,23 +36,6 @@ const SegmentsGlobe = dynamic(() => import("./SegmentsGlobe").then(mod => ({ def
   ),
 });
 
-// Helper function to parse coordinate string (e.g., "-30.7505058,-62.8236677")
-function parseCoordinates(text: string): { lat: number; lon: number } | null {
-  const coordPattern = /^([-+]?\d+\.?\d*)\s*,\s*([-+]?\d+\.?\d*)$/;
-  const match = text.trim().match(coordPattern);
-
-  if (!match) return null;
-
-  const lat = parseFloat(match[1]);
-  const lon = parseFloat(match[2]);
-
-  if (isNaN(lat) || isNaN(lon) || !validateCoordinates(lat, lon)) {
-    return null;
-  }
-
-  return { lat, lon };
-}
-
 type InputMode = "search" | "coordinates";
 
 interface Location {
@@ -106,8 +89,8 @@ export function SegmentsCalculatorClient({
   };
 
   // From location
-  const [fromSearchQuery, setFromSearchQuery] = useState("");
-  const [fromSearchResults, setFromSearchResults] = useState<GeocodingResult[]>([]);
+  const [fromSearchQuery] = useState("");
+  const [, setFromSearchResults] = useState<GeocodingResult[]>([]);
   const [fromLocation, setFromLocation] = useState<Location | null>(
     initialFromLat && initialFromLon && initialFromName
       ? {
@@ -119,12 +102,12 @@ export function SegmentsCalculatorClient({
   );
   const [fromLat, setFromLat] = useState(initialFromLat || String(defaultFrom.lat));
   const [fromLon, setFromLon] = useState(initialFromLon || String(defaultFrom.lon));
-  const [fromSearching, setFromSearching] = useState(false);
-  const [fromShowDropdown, setFromShowDropdown] = useState(false);
+  const [, setFromSearching] = useState(false);
+  const [, setFromShowDropdown] = useState(false);
 
   // To location
-  const [toSearchQuery, setToSearchQuery] = useState("");
-  const [toSearchResults, setToSearchResults] = useState<GeocodingResult[]>([]);
+  const [toSearchQuery] = useState("");
+  const [, setToSearchResults] = useState<GeocodingResult[]>([]);
   const [toLocation, setToLocation] = useState<Location | null>(
     initialToLat && initialToLon && initialToName
       ? {
@@ -136,8 +119,8 @@ export function SegmentsCalculatorClient({
   );
   const [toLat, setToLat] = useState(initialToLat || String(defaultTo.lat));
   const [toLon, setToLon] = useState(initialToLon || String(defaultTo.lon));
-  const [toSearching, setToSearching] = useState(false);
-  const [toShowDropdown, setToShowDropdown] = useState(false);
+  const [, setToSearching] = useState(false);
+  const [, setToShowDropdown] = useState(false);
 
   // Segment count (default 35 - good middle ground for LNAV, min 1, max 150)
   const [segmentCount, setSegmentCount] = useState(initialSegmentCount || "35");

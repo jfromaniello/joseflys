@@ -848,8 +848,20 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
 
     ctx.restore();
 
-    // eslint-disable-next-line react-hooks-exhaustive-deps
-  }, [tickIntervalNM, timeTickIntervalMin, routeSegments, loading, baseLayerVersion, showDistanceLabels, showTimeLabels, locations, printScale, showAerodromes, aerodromes]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    tickIntervalNM,
+    timeTickIntervalMin,
+    routeSegments,
+    loading,
+    baseLayerVersion,
+    showDistanceLabels,
+    showTimeLabels,
+    locations,
+    printScale,
+    showAerodromes,
+    aerodromes
+  ]);
 
   // Draw UTM grid with labels
   function drawUTMGrid(
