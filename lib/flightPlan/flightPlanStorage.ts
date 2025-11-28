@@ -307,6 +307,44 @@ export interface FlightPlan {
   created_at: number; // Timestamp (Date.now())
   updated_at: number; // Timestamp (Date.now())
   legs: FlightPlanLeg[]; // Array of legs
+
+  // Flight planning parameters (optional - for plans created via /flight-plans/create)
+  /**
+   * Cruise altitude in feet (pressure altitude)
+   * Used to look up cruise performance from aircraft tables
+   * @example 6500 for 6,500 ft
+   */
+  cruiseAltitude?: number;
+
+  /**
+   * Cruise power setting as percentage of max power
+   * Used to look up cruise performance from aircraft tables
+   * @default 65
+   * @example 65 for 65% power
+   */
+  cruisePower?: number;
+
+  /**
+   * Serialized aircraft performance data encoded in CBOR format and base64url
+   * Stored at flight plan level for consistent calculations across all legs
+   */
+  plane?: string;
+
+  /**
+   * Departure point of the flight plan (first leg's from)
+   */
+  departure?: LegPoint;
+
+  /**
+   * Destination point of the flight plan (last leg's to)
+   */
+  destination?: LegPoint;
+
+  /**
+   * Alternate airport for the flight plan
+   * If present, an additional leg is created from destination to alternate
+   */
+  alternate?: LegPoint;
 }
 
 const STORAGE_KEY = "flight_plans";
@@ -518,23 +556,49 @@ export function getFlightPlanById(id: string): FlightPlan | null {
 }
 
 /**
+ * Options for creating a new flight plan
+ */
+export interface CreateFlightPlanOptions {
+  name: string;
+  date?: string;
+  cruiseAltitude?: number;
+  cruisePower?: number;
+  plane?: string;
+  departure?: LegPoint;
+  destination?: LegPoint;
+  alternate?: LegPoint;
+}
+
+/**
  * Create a new flight plan
  */
 export function createFlightPlan(
-  name: string,
+  nameOrOptions: string | CreateFlightPlanOptions,
   date?: string
 ): FlightPlan {
   const plans = loadFlightPlans();
   const id = generateShortId();
   const now = Date.now();
 
+  // Support both old signature (name, date) and new options object
+  const options: CreateFlightPlanOptions =
+    typeof nameOrOptions === "string"
+      ? { name: nameOrOptions, date }
+      : nameOrOptions;
+
   const newPlan: FlightPlan = {
     id,
-    name,
-    date,
+    name: options.name,
+    date: options.date,
     created_at: now,
     updated_at: now,
     legs: [],
+    cruiseAltitude: options.cruiseAltitude,
+    cruisePower: options.cruisePower,
+    plane: options.plane,
+    departure: options.departure,
+    destination: options.destination,
+    alternate: options.alternate,
   };
 
   plans.push(newPlan);

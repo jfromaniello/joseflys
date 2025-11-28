@@ -98,6 +98,19 @@ export function FlightPlansClient() {
             </p>
           </div>
 
+          {/* Create New Button (shown when there are flight plans) */}
+          {flightPlans.length > 0 && (
+            <div className="mb-6">
+              <Link
+                href="/flight-plans/create"
+                className="inline-flex px-5 py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-medium transition-colors items-center gap-2 cursor-pointer"
+              >
+                <PlusIcon className="w-5 h-5" />
+                New Flight Plan
+              </Link>
+            </div>
+          )}
+
           {/* Flight Plans List */}
           {flightPlans.length === 0 ? (
             <div className="text-center py-12">
@@ -117,15 +130,24 @@ export function FlightPlansClient() {
                 className="text-sm mb-6"
                 style={{ color: "oklch(0.6 0.02 240)" }}
               >
-                Create a leg and click &ldquo;Save to Flight Plan&rdquo; to get started
+                Create a complete flight plan with route and aircraft settings
               </p>
-              <Link
-                href="/leg"
-                className="inline-flex px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors items-center gap-2"
-              >
-                <PlusIcon className="w-5 h-5" />
-                Create Your First Leg
-              </Link>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Link
+                  href="/flight-plans/create"
+                  className="inline-flex px-6 py-3 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-medium transition-colors items-center gap-2 justify-center cursor-pointer"
+                >
+                  <PlusIcon className="w-5 h-5" />
+                  Create Flight Plan
+                </Link>
+                <Link
+                  href="/leg"
+                  className="inline-flex px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors items-center gap-2 justify-center cursor-pointer"
+                >
+                  <PlusIcon className="w-5 h-5" />
+                  Create Single Leg
+                </Link>
+              </div>
             </div>
           ) : (
             <div className="space-y-4">

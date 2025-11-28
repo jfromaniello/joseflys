@@ -88,12 +88,30 @@ export function serializeFlightPlan(flightPlan: FlightPlan): string {
       ];
     });
 
+    // Convert LegPoints to compact format for flight plan level points
+    const departure = flightPlan.departure
+      ? [flightPlan.departure.name, flightPlan.departure.lat ?? null, flightPlan.departure.lon ?? null]
+      : null;
+    const destination = flightPlan.destination
+      ? [flightPlan.destination.name, flightPlan.destination.lat ?? null, flightPlan.destination.lon ?? null]
+      : null;
+    const alternate = flightPlan.alternate
+      ? [flightPlan.alternate.name, flightPlan.alternate.lat ?? null, flightPlan.alternate.lon ?? null]
+      : null;
+
     // Compact flight plan format
+    // Positions 0-3: original fields (name, date, plane, legs)
+    // Positions 4-8: new flight planning fields (cruiseAltitude, cruisePower, departure, destination, alternate)
     const compact = [
       flightPlan.name,
       flightPlan.date || "",
       plane, // Plane serialization (only once)
       compactLegs,
+      flightPlan.cruiseAltitude ?? null, // Position 4
+      flightPlan.cruisePower ?? null, // Position 5
+      departure, // Position 6
+      destination, // Position 7
+      alternate, // Position 8
     ];
 
     // Encode to CBOR
@@ -131,10 +149,28 @@ export function deserializeFlightPlan(serialized: string): Omit<FlightPlan, "id"
       string, // date
       string, // plane
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      any[][] // legs
+      any[][], // legs
+      number | null, // cruiseAltitude (optional, position 4)
+      number | null, // cruisePower (optional, position 5)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      any[] | null, // departure (optional, position 6)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      any[] | null, // destination (optional, position 7)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      any[] | null // alternate (optional, position 8)
     ];
 
-    const [name, date, plane, compactLegs] = decoded;
+    const [
+      name,
+      date,
+      plane,
+      compactLegs,
+      cruiseAltitude,
+      cruisePower,
+      departureCompact,
+      destinationCompact,
+      alternateCompact,
+    ] = decoded;
 
     // Reconstruct legs
     const legs = compactLegs.map((compactLeg) => {
@@ -260,10 +296,44 @@ export function deserializeFlightPlan(serialized: string): Omit<FlightPlan, "id"
       };
     });
 
+    // Reconstruct LegPoints from compact format for flight plan level points
+    const departure =
+      departureCompact && Array.isArray(departureCompact)
+        ? {
+            name: departureCompact[0] as string,
+            lat: departureCompact[1] !== null ? parseNumericValue(departureCompact[1]) : undefined,
+            lon: departureCompact[2] !== null ? parseNumericValue(departureCompact[2]) : undefined,
+          }
+        : undefined;
+
+    const destination =
+      destinationCompact && Array.isArray(destinationCompact)
+        ? {
+            name: destinationCompact[0] as string,
+            lat: destinationCompact[1] !== null ? parseNumericValue(destinationCompact[1]) : undefined,
+            lon: destinationCompact[2] !== null ? parseNumericValue(destinationCompact[2]) : undefined,
+          }
+        : undefined;
+
+    const alternate =
+      alternateCompact && Array.isArray(alternateCompact)
+        ? {
+            name: alternateCompact[0] as string,
+            lat: alternateCompact[1] !== null ? parseNumericValue(alternateCompact[1]) : undefined,
+            lon: alternateCompact[2] !== null ? parseNumericValue(alternateCompact[2]) : undefined,
+          }
+        : undefined;
+
     return {
       name,
       date: date || undefined,
       legs,
+      plane: plane || undefined,
+      cruiseAltitude: parseNumericValue(cruiseAltitude),
+      cruisePower: parseNumericValue(cruisePower),
+      departure,
+      destination,
+      alternate,
     };
   } catch (error) {
     console.error("Failed to deserialize flight plan:", error);
