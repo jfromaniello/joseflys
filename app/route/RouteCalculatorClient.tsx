@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { Tooltip } from "../components/Tooltip";
+import { LocationSearchInput } from "../components/LocationSearchInput";
 import { PageLayout } from "../components/PageLayout";
 import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
 import { Footer } from "../components/Footer";
@@ -28,23 +29,6 @@ const RouteMap = dynamic(() => import("./RouteMap").then((mod) => mod.RouteMap),
 });
 
 // Helper function to parse coordinate string (e.g., "-30.7505058,-62.8236677")
-function parseCoordinates(text: string): { lat: number; lon: number } | null {
-  // Match pattern: lat,lon (with optional spaces and signs)
-  const coordPattern = /^([-+]?\d+\.?\d*)\s*,\s*([-+]?\d+\.?\d*)$/;
-  const match = text.trim().match(coordPattern);
-
-  if (!match) return null;
-
-  const lat = parseFloat(match[1]);
-  const lon = parseFloat(match[2]);
-
-  // Validate coordinates are within valid ranges
-  if (isNaN(lat) || isNaN(lon) || !validateCoordinates(lat, lon)) {
-    return null;
-  }
-
-  return { lat, lon };
-}
 
 // Helper function to normalize angle to 0-360 range
 function normalizeHeading(heading: number): number {
@@ -65,20 +49,8 @@ interface Location {
 
 interface ToLocation extends Location {
   id: string;
-  searchQuery: string;
-  searchResults: GeocodingResult[];
-  searching: boolean;
-  showDropdown: boolean;
   lat_str: string;
   lon_str: string;
-}
-
-interface GeocodingResult {
-  name: string;
-  lat: number;
-  lon: number;
-  type: string;
-  importance: number;
 }
 
 interface InitialToLocation {
@@ -112,8 +84,6 @@ export function RouteCalculatorClient({
   const [inputMode, setInputMode] = useState<InputMode>("search");
 
   // From location
-  const [fromSearchQuery, setFromSearchQuery] = useState("");
-  const [fromSearchResults, setFromSearchResults] = useState<GeocodingResult[]>([]);
   const [fromLocation, setFromLocation] = useState<Location | null>(
     initialFromLat && initialFromLon && initialFromName
       ? {
@@ -125,8 +95,6 @@ export function RouteCalculatorClient({
   );
   const [fromLat, setFromLat] = useState(initialFromLat || "");
   const [fromLon, setFromLon] = useState(initialFromLon || "");
-  const [fromSearching, setFromSearching] = useState(false);
-  const [fromShowDropdown, setFromShowDropdown] = useState(false);
 
   // To locations (multiple destinations)
   const [toLocations, setToLocations] = useState<ToLocation[]>(() => {
@@ -139,10 +107,6 @@ export function RouteCalculatorClient({
         lon: parseFloat(loc.lon),
         lat_str: loc.lat,
         lon_str: loc.lon,
-        searchQuery: "",
-        searchResults: [],
-        searching: false,
-        showDropdown: false,
       }));
     }
 
@@ -155,10 +119,6 @@ export function RouteCalculatorClient({
         lon: parseFloat(initialToLon),
         lat_str: initialToLat,
         lon_str: initialToLon,
-        searchQuery: "",
-        searchResults: [],
-        searching: false,
-        showDropdown: false,
       }];
     }
 
@@ -170,89 +130,8 @@ export function RouteCalculatorClient({
       lon: 0,
       lat_str: "",
       lon_str: "",
-      searchQuery: "",
-      searchResults: [],
-      searching: false,
-      showDropdown: false,
     }];
   });
-  const [_showCopiedMessages, setShowCopiedMessages] = useState<Record<string, { distance: boolean; bearing: boolean }>>({});
-  const [showCopiedWaypoints, setShowCopiedWaypoints] = useState(false);
-
-  // Debounced search for "from" location
-  useEffect(() => {
-    if (inputMode !== "search" || fromSearchQuery.length < 3) {
-      setFromSearchResults([]);
-      setFromShowDropdown(false);
-      return;
-    }
-
-    setFromShowDropdown(true);
-    const timer = setTimeout(async () => {
-      setFromSearching(true);
-      try {
-        const response = await fetch(
-          `/api/geocode?q=${encodeURIComponent(fromSearchQuery)}`
-        );
-        if (response.ok) {
-          const results = await response.json();
-          setFromSearchResults(results);
-        }
-      } catch (error) {
-        console.error("Search error:", error);
-      } finally {
-        setFromSearching(false);
-      }
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [fromSearchQuery, inputMode]);
-
-  // Debounced search for each "to" location
-  useEffect(() => {
-    if (inputMode !== "search") return;
-
-    const timers: NodeJS.Timeout[] = [];
-
-    toLocations.forEach((toLocation, index) => {
-      if (toLocation.searchQuery.length < 3) {
-        if (toLocation.searchResults.length > 0 || toLocation.showDropdown) {
-          setToLocations(prev => prev.map((loc, i) =>
-            i === index ? { ...loc, searchResults: [], showDropdown: false } : loc
-          ));
-        }
-        return;
-      }
-
-      const timer = setTimeout(async () => {
-        setToLocations(prev => prev.map((loc, i) =>
-          i === index ? { ...loc, searching: true, showDropdown: true } : loc
-        ));
-
-        try {
-          const response = await fetch(
-            `/api/geocode?q=${encodeURIComponent(toLocation.searchQuery)}`
-          );
-          if (response.ok) {
-            const results = await response.json();
-            setToLocations(prev => prev.map((loc, i) =>
-              i === index ? { ...loc, searchResults: results, searching: false } : loc
-            ));
-          }
-        } catch (error) {
-          console.error("Search error:", error);
-          setToLocations(prev => prev.map((loc, i) =>
-            i === index ? { ...loc, searching: false } : loc
-          ));
-        }
-      }, 300);
-
-      timers.push(timer);
-    });
-
-    return () => timers.forEach(timer => clearTimeout(timer));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toLocations.map(loc => loc.searchQuery).join(','), inputMode]);
 
   // Update URL when locations change
   useEffect(() => {
@@ -351,34 +230,7 @@ export function RouteCalculatorClient({
   });
 
   // Handle location selection
-  const handleFromLocationSelect = useCallback((result: GeocodingResult) => {
-    setFromLocation({
-      name: result.name,
-      lat: result.lat,
-      lon: result.lon,
-    });
-    setFromLat(result.lat.toFixed(6));
-    setFromLon(result.lon.toFixed(6));
-    setFromSearchQuery(""); // Clear the search query
-    setFromSearchResults([]);
-    setFromShowDropdown(false);
-  }, []);
 
-  const handleToLocationSelect = useCallback((index: number, result: GeocodingResult) => {
-    setToLocations(prev => prev.map((loc, i) =>
-      i === index ? {
-        ...loc,
-        name: result.name,
-        lat: result.lat,
-        lon: result.lon,
-        lat_str: result.lat.toFixed(6),
-        lon_str: result.lon.toFixed(6),
-        searchQuery: "",
-        searchResults: [],
-        showDropdown: false,
-      } : loc
-    ));
-  }, []);
 
   const handleAddDestination = useCallback(() => {
     setToLocations(prev => [...prev, {
@@ -388,10 +240,6 @@ export function RouteCalculatorClient({
       lon: 0,
       lat_str: "",
       lon_str: "",
-      searchQuery: "",
-      searchResults: [],
-      searching: false,
-      showDropdown: false,
     }]);
   }, []);
 
@@ -414,67 +262,6 @@ export function RouteCalculatorClient({
       return updated;
     }));
   }, []);
-
-  const handleUpdateToSearchQuery = useCallback((index: number, query: string) => {
-    setToLocations(prev => prev.map((loc, i) =>
-      i === index ? { ...loc, searchQuery: query } : loc
-    ));
-  }, []);
-
-  const _handleCopyDistance = async (id: string, distance: number) => {
-    try {
-      await navigator.clipboard.writeText(Math.round(distance).toString());
-      setShowCopiedMessages(prev => ({ ...prev, [id]: { ...prev[id], distance: true } }));
-      setTimeout(() => {
-        setShowCopiedMessages(prev => ({ ...prev, [id]: { ...prev[id], distance: false } }));
-      }, 2000);
-    } catch (err) {
-      console.error("Failed to copy:", err);
-    }
-  };
-
-  const _handleCopyBearing = async (id: string, bearing: number) => {
-    try {
-      await navigator.clipboard.writeText(Math.round(bearing).toString().padStart(3, '0'));
-      setShowCopiedMessages(prev => ({ ...prev, [id]: { ...prev[id], bearing: true } }));
-      setTimeout(() => {
-        setShowCopiedMessages(prev => ({ ...prev, [id]: { ...prev[id], bearing: false } }));
-      }, 2000);
-    } catch (err) {
-      console.error("Failed to copy:", err);
-    }
-  };
-
-  const handleCopyWaypoints = async () => {
-    // Create waypoints array from valid results
-    const waypoints = results
-      .filter(r => r.validCoordinates && r.distance !== null)
-      .map(r => ({
-        name: r.toLocation.name ? r.toLocation.name.split(",")[0] : `(${r.toLocation.lat.toFixed(2)}, ${r.toLocation.lon.toFixed(2)})`,
-        distance: Math.round(r.distance!),
-      }));
-
-    try {
-      await navigator.clipboard.writeText(JSON.stringify(waypoints, null, 2));
-      setShowCopiedWaypoints(true);
-      setTimeout(() => setShowCopiedWaypoints(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy:", err);
-    }
-  };
-
-  // Build share URL (using first destination for simplicity)
-  const _shareUrl = (() => {
-    if (typeof window === "undefined") return "";
-    const params = new URLSearchParams();
-    if (fromLat) params.set("fromLat", fromLat);
-    if (fromLon) params.set("fromLon", fromLon);
-    if (toLocations.length > 0 && toLocations[0].lat_str) {
-      params.set("toLat", toLocations[0].lat_str);
-      params.set("toLon", toLocations[0].lon_str);
-    }
-    return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
-  })();
 
   return (
     <PageLayout currentPage="route">
@@ -530,97 +317,24 @@ export function RouteCalculatorClient({
           {inputMode === "search" && (
             <div className="space-y-6 mb-8">
               {/* From Location Search */}
-              <div>
-                <label
-                  className="flex items-center text-sm font-medium mb-2"
-                  style={{ color: "oklch(0.72 0.015 240)" }}
-                >
-                  From
-                  <Tooltip content="Search for a city, airport, or location by name. Select from the dropdown to set the departure point." />
-                </label>
-                <div className="relative">
-                  {fromLocation ? (
-                    <div className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border-2 border-sky-500/50 text-white">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="text-lg font-medium truncate">
-                            {fromLocation.name.split(",")[0]}
-                          </div>
-                          <div className="text-xs text-gray-400 mt-1">
-                            {fromLocation.lat.toFixed(4)}, {fromLocation.lon.toFixed(4)}
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => {
-                            setFromLocation(null);
-                            setFromLat("");
-                            setFromLon("");
-                            setFromSearchQuery("");
-                          }}
-                          className="ml-2 text-gray-400 hover:text-red-400 transition-colors"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <input
-                        type="text"
-                        value={fromSearchQuery}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          const coords = parseCoordinates(value);
-
-                          if (coords) {
-                            // Coordinates detected - set location directly
-                            setFromLocation({
-                              name: `${coords.lat.toFixed(4)}, ${coords.lon.toFixed(4)}`,
-                              lat: coords.lat,
-                              lon: coords.lon,
-                            });
-                            setFromLat(coords.lat.toFixed(6));
-                            setFromLon(coords.lon.toFixed(6));
-                            setFromSearchQuery("");
-                            setFromSearchResults([]);
-                            setFromShowDropdown(false);
-                          } else {
-                            // Normal search behavior
-                            setFromSearchQuery(value);
-                          }
-                        }}
-                        onFocus={() => {
-                          if (fromSearchResults.length > 0) {
-                            setFromShowDropdown(true);
-                          }
-                        }}
-                        placeholder="Search city, airport or paste coordinates..."
-                        className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white"
-                      />
-                      {fromSearching && fromShowDropdown && (
-                        <div className="absolute top-full mt-1 w-full bg-slate-800 rounded-lg p-2 text-sm text-gray-400 border border-gray-700 z-10">
-                          Searching...
-                        </div>
-                      )}
-                      {fromSearchResults.length > 0 && fromShowDropdown && (
-                        <div className="absolute top-full mt-1 w-full bg-slate-800 rounded-lg border border-gray-700 max-h-60 overflow-y-auto z-10">
-                          {fromSearchResults.map((result, idx) => (
-                            <button
-                              key={idx}
-                              onClick={() => handleFromLocationSelect(result)}
-                              className="w-full text-left px-4 py-2 hover:bg-slate-700 transition-colors text-sm text-white"
-                            >
-                              {result.name}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
+              <LocationSearchInput
+                value={fromLocation}
+                onChange={(loc) => {
+                  if (loc) {
+                    setFromLocation(loc);
+                    setFromLat(loc.lat.toFixed(6));
+                    setFromLon(loc.lon.toFixed(6));
+                  } else {
+                    setFromLocation(null);
+                    setFromLat("");
+                    setFromLon("");
+                  }
+                }}
+                label="From"
+                tooltip="Search for a city, airport, or location by name. Select from the dropdown to set the departure point."
+                placeholder="Search city, airport or paste coordinates..."
+                selectedBorderColor="border-sky-500/50"
+              />
 
               {/* To Locations (Multiple) */}
               <div>
@@ -663,7 +377,6 @@ export function RouteCalculatorClient({
                                       name: "",
                                       lat_str: "",
                                       lon_str: "",
-                                      searchQuery: "",
                                     } : loc
                                   ));
                                 }}
@@ -689,76 +402,40 @@ export function RouteCalculatorClient({
                           </div>
                         </div>
                       ) : (
-                        <>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="text"
-                              value={toLocation.searchQuery}
-                              onChange={(e) => {
-                                const value = e.target.value;
-                                const coords = parseCoordinates(value);
-
-                                if (coords) {
-                                  // Coordinates detected - set location directly
-                                  setToLocations(prev => prev.map((loc, i) =>
-                                    i === index ? {
-                                      ...loc,
-                                      name: `${coords.lat.toFixed(4)}, ${coords.lon.toFixed(4)}`,
-                                      lat: coords.lat,
-                                      lon: coords.lon,
-                                      lat_str: coords.lat.toFixed(6),
-                                      lon_str: coords.lon.toFixed(6),
-                                      searchQuery: "",
-                                      searchResults: [],
-                                      showDropdown: false,
-                                    } : loc
-                                  ));
-                                } else {
-                                  // Normal search behavior
-                                  handleUpdateToSearchQuery(index, value);
-                                }
-                              }}
-                              onFocus={() => {
-                                if (toLocation.searchResults.length > 0) {
-                                  setToLocations(prev => prev.map((loc, i) =>
-                                    i === index ? { ...loc, showDropdown: true } : loc
-                                  ));
-                                }
-                              }}
-                              placeholder="Search city, airport or paste coordinates..."
-                              className="flex-1 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white"
-                            />
-                            {toLocations.length > 1 && (
-                              <button
-                                onClick={() => handleRemoveDestination(index)}
-                                className="p-3 rounded-xl bg-slate-900/50 border-2 border-gray-600 text-gray-400 hover:text-red-400 hover:border-red-400/50 transition-colors"
-                                title="Remove destination"
-                              >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                              </button>
-                            )}
-                          </div>
-                          {toLocation.searching && toLocation.showDropdown && (
-                            <div className="absolute top-full mt-1 w-full bg-slate-800 rounded-lg p-2 text-sm text-gray-400 border border-gray-700 z-10">
-                              Searching...
-                            </div>
+                        <div className="flex items-center gap-2">
+                          <LocationSearchInput
+                            value={null}
+                            onChange={(loc) => {
+                              if (loc) {
+                                setToLocations(prev => prev.map((l, i) =>
+                                  i === index ? {
+                                    ...l,
+                                    name: loc.name,
+                                    lat: loc.lat,
+                                    lon: loc.lon,
+                                    lat_str: loc.lat.toFixed(6),
+                                    lon_str: loc.lon.toFixed(6),
+                                  } : l
+                                ));
+                              }
+                            }}
+                            showLabel={false}
+                            placeholder="Search city, airport or paste coordinates..."
+                            selectedBorderColor="border-purple-500/50"
+                            className="flex-1"
+                          />
+                          {toLocations.length > 1 && (
+                            <button
+                              onClick={() => handleRemoveDestination(index)}
+                              className="p-3 rounded-xl bg-slate-900/50 border-2 border-gray-600 text-gray-400 hover:text-red-400 hover:border-red-400/50 transition-colors cursor-pointer"
+                              title="Remove destination"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
                           )}
-                          {toLocation.searchResults.length > 0 && toLocation.showDropdown && (
-                            <div className="absolute top-full mt-1 w-full bg-slate-800 rounded-lg border border-gray-700 max-h-60 overflow-y-auto z-10">
-                              {toLocation.searchResults.map((result, idx) => (
-                                <button
-                                  key={idx}
-                                  onClick={() => handleToLocationSelect(index, result)}
-                                  className="w-full text-left px-4 py-2 hover:bg-slate-700 transition-colors text-sm text-white"
-                                >
-                                  {result.name}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </>
+                        </div>
                       )}
                     </div>
                   ))}
@@ -1043,14 +720,21 @@ export function RouteCalculatorClient({
                 />
               </div>
 
-              {/* Action Buttons - Two Column Layout on Desktop */}
+              {/* Action Buttons */}
               {results.filter(r => r.validCoordinates && r.distance !== null).length > 0 && (
-                <div className="mt-6 print:hidden grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-4">
-                  {/* Copy Waypoints Button */}
+                <div className="mt-6 print:hidden grid grid-cols-1 md:grid-cols-2 gap-3 md:max-w-lg md:mx-auto">
+                  <ShareButtonSimple
+                    shareData={{
+                      title: "José's Route Calculator",
+                      text: results.length === 1 && results[0].distance !== null && results[0].bearing !== null
+                        ? `Distance: ${Math.round(results[0].distance)} NM, Bearing: ${Math.round(results[0].bearing).toString().padStart(3, '0')}°T`
+                        : `${results.filter(r => r.validCoordinates).length} destinations calculated`,
+                    }}
+                  />
                   <button
-                    onClick={handleCopyWaypoints}
-                    className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl border-2 border-emerald-500/50 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all font-medium cursor-pointer"
-                    style={{ color: "oklch(0.7 0.15 150)" }}
+                    onClick={() => window.print()}
+                    className="w-full px-6 py-3 rounded-xl border-2 border-gray-600 hover:border-gray-500 hover:bg-slate-700/50 transition-all text-center flex items-center justify-center gap-2 cursor-pointer"
+                    style={{ color: "oklch(0.7 0.02 240)" }}
                   >
                     <svg
                       className="w-5 h-5"
@@ -1062,43 +746,11 @@ export function RouteCalculatorClient({
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth={2}
-                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                        d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
                       />
                     </svg>
-                    {showCopiedWaypoints ? "✓ Copied!" : "Copy Waypoints for Leg Planner"}
+                    <span className="text-sm font-medium">Print</span>
                   </button>
-
-                  {/* Share & Print Buttons (stacked) */}
-                  <div className="flex flex-col gap-2">
-                    <ShareButtonSimple
-                      shareData={{
-                        title: "José's Route Calculator",
-                        text: results.length === 1 && results[0].distance !== null && results[0].bearing !== null
-                          ? `Distance: ${Math.round(results[0].distance)} NM, Bearing: ${Math.round(results[0].bearing).toString().padStart(3, '0')}°T`
-                          : `${results.filter(r => r.validCoordinates).length} destinations calculated`,
-                      }}
-                    />
-                    <button
-                      onClick={() => window.print()}
-                      className="w-full px-6 py-3 rounded-xl border-2 border-gray-600 hover:border-gray-500 hover:bg-slate-700/50 transition-all text-center flex items-center justify-center gap-2 cursor-pointer"
-                      style={{ color: "oklch(0.7 0.02 240)" }}
-                    >
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
-                        />
-                      </svg>
-                      <span className="text-sm font-medium">Print</span>
-                    </button>
-                  </div>
                 </div>
               )}
             </>
