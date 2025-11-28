@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Tooltip } from "../components/Tooltip";
+import { LocationSearchInput } from "../components/LocationSearchInput";
 import { PageLayout } from "../components/PageLayout";
 import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
 import { Footer } from "../components/Footer";
@@ -550,136 +551,46 @@ ${waypoints.join("\n")}
               <>
                 {/* From Search */}
                 <div className="mb-4">
-                  <label
-                    className="flex items-center text-sm font-medium mb-2"
-                    style={{ color: "oklch(0.72 0.015 240)" }}
-                  >
-                    From
-                    <Tooltip content="Search for a city, airport, or location. You can also paste coordinates directly (e.g., '40.7128, -74.0060')." />
-                  </label>
-                  <div className="relative">
-                    {fromLocation ? (
-                      <div className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border-2 border-sky-500/50 text-white">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="text-lg font-medium truncate">
-                              {fromLocation.name.split(",")[0]}
-                            </div>
-                            <div className="text-xs text-gray-400 mt-1">
-                              {fromLocation.lat.toFixed(4)}, {fromLocation.lon.toFixed(4)}
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => {
-                              setFromLocation(null);
-                              setFromLat("");
-                              setFromLon("");
-                              setFromSearchQuery("");
-                            }}
-                            className="ml-2 text-gray-400 hover:text-red-400 transition-colors cursor-pointer"
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <input
-                        type="text"
-                        value={fromSearchQuery}
-                        onChange={(e) => handleFromSearchChange(e.target.value)}
-                        onFocus={() => setFromShowDropdown(true)}
-                        placeholder="Search city or airport..."
-                        className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border-2 border-gray-600 focus:border-blue-500 focus:outline-none"
-                      />
-                    )}
-                    {fromShowDropdown && fromSearchResults.length > 0 && (
-                      <div className="absolute z-10 w-full mt-1 bg-slate-700 border-2 border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                        {fromSearchResults.map((result, idx) => (
-                          <div
-                            key={idx}
-                            onClick={() => handleFromLocationSelect(result)}
-                            className="px-4 py-2 hover:bg-slate-600 cursor-pointer"
-                          >
-                            {result.name}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {fromSearching && (
-                      <div className="absolute right-3 top-3 text-gray-400">
-                        Searching...
-                      </div>
-                    )}
-                  </div>
+                  <LocationSearchInput
+                    value={fromLocation}
+                    onChange={(loc) => {
+                      if (loc) {
+                        setFromLocation(loc);
+                        setFromLat(loc.lat.toFixed(6));
+                        setFromLon(loc.lon.toFixed(6));
+                      } else {
+                        setFromLocation(null);
+                        setFromLat("");
+                        setFromLon("");
+                      }
+                    }}
+                    label="From"
+                    tooltip="Search for a city, airport, or location. You can also paste coordinates directly (e.g., '40.7128, -74.0060')."
+                    placeholder="Search city or airport..."
+                    selectedBorderColor="border-sky-500/50"
+                  />
                 </div>
 
                 {/* To Search */}
                 <div className="mb-4">
-                  <label
-                    className="flex items-center text-sm font-medium mb-2"
-                    style={{ color: "oklch(0.72 0.015 240)" }}
-                  >
-                    To
-                    <Tooltip content="Search for destination city, airport, or location. You can also paste coordinates directly." />
-                  </label>
-                  <div className="relative">
-                    {toLocation ? (
-                      <div className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border-2 border-sky-500/50 text-white">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="text-lg font-medium truncate">
-                              {toLocation.name.split(",")[0]}
-                            </div>
-                            <div className="text-xs text-gray-400 mt-1">
-                              {toLocation.lat.toFixed(4)}, {toLocation.lon.toFixed(4)}
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => {
-                              setToLocation(null);
-                              setToLat("");
-                              setToLon("");
-                              setToSearchQuery("");
-                            }}
-                            className="ml-2 text-gray-400 hover:text-red-400 transition-colors cursor-pointer"
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <input
-                        type="text"
-                        value={toSearchQuery}
-                        onChange={(e) => handleToSearchChange(e.target.value)}
-                        onFocus={() => setToShowDropdown(true)}
-                        placeholder="Search city or airport..."
-                        className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border-2 border-gray-600 focus:border-blue-500 focus:outline-none"
-                      />
-                    )}
-                    {toShowDropdown && toSearchResults.length > 0 && (
-                      <div className="absolute z-10 w-full mt-1 bg-slate-700 border-2 border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                        {toSearchResults.map((result, idx) => (
-                          <div
-                            key={idx}
-                            onClick={() => handleToLocationSelect(result)}
-                            className="px-4 py-2 hover:bg-slate-600 cursor-pointer"
-                          >
-                            {result.name}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {toSearching && (
-                      <div className="absolute right-3 top-3 text-gray-400">
-                        Searching...
-                      </div>
-                    )}
-                  </div>
+                  <LocationSearchInput
+                    value={toLocation}
+                    onChange={(loc) => {
+                      if (loc) {
+                        setToLocation(loc);
+                        setToLat(loc.lat.toFixed(6));
+                        setToLon(loc.lon.toFixed(6));
+                      } else {
+                        setToLocation(null);
+                        setToLat("");
+                        setToLon("");
+                      }
+                    }}
+                    label="To"
+                    tooltip="Search for destination city, airport, or location. You can also paste coordinates directly."
+                    placeholder="Search city or airport..."
+                    selectedBorderColor="border-red-500/50"
+                  />
                 </div>
               </>
             ) : (

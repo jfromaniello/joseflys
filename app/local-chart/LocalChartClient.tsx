@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
 import { Tooltip } from "../components/Tooltip";
+import { LocationSearchInput, LocationResult } from "../components/LocationSearchInput";
 import { PageLayout } from "../components/PageLayout";
 import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
 import { Footer } from "../components/Footer";
@@ -439,93 +440,24 @@ export function LocalChartClient({
 
           {/* From Location Search */}
           <div className="mb-6">
-            <label
-              className="flex items-center text-sm font-medium mb-2"
-              style={{ color: "oklch(0.72 0.015 240)" }}
-            >
-              Origin
-              <Tooltip content="Search for your departure point or paste coordinates (e.g., -31.4135, -64.181)" />
-            </label>
-            <div className="relative">
-              {fromLocation ? (
-                <div className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border-2 border-sky-500/50 text-white">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-lg font-medium truncate">
-                        {fromLocation.name.split(",")[0]}
-                      </div>
-                      <div className="text-xs text-gray-400 mt-1">
-                        {fromLocation.lat.toFixed(4)}, {fromLocation.lon.toFixed(4)}
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setFromLocation(null);
-                        setFromLat("");
-                        setFromLon("");
-                        setFromSearchQuery("");
-                      }}
-                      className="ml-2 text-gray-400 hover:text-red-400 transition-colors"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <input
-                    type="text"
-                    value={fromSearchQuery}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      const coords = parseCoordinates(value);
-
-                      if (coords) {
-                        setFromLocation({
-                          name: `${coords.lat.toFixed(4)}, ${coords.lon.toFixed(4)}`,
-                          lat: coords.lat,
-                          lon: coords.lon,
-                        });
-                        setFromLat(coords.lat.toFixed(6));
-                        setFromLon(coords.lon.toFixed(6));
-                        setFromSearchQuery("");
-                        setFromSearchResults([]);
-                        setFromShowDropdown(false);
-                      } else {
-                        setFromSearchQuery(value);
-                      }
-                    }}
-                    onFocus={() => {
-                      if (fromSearchResults.length > 0) {
-                        setFromShowDropdown(true);
-                      }
-                    }}
-                    placeholder="Search location or paste coordinates..."
-                    className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white"
-                  />
-                  {fromSearching && fromShowDropdown && (
-                    <div className="absolute top-full mt-1 w-full bg-slate-800 rounded-lg p-2 text-sm text-gray-400 border border-gray-700 z-10">
-                      Searching...
-                    </div>
-                  )}
-                  {fromSearchResults.length > 0 && fromShowDropdown && (
-                    <div className="absolute top-full mt-1 w-full bg-slate-800 rounded-lg border border-gray-700 max-h-60 overflow-y-auto z-10">
-                      {fromSearchResults.map((result, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => handleFromLocationSelect(result)}
-                          className="w-full text-left px-4 py-2 hover:bg-slate-700 transition-colors text-sm text-white"
-                        >
-                          {result.name}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
+            <LocationSearchInput
+              value={fromLocation}
+              onChange={(loc) => {
+                if (loc) {
+                  setFromLocation(loc);
+                  setFromLat(loc.lat.toFixed(6));
+                  setFromLon(loc.lon.toFixed(6));
+                } else {
+                  setFromLocation(null);
+                  setFromLat("");
+                  setFromLon("");
+                }
+              }}
+              label="Origin"
+              tooltip="Search for your departure point or paste coordinates (e.g., -31.4135, -64.181)"
+              placeholder="Search location or paste coordinates..."
+              selectedBorderColor="border-sky-500/50"
+            />
           </div>
 
           {/* To Locations (Multiple Waypoints) */}
@@ -676,74 +608,43 @@ export function LocalChartClient({
                       </div>
                     </div>
                   ) : (
-                    <>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={toLocation.searchQuery}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            const coords = parseCoordinates(value);
-
-                            if (coords) {
-                              setToLocations(prev => prev.map((loc, i) =>
-                                i === index ? {
-                                  ...loc,
-                                  name: `${coords.lat.toFixed(4)}, ${coords.lon.toFixed(4)}`,
-                                  lat: coords.lat,
-                                  lon: coords.lon,
-                                  lat_str: coords.lat.toFixed(6),
-                                  lon_str: coords.lon.toFixed(6),
-                                  searchQuery: "",
-                                  searchResults: [],
-                                  showDropdown: false,
-                                } : loc
-                              ));
-                            } else {
-                              handleUpdateToSearchQuery(index, value);
-                            }
-                          }}
-                          onFocus={() => {
-                            if (toLocation.searchResults.length > 0) {
-                              setToLocations(prev => prev.map((loc, i) =>
-                                i === index ? { ...loc, showDropdown: true } : loc
-                              ));
-                            }
-                          }}
-                          placeholder="Search location or paste coordinates..."
-                          className="flex-1 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 text-white"
-                        />
-                        {toLocations.length > 1 && (
-                          <button
-                            onClick={() => handleRemoveDestination(index)}
-                            className="p-3 rounded-xl bg-slate-900/50 border-2 border-gray-600 text-gray-400 hover:text-red-400 hover:border-red-400/50 transition-colors cursor-pointer"
-                            title="Remove waypoint"
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        )}
-                      </div>
-                      {toLocation.searching && toLocation.showDropdown && (
-                        <div className="absolute top-full mt-1 w-full bg-slate-800 rounded-lg p-2 text-sm text-gray-400 border border-gray-700 z-10">
-                          Searching...
-                        </div>
+                    <div className="flex items-center gap-2">
+                      <LocationSearchInput
+                        value={null}
+                        onChange={(loc) => {
+                          if (loc) {
+                            setToLocations(prev => prev.map((l, i) =>
+                              i === index ? {
+                                ...l,
+                                name: loc.name,
+                                lat: loc.lat,
+                                lon: loc.lon,
+                                lat_str: loc.lat.toFixed(6),
+                                lon_str: loc.lon.toFixed(6),
+                                searchQuery: "",
+                                searchResults: [],
+                                showDropdown: false,
+                              } : l
+                            ));
+                          }
+                        }}
+                        showLabel={false}
+                        placeholder="Search location or paste coordinates..."
+                        selectedBorderColor="border-purple-500/50"
+                        className="flex-1"
+                      />
+                      {toLocations.length > 1 && (
+                        <button
+                          onClick={() => handleRemoveDestination(index)}
+                          className="p-3 rounded-xl bg-slate-900/50 border-2 border-gray-600 text-gray-400 hover:text-red-400 hover:border-red-400/50 transition-colors cursor-pointer"
+                          title="Remove waypoint"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
                       )}
-                      {toLocation.searchResults.length > 0 && toLocation.showDropdown && (
-                        <div className="absolute top-full mt-1 w-full bg-slate-800 rounded-lg border border-gray-700 max-h-60 overflow-y-auto z-10">
-                          {toLocation.searchResults.map((result, idx) => (
-                            <button
-                              key={idx}
-                              onClick={() => handleToLocationSelect(index, result)}
-                              className="w-full text-left px-4 py-2 hover:bg-slate-700 transition-colors text-sm text-white"
-                            >
-                              {result.name}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </>
+                    </div>
                   )}
                 </div>
               ))}

@@ -7,6 +7,7 @@ import {
   calculateInitialBearing,
   validateCoordinates,
 } from "@/lib/distanceCalculations";
+import { LocationSearchInput } from "./LocationSearchInput";
 
 type InputMode = "search" | "coordinates";
 
@@ -275,126 +276,42 @@ export function DistanceCalculatorModal({
                   {inputMode === "search" && (
                     <div className="grid grid-cols-2 gap-4">
                       {/* From Location */}
-                      <div className="relative">
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                          From
-                        </label>
-                        {fromLocation ? (
-                          <div className="px-4 py-3 rounded-xl bg-slate-900/50 border-2 border-sky-500/50 text-white">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <div className="text-sm font-medium truncate">
-                                  {fromLocation.name.split(",")[0]}
-                                </div>
-                                <div className="text-xs text-gray-400 mt-1">
-                                  {fromLocation.lat.toFixed(4)}, {fromLocation.lon.toFixed(4)}
-                                </div>
-                              </div>
-                              <button
-                                onClick={() => {
-                                  setFromLocation(null);
-                                  setFromLat("");
-                                  setFromLon("");
-                                }}
-                                className="ml-2 text-gray-400 hover:text-red-400"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <>
-                            <input
-                              type="text"
-                              value={fromSearchQuery}
-                              onChange={(e) => setFromSearchQuery(e.target.value)}
-                              placeholder="Search..."
-                              className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all bg-slate-900/50 border-2 border-gray-600 text-white"
-                            />
-                            {fromSearching && fromShowDropdown && (
-                              <div className="absolute top-full mt-1 w-full bg-slate-700 rounded-lg p-2 text-sm text-gray-400 border border-gray-600 z-10">
-                                Searching...
-                              </div>
-                            )}
-                            {fromSearchResults.length > 0 && fromShowDropdown && (
-                              <div className="absolute top-full mt-1 w-full bg-slate-700 rounded-lg border border-gray-600 max-h-60 overflow-y-auto z-10">
-                                {fromSearchResults.map((result, idx) => (
-                                  <button
-                                    key={idx}
-                                    onClick={() => handleFromLocationSelect(result)}
-                                    className="w-full text-left px-4 py-2 hover:bg-slate-600 transition-colors text-sm text-white"
-                                  >
-                                    {result.name}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </div>
+                      <LocationSearchInput
+                        value={fromLocation}
+                        onChange={(loc) => {
+                          if (loc) {
+                            setFromLocation(loc);
+                            setFromLat(loc.lat.toFixed(6));
+                            setFromLon(loc.lon.toFixed(6));
+                          } else {
+                            setFromLocation(null);
+                            setFromLat("");
+                            setFromLon("");
+                          }
+                        }}
+                        label="From"
+                        placeholder="Search..."
+                        selectedBorderColor="border-sky-500/50"
+                      />
 
                       {/* To Location */}
-                      <div className="relative">
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                          To
-                        </label>
-                        {toLocation ? (
-                          <div className="px-4 py-3 rounded-xl bg-slate-900/50 border-2 border-sky-500/50 text-white">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <div className="text-sm font-medium truncate">
-                                  {toLocation.name.split(",")[0]}
-                                </div>
-                                <div className="text-xs text-gray-400 mt-1">
-                                  {toLocation.lat.toFixed(4)}, {toLocation.lon.toFixed(4)}
-                                </div>
-                              </div>
-                              <button
-                                onClick={() => {
-                                  setToLocation(null);
-                                  setToLat("");
-                                  setToLon("");
-                                }}
-                                className="ml-2 text-gray-400 hover:text-red-400"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <>
-                            <input
-                              type="text"
-                              value={toSearchQuery}
-                              onChange={(e) => setToSearchQuery(e.target.value)}
-                              placeholder="Search..."
-                              className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all bg-slate-900/50 border-2 border-gray-600 text-white"
-                            />
-                            {toSearching && toShowDropdown && (
-                              <div className="absolute top-full mt-1 w-full bg-slate-700 rounded-lg p-2 text-sm text-gray-400 border border-gray-600 z-10">
-                                Searching...
-                              </div>
-                            )}
-                            {toSearchResults.length > 0 && toShowDropdown && (
-                              <div className="absolute top-full mt-1 w-full bg-slate-700 rounded-lg border border-gray-600 max-h-60 overflow-y-auto z-10">
-                                {toSearchResults.map((result, idx) => (
-                                  <button
-                                    key={idx}
-                                    onClick={() => handleToLocationSelect(result)}
-                                    className="w-full text-left px-4 py-2 hover:bg-slate-600 transition-colors text-sm text-white"
-                                  >
-                                    {result.name}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </div>
+                      <LocationSearchInput
+                        value={toLocation}
+                        onChange={(loc) => {
+                          if (loc) {
+                            setToLocation(loc);
+                            setToLat(loc.lat.toFixed(6));
+                            setToLon(loc.lon.toFixed(6));
+                          } else {
+                            setToLocation(null);
+                            setToLat("");
+                            setToLon("");
+                          }
+                        }}
+                        label="To"
+                        placeholder="Search..."
+                        selectedBorderColor="border-red-500/50"
+                      />
                     </div>
                   )}
 
