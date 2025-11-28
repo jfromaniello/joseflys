@@ -355,27 +355,7 @@ export function SegmentsCalculatorClient({
   }, [fromLocation, toLocation, segmentCount]);
 
   // Handle location selection from search dropdown
-  const handleFromLocationSelect = (result: GeocodingResult) => {
-    setFromLocation({
-      name: result.name,
-      lat: result.lat,
-      lon: result.lon,
-    });
-    setFromSearchQuery("");
-    setFromSearchResults([]);
-    setFromShowDropdown(false);
-  };
 
-  const handleToLocationSelect = (result: GeocodingResult) => {
-    setToLocation({
-      name: result.name,
-      lat: result.lat,
-      lon: result.lon,
-    });
-    setToSearchQuery("");
-    setToSearchResults([]);
-    setToShowDropdown(false);
-  };
 
   // Handle coordinate input mode
   const handleFromCoordinatesSubmit = () => {
@@ -411,37 +391,7 @@ export function SegmentsCalculatorClient({
   };
 
   // Smart search query handler - detects coordinate paste
-  const handleFromSearchChange = (value: string) => {
-    setFromSearchQuery(value);
 
-    // Try to parse as coordinates
-    const coords = parseCoordinates(value);
-    if (coords) {
-      setFromLocation({
-        name: `${coords.lat.toFixed(4)}°, ${coords.lon.toFixed(4)}°`,
-        lat: coords.lat,
-        lon: coords.lon,
-      });
-      setFromSearchQuery("");
-      setFromShowDropdown(false);
-    }
-  };
-
-  const handleToSearchChange = (value: string) => {
-    setToSearchQuery(value);
-
-    // Try to parse as coordinates
-    const coords = parseCoordinates(value);
-    if (coords) {
-      setToLocation({
-        name: `${coords.lat.toFixed(4)}°, ${coords.lon.toFixed(4)}°`,
-        lat: coords.lat,
-        lon: coords.lon,
-      });
-      setToSearchQuery("");
-      setToShowDropdown(false);
-    }
-  };
 
   // Generate and download GPX file
   const handleDownloadGPX = () => {

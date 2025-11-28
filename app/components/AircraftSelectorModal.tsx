@@ -148,54 +148,79 @@ export function AircraftSelectorModal({
                         )}
                       </div>
 
-                      {/* Weight Info */}
-                      <div className="grid grid-cols-3 gap-4 mb-4">
-                        <div>
-                          <p className="text-xs text-slate-400 mb-1">Empty Weight</p>
-                          <p className="text-white font-medium">{selectedAircraft.weights.emptyWeight} lbs</p>
+                      {/* Key Specs Grid */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                        {/* Cruise TAS - get typical cruise from middle of cruise table */}
+                        {selectedAircraft.cruiseTable && selectedAircraft.cruiseTable.length > 0 && (() => {
+                          const midIndex = Math.floor(selectedAircraft.cruiseTable.length / 2);
+                          const typicalCruise = selectedAircraft.cruiseTable[midIndex];
+                          return (
+                            <div className="bg-slate-800/50 rounded-lg p-3">
+                              <p className="text-xs text-slate-400 mb-1">Cruise TAS</p>
+                              <p className="text-white font-semibold text-lg">{typicalCruise.tas} <span className="text-sm font-normal text-slate-400">KT</span></p>
+                            </div>
+                          );
+                        })()}
+
+                        {/* Fuel Capacity */}
+                        <div className="bg-slate-800/50 rounded-lg p-3">
+                          <p className="text-xs text-slate-400 mb-1">Usable Fuel</p>
+                          <p className="text-white font-semibold text-lg">{selectedAircraft.engine.usableFuelGallons} <span className="text-sm font-normal text-slate-400">GAL</span></p>
                         </div>
-                        {selectedAircraft.weights.standardWeight && (
-                          <div>
-                            <p className="text-xs text-slate-400 mb-1">Standard Weight</p>
-                            <p className="text-white font-medium">{selectedAircraft.weights.standardWeight} lbs</p>
+
+                        {/* Service Ceiling */}
+                        {selectedAircraft.serviceCeiling && (
+                          <div className="bg-slate-800/50 rounded-lg p-3">
+                            <p className="text-xs text-slate-400 mb-1">Service Ceiling</p>
+                            <p className="text-white font-semibold text-lg">{(selectedAircraft.serviceCeiling / 1000).toFixed(1)} <span className="text-sm font-normal text-slate-400">kft</span></p>
                           </div>
                         )}
-                        <div>
-                          <p className="text-xs text-slate-400 mb-1">Max Gross Weight</p>
-                          <p className="text-white font-medium">{selectedAircraft.weights.maxGrossWeight} lbs</p>
+
+                        {/* Max Gross Weight */}
+                        <div className="bg-slate-800/50 rounded-lg p-3">
+                          <p className="text-xs text-slate-400 mb-1">Max Gross</p>
+                          <p className="text-white font-semibold text-lg">{selectedAircraft.weights.maxGrossWeight.toLocaleString()} <span className="text-sm font-normal text-slate-400">lbs</span></p>
                         </div>
                       </div>
 
-                      {/* Climb Table Preview */}
-                      {selectedAircraft.climbTable && selectedAircraft.climbTable.length > 0 && (
-                        <div>
-                          <p className="text-xs text-slate-400 mb-2">Climb Performance Table</p>
-                          <div className="overflow-x-auto rounded-lg border border-slate-700">
-                            <table className="w-full text-sm">
-                              <thead className="bg-slate-800">
-                                <tr className="border-b border-slate-700">
-                                  <th className="px-3 py-2 text-left text-slate-300 font-medium text-xs">From (ft)</th>
-                                  <th className="px-3 py-2 text-left text-slate-300 font-medium text-xs">To (ft)</th>
-                                  <th className="px-3 py-2 text-left text-slate-300 font-medium text-xs">ROC (fpm)</th>
-                                  <th className="px-3 py-2 text-left text-slate-300 font-medium text-xs">TAS (KT)</th>
-                                  <th className="px-3 py-2 text-left text-slate-300 font-medium text-xs">Fuel (gph)</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {selectedAircraft.climbTable.map((segment, index) => (
-                                  <tr key={index} className="border-b border-slate-700/50">
-                                    <td className="px-3 py-2 text-white">{segment.altitudeFrom}</td>
-                                    <td className="px-3 py-2 text-white">{segment.altitudeTo}</td>
-                                    <td className="px-3 py-2 text-white">{segment.rateOfClimb}</td>
-                                    <td className="px-3 py-2 text-white">{segment.climbTAS}</td>
-                                    <td className="px-3 py-2 text-white">{segment.fuelFlow}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
+                      {/* Engine & Fuel Info */}
+                      <div className="grid grid-cols-2 gap-3 mb-4">
+                        <div className="bg-slate-800/50 rounded-lg p-3">
+                          <p className="text-xs text-slate-400 mb-1">Engine</p>
+                          <p className="text-white text-sm">{selectedAircraft.engine.type}</p>
+                          <p className="text-slate-400 text-xs mt-1">{selectedAircraft.engine.ratedHP} HP</p>
                         </div>
-                      )}
+
+                        {/* Cruise Fuel Flow */}
+                        {selectedAircraft.cruiseTable && selectedAircraft.cruiseTable.length > 0 && (() => {
+                          const midIndex = Math.floor(selectedAircraft.cruiseTable.length / 2);
+                          const typicalCruise = selectedAircraft.cruiseTable[midIndex];
+                          const endurance = selectedAircraft.engine.usableFuelGallons / typicalCruise.fuelFlow;
+                          return (
+                            <div className="bg-slate-800/50 rounded-lg p-3">
+                              <p className="text-xs text-slate-400 mb-1">Cruise Fuel</p>
+                              <p className="text-white text-sm">{typicalCruise.fuelFlow} GPH @ {typicalCruise.percentPower}% pwr</p>
+                              <p className="text-slate-400 text-xs mt-1">~{endurance.toFixed(1)} hr endurance</p>
+                            </div>
+                          );
+                        })()}
+                      </div>
+
+                      {/* V-Speeds */}
+                      <div className="bg-slate-800/50 rounded-lg p-3">
+                        <p className="text-xs text-slate-400 mb-2">V-Speeds (KIAS)</p>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                          <span><span className="text-slate-400">Vs₀:</span> <span className="text-white">{selectedAircraft.limits.vs0}</span></span>
+                          <span><span className="text-slate-400">Vs:</span> <span className="text-white">{selectedAircraft.limits.vs}</span></span>
+                          <span><span className="text-slate-400">Va:</span> <span className="text-white">{selectedAircraft.limits.va}</span></span>
+                          <span><span className="text-slate-400">Vfe:</span> <span className="text-white">{selectedAircraft.limits.vfe}</span></span>
+                          <span><span className="text-slate-400">Vno:</span> <span className="text-white">{selectedAircraft.limits.vno}</span></span>
+                          <span><span className="text-slate-400">Vne:</span> <span className="text-white">{selectedAircraft.limits.vne}</span></span>
+                          {selectedAircraft.limits.maxCrosswind && (
+                            <span><span className="text-slate-400">X-wind:</span> <span className="text-white">{selectedAircraft.limits.maxCrosswind} KT</span></span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   )}
 
