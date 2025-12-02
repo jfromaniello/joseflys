@@ -9,7 +9,6 @@ import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
 import { calculateCourse, calculateWaypoints, Waypoint, FlightParameters } from "@/lib/courseCalculations";
 import { DeviationEntry } from "../components/CompassDeviationModal";
 import { WaypointsModal } from "../components/WaypointsModal";
-import { DistanceCalculatorModal } from "../components/DistanceCalculatorModal";
 import { TASCalculatorModal } from "../components/TASCalculatorModal";
 import { compressForUrl, decompressFromUrl } from "@/lib/urlCompression";
 import { loadAircraftFromUrl, serializeAircraft } from "@/lib/aircraftStorage";
@@ -147,7 +146,6 @@ export function LegPlannerClient({
     (initialFuelUnit as FuelUnit) || 'gph'
   );
   const [isWaypointsModalOpen, setIsWaypointsModalOpen] = useState(false);
-  const [isDistanceModalOpen, setIsDistanceModalOpen] = useState(false);
   const [isTASModalOpen, setIsTASModalOpen] = useState(false);
   const [isFlightPlanModalOpen, setIsFlightPlanModalOpen] = useState(false);
 
@@ -157,20 +155,33 @@ export function LegPlannerClient({
   // Flight plan tracking state
   const [flightPlanId, setFlightPlanId] = useState<string>(initialFlightPlanId);
   const [legId, setLegId] = useState<string>(initialLegId);
-  const [currentFlightPlan, setCurrentFlightPlan] = useState<FlightPlan | null>(() => {
-    if (initialFlightPlanId) {
-      return getFlightPlanById(initialFlightPlanId);
-    }
-    return null;
-  });
+  // Initialize as null to avoid localStorage access during SSR
+  const [currentFlightPlan, setCurrentFlightPlan] = useState<FlightPlan | null>(null);
 
-  // Aircraft state - initialize from URL if plane param exists
-  const [aircraft, setAircraft] = useState<ResolvedAircraftPerformance | null>(() => {
-    if (initialPlane) {
-      return loadAircraftFromUrl(initialPlane);
+  // Load flight plan from localStorage after mount (client-side only)
+  useEffect(() => {
+    if (initialFlightPlanId) {
+      const plan = getFlightPlanById(initialFlightPlanId);
+      setCurrentFlightPlan(plan);
     }
-    return null;
-  });
+  }, [initialFlightPlanId]);
+
+  // Aircraft state - initialize as null to avoid localStorage access during SSR
+  const [aircraft, setAircraft] = useState<ResolvedAircraftPerformance | null>(null);
+
+  // Load aircraft from URL after mount (client-side only)
+  useEffect(() => {
+    if (initialPlane) {
+      const loaded = loadAircraftFromUrl(initialPlane);
+      if (loaded) {
+        setAircraft(loaded);
+        // Also update deviation table from aircraft if it has one
+        if (loaded.deviationTable && loaded.deviationTable.length > 0) {
+          setDeviationTable(loaded.deviationTable);
+        }
+      }
+    }
+  }, [initialPlane]);
 
   // Compass deviation table state - initialize from aircraft or legacy devTable param
   const [deviationTable, setDeviationTable] = useState<DeviationEntry[]>(() => {
@@ -455,40 +466,30 @@ export function LegPlannerClient({
 
   // Load example data
   const loadExample = () => {
-    setTrueCourse("090");
-    setTas("120");
-    setWindDir("180");
-    setWindSpeed("25");
-    setMagVar("5"); // WMM convention: 5°E
-    setDistance("85");
+    // Example: Palo Alto (KPAO) to Half Moon Bay (KHAF), California
+    // A popular VFR training flight over the SF Peninsula (~18nm)
+
+    // Set from/to points with coordinates (auto-calculates TC, distance, magvar)
+    setFromPoint({ lat: 37.4611, lon: -122.1150, name: "Palo Alto (KPAO)" });
+    setToPoint({ lat: 37.5134, lon: -122.5008, name: "Half Moon Bay (KHAF)" });
+
+    // Set checkpoints along the route
+    setCheckpoints([
+      { lat: 37.475, lon: -122.27, name: "Crystal Springs" },
+      { lat: 37.49, lon: -122.42, name: "Coastline" }
+    ]);
+
+    // Flight parameters
+    setTas("105");
+    setWindDir("300");
+    setWindSpeed("12");
     setFuelFlow("8");
-    setDescription("SAZS to SACO (Example Flight)");
-    setDepartureTime("1430");
+    setDepartureTime("1000");
     setElapsedMinutes("0");
     setPreviousFuelUsed("");
 
-    // Set example waypoints
-    const exampleWaypoints = [
-      { name: "Rio Segundo", distance: 28 },
-      { name: "Villa Maria", distance: 52 },
-      { name: "Laboulaye", distance: 75 }
-    ];
-    setWaypoints(exampleWaypoints);
-  };
-
-  const handleDistanceCalculatorApply = (data: {
-    bearing: number;
-    distance: number;
-    fromName: string;
-    toName: string;
-  }) => {
-    setTrueCourse(data.bearing.toString().padStart(3, '0'));
-    setDistance(data.distance.toString());
-    setFromCity(data.fromName);
-    setToCity(data.toName);
-    if (!description) {
-      setDescription(`${data.fromName} to ${data.toName}`);
-    }
+    // Clear legacy waypoints (using checkpoints instead)
+    setWaypoints([]);
   };
 
   const handleTASCalculatorApply = (data: { tas: number; speedUnit: SpeedUnit }) => {
@@ -697,34 +698,6 @@ export function LegPlannerClient({
               </div>
               {/* Buttons - Desktop */}
               <div className="hidden md:flex gap-2">
-                {/* Distance Calculator Button */}
-                <div className="relative group">
-                  <button
-                    onClick={() => setIsDistanceModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed border-gray-600 hover:border-sky-500/50 hover:bg-sky-500/10 transition-all text-sm font-medium cursor-pointer whitespace-nowrap"
-                    style={{ color: "oklch(0.65 0.15 230)" }}
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
-                      />
-                    </svg>
-                    Route Lookup
-                  </button>
-                  {/* Custom Tooltip */}
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none whitespace-nowrap border border-gray-700 z-50">
-                    Search for two cities or airports to automatically populate True Course, Distance, and Description fields
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-slate-900"></div>
-                  </div>
-                </div>
                 {/* TAS Calculator Button */}
                 <div className="relative group">
                   <button
@@ -812,31 +785,6 @@ export function LegPlannerClient({
                 >
                   <MenuItems className="absolute right-0 mt-2 w-56 origin-top-right rounded-xl bg-slate-800 shadow-lg border border-gray-700 focus:outline-none z-10">
                     <div className="p-1">
-                      <MenuItem>
-                        {({ active }) => (
-                          <button
-                            onClick={() => setIsDistanceModalOpen(true)}
-                            className={`${
-                              active ? 'bg-slate-700' : ''
-                            } group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-sky-400 cursor-pointer`}
-                          >
-                            <svg
-                              className="w-5 h-5"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
-                              />
-                            </svg>
-                            Route Lookup
-                          </button>
-                        )}
-                      </MenuItem>
                       <MenuItem>
                         {({ active }) => (
                           <button
@@ -1325,14 +1273,6 @@ export function LegPlannerClient({
         onApply={setWaypoints}
         initialWaypoints={waypoints}
         totalDistance={dist}
-      />
-
-      {/* Distance Calculator Modal */}
-      <DistanceCalculatorModal
-        isOpen={isDistanceModalOpen}
-        onClose={() => setIsDistanceModalOpen(false)}
-        onApply={handleDistanceCalculatorApply}
-        description="Search for cities or airports to populate True Course, Distance, and Description fields for your flight plan"
       />
 
       {/* TAS Calculator Modal */}

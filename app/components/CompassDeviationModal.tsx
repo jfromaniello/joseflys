@@ -47,24 +47,23 @@ export function CompassDeviationModal({
     }
   }, [isOpen]);
 
-  // Initialize selected aircraft when modal opens
+  // Initialize selected aircraft when modal opens or when customAircraft loads
   useEffect(() => {
-    if (isOpen && !prevIsOpenRef.current) {
-      // If initialAircraft is provided and has a deviation table, use it
-      if (initialAircraft && initialAircraft.deviationTable && initialAircraft.deviationTable.length > 0) {
-        // Safe: Synchronizing with external system (modal state transition)
-        // Only runs on closed → open transition (tracked by prevIsOpenRef)
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setSelectedAircraftModel(initialAircraft.model);
-      } else if (customAircraft.length > 0) {
-        // Select first aircraft by default
-        setSelectedAircraftModel(customAircraft[0].model);
-      } else {
-        setSelectedAircraftModel("");
-      }
+    if (!isOpen) {
+      prevIsOpenRef.current = false;
+      return;
     }
-    prevIsOpenRef.current = isOpen;
-  }, [isOpen, initialAircraft, customAircraft]);
+
+    // If initialAircraft is provided and has a deviation table, use it
+    if (initialAircraft && initialAircraft.deviationTable && initialAircraft.deviationTable.length > 0) {
+      setSelectedAircraftModel(initialAircraft.model);
+    } else if (customAircraft.length > 0 && !selectedAircraftModel) {
+      // Select first aircraft by default only if nothing is selected
+      setSelectedAircraftModel(customAircraft[0].model);
+    }
+
+    prevIsOpenRef.current = true;
+  }, [isOpen, initialAircraft, customAircraft, selectedAircraftModel]);
 
   const handleApply = () => {
     const selectedAircraft = customAircraft.find(ac => ac.model === selectedAircraftModel);
