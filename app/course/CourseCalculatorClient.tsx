@@ -44,22 +44,26 @@ export function CourseCalculatorClient({
   const [isDistanceModalOpen, setIsDistanceModalOpen] = useState(false);
   const [isTASModalOpen, setIsTASModalOpen] = useState(false);
 
-  // Aircraft state - initialize from URL if plane param exists
-  const [aircraft, setAircraft] = useState<ResolvedAircraftPerformance | null>(() => {
+  // Aircraft state - initialize as null to avoid localStorage access during SSR
+  const [aircraft, setAircraft] = useState<ResolvedAircraftPerformance | null>(null);
+
+  // Load aircraft from URL after mount (client-side only)
+  useEffect(() => {
     if (initialPlane) {
-      return loadAircraftFromUrl(initialPlane);
+      const loaded = loadAircraftFromUrl(initialPlane);
+      if (loaded) {
+        setAircraft(loaded);
+        // Also update deviation table from aircraft if it has one
+        if (loaded.deviationTable && loaded.deviationTable.length > 0) {
+          setDeviationTable(loaded.deviationTable);
+        }
+      }
     }
-    return null;
-  });
+  }, [initialPlane]);
 
-  // Compass deviation table state - initialize from aircraft or legacy devTable param
+  // Compass deviation table state - initialize from legacy devTable param only (aircraft loaded via useEffect)
   const [deviationTable, setDeviationTable] = useState<DeviationEntry[]>(() => {
-    // Priority 1: From aircraft if loaded
-    if (aircraft?.deviationTable) {
-      return aircraft.deviationTable;
-    }
-
-    // Priority 2: Legacy devTable param (compressed JSON)
+    // Legacy devTable param (compressed JSON)
     if (initialDevTable) {
       try {
         const decompressed = decompressFromUrl(initialDevTable);
