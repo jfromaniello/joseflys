@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { createRootMetadata, createStructuredData } from "@/lib/metadata";
 import { Analytics } from "./components/Analytics";
+import { DynamicManifest } from "./components/DynamicManifest";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,6 +35,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <DynamicManifest />
         <Analytics />
         {children}
       </body>
