@@ -25,12 +25,14 @@ import {
 
 interface ViewAircraftClientProps {
   aircraftId: string;
+  initialAircraft?: ResolvedAircraftPerformance | null;
 }
 
-export function ViewAircraftClient({ aircraftId }: ViewAircraftClientProps) {
+export function ViewAircraftClient({ aircraftId, initialAircraft }: ViewAircraftClientProps) {
   const router = useRouter();
-  const [resolved, setResolved] = useState<ResolvedAircraftPerformance | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Use initialAircraft for SSR, loading only needed for custom aircraft
+  const [resolved, setResolved] = useState<ResolvedAircraftPerformance | null>(initialAircraft ?? null);
+  const [loading, setLoading] = useState(!initialAircraft);
 
   // Chart metric states
   const [climbChartMetric, setClimbChartMetric] = useState<'time' | 'fuel' | 'distance'>('time');
@@ -38,7 +40,10 @@ export function ViewAircraftClient({ aircraftId }: ViewAircraftClientProps) {
   const [takeoffChartMetric, setTakeoffChartMetric] = useState<'groundRoll' | 'over50ft'>('groundRoll');
 
   useEffect(() => {
-    // Try to load from custom aircraft first
+    // If we already have initialAircraft (preset), no need to load
+    if (initialAircraft) return;
+
+    // Try to load from custom aircraft (localStorage)
     const loaded = getRawAircraftByModel(aircraftId);
     if (loaded) {
       setResolved(resolveAircraft(loaded));
@@ -46,20 +51,12 @@ export function ViewAircraftClient({ aircraftId }: ViewAircraftClientProps) {
       return;
     }
 
-    // Try to find in presets
-    const preset = PRESET_AIRCRAFT.find(p => p.model === aircraftId);
-    if (preset) {
-      setResolved(preset as ResolvedAircraftPerformance);
-      setLoading(false);
-      return;
-    }
-
-    // Not found
+    // Not found - redirect
     router.push("/my-planes");
-  }, [aircraftId, router]);
+  }, [aircraftId, router, initialAircraft]);
 
   // Check if this is a preset aircraft
-  const isPreset = PRESET_AIRCRAFT.some(p => p.model === aircraftId);
+  const isPreset = !!initialAircraft || PRESET_AIRCRAFT.some(p => p.model === aircraftId);
 
   // Helper functions for climb table
   const getClimbUniquePAs = () => {
