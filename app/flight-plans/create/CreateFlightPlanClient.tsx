@@ -11,6 +11,7 @@ import Link from "next/link";
 import { PageLayout } from "@/app/components/PageLayout";
 import { Footer } from "@/app/components/Footer";
 import { AircraftSelectorModal } from "@/app/components/AircraftSelectorModal";
+import { AircraftSelector } from "@/app/components/AircraftSelector";
 import { Tooltip } from "@/app/components/Tooltip";
 import { RoutePointsInput, RoutePoint } from "./components/RoutePointsInput";
 import {
@@ -426,21 +427,10 @@ export function CreateFlightPlanClient() {
                   Aircraft
                   <Tooltip content="Select the aircraft you'll be flying. Performance data will be used for fuel and time calculations." />
                 </label>
-                <button
+                <AircraftSelector
+                  aircraft={selectedAircraft}
                   onClick={() => setIsAircraftModalOpen(true)}
-                  className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all text-lg bg-slate-900/50 border-2 border-slate-600 text-white text-left cursor-pointer hover:border-slate-500"
-                >
-                  {selectedAircraft ? (
-                    <div>
-                      <div className="font-medium">{selectedAircraft.name}</div>
-                      <div className="text-sm text-slate-400">
-                        {selectedAircraft.engine.ratedHP} HP | {selectedAircraft.engine.usableFuelGallons} gal usable
-                      </div>
-                    </div>
-                  ) : (
-                    <span className="text-slate-400">Select aircraft...</span>
-                  )}
-                </button>
+                />
               </div>
 
               {/* Cruise Settings */}

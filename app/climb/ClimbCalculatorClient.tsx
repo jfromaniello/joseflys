@@ -7,6 +7,7 @@ import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
 import { Footer } from "../components/Footer";
 import { ShareButtonSimple } from "../components/ShareButtonSimple";
 import { AircraftSelectorModal } from "../components/AircraftSelectorModal";
+import { AircraftSelector } from "../components/AircraftSelector";
 import { ResolvedAircraftPerformance, PRESET_AIRCRAFT } from "@/lib/aircraft";
 import { calculateClimbPerformance, getClimbTableTemperatureRange, ClimbResult } from "@/lib/climbCalculations";
 import {
@@ -114,11 +115,6 @@ export function ClimbCalculatorClient({
     setAircraft(newAircraft);
   }, []);
 
-  // Count unique OAT values in climb table
-  const uniqueOATs = aircraft.climbTable
-    ? [...new Set(aircraft.climbTable.map(r => r.oat))].sort((a, b) => a - b)
-    : [];
-
   return (
     <PageLayout currentPage="climb">
       <CalculatorPageHeader
@@ -128,34 +124,20 @@ export function ClimbCalculatorClient({
 
       <main className="w-full max-w-4xl">
         <div className="rounded-2xl p-6 sm:p-8 shadow-2xl bg-slate-800/50 backdrop-blur-sm border border-gray-700">
-          {/* Aircraft Details Section */}
-          <div className="mb-8 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl sm:text-2xl font-bold" style={{ color: "white" }}>
-                Aircraft Details
-              </h2>
-              <button
-                onClick={() => setIsAircraftModalOpen(true)}
-                className="px-4 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 transition-all cursor-pointer border border-sky-500/30 text-sm font-medium"
-                style={{ color: "oklch(0.8 0.15 230)" }}
-              >
-                Edit Performance Table
-              </button>
-            </div>
-
-            <div className="p-4 rounded-xl bg-slate-900/50 border border-gray-600">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold" style={{ color: "white" }}>
-                    {aircraft.name}
-                  </p>
-                  <p className="text-xs" style={{ color: "oklch(0.6 0.02 240)" }}>
-                    {aircraft.climbTable?.length || 0} data points
-                    {uniqueOATs.length > 0 && ` • OAT columns: ${uniqueOATs.join('°, ')}°C`}
-                  </p>
-                </div>
-              </div>
-            </div>
+          {/* Aircraft Section */}
+          <div className="mb-8">
+            <label
+              className="flex items-center text-sm font-medium mb-2"
+              style={{ color: "oklch(0.72 0.015 240)" }}
+            >
+              Aircraft
+              <Tooltip content="Select an aircraft with climb performance data from its POH" />
+            </label>
+            <AircraftSelector
+              aircraft={aircraft}
+              onClick={() => setIsAircraftModalOpen(true)}
+              showClimbInfo
+            />
           </div>
 
           {/* Climb Parameters */}

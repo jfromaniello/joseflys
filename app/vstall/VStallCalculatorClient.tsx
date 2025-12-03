@@ -7,10 +7,11 @@ import { Footer } from "../components/Footer";
 import { ShareButton } from "../components/ShareButton";
 import { Tooltip } from "../components/Tooltip";
 import { AtmosphericConditionsInputs, type AtmosphericConditionsData } from "../components/AtmosphericConditionsInputs";
-import { AircraftSearchSelector } from "../components/AircraftSearchSelector";
+import { AircraftSelector } from "../components/AircraftSelector";
+import { AircraftSelectorModal } from "../components/AircraftSelectorModal";
 import { ResolvedAircraftPerformance } from "@/lib/aircraft";
 import { calculateVStall, validateInputs, ValidationError } from "@/lib/vstallCalculations";
-import { getAircraftByModel, loadCustomAircraft, resolveAircraft } from "@/lib/aircraftStorage";
+import { getAircraftByModel } from "@/lib/aircraftStorage";
 
 interface VStallCalculatorClientProps {
   initialAircraft: string;
@@ -47,15 +48,8 @@ export function VStallCalculatorClient({
   // Atmospheric conditions data (from component)
   const [atmosphericData, setAtmosphericData] = useState<AtmosphericConditionsData | null>(null);
 
-  // Custom aircraft list
-  const [customAircraft, setCustomAircraft] = useState<ResolvedAircraftPerformance[]>([]);
-
-  // Load custom aircraft on mount
-  useEffect(() => {
-    loadCustomAircraft().then(loaded => {
-      setCustomAircraft(loaded.map(ac => resolveAircraft(ac)));
-    });
-  }, []);
+  // Aircraft modal state
+  const [isAircraftModalOpen, setIsAircraftModalOpen] = useState(false);
 
   // Determine initial altitude mode from URL params
   const initialAltitudeMode = initialDA ? "da" : (initialAlt && initialQNH) ? "qnh" : "pa";
@@ -194,22 +188,14 @@ export function VStallCalculatorClient({
         <div className="rounded-2xl p-6 sm:p-8 shadow-2xl bg-slate-800/50 backdrop-blur-sm border border-gray-700">
           {/* Aircraft Selection Section */}
           <div className="mb-8 pb-8 border-b border-gray-700/50">
-            <div className="flex items-center justify-between gap-3 mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-sky-500/20 to-blue-500/20 border border-sky-500/30">
-                  <svg className="w-6 h-6" fill="none" stroke="oklch(0.7 0.15 230)" viewBox="0 0 24 24" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                  </svg>
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold" style={{ color: "white" }}>
-                    Aircraft Selection
-                  </h2>
-                  <p className="text-sm" style={{ color: "oklch(0.65 0.02 240)" }}>
-                    Choose your aircraft model
-                  </p>
-                </div>
-              </div>
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <label
+                className="flex items-center text-sm font-medium"
+                style={{ color: "oklch(0.72 0.015 240)" }}
+              >
+                Aircraft
+                <Tooltip content="Select the aircraft to calculate stall speeds" />
+              </label>
               {/* Example Button */}
               <div className="relative group">
                 <button
@@ -239,50 +225,46 @@ export function VStallCalculatorClient({
                 </div>
               </div>
             </div>
-            <div className="space-y-4">
-              <AircraftSearchSelector
-                selectedAircraft={selectedAircraft}
-                customAircraft={customAircraft}
-                onSelect={setSelectedAircraft}
-                onClear={() => setSelectedAircraft(null)}
-              />
-              {aircraft && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <div className="p-3 rounded-xl bg-slate-900/30 border border-gray-700/50">
-                    <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "oklch(0.55 0.02 240)" }}>
-                      Empty Weight
-                    </p>
-                    <p className="text-lg font-bold" style={{ color: "white" }}>
-                      {aircraft.weights.emptyWeight} <span className="text-xs font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>lbs</span>
-                    </p>
-                  </div>
-                  <div className="p-3 rounded-xl bg-slate-900/30 border border-gray-700/50">
-                    <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "oklch(0.55 0.02 240)" }}>
-                      Max Gross
-                    </p>
-                    <p className="text-lg font-bold" style={{ color: "white" }}>
-                      {aircraft.weights.maxGrossWeight} <span className="text-xs font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>lbs</span>
-                    </p>
-                  </div>
-                  <div className="p-3 rounded-xl bg-gradient-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30">
-                    <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "oklch(0.65 0.15 230)" }}>
-                      Vs Clean
-                    </p>
-                    <p className="text-lg font-bold" style={{ color: "white" }}>
-                      {aircraft.limits.vs} <span className="text-xs font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>KIAS</span>
-                    </p>
-                  </div>
-                  <div className="p-3 rounded-xl bg-gradient-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30">
-                    <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "oklch(0.65 0.15 230)" }}>
-                      Vs0 Landing
-                    </p>
-                    <p className="text-lg font-bold" style={{ color: "white" }}>
-                      {aircraft.limits.vs0} <span className="text-xs font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>KIAS</span>
-                    </p>
-                  </div>
+            <AircraftSelector
+              aircraft={selectedAircraft}
+              onClick={() => setIsAircraftModalOpen(true)}
+            />
+            {aircraft && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+                <div className="p-3 rounded-xl bg-slate-900/30 border border-gray-700/50">
+                  <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "oklch(0.55 0.02 240)" }}>
+                    Empty Weight
+                  </p>
+                  <p className="text-lg font-bold" style={{ color: "white" }}>
+                    {aircraft.weights.emptyWeight} <span className="text-xs font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>lbs</span>
+                  </p>
                 </div>
-              )}
-            </div>
+                <div className="p-3 rounded-xl bg-slate-900/30 border border-gray-700/50">
+                  <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "oklch(0.55 0.02 240)" }}>
+                    Max Gross
+                  </p>
+                  <p className="text-lg font-bold" style={{ color: "white" }}>
+                    {aircraft.weights.maxGrossWeight} <span className="text-xs font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>lbs</span>
+                  </p>
+                </div>
+                <div className="p-3 rounded-xl bg-gradient-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30">
+                  <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "oklch(0.65 0.15 230)" }}>
+                    Vs Clean
+                  </p>
+                  <p className="text-lg font-bold" style={{ color: "white" }}>
+                    {aircraft.limits.vs} <span className="text-xs font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>KIAS</span>
+                  </p>
+                </div>
+                <div className="p-3 rounded-xl bg-gradient-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30">
+                  <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "oklch(0.65 0.15 230)" }}>
+                    Vs0 Landing
+                  </p>
+                  <p className="text-lg font-bold" style={{ color: "white" }}>
+                    {aircraft.limits.vs0} <span className="text-xs font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>KIAS</span>
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Weight and Configuration Section */}
@@ -668,6 +650,14 @@ export function VStallCalculatorClient({
       </main>
 
       <Footer description="V-Stall calculations based on aerodynamic theory and aircraft performance data" />
+
+      {/* Aircraft Selector Modal */}
+      <AircraftSelectorModal
+        isOpen={isAircraftModalOpen}
+        onClose={() => setIsAircraftModalOpen(false)}
+        onApply={setSelectedAircraft}
+        initialAircraft={selectedAircraft || undefined}
+      />
     </PageLayout>
   );
 }

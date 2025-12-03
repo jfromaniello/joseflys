@@ -16,12 +16,15 @@ import { calculateClimbPerformance } from "./climbCalculations";
 
 export type SurfaceType = "dry-asphalt" | "wet-asphalt" | "dry-grass" | "wet-grass";
 
+export type FlapConfiguration = "0" | "10" | "full";
+
 export type TakeoffDecision = "GO" | "MARGINAL" | "NO-GO";
 
 export interface TakeoffInputs {
   // Aircraft
   aircraft: ResolvedAircraftPerformance;
   weight: number; // lbs
+  flapConfiguration: FlapConfiguration; // flap setting for takeoff
 
   // Atmospheric
   pressureAltitude: number; // ft
@@ -92,6 +95,16 @@ const TAILWIND_FACTOR_PER_KT = 0.03;  // ~3% increase per kt tailwind (more pena
 
 /** Slope correction: % increase per 1% uphill slope */
 const SLOPE_CORRECTION_FACTOR = 0.10; // 10% per 1% slope
+
+/** Flap configuration corrections
+ * Ground roll reduction and climb rate reduction for each flap setting
+ * Based on typical POH data (e.g., C172: 10° flaps reduces ground roll ~10%)
+ */
+const FLAP_CORRECTIONS: Record<FlapConfiguration, { groundRollFactor: number; climbRateFactor: number }> = {
+  "0": { groundRollFactor: 1.0, climbRateFactor: 1.0 },      // Baseline (no flaps)
+  "10": { groundRollFactor: 0.90, climbRateFactor: 0.95 },   // 10% less ground roll, 5% less climb
+  "full": { groundRollFactor: 0.85, climbRateFactor: 0.80 }, // 15% less ground roll, 20% less climb (not recommended)
+};
 
 /** Vr is typically 1.2 × VS1 for most GA aircraft */
 const VR_MULTIPLIER = 1.2;
@@ -342,6 +355,10 @@ export function calculateTakeoffPerformance(inputs: TakeoffInputs): TakeoffResul
   const slopeFactor = 1 + inputs.runwaySlope * SLOPE_CORRECTION_FACTOR;
   groundRoll *= slopeFactor;
 
+  // Flap configuration correction
+  const flapCorrection = FLAP_CORRECTIONS[inputs.flapConfiguration];
+  groundRoll *= flapCorrection.groundRollFactor;
+
   // -------------------------------------------------------------------------
   // Rate of Climb at Obstacle
   // -------------------------------------------------------------------------
@@ -371,6 +388,9 @@ export function calculateTakeoffPerformance(inputs: TakeoffInputs): TakeoffResul
     // Weight correction for ROC (linear approximation)
     const weightRatio = inputs.weight / performanceRefWeight;
     rateOfClimb *= (2 - weightRatio); // ROC decreases with weight
+
+    // Flap correction for ROC
+    rateOfClimb *= flapCorrection.climbRateFactor;
   }
 
   if (rateOfClimb <= 0) {
@@ -443,6 +463,10 @@ export function calculateTakeoffPerformance(inputs: TakeoffInputs): TakeoffResul
 
   if (inputs.obstacleHeight > 50 && rateOfClimb < 300) {
     warnings.push(`Low rate of climb (${Math.round(rateOfClimb)} ft/min) with ${inputs.obstacleHeight} ft obstacle`);
+  }
+
+  if (inputs.flapConfiguration === "full") {
+    warnings.push("Full flaps not recommended for takeoff - significantly reduced climb performance");
   }
 
   const tasIncrease = ((vrTAS - vrIAS) / vrIAS) * 100;

@@ -7,15 +7,17 @@ import { Footer } from "../components/Footer";
 import { ShareButton } from "../components/ShareButton";
 import { Tooltip } from "../components/Tooltip";
 import { AtmosphericConditionsInputs, type AtmosphericConditionsData } from "../components/AtmosphericConditionsInputs";
-import { AircraftSearchSelector } from "../components/AircraftSearchSelector";
+import { AircraftSelector } from "../components/AircraftSelector";
+import { AircraftSelectorModal } from "../components/AircraftSelectorModal";
 import { PRESET_AIRCRAFT, ResolvedAircraftPerformance } from "@/lib/aircraft";
 import {
   calculateTakeoffPerformance,
   validateTakeoffInputs,
   type SurfaceType,
+  type FlapConfiguration,
   type TakeoffResults,
 } from "@/lib/takeoffCalculations";
-import { loadAircraftFromUrl, serializeAircraft, getAircraftByModel, loadCustomAircraft, resolveAircraft } from "@/lib/aircraftStorage";
+import { loadAircraftFromUrl, serializeAircraft, getAircraftByModel } from "@/lib/aircraftStorage";
 import { formatDistance } from "@/lib/formatters";
 import { TakeoffVisualization } from "./TakeoffVisualization";
 import { TAKEOFF_EXAMPLES } from "@/lib/takeoffExamples";
@@ -24,6 +26,7 @@ interface TakeoffCalculatorClientProps {
   initialAircraft: string;
   initialPlane: string;
   initialWeight: string;
+  initialFlaps: string;
   initialPA: string;
   initialAlt: string;
   initialQNH: string;
@@ -41,6 +44,7 @@ export function TakeoffCalculatorClient({
   initialAircraft,
   initialPlane,
   initialWeight,
+  initialFlaps,
   initialPA,
   initialAlt,
   initialQNH,
@@ -64,18 +68,14 @@ export function TakeoffCalculatorClient({
     return aircraftFromModel || (PRESET_AIRCRAFT[0] as ResolvedAircraftPerformance);
   });
 
-  // Custom aircraft list
-  const [customAircraft, setCustomAircraft] = useState<ResolvedAircraftPerformance[]>([]);
-
-  // Load custom aircraft on mount
-  useEffect(() => {
-    loadCustomAircraft().then(loaded => {
-      setCustomAircraft(loaded.map(ac => resolveAircraft(ac)));
-    });
-  }, []);
+  // Aircraft modal state
+  const [isAircraftModalOpen, setIsAircraftModalOpen] = useState(false);
 
   // Input state
   const [weight, setWeight] = useState<string>(initialWeight);
+  const [flapConfiguration, setFlapConfiguration] = useState<FlapConfiguration>(
+    (initialFlaps as FlapConfiguration) || "0"
+  );
   const [runwayLength, setRunwayLength] = useState<string>(initialRunway);
   const [surfaceType, setSurfaceType] = useState<SurfaceType>(initialSurface as SurfaceType || "dry-asphalt");
   const [runwaySlope, setRunwaySlope] = useState<string>(initialSlope);
@@ -125,8 +125,9 @@ export function TakeoffCalculatorClient({
       }
     }
 
-    // Weight
+    // Weight & Flaps
     if (weight) params.set("weight", weight);
+    if (flapConfiguration) params.set("flaps", flapConfiguration);
 
     // Add atmospheric parameters based on mode
     if (atmosphericData.altitudeMode === "pa" && atmosphericData.pressureAlt) {
@@ -149,7 +150,7 @@ export function TakeoffCalculatorClient({
 
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState(null, "", newUrl);
-  }, [aircraft, weight, atmosphericData, runwayLength, surfaceType, runwaySlope, headwindComponent, obstacleHeight]);
+  }, [aircraft, weight, flapConfiguration, atmosphericData, runwayLength, surfaceType, runwaySlope, headwindComponent, obstacleHeight]);
 
   // Parse values
   const weightVal = parseFloat(weight);
@@ -179,6 +180,7 @@ export function TakeoffCalculatorClient({
     ? calculateTakeoffPerformance({
         aircraft,
         weight: weightVal,
+        flapConfiguration,
         pressureAltitude: actualPA,
         densityAltitude: actualDA,
         oat: oatVal,
@@ -262,22 +264,14 @@ export function TakeoffCalculatorClient({
 
           {/* Aircraft Selection Section */}
           <div className="mb-8 pb-8 border-b border-gray-700/50">
-            <div className="flex items-center justify-between gap-3 mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-sky-500/20 to-blue-500/20 border border-sky-500/30">
-                  <svg className="w-6 h-6" fill="none" stroke="oklch(0.7 0.15 230)" viewBox="0 0 24 24" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                  </svg>
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold" style={{ color: "white" }}>
-                    Aircraft Selection
-                  </h2>
-                  <p className="text-sm" style={{ color: "oklch(0.65 0.02 240)" }}>
-                    Choose your aircraft model
-                  </p>
-                </div>
-              </div>
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <label
+                className="flex items-center text-sm font-medium"
+                style={{ color: "oklch(0.72 0.015 240)" }}
+              >
+                Aircraft
+                <Tooltip content="Select the aircraft to calculate takeoff performance" />
+              </label>
               {/* Example Button */}
               <div className="relative group">
                 <button
@@ -307,53 +301,13 @@ export function TakeoffCalculatorClient({
                 </div>
               </div>
             </div>
-            <div className="space-y-4">
-              <AircraftSearchSelector
-                selectedAircraft={aircraft}
-                customAircraft={customAircraft}
-                onSelect={setAircraft}
-                onClear={() => setAircraft(null)}
-              />
-              {aircraft && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <div className="p-3 rounded-xl bg-slate-900/30 border border-gray-700/50">
-                    <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "oklch(0.55 0.02 240)" }}>
-                      Empty Weight
-                    </p>
-                    <p className="text-lg font-bold" style={{ color: "white" }}>
-                      {aircraft.weights?.emptyWeight || "N/A"} <span className="text-xs font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>lbs</span>
-                    </p>
-                  </div>
-                  <div className="p-3 rounded-xl bg-slate-900/30 border border-gray-700/50">
-                    <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "oklch(0.55 0.02 240)" }}>
-                      Max Gross
-                    </p>
-                    <p className="text-lg font-bold" style={{ color: "white" }}>
-                      {aircraft.weights?.maxGrossWeight || "N/A"} <span className="text-xs font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>lbs</span>
-                    </p>
-                  </div>
-                  <div className="p-3 rounded-xl bg-gradient-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30">
-                    <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "oklch(0.65 0.15 230)" }}>
-                      Vs Clean
-                    </p>
-                    <p className="text-lg font-bold" style={{ color: "white" }}>
-                      {aircraft.limits?.vs || "N/A"} <span className="text-xs font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>KIAS</span>
-                    </p>
-                  </div>
-                  <div className="p-3 rounded-xl bg-gradient-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30">
-                    <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "oklch(0.65 0.15 230)" }}>
-                      Vs0 Landing
-                    </p>
-                    <p className="text-lg font-bold" style={{ color: "white" }}>
-                      {aircraft.limits?.vs0 || "N/A"} <span className="text-xs font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>KIAS</span>
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
+            <AircraftSelector
+              aircraft={aircraft}
+              onClick={() => setIsAircraftModalOpen(true)}
+            />
           </div>
 
-          {/* Weight Section */}
+          {/* Weight & Configuration Section */}
           <div className="mb-8 pb-8 border-b border-gray-700/50">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30">
@@ -363,35 +317,56 @@ export function TakeoffCalculatorClient({
               </div>
               <div>
                 <h2 className="text-2xl font-bold" style={{ color: "white" }}>
-                  Aircraft Weight
+                  Weight & Configuration
                 </h2>
                 <p className="text-sm" style={{ color: "oklch(0.65 0.02 240)" }}>
-                  Current takeoff weight
+                  Set aircraft weight and flap position
                 </p>
               </div>
             </div>
-            <div>
-              <label
-                className="flex items-center text-sm font-medium mb-2"
-                style={{ color: "oklch(0.72 0.015 240)" }}
-              >
-                Takeoff Weight
-                <Tooltip content="Current weight of the aircraft at takeoff in pounds" />
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  value={weight}
-                  onChange={(e) => setWeight(e.target.value)}
-                  className="w-full h-[52px] px-4 pr-16 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 hover:border-gray-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
-                  placeholder="1670"
-                />
-                <span
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-                  style={{ color: "oklch(0.55 0.02 240)" }}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label
+                  className="flex items-center text-sm font-medium mb-2"
+                  style={{ color: "oklch(0.72 0.015 240)" }}
                 >
-                  lbs
-                </span>
+                  Takeoff Weight
+                  <Tooltip content="Current weight of the aircraft at takeoff in pounds" />
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={weight}
+                    onChange={(e) => setWeight(e.target.value)}
+                    className="w-full h-[52px] px-4 pr-16 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 hover:border-gray-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
+                    placeholder="1670"
+                  />
+                  <span
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
+                    style={{ color: "oklch(0.55 0.02 240)" }}
+                  >
+                    lbs
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label
+                  className="flex items-center text-sm font-medium mb-2"
+                  style={{ color: "oklch(0.72 0.015 240)" }}
+                >
+                  Flap Configuration
+                  <Tooltip content="Flap setting for takeoff. 10° flaps reduces ground roll but slightly decreases climb performance." />
+                </label>
+                <select
+                  value={flapConfiguration}
+                  onChange={(e) => setFlapConfiguration(e.target.value as FlapConfiguration)}
+                  className="w-full h-[52px] pl-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 hover:border-gray-500 text-white cursor-pointer"
+                >
+                  <option value="0">0° (Normal Takeoff)</option>
+                  <option value="10">10° (Short Field)</option>
+                  <option value="full">Full (Not Recommended)</option>
+                </select>
               </div>
             </div>
           </div>
@@ -766,6 +741,14 @@ export function TakeoffCalculatorClient({
       </main>
 
       <Footer description="Calculate takeoff performance, ground roll, obstacle clearance, and safety margins for your flight planning needs." />
+
+      {/* Aircraft Selector Modal */}
+      <AircraftSelectorModal
+        isOpen={isAircraftModalOpen}
+        onClose={() => setIsAircraftModalOpen(false)}
+        onApply={setAircraft}
+        initialAircraft={aircraft || undefined}
+      />
     </PageLayout>
   );
 }

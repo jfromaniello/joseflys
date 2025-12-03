@@ -8,6 +8,7 @@ interface TakeoffPageProps {
     aircraft?: string;   // Aircraft model code (e.g., "C150")
     plane?: string;      // Serialized aircraft data
     weight?: string;     // Takeoff weight (lbs)
+    flaps?: string;      // Flap configuration: 0, 10, full
     pa?: string;         // Pressure altitude (ft)
     alt?: string;        // Field elevation (ft)
     qnh?: string;        // QNH (for altitude + QNH method)
@@ -28,6 +29,7 @@ export default async function TakeoffPage({ searchParams }: TakeoffPageProps) {
   const aircraft = params.aircraft || "C150";
   const plane = params.plane || "";
   const weight = params.weight || "";
+  const flaps = params.flaps || "0";
   const pa = params.pa || "";
   const alt = params.alt || "";
   const qnh = params.qnh || "";
@@ -51,6 +53,7 @@ export default async function TakeoffPage({ searchParams }: TakeoffPageProps) {
         initialAircraft={aircraft}
         initialPlane={plane}
         initialWeight={weight}
+        initialFlaps={flaps}
         initialPA={pa}
         initialAlt={alt}
         initialQNH={qnh}
