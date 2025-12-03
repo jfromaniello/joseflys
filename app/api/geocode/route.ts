@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
-import airportsData from '../../../airports.json';
+import airportsData from '../../../data/airports.json';
 
 export const runtime = 'edge';
 
-// Airport data structure: [code, lat, lon, name]
-type AirportData = [string, number, number, string];
+// Airport data structure: [code, lat, lon, name, elevation_ft]
+type AirportData = [string, number, number, string, number | null];
 
 interface GeocodeResult {
   name: string;

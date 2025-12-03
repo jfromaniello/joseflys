@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import argentinaData from "../../../data/ad-lads/argentina.json";
+import airportsData from "../../../data/airports.json";
 
 export const runtime = "edge";
 
 interface Aerodrome {
   type: "AD" | "LAD";
   code: string | null;
-  shortCode: string | null;
   name: string;
   lat: number;
   lon: number;
-  province: string | null;
-  fir: string | null;
 }
 
 interface AerodromeData {
@@ -26,7 +24,12 @@ interface AerodromeData {
   data: Aerodrome[];
 }
 
-const data = argentinaData as AerodromeData;
+// Argentina AD/LAD data
+const argData = argentinaData as AerodromeData;
+
+// Global airports: [code, lat, lon, name, elevation]
+type AirportEntry = [string, number, number, string, number | null];
+const globalAirports = airportsData as AirportEntry[];
 
 /**
  * GET /api/aerodromes
@@ -75,8 +78,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Filter by bounding box and type
-    const results = data.data.filter((aerodrome) => {
+    // Filter Argentina data by bounding box and type
+    const argResults = argData.data.filter((aerodrome) => {
       const inBounds =
         aerodrome.lat >= minLat &&
         aerodrome.lat <= maxLat &&
@@ -84,11 +87,33 @@ export async function GET(request: NextRequest) {
         aerodrome.lon <= maxLon;
 
       if (!inBounds) return false;
-
       if (typeFilter && aerodrome.type !== typeFilter) return false;
 
       return true;
     });
+
+    // Filter global airports by bounding box (only if type is AD or not filtered)
+    const globalResults: Aerodrome[] =
+      typeFilter === "LAD"
+        ? []
+        : globalAirports
+            .filter(
+              ([, lat, lon]) =>
+                lat >= minLat &&
+                lat <= maxLat &&
+                lon >= minLon &&
+                lon <= maxLon
+            )
+            .map(([code, lat, lon, name]) => ({
+              type: "AD" as const,
+              code,
+              name,
+              lat,
+              lon,
+            }));
+
+    // Combine results (Argentina data first, then global airports)
+    const results = [...argResults, ...globalResults];
 
     return NextResponse.json({
       count: results.length,

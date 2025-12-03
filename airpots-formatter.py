@@ -15,7 +15,7 @@ def main():
     with INPUT_FILE.open(newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
-            # Elegimos ICAO si existe, si no usamos ident como fallback
+            # Use ICAO if available, otherwise fallback to ident
             icao = (row.get("icao_code") or "").strip()
             ident = (row.get("ident") or "").strip()
 
@@ -26,27 +26,29 @@ def main():
             lat = row.get("latitude_deg")
             lon = row.get("longitude_deg")
             name = (row.get("name") or "").strip()
+            elevation = row.get("elevation_ft")
 
-            # Si falta algo esencial, lo skippeamos
+            # Skip if essential fields are missing
             if not lat or not lon or not name:
                 continue
 
             try:
                 lat_f = float(lat)
                 lon_f = float(lon)
+                elev_f = int(float(elevation)) if elevation else None
             except ValueError:
                 continue
 
-            # Formato compacto: [ICAO, lat, lon, name]
-            airports.append([code, lat_f, lon_f, name])
+            # Compact format: [ICAO, lat, lon, name, elevation_ft]
+            airports.append([code, lat_f, lon_f, name, elev_f])
 
-    # Dump compacto (sin espacios) y UTF-8
+    # Compact dump (no spaces) with UTF-8
     with OUTPUT_FILE.open("w", encoding="utf-8") as f:
         json.dump(
             airports,
             f,
-            ensure_ascii=False,          # guardamos nombres con acentos/palomitas bien
-            separators=(",", ":")        # formato bien compacto
+            ensure_ascii=False,          # preserve accents and special chars
+            separators=(",", ":")        # compact format
         )
 
     print(f"Wrote {len(airports)} airports to {OUTPUT_FILE}")

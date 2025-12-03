@@ -10,12 +10,9 @@ export interface Coordinate {
 export interface AerodromeData {
   type: "AD" | "LAD";
   code: string | null;
-  shortCode: string | null;
   name: string;
   lat: number;
   lon: number;
-  province: string | null;
-  fir: string | null;
 }
 
 export interface AlternateWithDistance extends AerodromeData {
