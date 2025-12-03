@@ -56,6 +56,8 @@ export function CompassDeviationModal({
 
     // If initialAircraft is provided and has a deviation table, use it
     if (initialAircraft && initialAircraft.deviationTable && initialAircraft.deviationTable.length > 0) {
+      // Safe: Setting initial selection when modal opens
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedAircraftModel(initialAircraft.model);
     } else if (customAircraft.length > 0 && !selectedAircraftModel) {
       // Select first aircraft by default only if nothing is selected

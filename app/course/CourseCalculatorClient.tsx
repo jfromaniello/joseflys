@@ -47,20 +47,6 @@ export function CourseCalculatorClient({
   // Aircraft state - initialize as null to avoid localStorage access during SSR
   const [aircraft, setAircraft] = useState<ResolvedAircraftPerformance | null>(null);
 
-  // Load aircraft from URL after mount (client-side only)
-  useEffect(() => {
-    if (initialPlane) {
-      const loaded = loadAircraftFromUrl(initialPlane);
-      if (loaded) {
-        setAircraft(loaded);
-        // Also update deviation table from aircraft if it has one
-        if (loaded.deviationTable && loaded.deviationTable.length > 0) {
-          setDeviationTable(loaded.deviationTable);
-        }
-      }
-    }
-  }, [initialPlane]);
-
   // Compass deviation table state - initialize from legacy devTable param only (aircraft loaded via useEffect)
   const [deviationTable, setDeviationTable] = useState<DeviationEntry[]>(() => {
     // Legacy devTable param (compressed JSON)
@@ -76,6 +62,22 @@ export function CourseCalculatorClient({
     }
     return [];
   });
+
+  // Load aircraft from URL after mount (client-side only)
+  useEffect(() => {
+    if (initialPlane) {
+      const loaded = loadAircraftFromUrl(initialPlane);
+      if (loaded) {
+        // Safe: Initial load from URL param on mount
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setAircraft(loaded);
+        // Also update deviation table from aircraft if it has one
+        if (loaded.deviationTable && loaded.deviationTable.length > 0) {
+          setDeviationTable(loaded.deviationTable);
+        }
+      }
+    }
+  }, [initialPlane]);
 
   // Update URL when parameters change (client-side only, no page reload)
   useEffect(() => {

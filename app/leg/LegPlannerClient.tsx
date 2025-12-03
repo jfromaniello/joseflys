@@ -107,8 +107,8 @@ export function LegPlannerClient({
   const [descentWindSpeed, setDescentWindSpeed] = useState<string>(initialDescentWs);
   const [additionalFuel, setAdditionalFuel] = useState<string>(initialAdditionalFuel);
   const [approachLandingFuel, setApproachLandingFuel] = useState<string>(initialApproachLandingFuel);
-  const [fromCity, setFromCity] = useState<string>(initialFromCity);
-  const [toCity, setToCity] = useState<string>(initialToCity);
+  const [fromCity] = useState<string>(initialFromCity);
+  const [toCity] = useState<string>(initialToCity);
 
   // New waypoint-based navigation
   const [fromPoint, setFromPoint] = useState<{ lat: number; lon: number; name: string } | null>(() => {
