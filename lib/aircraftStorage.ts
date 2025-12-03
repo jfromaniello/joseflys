@@ -6,7 +6,7 @@
 import {
   AircraftPerformance,
   ResolvedAircraftPerformance,
-  ClimbPerformanceData,
+  ClimbPerformance,
   DeviationEntry,
   PRESET_AIRCRAFT,
   migrateAircraftToNewFormat,
@@ -39,7 +39,7 @@ export interface SerializeOptions {
  * - Index 1: model (string)
  * - Index 2: standardWeight (number | null)
  * - Index 3: maxWeight (number | null)
- * - Index 4: climb table array - each entry: [from, to, roc, tas, fuelFlow]
+ * - Index 4: climb table array - each entry: [pressureAltitude, oat, timeFromSL, fuelFromSL, distanceFromSL]
  * - Index 5: deviation table array - each entry: [forHeading, steerHeading]
  *
  * CBOR binary is then base64url encoded for URL safety
@@ -71,11 +71,11 @@ export function serializeAircraft(
       opts.includeMaxWeight ? maxWeight : null, // 3
       opts.includeClimbTable
         ? (aircraft.climbTable?.map(seg => [
-            seg.altitudeFrom,
-            seg.altitudeTo,
-            seg.rateOfClimb,
-            seg.climbTAS,
-            seg.fuelFlow
+            seg.pressureAltitude,
+            seg.oat,
+            seg.timeFromSL,
+            seg.fuelFromSL,
+            seg.distanceFromSL
           ]) ?? [])
         : [], // 4
       opts.includeDeviationTable
@@ -153,14 +153,14 @@ export function deserializeAircraft(serialized: string): AircraftPerformance | n
         if (decoded[2] !== null) aircraft.standardWeight = decoded[2] as number;
         if (decoded[3] !== null) aircraft.maxWeight = decoded[3] as number;
 
-        // Climb table
+        // Climb table (new format: pressureAltitude, oat, timeFromSL, fuelFromSL, distanceFromSL)
         if (Array.isArray(decoded[4]) && decoded[4].length > 0) {
           aircraft.climbTable = decoded[4].map((seg: number[]) => ({
-            altitudeFrom: seg[0],
-            altitudeTo: seg[1],
-            rateOfClimb: seg[2],
-            climbTAS: seg[3],
-            fuelFlow: seg[4],
+            pressureAltitude: seg[0],
+            oat: seg[1],
+            timeFromSL: seg[2],
+            fuelFromSL: seg[3],
+            distanceFromSL: seg[4],
           }));
         }
 
@@ -198,10 +198,10 @@ export function deserializeAircraft(serialized: string): AircraftPerformance | n
       maxWeight,
     };
 
-    // Find CLIMB marker
+    // Find CLIMB marker (new format: pressureAltitude, oat, timeFromSL, fuelFromSL, distanceFromSL)
     const climbIndex = parts.indexOf("CLIMB");
     if (climbIndex !== -1) {
-      const climbTable: ClimbPerformanceData[] = [];
+      const climbTable: ClimbPerformance[] = [];
 
       // Find end of climb data (DEV marker or end of array)
       const devIndex = parts.indexOf("DEV");
@@ -212,11 +212,11 @@ export function deserializeAircraft(serialized: string): AircraftPerformance | n
         if (segmentParts.length !== 5) continue;
 
         climbTable.push({
-          altitudeFrom: segmentParts[0],
-          altitudeTo: segmentParts[1],
-          rateOfClimb: segmentParts[2],
-          climbTAS: segmentParts[3],
-          fuelFlow: segmentParts[4],
+          pressureAltitude: segmentParts[0],
+          oat: segmentParts[1],
+          timeFromSL: segmentParts[2],
+          fuelFromSL: segmentParts[3],
+          distanceFromSL: segmentParts[4],
         });
       }
 
@@ -262,7 +262,7 @@ export function deserializeAircraft(serialized: string): AircraftPerformance | n
  */
 function hashAircraftData(aircraft: AircraftPerformance): string {
   const climbData = aircraft.climbTable?.map(seg =>
-    `${seg.altitudeFrom},${seg.altitudeTo},${seg.rateOfClimb},${seg.climbTAS},${seg.fuelFlow}`
+    `${seg.pressureAltitude},${seg.oat},${seg.timeFromSL},${seg.fuelFromSL},${seg.distanceFromSL}`
   ).join("|") || "";
 
   const devData = aircraft.deviationTable?.map(dev =>
@@ -646,6 +646,8 @@ export function resolveAircraft(aircraft: AircraftPerformance): ResolvedAircraft
 
     // Optional fields
     serviceCeiling: aircraft.serviceCeiling ?? parent.serviceCeiling,
+    description: aircraft.description ?? parent.description,
+    wikipediaUrl: aircraft.wikipediaUrl ?? parent.wikipediaUrl,
   };
 
   return resolved;

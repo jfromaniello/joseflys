@@ -1,263 +1,215 @@
 /**
  * Climb Performance Calculations
  *
- * These functions calculate climb performance based on:
- * - Aircraft performance table
- * - Density Altitude
- * - Target altitude
- * - Current altitude
- * - Ground speed during climb
+ * Uses POH-style cumulative climb tables indexed by Pressure Altitude × OAT.
+ * Performs bilinear interpolation for values between table entries.
  */
 
-import { AircraftPerformance, ClimbPerformanceData } from "./aircraft";
+import { ClimbPerformance } from "./aircraft";
 
-export interface ClimbSegment {
-  altitudeFrom: number;
-  altitudeTo: number;
-  rateOfClimb: number; // ft/min
-  climbTAS: number; // kt
-  fuelFlow: number; // gal/h
+export interface ClimbResult {
   time: number; // minutes
+  fuel: number; // gallons
   distance: number; // NM
-  fuelUsed: number; // gallons
-}
-
-export interface ClimbResults {
-  segments: ClimbSegment[];
-  totalTime: number; // minutes
-  totalDistance: number; // NM
-  totalFuel: number; // gallons
-  topOfClimbAltitude: number; // ft
-  averageROC: number; // ft/min
-  averageTAS: number; // kt
 }
 
 /**
- * Adjust Rate of Climb for Density Altitude
- * Using a simplified model: for every 1000 ft of DA above PA, reduce ROC by ~7-10%
+ * Get unique sorted values from climb table
  */
-function adjustROCForDA(baseROC: number, pressureAltitude: number, densityAltitude: number): number {
-  const daEffect = densityAltitude - pressureAltitude;
-  const reductionFactor = 1 - (daEffect / 1000) * 0.08; // 8% reduction per 1000 ft DA increase
-  return baseROC * Math.max(reductionFactor, 0.3); // Minimum 30% of base ROC
+function getUniqueValues(
+  climbTable: ClimbPerformance[],
+  key: "pressureAltitude" | "oat"
+): number[] {
+  const values = [...new Set(climbTable.map((p) => p[key]))];
+  return values.sort((a, b) => a - b);
 }
 
 /**
- * Adjust TAS for altitude
- * TAS increases approximately 2% per 1000 ft
+ * Find bracketing values for interpolation
+ * Returns [lower, upper] or [value, value] if exact match
  */
-function _adjustTASForAltitude(baseTAS: number, altitude: number): number {
-  return baseTAS * (1 + (altitude / 1000) * 0.02);
+function findBracket(sortedValues: number[], target: number): [number, number] {
+  // Clamp to table bounds
+  if (target <= sortedValues[0]) {
+    return [sortedValues[0], sortedValues[0]];
+  }
+  if (target >= sortedValues[sortedValues.length - 1]) {
+    return [
+      sortedValues[sortedValues.length - 1],
+      sortedValues[sortedValues.length - 1],
+    ];
+  }
+
+  // Find bracket
+  for (let i = 0; i < sortedValues.length - 1; i++) {
+    if (target >= sortedValues[i] && target <= sortedValues[i + 1]) {
+      return [sortedValues[i], sortedValues[i + 1]];
+    }
+  }
+
+  // Fallback (shouldn't happen)
+  return [sortedValues[0], sortedValues[sortedValues.length - 1]];
 }
 
 /**
- * Find the performance data segment for a given altitude
+ * Get climb table entry for exact PA and OAT
  */
-function findPerformanceSegment(
-  climbTable: ClimbPerformanceData[],
-  altitude: number
-): ClimbPerformanceData | null {
+function getEntry(
+  climbTable: ClimbPerformance[],
+  pa: number,
+  oat: number
+): ClimbPerformance | undefined {
   return climbTable.find(
-    (segment) => altitude >= segment.altitudeFrom && altitude < segment.altitudeTo
-  ) || null;
+    (p) => p.pressureAltitude === pa && p.oat === oat
+  );
 }
 
 /**
- * Interpolate ROC between two segments
+ * Linear interpolation
  */
-function _interpolateROC(
-  lowerSegment: ClimbPerformanceData,
-  upperSegment: ClimbPerformanceData,
-  altitude: number
-): number {
-  const altRange = upperSegment.altitudeTo - lowerSegment.altitudeFrom;
-  const altPosition = altitude - lowerSegment.altitudeFrom;
-  const ratio = altPosition / altRange;
-
-  return lowerSegment.rateOfClimb * (1 - ratio) + upperSegment.rateOfClimb * ratio;
+function lerp(v0: number, v1: number, t: number): number {
+  return v0 + t * (v1 - v0);
 }
 
 /**
- * Calculate climb performance from current altitude to target altitude
+ * Interpolate cumulative values at a specific PA and OAT using bilinear interpolation
+ */
+function interpolateAtPoint(
+  climbTable: ClimbPerformance[],
+  pa: number,
+  oat: number
+): { time: number; fuel: number; distance: number } {
+  const altitudes = getUniqueValues(climbTable, "pressureAltitude");
+  const temperatures = getUniqueValues(climbTable, "oat");
+
+  const [paLow, paHigh] = findBracket(altitudes, pa);
+  const [oatLow, oatHigh] = findBracket(temperatures, oat);
+
+  // Get the four corner points
+  const q11 = getEntry(climbTable, paLow, oatLow);
+  const q12 = getEntry(climbTable, paLow, oatHigh);
+  const q21 = getEntry(climbTable, paHigh, oatLow);
+  const q22 = getEntry(climbTable, paHigh, oatHigh);
+
+  // If any corner is missing, try to find best available data
+  if (!q11 || !q12 || !q21 || !q22) {
+    // Try to find at least one valid entry
+    const available = [q11, q12, q21, q22].filter(Boolean) as ClimbPerformance[];
+    if (available.length === 0) {
+      return { time: 0, fuel: 0, distance: 0 };
+    }
+    // Use the closest available point
+    const closest = available[0];
+    return {
+      time: closest.timeFromSL,
+      fuel: closest.fuelFromSL,
+      distance: closest.distanceFromSL,
+    };
+  }
+
+  // Calculate interpolation factors
+  const tPA = paHigh === paLow ? 0 : (pa - paLow) / (paHigh - paLow);
+  const tOAT = oatHigh === oatLow ? 0 : (oat - oatLow) / (oatHigh - oatLow);
+
+  // Bilinear interpolation for each value
+  const interpolate = (
+    v11: number,
+    v12: number,
+    v21: number,
+    v22: number
+  ): number => {
+    const r1 = lerp(v11, v12, tOAT); // Interpolate along OAT at paLow
+    const r2 = lerp(v21, v22, tOAT); // Interpolate along OAT at paHigh
+    return lerp(r1, r2, tPA); // Interpolate along PA
+  };
+
+  return {
+    time: interpolate(
+      q11.timeFromSL,
+      q12.timeFromSL,
+      q21.timeFromSL,
+      q22.timeFromSL
+    ),
+    fuel: interpolate(
+      q11.fuelFromSL,
+      q12.fuelFromSL,
+      q21.fuelFromSL,
+      q22.fuelFromSL
+    ),
+    distance: interpolate(
+      q11.distanceFromSL,
+      q12.distanceFromSL,
+      q21.distanceFromSL,
+      q22.distanceFromSL
+    ),
+  };
+}
+
+/**
+ * Calculate climb performance between two pressure altitudes at a given OAT
  *
- * @param aircraft - Aircraft performance data
- * @param currentAltitude - Current altitude in feet (typically departure elevation)
- * @param targetAltitude - Target cruise altitude in feet
- * @param densityAltitude - Density altitude at departure in feet
- * @param groundSpeed - Ground speed during climb in knots (TAS ± wind component)
- * @param weightRatio - Ratio of current weight to standard weight (1.0 = standard weight)
- * @returns Climb performance results
+ * @param climbTable - Aircraft climb performance table
+ * @param fromPA - Starting pressure altitude (ft)
+ * @param toPA - Target pressure altitude (ft)
+ * @param oat - Outside Air Temperature (°C)
+ * @returns Climb time (min), fuel (gal), and distance (NM)
  */
 export function calculateClimbPerformance(
-  aircraft: AircraftPerformance,
-  currentAltitude: number,
-  targetAltitude: number,
-  densityAltitude: number,
-  groundSpeed: number,
-  weightRatio: number = 1.0
-): ClimbResults {
-  if (targetAltitude <= currentAltitude) {
-    return {
-      segments: [],
-      totalTime: 0,
-      totalDistance: 0,
-      totalFuel: 0,
-      topOfClimbAltitude: currentAltitude,
-      averageROC: 0,
-      averageTAS: 0,
-    };
+  climbTable: ClimbPerformance[],
+  fromPA: number,
+  toPA: number,
+  oat: number
+): ClimbResult {
+  // Descending or level flight
+  if (toPA <= fromPA) {
+    return { time: 0, fuel: 0, distance: 0 };
   }
 
-  // Check if aircraft has climb table
-  if (!aircraft.climbTable || aircraft.climbTable.length === 0) {
-    console.warn("Aircraft has no climb performance table");
-    return {
-      segments: [],
-      totalTime: 0,
-      totalDistance: 0,
-      totalFuel: 0,
-      topOfClimbAltitude: currentAltitude,
-      averageROC: 0,
-      averageTAS: 0,
-    };
+  // Empty table check
+  if (!climbTable || climbTable.length === 0) {
+    return { time: 0, fuel: 0, distance: 0 };
   }
 
-  const segments: ClimbSegment[] = [];
-  let currentAlt = currentAltitude;
+  // Get cumulative values at both altitudes
+  const atFrom = interpolateAtPoint(climbTable, fromPA, oat);
+  const atTo = interpolateAtPoint(climbTable, toPA, oat);
 
-  // Process each segment of the climb
-  while (currentAlt < targetAltitude) {
-    const segment = findPerformanceSegment(aircraft.climbTable, currentAlt);
-
-    if (!segment) {
-      // If no segment found, we've exceeded the aircraft's climb capability
-      console.warn(`No performance data available for altitude ${currentAlt} ft`);
-      break;
-    }
-
-    // Determine the top of this segment
-    const segmentTop = Math.min(segment.altitudeTo, targetAltitude);
-    const altitudeGain = segmentTop - currentAlt;
-
-    // Adjust ROC for density altitude and weight
-    let adjustedROC = adjustROCForDA(segment.rateOfClimb, currentAlt, densityAltitude);
-
-    // Weight affects ROC: heavier aircraft climb slower
-    // Approximation: ROC decreases linearly with weight increase
-    adjustedROC = adjustedROC / weightRatio;
-
-    // Calculate time for this segment
-    const timeMinutes = altitudeGain / adjustedROC;
-
-    // Calculate distance (using ground speed)
-    const distanceNM = (timeMinutes / 60) * groundSpeed;
-
-    // Calculate fuel used
-    const fuelUsed = (timeMinutes / 60) * segment.fuelFlow;
-
-    segments.push({
-      altitudeFrom: currentAlt,
-      altitudeTo: segmentTop,
-      rateOfClimb: adjustedROC,
-      climbTAS: segment.climbTAS,
-      fuelFlow: segment.fuelFlow,
-      time: timeMinutes,
-      distance: distanceNM,
-      fuelUsed: fuelUsed,
-    });
-
-    currentAlt = segmentTop;
-  }
-
-  // Calculate totals
-  const totalTime = segments.reduce((sum, seg) => sum + seg.time, 0);
-  const totalDistance = segments.reduce((sum, seg) => sum + seg.distance, 0);
-  const totalFuel = segments.reduce((sum, seg) => sum + seg.fuelUsed, 0);
-  const totalAltitudeGain = targetAltitude - currentAltitude;
-  const averageROC = totalTime > 0 ? totalAltitudeGain / totalTime : 0;
-
-  // Calculate average TAS weighted by time
-  const averageTAS = segments.length > 0
-    ? segments.reduce((sum, seg) => sum + seg.climbTAS * seg.time, 0) / totalTime
-    : 0;
-
+  // Difference gives us the climb segment values
   return {
-    segments,
-    totalTime,
-    totalDistance,
-    totalFuel,
-    topOfClimbAltitude: currentAlt,
-    averageROC,
-    averageTAS,
+    time: Math.max(0, atTo.time - atFrom.time),
+    fuel: Math.max(0, atTo.fuel - atFrom.fuel),
+    distance: Math.max(0, atTo.distance - atFrom.distance),
   };
 }
 
 /**
- * Calculate Top of Climb position from departure point
- *
- * @param departureLatitude - Departure latitude in degrees
- * @param departureLongitude - Departure longitude in degrees
- * @param trueCourse - True course in degrees
- * @param climbDistance - Distance to climb in NM
- * @returns Top of Climb coordinates
+ * Get the available temperature range from a climb table
  */
-export function calculateTopOfClimbPosition(
-  departureLatitude: number,
-  departureLongitude: number,
-  trueCourse: number,
-  climbDistance: number
-): { latitude: number; longitude: number } {
-  // Convert to radians
-  const lat1 = (departureLatitude * Math.PI) / 180;
-  const lon1 = (departureLongitude * Math.PI) / 180;
-  const bearing = (trueCourse * Math.PI) / 180;
-
-  // Earth radius in nautical miles
-  const R = 3440.065;
-
-  // Calculate using great circle navigation
-  const lat2 = Math.asin(
-    Math.sin(lat1) * Math.cos(climbDistance / R) +
-    Math.cos(lat1) * Math.sin(climbDistance / R) * Math.cos(bearing)
-  );
-
-  const lon2 =
-    lon1 +
-    Math.atan2(
-      Math.sin(bearing) * Math.sin(climbDistance / R) * Math.cos(lat1),
-      Math.cos(climbDistance / R) - Math.sin(lat1) * Math.sin(lat2)
-    );
-
-  // Convert back to degrees
+export function getClimbTableTemperatureRange(
+  climbTable: ClimbPerformance[]
+): { min: number; max: number } | null {
+  if (!climbTable || climbTable.length === 0) {
+    return null;
+  }
+  const temperatures = getUniqueValues(climbTable, "oat");
   return {
-    latitude: (lat2 * 180) / Math.PI,
-    longitude: (lon2 * 180) / Math.PI,
+    min: temperatures[0],
+    max: temperatures[temperatures.length - 1],
   };
 }
 
 /**
- * Quick estimate of climb performance using simple average ROC
- * Useful when detailed table is not available
- *
- * @param altitudeGain - Altitude to gain in feet
- * @param averageROC - Average rate of climb in ft/min
- * @param groundSpeed - Ground speed in knots
- * @param fuelFlow - Fuel flow in gal/h
- * @returns Quick climb estimates
+ * Get the available altitude range from a climb table
  */
-export function quickClimbEstimate(
-  altitudeGain: number,
-  averageROC: number,
-  groundSpeed: number,
-  fuelFlow: number
-): {
-  time: number; // minutes
-  distance: number; // NM
-  fuel: number; // gallons
-} {
-  const time = altitudeGain / averageROC;
-  const distance = (time / 60) * groundSpeed;
-  const fuel = (time / 60) * fuelFlow;
-
-  return { time, distance, fuel };
+export function getClimbTableAltitudeRange(
+  climbTable: ClimbPerformance[]
+): { min: number; max: number } | null {
+  if (!climbTable || climbTable.length === 0) {
+    return null;
+  }
+  const altitudes = getUniqueValues(climbTable, "pressureAltitude");
+  return {
+    min: altitudes[0],
+    max: altitudes[altitudes.length - 1],
+  };
 }

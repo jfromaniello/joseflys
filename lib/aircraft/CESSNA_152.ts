@@ -4,55 +4,42 @@ export const CESSNA_152: AircraftPerformance = {
   name: "Cessna 152",
   model: "C152",
 
+  description: "The Cessna 152 is a two-seat tricycle gear general aviation airplane produced from 1977 to 1985. It replaced the Cessna 150 and features a Lycoming O-235 engine, improved aerodynamics, and a 28-volt electrical system. With over 7,500 units built, it remains one of the most popular flight training aircraft worldwide, prized for its reliability and economy.",
+
+  wikipediaUrl: "https://en.wikipedia.org/wiki/Cessna_152",
+
   weights: {
     emptyWeight: 1081, // lbs typical for C152
     standardWeight: 1670, // performance tables at MTOW
     maxGrossWeight: 1670, // lbs (C152 standard)
   },
 
+  // Cumulative climb performance from Sea Level (POH-style)
+  // Based on Cessna 152 POH Section 5
   climbTable: [
-    {
-      altitudeFrom: 0,
-      altitudeTo: 2000,
-      rateOfClimb: 715, // fpm @ SL per POH
-      climbTAS: 67, // KTAS (Vy ~ 67 KIAS)
-      fuelFlow: 6.5, // gph at climb power
-    },
-    {
-      altitudeFrom: 2000,
-      altitudeTo: 4000,
-      rateOfClimb: 650,
-      climbTAS: 68,
-      fuelFlow: 6.5,
-    },
-    {
-      altitudeFrom: 4000,
-      altitudeTo: 6000,
-      rateOfClimb: 580,
-      climbTAS: 69,
-      fuelFlow: 6.5,
-    },
-    {
-      altitudeFrom: 6000,
-      altitudeTo: 8000,
-      rateOfClimb: 500,
-      climbTAS: 70,
-      fuelFlow: 6.5,
-    },
-    {
-      altitudeFrom: 8000,
-      altitudeTo: 10000,
-      rateOfClimb: 410,
-      climbTAS: 71,
-      fuelFlow: 6.5,
-    },
-    {
-      altitudeFrom: 10000,
-      altitudeTo: 12000,
-      rateOfClimb: 310,
-      climbTAS: 72,
-      fuelFlow: 6.5,
-    },
+    // 0°C
+    { pressureAltitude: 0, oat: 0, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 0, timeFromSL: 3, fuelFromSL: 0.3, distanceFromSL: 3 },
+    { pressureAltitude: 4000, oat: 0, timeFromSL: 6, fuelFromSL: 0.6, distanceFromSL: 6 },
+    { pressureAltitude: 6000, oat: 0, timeFromSL: 10, fuelFromSL: 1.0, distanceFromSL: 11 },
+    { pressureAltitude: 8000, oat: 0, timeFromSL: 15, fuelFromSL: 1.6, distanceFromSL: 17 },
+    { pressureAltitude: 10000, oat: 0, timeFromSL: 22, fuelFromSL: 2.3, distanceFromSL: 25 },
+    { pressureAltitude: 12000, oat: 0, timeFromSL: 31, fuelFromSL: 3.3, distanceFromSL: 36 },
+    // 20°C
+    { pressureAltitude: 0, oat: 20, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 20, timeFromSL: 4, fuelFromSL: 0.4, distanceFromSL: 4 },
+    { pressureAltitude: 4000, oat: 20, timeFromSL: 8, fuelFromSL: 0.8, distanceFromSL: 8 },
+    { pressureAltitude: 6000, oat: 20, timeFromSL: 13, fuelFromSL: 1.3, distanceFromSL: 14 },
+    { pressureAltitude: 8000, oat: 20, timeFromSL: 19, fuelFromSL: 2.0, distanceFromSL: 21 },
+    { pressureAltitude: 10000, oat: 20, timeFromSL: 28, fuelFromSL: 2.9, distanceFromSL: 32 },
+    { pressureAltitude: 12000, oat: 20, timeFromSL: 40, fuelFromSL: 4.2, distanceFromSL: 47 },
+    // 40°C
+    { pressureAltitude: 0, oat: 40, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 40, timeFromSL: 5, fuelFromSL: 0.5, distanceFromSL: 5 },
+    { pressureAltitude: 4000, oat: 40, timeFromSL: 10, fuelFromSL: 1.0, distanceFromSL: 11 },
+    { pressureAltitude: 6000, oat: 40, timeFromSL: 17, fuelFromSL: 1.8, distanceFromSL: 19 },
+    { pressureAltitude: 8000, oat: 40, timeFromSL: 26, fuelFromSL: 2.7, distanceFromSL: 30 },
+    { pressureAltitude: 10000, oat: 40, timeFromSL: 40, fuelFromSL: 4.2, distanceFromSL: 46 },
   ],
 
   cruiseTable: [

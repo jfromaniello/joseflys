@@ -15,6 +15,10 @@ export interface ResolvedAircraftPerformance {
   takeoffTable?: TakeoffPerformance[];
   landingTable?: LandingPerformance[];
   deviationTable?: DeviationEntry[];
+  /** Brief description of the aircraft (history, capabilities, etc.) */
+  description?: string;
+  /** Link to Wikipedia article */
+  wikipediaUrl?: string;
 }
 
 /**
@@ -79,6 +83,12 @@ export interface AircraftPerformance {
 
   /** Optional compass deviation table (for user-created aircraft instances) */
   deviationTable?: DeviationEntry[];
+
+  /** Brief description of the aircraft (history, capabilities, etc.) */
+  description?: string;
+
+  /** Link to Wikipedia article */
+  wikipediaUrl?: string;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -104,23 +114,29 @@ export interface AircraftWeights {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Performance values for climb at a given altitude range.
+ * Cumulative climb performance data from Sea Level, indexed by Pressure Altitude × OAT.
+ * This matches the standard POH format where data is presented as cumulative values from SL.
+ *
+ * To calculate climb between two altitudes:
+ *   time = timeFromSL(toPA) - timeFromSL(fromPA)
+ *   fuel = fuelFromSL(toPA) - fuelFromSL(fromPA)
+ *   distance = distanceFromSL(toPA) - distanceFromSL(fromPA)
  */
 export interface ClimbPerformance {
-  /** Altitude range start (ft) */
-  altitudeFrom: number;
+  /** Pressure altitude in feet (typical: 0, 2000, 4000, 6000, 8000, 10000, 12000) */
+  pressureAltitude: number;
 
-  /** Altitude range end (ft) */
-  altitudeTo: number;
+  /** Outside Air Temperature in °C (varies by POH: 0,10,20,30,40 or 0,20,40 etc.) */
+  oat: number;
 
-  /** Rate of climb in feet per minute */
-  rateOfClimb: number;
+  /** Cumulative time from Sea Level (minutes) */
+  timeFromSL: number;
 
-  /** True Airspeed during climb (KTAS) */
-  climbTAS: number;
+  /** Cumulative fuel from Sea Level (gallons) */
+  fuelFromSL: number;
 
-  /** Fuel flow during climb (gallons per hour) */
-  fuelFlow: number;
+  /** Cumulative distance from Sea Level (NM) */
+  distanceFromSL: number;
 }
 
 /* -------------------------------------------------------------------------- */

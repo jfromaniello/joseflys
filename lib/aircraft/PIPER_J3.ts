@@ -4,41 +4,37 @@ export const PIPER_J3: AircraftPerformance = {
   name: "Piper J-3 Cub",
   model: "J3",
 
+  description: "The Piper J-3 Cub is one of the most iconic aircraft in aviation history, produced from 1937 to 1947. With its distinctive yellow color and simple, reliable design, over 19,000 were built. It trained thousands of military pilots during World War II and remains a beloved classic among pilots, prized for its pure stick-and-rudder flying experience.",
+
+  wikipediaUrl: "https://en.wikipedia.org/wiki/Piper_J-3_Cub",
+
   weights: {
     emptyWeight: 680, // lbs typical for J-3C-65
     standardWeight: 1220, // performance tables at MTOW
     maxGrossWeight: 1220, // lbs
   },
 
+  // Cumulative climb performance from Sea Level (POH-style)
+  // Based on Piper J-3 Cub with 65 hp A-65 engine
   climbTable: [
-    {
-      altitudeFrom: 0,
-      altitudeTo: 3000,
-      rateOfClimb: 450, // fpm @ SL (A-65 engine)
-      climbTAS: 55, // KTAS
-      fuelFlow: 5.0, // gph at climb power
-    },
-    {
-      altitudeFrom: 3000,
-      altitudeTo: 6000,
-      rateOfClimb: 380,
-      climbTAS: 56,
-      fuelFlow: 5.0,
-    },
-    {
-      altitudeFrom: 6000,
-      altitudeTo: 9000,
-      rateOfClimb: 300,
-      climbTAS: 57,
-      fuelFlow: 5.0,
-    },
-    {
-      altitudeFrom: 9000,
-      altitudeTo: 11500,
-      rateOfClimb: 180,
-      climbTAS: 58,
-      fuelFlow: 5.0,
-    },
+    // 0°C
+    { pressureAltitude: 0, oat: 0, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 0, timeFromSL: 5, fuelFromSL: 0.4, distanceFromSL: 4 },
+    { pressureAltitude: 4000, oat: 0, timeFromSL: 11, fuelFromSL: 0.9, distanceFromSL: 9 },
+    { pressureAltitude: 6000, oat: 0, timeFromSL: 18, fuelFromSL: 1.5, distanceFromSL: 16 },
+    { pressureAltitude: 8000, oat: 0, timeFromSL: 28, fuelFromSL: 2.3, distanceFromSL: 25 },
+    { pressureAltitude: 10000, oat: 0, timeFromSL: 42, fuelFromSL: 3.5, distanceFromSL: 39 },
+    // 20°C
+    { pressureAltitude: 0, oat: 20, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 20, timeFromSL: 6, fuelFromSL: 0.5, distanceFromSL: 5 },
+    { pressureAltitude: 4000, oat: 20, timeFromSL: 14, fuelFromSL: 1.1, distanceFromSL: 12 },
+    { pressureAltitude: 6000, oat: 20, timeFromSL: 24, fuelFromSL: 2.0, distanceFromSL: 21 },
+    { pressureAltitude: 8000, oat: 20, timeFromSL: 38, fuelFromSL: 3.1, distanceFromSL: 34 },
+    // 40°C
+    { pressureAltitude: 0, oat: 40, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 40, timeFromSL: 8, fuelFromSL: 0.6, distanceFromSL: 7 },
+    { pressureAltitude: 4000, oat: 40, timeFromSL: 19, fuelFromSL: 1.5, distanceFromSL: 17 },
+    { pressureAltitude: 6000, oat: 40, timeFromSL: 35, fuelFromSL: 2.8, distanceFromSL: 31 },
   ],
 
   cruiseTable: [

@@ -5,41 +5,36 @@ export const PIPER_PA11: AircraftPerformance = {
   name: "Piper PA-11 Cub Special",
   model: "PA-11",
 
+  description: "The Piper PA-11 Cub Special is a two-seat light aircraft produced from 1947 to 1949. It was developed as an improved version of the legendary J-3 Cub with a fully enclosed engine cowling and more powerful Continental or Lycoming engines (90 HP). Over 1,500 units were built and it remains popular among tailwheel enthusiasts and backcountry pilots.",
+
+  wikipediaUrl: "https://en.wikipedia.org/wiki/Piper_PA-11",
+
   weights: {
     emptyWeight: 730, // lbs :contentReference[oaicite:24]{index=24}
     standardWeight: 1220, // usamos MTOW como estándar
     maxGrossWeight: 1220, // lbs (~553 kg) :contentReference[oaicite:25]{index=25}
   },
 
+  // Cumulative climb performance from Sea Level (POH-style)
+  // Based on PA-11 Cub Special characteristics with 90 hp C90 engine
   climbTable: [
-    {
-      altitudeFrom: 0,
-      altitudeTo: 2000,
-      rateOfClimb: 800, // fpm típico entre datos de 500–900 fpm :contentReference[oaicite:26]{index=26}
-      climbTAS: 50, // KTAS (Vy ~ 55 mph ≈ 48 kt) :contentReference[oaicite:27]{index=27}
-      fuelFlow: 6.0, // gph @ full power :contentReference[oaicite:28]{index=28}
-    },
-    {
-      altitudeFrom: 2000,
-      altitudeTo: 4000,
-      rateOfClimb: 700,
-      climbTAS: 51,
-      fuelFlow: 5.8,
-    },
-    {
-      altitudeFrom: 4000,
-      altitudeTo: 6000,
-      rateOfClimb: 600,
-      climbTAS: 52,
-      fuelFlow: 5.6,
-    },
-    {
-      altitudeFrom: 6000,
-      altitudeTo: 8000,
-      rateOfClimb: 500,
-      climbTAS: 53,
-      fuelFlow: 5.4,
-    },
+    // 0°C
+    { pressureAltitude: 0, oat: 0, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 0, timeFromSL: 3, fuelFromSL: 0.3, distanceFromSL: 2 },
+    { pressureAltitude: 4000, oat: 0, timeFromSL: 6, fuelFromSL: 0.6, distanceFromSL: 5 },
+    { pressureAltitude: 6000, oat: 0, timeFromSL: 10, fuelFromSL: 1.0, distanceFromSL: 8 },
+    { pressureAltitude: 8000, oat: 0, timeFromSL: 15, fuelFromSL: 1.4, distanceFromSL: 12 },
+    // 20°C
+    { pressureAltitude: 0, oat: 20, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 20, timeFromSL: 4, fuelFromSL: 0.4, distanceFromSL: 3 },
+    { pressureAltitude: 4000, oat: 20, timeFromSL: 8, fuelFromSL: 0.8, distanceFromSL: 6 },
+    { pressureAltitude: 6000, oat: 20, timeFromSL: 13, fuelFromSL: 1.2, distanceFromSL: 10 },
+    { pressureAltitude: 8000, oat: 20, timeFromSL: 19, fuelFromSL: 1.8, distanceFromSL: 15 },
+    // 40°C
+    { pressureAltitude: 0, oat: 40, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 40, timeFromSL: 5, fuelFromSL: 0.5, distanceFromSL: 4 },
+    { pressureAltitude: 4000, oat: 40, timeFromSL: 11, fuelFromSL: 1.0, distanceFromSL: 9 },
+    { pressureAltitude: 6000, oat: 40, timeFromSL: 19, fuelFromSL: 1.8, distanceFromSL: 15 },
   ],
 
   cruiseTable: [

@@ -157,31 +157,24 @@ export function CreateFlightPlanClient() {
 
         // Calculate climb data for first leg
         let climbData: {
-          climbTas?: number;
           climbDist?: number;
           climbFuel?: number;
         } = {};
 
         if (i === 0 && selectedAircraft.climbTable.length > 0) {
           const targetAlt = parseFloat(cruiseAltitude) || 6500;
+          // Use 20°C as standard OAT for flight plan estimation
           const climbPerf = calculateClimbPerformance(
-            selectedAircraft,
-            0, // currentAlt
-            targetAlt, // targetAlt
-            0, // DA adjustment
-            cruisePerf.tas // approximate GS
+            selectedAircraft.climbTable,
+            0, // fromPA
+            targetAlt, // toPA
+            20 // OAT (standard condition)
           );
 
           if (climbPerf) {
             climbData = {
-              climbTas: Math.round(
-                selectedAircraft.climbTable.reduce(
-                  (sum, entry) => sum + entry.climbTAS,
-                  0
-                ) / selectedAircraft.climbTable.length
-              ),
-              climbDist: Math.round(climbPerf.totalDistance * 10) / 10,
-              climbFuel: Math.round(climbPerf.totalFuel * 10) / 10,
+              climbDist: Math.round(climbPerf.distance * 10) / 10,
+              climbFuel: Math.round(climbPerf.fuel * 10) / 10,
             };
           }
         }
@@ -197,11 +190,6 @@ export function CreateFlightPlanClient() {
         const isLastMainLeg = i === routePoints.length - 2;
         if (isLastMainLeg && alternate && selectedAircraft.climbTable.length > 0) {
           const targetAlt = parseFloat(cruiseAltitude) || 6500;
-          // Use similar performance to climb for descent (simplified)
-          const avgClimbTas = Math.round(
-            selectedAircraft.climbTable.reduce((sum, entry) => sum + entry.climbTAS, 0) /
-              selectedAircraft.climbTable.length
-          );
           // Descent is typically faster and uses less fuel than climb
           // Approximate: 500 fpm descent, ~3 NM per 1000ft at typical speeds
           const descentDist = (targetAlt / 1000) * 3;
@@ -209,7 +197,7 @@ export function CreateFlightPlanClient() {
           const descentFuel = (descentTime / 60) * cruisePerf.fuelFlow * 0.5; // ~50% of cruise fuel flow
 
           descentData = {
-            descentTas: avgClimbTas + 10, // Slightly faster than climb
+            descentTas: cruisePerf.tas, // Use cruise TAS for descent estimation
             descentDist: Math.round(descentDist * 10) / 10,
             descentFuel: Math.round(descentFuel * 10) / 10,
           };
@@ -272,13 +260,6 @@ export function CreateFlightPlanClient() {
 
         // Calculate descent data for alternate leg (required for alternate detection)
         const targetAlt = parseFloat(cruiseAltitude) || 6500;
-        const avgClimbTas =
-          selectedAircraft.climbTable.length > 0
-            ? Math.round(
-                selectedAircraft.climbTable.reduce((sum, entry) => sum + entry.climbTAS, 0) /
-                  selectedAircraft.climbTable.length
-              )
-            : cruisePerf.tas - 20;
         const altDescentDist = (targetAlt / 1000) * 3;
         const altDescentTime = targetAlt / 500; // minutes
         const altDescentFuel = (altDescentTime / 60) * cruisePerf.fuelFlow * 0.5;
@@ -309,7 +290,7 @@ export function CreateFlightPlanClient() {
           depTime: departureTime || undefined,
           additionalFuel: 45, // 45 minutes reserve for alternate
           // Descent data required for alternate detection
-          descentTas: avgClimbTas + 10,
+          descentTas: cruisePerf.tas,
           descentDist: Math.round(altDescentDist * 10) / 10,
           descentFuel: Math.round(altDescentFuel * 10) / 10,
         };

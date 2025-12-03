@@ -89,13 +89,16 @@ export function createEmptyAircraftWithClimb(
       maxGrossWeight: 2200,
     },
     climbTable: [
-      {
-        altitudeFrom: 0,
-        altitudeTo: 2000,
-        rateOfClimb: 500,
-        climbTAS: 70,
-        fuelFlow: 8.0,
-      },
+      // Minimal POH-style climb table with 3 OAT columns
+      { pressureAltitude: 0, oat: 0, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+      { pressureAltitude: 4000, oat: 0, timeFromSL: 8, fuelFromSL: 1.0, distanceFromSL: 8 },
+      { pressureAltitude: 8000, oat: 0, timeFromSL: 18, fuelFromSL: 2.2, distanceFromSL: 20 },
+      { pressureAltitude: 0, oat: 20, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+      { pressureAltitude: 4000, oat: 20, timeFromSL: 10, fuelFromSL: 1.3, distanceFromSL: 11 },
+      { pressureAltitude: 8000, oat: 20, timeFromSL: 22, fuelFromSL: 2.8, distanceFromSL: 26 },
+      { pressureAltitude: 0, oat: 40, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+      { pressureAltitude: 4000, oat: 40, timeFromSL: 14, fuelFromSL: 1.8, distanceFromSL: 15 },
+      { pressureAltitude: 8000, oat: 40, timeFromSL: 30, fuelFromSL: 3.8, distanceFromSL: 36 },
     ],
     cruiseTable: [
       {

@@ -6,7 +6,7 @@ import { Tooltip } from "./Tooltip";
 import {
   AircraftPerformance,
   ResolvedAircraftPerformance,
-  ClimbPerformanceData,
+  ClimbPerformance,
   PRESET_AIRCRAFT,
   createEmptyAircraftWithClimb,
 } from "@/lib/aircraft";
@@ -84,29 +84,14 @@ export function AircraftPerformanceModal({
         if (custom) {
           setIsCustom(true);
           setIsEditing(false);
-          // If aircraft has no climb table, add default one for editing
           const aircraftCopy = JSON.parse(JSON.stringify(custom));
-          if (!aircraftCopy.climbTable || aircraftCopy.climbTable.length === 0) {
-            aircraftCopy.climbTable = [
-              {
-                altitudeFrom: 0,
-                altitudeTo: 2000,
-                rateOfClimb: 500,
-                climbTAS: 70,
-                fuelFlow: 8.0,
-              },
-            ];
-            // Ensure weights object exists
-            if (!aircraftCopy.weights) {
-              aircraftCopy.weights = {
-                emptyWeight: 1200,
-                standardWeight: 2000,
-                maxGrossWeight: 2200,
-              };
-            } else {
-              aircraftCopy.weights.standardWeight = aircraftCopy.weights.standardWeight || 2000;
-              aircraftCopy.weights.maxGrossWeight = aircraftCopy.weights.maxGrossWeight || 2200;
-            }
+          // Ensure weights object exists
+          if (!aircraftCopy.weights) {
+            aircraftCopy.weights = {
+              emptyWeight: 1200,
+              standardWeight: 2000,
+              maxGrossWeight: 2200,
+            };
           }
           setAircraft(aircraftCopy);
           setSelectedPreset(model);
@@ -139,23 +124,27 @@ export function AircraftPerformanceModal({
     onClose();
   };
 
-  const addSegment = () => {
-    const lastSegment = aircraft.climbTable?.[aircraft.climbTable.length - 1];
-    const newSegment: ClimbPerformanceData = {
-      altitudeFrom: lastSegment?.altitudeTo || 0,
-      altitudeTo: (lastSegment?.altitudeTo || 0) + 2000,
-      rateOfClimb: 500,
-      climbTAS: 70,
-      fuelFlow: 8.0,
+  const addRow = () => {
+    const lastRow = aircraft.climbTable?.[aircraft.climbTable.length - 1];
+    // Get unique OAT values
+    const existingOATs = [...new Set((aircraft.climbTable || []).map(r => r.oat))].sort((a, b) => a - b);
+    const lastOAT = existingOATs.length > 0 ? existingOATs[existingOATs.length - 1] : 20;
+
+    const newRow: ClimbPerformance = {
+      pressureAltitude: lastRow?.pressureAltitude ? lastRow.pressureAltitude + 2000 : 0,
+      oat: lastOAT,
+      timeFromSL: lastRow?.timeFromSL ? lastRow.timeFromSL + 5 : 0,
+      fuelFromSL: lastRow?.fuelFromSL ? lastRow.fuelFromSL + 1 : 0,
+      distanceFromSL: lastRow?.distanceFromSL ? lastRow.distanceFromSL + 5 : 0,
     };
 
     setAircraft({
       ...aircraft,
-      climbTable: [...(aircraft.climbTable || []), newSegment],
+      climbTable: [...(aircraft.climbTable || []), newRow],
     });
   };
 
-  const removeSegment = (index: number) => {
+  const removeRow = (index: number) => {
     if (aircraft.climbTable && aircraft.climbTable.length > 1) {
       setAircraft({
         ...aircraft,
@@ -164,12 +153,17 @@ export function AircraftPerformanceModal({
     }
   };
 
-  const updateSegment = (index: number, field: keyof ClimbPerformanceData, value: number) => {
+  const updateRow = (index: number, field: keyof ClimbPerformance, value: number) => {
     if (!aircraft.climbTable) return;
     const newTable = [...aircraft.climbTable];
     newTable[index] = { ...newTable[index], [field]: value };
     setAircraft({ ...aircraft, climbTable: newTable });
   };
+
+  // Get unique OAT values for display
+  const uniqueOATs = aircraft.climbTable
+    ? [...new Set(aircraft.climbTable.map(r => r.oat))].sort((a, b) => a - b)
+    : [];
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -229,7 +223,7 @@ export function AircraftPerformanceModal({
                     </button>
                   </div>
                   <p className="text-sm" style={{ color: "oklch(0.6 0.02 240)" }}>
-                    Select a preset aircraft or customize your own climb performance table
+                    POH-style climb performance table indexed by Pressure Altitude × OAT
                   </p>
                 </div>
 
@@ -353,16 +347,23 @@ export function AircraftPerformanceModal({
                   {/* Performance Table */}
                   <div>
                     <div className="flex items-center justify-between mb-3">
-                      <label className="text-sm font-medium flex items-center" style={{ color: "oklch(0.72 0.015 240)" }}>
-                        Climb Performance Table
-                        <Tooltip content="Enter the climb performance data from your POH for different altitude ranges" />
-                      </label>
+                      <div>
+                        <label className="text-sm font-medium flex items-center" style={{ color: "oklch(0.72 0.015 240)" }}>
+                          Climb Performance Table
+                          <Tooltip content="Cumulative climb data from Sea Level, indexed by Pressure Altitude × OAT. Values are subtracted to calculate climb between any two altitudes." />
+                        </label>
+                        {uniqueOATs.length > 0 && (
+                          <p className="text-xs mt-1" style={{ color: "oklch(0.55 0.02 240)" }}>
+                            OAT columns: {uniqueOATs.join('°C, ')}°C
+                          </p>
+                        )}
+                      </div>
                       {(isCustom || isEditing) && (
                         <button
-                          onClick={addSegment}
+                          onClick={addRow}
                           className="text-sm px-3 py-1.5 rounded-lg bg-sky-600/30 hover:bg-sky-600/50 text-sky-300 hover:text-sky-200 border border-sky-500/30 transition-all cursor-pointer"
                         >
-                          + Add Segment
+                          + Add Row
                         </button>
                       )}
                     </div>
@@ -372,19 +373,19 @@ export function AircraftPerformanceModal({
                         <thead className="bg-slate-800/80">
                           <tr>
                             <th className="px-3 py-2 text-left font-medium" style={{ color: "oklch(0.7 0.02 240)" }}>
-                              From (ft)
+                              PA (ft)
                             </th>
                             <th className="px-3 py-2 text-left font-medium" style={{ color: "oklch(0.7 0.02 240)" }}>
-                              To (ft)
+                              OAT (°C)
                             </th>
                             <th className="px-3 py-2 text-left font-medium" style={{ color: "oklch(0.7 0.02 240)" }}>
-                              ROC (ft/min)
+                              Time (min)
                             </th>
                             <th className="px-3 py-2 text-left font-medium" style={{ color: "oklch(0.7 0.02 240)" }}>
-                              TAS (kt)
+                              Fuel (gal)
                             </th>
                             <th className="px-3 py-2 text-left font-medium" style={{ color: "oklch(0.7 0.02 240)" }}>
-                              Fuel (gal/h)
+                              Dist (NM)
                             </th>
                             {(isCustom || isEditing) && (
                               <th className="px-3 py-2 text-left font-medium" style={{ color: "oklch(0.7 0.02 240)" }}>
@@ -394,14 +395,14 @@ export function AircraftPerformanceModal({
                           </tr>
                         </thead>
                         <tbody>
-                          {(aircraft.climbTable || []).map((segment, index) => (
+                          {(aircraft.climbTable || []).map((row, index) => (
                             <tr key={index} className="border-t border-gray-700/50">
                               <td className="px-3 py-2">
                                 <input
                                   type="number"
-                                  value={segment.altitudeFrom}
+                                  value={row.pressureAltitude}
                                   onChange={(e) =>
-                                    updateSegment(index, "altitudeFrom", parseFloat(e.target.value))
+                                    updateRow(index, "pressureAltitude", parseFloat(e.target.value))
                                   }
                                   disabled={!isCustom && !isEditing}
                                   className="w-full px-2 py-1.5 rounded text-sm bg-slate-800 border border-gray-600 text-white text-right disabled:opacity-50 disabled:bg-transparent disabled:border-transparent"
@@ -410,31 +411,9 @@ export function AircraftPerformanceModal({
                               <td className="px-3 py-2">
                                 <input
                                   type="number"
-                                  value={segment.altitudeTo}
+                                  value={row.oat}
                                   onChange={(e) =>
-                                    updateSegment(index, "altitudeTo", parseFloat(e.target.value))
-                                  }
-                                  disabled={!isCustom && !isEditing}
-                                  className="w-full px-2 py-1.5 rounded text-sm bg-slate-800 border border-gray-600 text-white text-right disabled:opacity-50 disabled:bg-transparent disabled:border-transparent"
-                                />
-                              </td>
-                              <td className="px-3 py-2">
-                                <input
-                                  type="number"
-                                  value={segment.rateOfClimb}
-                                  onChange={(e) =>
-                                    updateSegment(index, "rateOfClimb", parseFloat(e.target.value))
-                                  }
-                                  disabled={!isCustom && !isEditing}
-                                  className="w-full px-2 py-1.5 rounded text-sm bg-slate-800 border border-gray-600 text-white text-right disabled:opacity-50 disabled:bg-transparent disabled:border-transparent"
-                                />
-                              </td>
-                              <td className="px-3 py-2">
-                                <input
-                                  type="number"
-                                  value={segment.climbTAS}
-                                  onChange={(e) =>
-                                    updateSegment(index, "climbTAS", parseFloat(e.target.value))
+                                    updateRow(index, "oat", parseFloat(e.target.value))
                                   }
                                   disabled={!isCustom && !isEditing}
                                   className="w-full px-2 py-1.5 rounded text-sm bg-slate-800 border border-gray-600 text-white text-right disabled:opacity-50 disabled:bg-transparent disabled:border-transparent"
@@ -444,9 +423,33 @@ export function AircraftPerformanceModal({
                                 <input
                                   type="number"
                                   step="0.1"
-                                  value={segment.fuelFlow}
+                                  value={row.timeFromSL}
                                   onChange={(e) =>
-                                    updateSegment(index, "fuelFlow", parseFloat(e.target.value))
+                                    updateRow(index, "timeFromSL", parseFloat(e.target.value))
+                                  }
+                                  disabled={!isCustom && !isEditing}
+                                  className="w-full px-2 py-1.5 rounded text-sm bg-slate-800 border border-gray-600 text-white text-right disabled:opacity-50 disabled:bg-transparent disabled:border-transparent"
+                                />
+                              </td>
+                              <td className="px-3 py-2">
+                                <input
+                                  type="number"
+                                  step="0.1"
+                                  value={row.fuelFromSL}
+                                  onChange={(e) =>
+                                    updateRow(index, "fuelFromSL", parseFloat(e.target.value))
+                                  }
+                                  disabled={!isCustom && !isEditing}
+                                  className="w-full px-2 py-1.5 rounded text-sm bg-slate-800 border border-gray-600 text-white text-right disabled:opacity-50 disabled:bg-transparent disabled:border-transparent"
+                                />
+                              </td>
+                              <td className="px-3 py-2">
+                                <input
+                                  type="number"
+                                  step="0.1"
+                                  value={row.distanceFromSL}
+                                  onChange={(e) =>
+                                    updateRow(index, "distanceFromSL", parseFloat(e.target.value))
                                   }
                                   disabled={!isCustom && !isEditing}
                                   className="w-full px-2 py-1.5 rounded text-sm bg-slate-800 border border-gray-600 text-white text-right disabled:opacity-50 disabled:bg-transparent disabled:border-transparent"
@@ -455,7 +458,7 @@ export function AircraftPerformanceModal({
                               {(isCustom || isEditing) && (
                                 <td className="px-3 py-2">
                                   <button
-                                    onClick={() => removeSegment(index)}
+                                    onClick={() => removeRow(index)}
                                     disabled={(aircraft.climbTable?.length || 0) === 1}
                                     className="px-2 py-1 rounded text-xs bg-red-600/30 hover:bg-red-600/50 text-red-300 hover:text-red-200 border border-red-500/30 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                                   >
@@ -473,7 +476,7 @@ export function AircraftPerformanceModal({
                   {/* Info Note */}
                   <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30">
                     <p className="text-xs leading-relaxed" style={{ color: "oklch(0.7 0.15 230)" }}>
-                      <span className="font-semibold">⚠️ Important:</span> Always verify performance data with your aircraft&apos;s official Pilot Operating Handbook (POH). Preset values are approximations for reference only. The calculator automatically adjusts for density altitude and weight, but actual performance may vary based on aircraft condition, pilot technique, and atmospheric conditions. ROC = Rate of Climb, TAS = True Airspeed during climb, Fuel = Fuel flow rate in gallons per hour.
+                      <span className="font-semibold">POH Format:</span> This table uses cumulative values from Sea Level. To calculate climb between two altitudes, the calculator subtracts the lower altitude values from the higher. Example: Climb 2000→6000 ft at 20°C = values at 6000ft minus values at 2000ft. Always verify with your POH.
                     </p>
                   </div>
                 </div>

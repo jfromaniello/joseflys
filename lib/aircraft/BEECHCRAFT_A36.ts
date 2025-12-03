@@ -4,55 +4,42 @@ export const BEECHCRAFT_A36: AircraftPerformance = {
   name: "Beechcraft A36 Bonanza",
   model: "A36",
 
+  description: "The Beechcraft A36 Bonanza is a six-seat high-performance single-engine aircraft produced since 1968. Part of the legendary Bonanza family (in production since 1947), the A36 features a conventional tail design and Continental IO-550 engine producing 300 HP. Known for its speed, range, and quality construction, it's considered one of the finest single-engine aircraft ever built.",
+
+  wikipediaUrl: "https://en.wikipedia.org/wiki/Beechcraft_Bonanza",
+
   weights: {
     emptyWeight: 2437, // lbs typical for A36 with IO-550
     standardWeight: 3650, // performance tables at MTOW (IO-550 models)
     maxGrossWeight: 3650, // lbs (IO-550 models, earlier IO-520 models 3600 lbs)
   },
 
+  // Cumulative climb performance from Sea Level (POH-style)
+  // Based on Beechcraft A36 Bonanza POH
   climbTable: [
-    {
-      altitudeFrom: 0,
-      altitudeTo: 2000,
-      rateOfClimb: 1210, // fpm @ SL per POH
-      climbTAS: 100, // KTAS (Vy ~ 96 KIAS)
-      fuelFlow: 20.0, // gph at climb power
-    },
-    {
-      altitudeFrom: 2000,
-      altitudeTo: 4000,
-      rateOfClimb: 1110,
-      climbTAS: 101,
-      fuelFlow: 19.5,
-    },
-    {
-      altitudeFrom: 4000,
-      altitudeTo: 6000,
-      rateOfClimb: 1005,
-      climbTAS: 102,
-      fuelFlow: 19.0,
-    },
-    {
-      altitudeFrom: 6000,
-      altitudeTo: 8000,
-      rateOfClimb: 895,
-      climbTAS: 103,
-      fuelFlow: 18.5,
-    },
-    {
-      altitudeFrom: 8000,
-      altitudeTo: 10000,
-      rateOfClimb: 780,
-      climbTAS: 104,
-      fuelFlow: 18.0,
-    },
-    {
-      altitudeFrom: 10000,
-      altitudeTo: 12000,
-      rateOfClimb: 660,
-      climbTAS: 105,
-      fuelFlow: 17.5,
-    },
+    // 0°C
+    { pressureAltitude: 0, oat: 0, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 0, timeFromSL: 2, fuelFromSL: 0.6, distanceFromSL: 3 },
+    { pressureAltitude: 4000, oat: 0, timeFromSL: 4, fuelFromSL: 1.3, distanceFromSL: 7 },
+    { pressureAltitude: 6000, oat: 0, timeFromSL: 6, fuelFromSL: 2.0, distanceFromSL: 11 },
+    { pressureAltitude: 8000, oat: 0, timeFromSL: 9, fuelFromSL: 2.9, distanceFromSL: 16 },
+    { pressureAltitude: 10000, oat: 0, timeFromSL: 13, fuelFromSL: 3.9, distanceFromSL: 22 },
+    { pressureAltitude: 12000, oat: 0, timeFromSL: 17, fuelFromSL: 5.1, distanceFromSL: 30 },
+    // 20°C
+    { pressureAltitude: 0, oat: 20, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 20, timeFromSL: 2, fuelFromSL: 0.7, distanceFromSL: 4 },
+    { pressureAltitude: 4000, oat: 20, timeFromSL: 5, fuelFromSL: 1.6, distanceFromSL: 9 },
+    { pressureAltitude: 6000, oat: 20, timeFromSL: 8, fuelFromSL: 2.5, distanceFromSL: 14 },
+    { pressureAltitude: 8000, oat: 20, timeFromSL: 11, fuelFromSL: 3.6, distanceFromSL: 20 },
+    { pressureAltitude: 10000, oat: 20, timeFromSL: 16, fuelFromSL: 4.8, distanceFromSL: 28 },
+    { pressureAltitude: 12000, oat: 20, timeFromSL: 21, fuelFromSL: 6.3, distanceFromSL: 38 },
+    // 40°C
+    { pressureAltitude: 0, oat: 40, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 40, timeFromSL: 3, fuelFromSL: 0.9, distanceFromSL: 5 },
+    { pressureAltitude: 4000, oat: 40, timeFromSL: 6, fuelFromSL: 2.0, distanceFromSL: 11 },
+    { pressureAltitude: 6000, oat: 40, timeFromSL: 10, fuelFromSL: 3.3, distanceFromSL: 18 },
+    { pressureAltitude: 8000, oat: 40, timeFromSL: 15, fuelFromSL: 4.8, distanceFromSL: 27 },
+    { pressureAltitude: 10000, oat: 40, timeFromSL: 22, fuelFromSL: 6.6, distanceFromSL: 39 },
   ],
 
   cruiseTable: [

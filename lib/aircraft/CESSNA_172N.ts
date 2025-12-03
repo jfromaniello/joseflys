@@ -4,55 +4,42 @@ export const CESSNA_172N: AircraftPerformance = {
   name: "Cessna 172N Skyhawk",
   model: "C172N",
 
+  description: "The Cessna 172 Skyhawk is the most produced aircraft in history with over 45,000 units built since 1956. The 172N model (1977-1980) features a Lycoming O-320-H2AD engine producing 160 HP. Known for its exceptional stability and forgiving flight characteristics, it's the world's most popular training and personal aircraft.",
+
+  wikipediaUrl: "https://en.wikipedia.org/wiki/Cessna_172",
+
   weights: {
     emptyWeight: 1370, // lbs typical for 172N
     standardWeight: 2300, // performance tables at MTOW
     maxGrossWeight: 2300, // lbs (172N standard)
   },
 
+  // Cumulative climb performance from Sea Level (POH-style)
+  // Based on Cessna 172N POH Section 5, ISA conditions
   climbTable: [
-    {
-      altitudeFrom: 0,
-      altitudeTo: 2000,
-      rateOfClimb: 730, // fpm @ SL per POH
-      climbTAS: 79, // KTAS (Vy ~ 79 KIAS)
-      fuelFlow: 11.0, // gph at climb power
-    },
-    {
-      altitudeFrom: 2000,
-      altitudeTo: 4000,
-      rateOfClimb: 680,
-      climbTAS: 80,
-      fuelFlow: 10.5,
-    },
-    {
-      altitudeFrom: 4000,
-      altitudeTo: 6000,
-      rateOfClimb: 620,
-      climbTAS: 81,
-      fuelFlow: 10.0,
-    },
-    {
-      altitudeFrom: 6000,
-      altitudeTo: 8000,
-      rateOfClimb: 560,
-      climbTAS: 82,
-      fuelFlow: 9.5,
-    },
-    {
-      altitudeFrom: 8000,
-      altitudeTo: 10000,
-      rateOfClimb: 490,
-      climbTAS: 83,
-      fuelFlow: 9.0,
-    },
-    {
-      altitudeFrom: 10000,
-      altitudeTo: 12000,
-      rateOfClimb: 410,
-      climbTAS: 84,
-      fuelFlow: 8.5,
-    },
+    // 0°C (ISA-15)
+    { pressureAltitude: 0, oat: 0, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 0, timeFromSL: 3, fuelFromSL: 0.5, distanceFromSL: 3 },
+    { pressureAltitude: 4000, oat: 0, timeFromSL: 6, fuelFromSL: 1.1, distanceFromSL: 7 },
+    { pressureAltitude: 6000, oat: 0, timeFromSL: 10, fuelFromSL: 1.8, distanceFromSL: 12 },
+    { pressureAltitude: 8000, oat: 0, timeFromSL: 15, fuelFromSL: 2.6, distanceFromSL: 18 },
+    { pressureAltitude: 10000, oat: 0, timeFromSL: 21, fuelFromSL: 3.5, distanceFromSL: 26 },
+    { pressureAltitude: 12000, oat: 0, timeFromSL: 28, fuelFromSL: 4.6, distanceFromSL: 36 },
+    // 20°C (ISA+5)
+    { pressureAltitude: 0, oat: 20, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 20, timeFromSL: 4, fuelFromSL: 0.6, distanceFromSL: 4 },
+    { pressureAltitude: 4000, oat: 20, timeFromSL: 8, fuelFromSL: 1.3, distanceFromSL: 9 },
+    { pressureAltitude: 6000, oat: 20, timeFromSL: 13, fuelFromSL: 2.2, distanceFromSL: 15 },
+    { pressureAltitude: 8000, oat: 20, timeFromSL: 19, fuelFromSL: 3.2, distanceFromSL: 23 },
+    { pressureAltitude: 10000, oat: 20, timeFromSL: 27, fuelFromSL: 4.4, distanceFromSL: 33 },
+    { pressureAltitude: 12000, oat: 20, timeFromSL: 37, fuelFromSL: 5.8, distanceFromSL: 46 },
+    // 40°C (ISA+25)
+    { pressureAltitude: 0, oat: 40, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 40, timeFromSL: 5, fuelFromSL: 0.8, distanceFromSL: 5 },
+    { pressureAltitude: 4000, oat: 40, timeFromSL: 11, fuelFromSL: 1.7, distanceFromSL: 12 },
+    { pressureAltitude: 6000, oat: 40, timeFromSL: 18, fuelFromSL: 2.9, distanceFromSL: 21 },
+    { pressureAltitude: 8000, oat: 40, timeFromSL: 27, fuelFromSL: 4.3, distanceFromSL: 32 },
+    { pressureAltitude: 10000, oat: 40, timeFromSL: 40, fuelFromSL: 6.2, distanceFromSL: 48 },
   ],
 
   cruiseTable: [

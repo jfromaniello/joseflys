@@ -279,6 +279,12 @@ export default function MyPlanesClient() {
                                 <td className="py-3 px-4 text-right">
                                   <div className="flex gap-2 justify-end">
                                     <button
+                                      onClick={() => router.push(`/aircraft/${plane.model}/view`)}
+                                      className="px-3 py-1 bg-slate-600/30 hover:bg-slate-600/50 text-slate-300 hover:text-slate-200 border border-slate-500/30 rounded text-sm transition-all cursor-pointer"
+                                    >
+                                      View
+                                    </button>
+                                    <button
                                       onClick={() => handleEdit(plane.model)}
                                       className="px-3 py-1 bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 hover:text-blue-200 border border-blue-500/30 rounded text-sm transition-all cursor-pointer"
                                     >
@@ -361,6 +367,13 @@ export default function MyPlanesClient() {
                               </td>
                               <td className="py-3 px-4 text-right">
                                 <div className="flex gap-2 justify-end">
+                                  <button
+                                    onClick={() => router.push(`/aircraft/${plane.model}/view`)}
+                                    className="px-3 py-1 bg-slate-600/30 hover:bg-slate-600/50 text-slate-300 hover:text-slate-200 border border-slate-500/30 rounded text-sm transition-all cursor-pointer"
+                                    title="View aircraft details"
+                                  >
+                                    View
+                                  </button>
                                   <button
                                     onClick={() => handleFork(plane)}
                                     className="px-3 py-1 bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 hover:text-amber-200 border border-amber-500/30 rounded text-sm transition-all cursor-pointer"

@@ -5,48 +5,42 @@ export const CESSNA_182: AircraftPerformance = {
   name: "Cessna 182P Skylane",
   model: "C182P",
 
+  description: "The Cessna 182 Skylane is a four-seat single-engine airplane produced since 1956. The 182P model (1972-1980) features a Continental O-470-R engine producing 230 HP. With its higher power and payload capacity compared to the 172, it's popular for cross-country flying, aerial photography, and cargo transport in general aviation.",
+
+  wikipediaUrl: "https://en.wikipedia.org/wiki/Cessna_182_Skylane",
+
   weights: {
     emptyWeight: 1750, // promedio entre varios 182P :contentReference[oaicite:11]{index=11}
     standardWeight: 2950, // asumimos tablas a MTOW
     maxGrossWeight: 2950, // lbs (182P clásico) :contentReference[oaicite:12]{index=12}
   },
 
+  // Cumulative climb performance from Sea Level (POH-style)
+  // Based on Cessna 182P POH Section 5
   climbTable: [
-    {
-      altitudeFrom: 0,
-      altitudeTo: 2000,
-      rateOfClimb: 1000, // fpm @ SL :contentReference[oaicite:13]{index=13}
-      climbTAS: 85, // KTAS aprox (Vy ~ 85 KIAS)
-      fuelFlow: 18.0, // gph a potencia de despegue/ascenso
-    },
-    {
-      altitudeFrom: 2000,
-      altitudeTo: 4000,
-      rateOfClimb: 900,
-      climbTAS: 86,
-      fuelFlow: 17.5,
-    },
-    {
-      altitudeFrom: 4000,
-      altitudeTo: 6000,
-      rateOfClimb: 800,
-      climbTAS: 88,
-      fuelFlow: 17.0,
-    },
-    {
-      altitudeFrom: 6000,
-      altitudeTo: 8000,
-      rateOfClimb: 700,
-      climbTAS: 90,
-      fuelFlow: 16.5,
-    },
-    {
-      altitudeFrom: 8000,
-      altitudeTo: 10000,
-      rateOfClimb: 600,
-      climbTAS: 92,
-      fuelFlow: 16.0,
-    },
+    // 0°C
+    { pressureAltitude: 0, oat: 0, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 0, timeFromSL: 2, fuelFromSL: 0.6, distanceFromSL: 3 },
+    { pressureAltitude: 4000, oat: 0, timeFromSL: 5, fuelFromSL: 1.3, distanceFromSL: 6 },
+    { pressureAltitude: 6000, oat: 0, timeFromSL: 8, fuelFromSL: 2.1, distanceFromSL: 10 },
+    { pressureAltitude: 8000, oat: 0, timeFromSL: 12, fuelFromSL: 3.1, distanceFromSL: 16 },
+    { pressureAltitude: 10000, oat: 0, timeFromSL: 17, fuelFromSL: 4.2, distanceFromSL: 23 },
+    { pressureAltitude: 12000, oat: 0, timeFromSL: 23, fuelFromSL: 5.6, distanceFromSL: 32 },
+    // 20°C
+    { pressureAltitude: 0, oat: 20, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 20, timeFromSL: 3, fuelFromSL: 0.8, distanceFromSL: 4 },
+    { pressureAltitude: 4000, oat: 20, timeFromSL: 6, fuelFromSL: 1.6, distanceFromSL: 8 },
+    { pressureAltitude: 6000, oat: 20, timeFromSL: 10, fuelFromSL: 2.6, distanceFromSL: 13 },
+    { pressureAltitude: 8000, oat: 20, timeFromSL: 15, fuelFromSL: 3.8, distanceFromSL: 20 },
+    { pressureAltitude: 10000, oat: 20, timeFromSL: 21, fuelFromSL: 5.2, distanceFromSL: 29 },
+    { pressureAltitude: 12000, oat: 20, timeFromSL: 29, fuelFromSL: 7.0, distanceFromSL: 41 },
+    // 40°C
+    { pressureAltitude: 0, oat: 40, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 40, timeFromSL: 4, fuelFromSL: 1.0, distanceFromSL: 5 },
+    { pressureAltitude: 4000, oat: 40, timeFromSL: 8, fuelFromSL: 2.1, distanceFromSL: 11 },
+    { pressureAltitude: 6000, oat: 40, timeFromSL: 13, fuelFromSL: 3.4, distanceFromSL: 18 },
+    { pressureAltitude: 8000, oat: 40, timeFromSL: 20, fuelFromSL: 5.0, distanceFromSL: 28 },
+    { pressureAltitude: 10000, oat: 40, timeFromSL: 29, fuelFromSL: 7.0, distanceFromSL: 41 },
   ],
 
   cruiseTable: [

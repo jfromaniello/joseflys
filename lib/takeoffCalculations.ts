@@ -8,6 +8,7 @@
 
 import type { ResolvedAircraftPerformance } from "./aircraft/types";
 import { calculateTAS } from "./tasCalculations";
+import { calculateClimbPerformance } from "./climbCalculations";
 
 // ============================================================================
 // Types & Interfaces
@@ -349,24 +350,22 @@ export function calculateTakeoffPerformance(inputs: TakeoffInputs): TakeoffResul
   let rateOfClimb = 0;
 
   if (inputs.aircraft.climbTable && inputs.aircraft.climbTable.length > 0) {
-    // Interpolate ROC from climb table
-    // Find the segment that contains our density altitude
-    const segment = inputs.aircraft.climbTable.find(
-      entry => entry.altitudeFrom <= inputs.densityAltitude && entry.altitudeTo >= inputs.densityAltitude
+    // Calculate ROC using POH-style climb table
+    // Estimate instantaneous ROC by calculating time to climb 500ft from current PA
+    const climbSegment = 500; // ft
+    const fromPA = inputs.pressureAltitude;
+    const toPA = inputs.pressureAltitude + climbSegment;
+
+    const climbResult = calculateClimbPerformance(
+      inputs.aircraft.climbTable,
+      fromPA,
+      toPA,
+      inputs.oat
     );
 
-    if (segment) {
-      // Use the ROC from the matching segment
-      rateOfClimb = segment.rateOfClimb;
-    } else {
-      // Use the nearest segment
-      const sortedClimb = [...inputs.aircraft.climbTable].sort((a, b) => a.altitudeFrom - b.altitudeFrom);
-
-      if (inputs.densityAltitude < sortedClimb[0].altitudeFrom) {
-        rateOfClimb = sortedClimb[0].rateOfClimb;
-      } else {
-        rateOfClimb = sortedClimb[sortedClimb.length - 1].rateOfClimb;
-      }
+    if (climbResult.time > 0) {
+      // ROC = altitude gained / time (ft/min)
+      rateOfClimb = climbSegment / climbResult.time;
     }
 
     // Weight correction for ROC (linear approximation)

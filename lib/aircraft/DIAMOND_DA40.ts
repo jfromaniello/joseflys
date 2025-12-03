@@ -4,55 +4,42 @@ export const DIAMOND_DA40: AircraftPerformance = {
   name: "Diamond DA40 Star",
   model: "DA40",
 
+  description: "The Diamond DA40 Star is a four-seat single-engine aircraft produced since 1997 by Diamond Aircraft. It features an all-composite airframe, excellent visibility with a large canopy, and modern aerodynamics. Available with gasoline (Lycoming IO-360) or diesel (Austro AE300) engines, it's popular with flight schools for its safety features, fuel efficiency, and modern cockpit design.",
+
+  wikipediaUrl: "https://en.wikipedia.org/wiki/Diamond_DA40",
+
   weights: {
     emptyWeight: 1746, // lbs typical for DA40 with IO-360
     standardWeight: 2646, // performance tables at MTOW
     maxGrossWeight: 2646, // lbs
   },
 
+  // Cumulative climb performance from Sea Level (POH-style)
+  // Based on Diamond DA40 POH
   climbTable: [
-    {
-      altitudeFrom: 0,
-      altitudeTo: 2000,
-      rateOfClimb: 1120, // fpm @ SL (DA40 XLS with PowerFlow)
-      climbTAS: 85, // KTAS
-      fuelFlow: 13.0, // gph at climb power
-    },
-    {
-      altitudeFrom: 2000,
-      altitudeTo: 4000,
-      rateOfClimb: 1020,
-      climbTAS: 86,
-      fuelFlow: 12.5,
-    },
-    {
-      altitudeFrom: 4000,
-      altitudeTo: 6000,
-      rateOfClimb: 915,
-      climbTAS: 87,
-      fuelFlow: 12.0,
-    },
-    {
-      altitudeFrom: 6000,
-      altitudeTo: 8000,
-      rateOfClimb: 805,
-      climbTAS: 88,
-      fuelFlow: 11.5,
-    },
-    {
-      altitudeFrom: 8000,
-      altitudeTo: 10000,
-      rateOfClimb: 690,
-      climbTAS: 89,
-      fuelFlow: 11.0,
-    },
-    {
-      altitudeFrom: 10000,
-      altitudeTo: 12000,
-      rateOfClimb: 565,
-      climbTAS: 90,
-      fuelFlow: 10.5,
-    },
+    // 0°C
+    { pressureAltitude: 0, oat: 0, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 0, timeFromSL: 2, fuelFromSL: 0.4, distanceFromSL: 3 },
+    { pressureAltitude: 4000, oat: 0, timeFromSL: 4, fuelFromSL: 0.9, distanceFromSL: 6 },
+    { pressureAltitude: 6000, oat: 0, timeFromSL: 7, fuelFromSL: 1.5, distanceFromSL: 10 },
+    { pressureAltitude: 8000, oat: 0, timeFromSL: 10, fuelFromSL: 2.1, distanceFromSL: 15 },
+    { pressureAltitude: 10000, oat: 0, timeFromSL: 14, fuelFromSL: 2.9, distanceFromSL: 21 },
+    { pressureAltitude: 12000, oat: 0, timeFromSL: 19, fuelFromSL: 3.9, distanceFromSL: 29 },
+    // 20°C
+    { pressureAltitude: 0, oat: 20, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 20, timeFromSL: 3, fuelFromSL: 0.5, distanceFromSL: 4 },
+    { pressureAltitude: 4000, oat: 20, timeFromSL: 5, fuelFromSL: 1.1, distanceFromSL: 8 },
+    { pressureAltitude: 6000, oat: 20, timeFromSL: 9, fuelFromSL: 1.8, distanceFromSL: 13 },
+    { pressureAltitude: 8000, oat: 20, timeFromSL: 13, fuelFromSL: 2.6, distanceFromSL: 19 },
+    { pressureAltitude: 10000, oat: 20, timeFromSL: 18, fuelFromSL: 3.6, distanceFromSL: 27 },
+    { pressureAltitude: 12000, oat: 20, timeFromSL: 24, fuelFromSL: 4.8, distanceFromSL: 37 },
+    // 40°C
+    { pressureAltitude: 0, oat: 40, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 40, timeFromSL: 4, fuelFromSL: 0.7, distanceFromSL: 5 },
+    { pressureAltitude: 4000, oat: 40, timeFromSL: 8, fuelFromSL: 1.5, distanceFromSL: 11 },
+    { pressureAltitude: 6000, oat: 40, timeFromSL: 12, fuelFromSL: 2.4, distanceFromSL: 18 },
+    { pressureAltitude: 8000, oat: 40, timeFromSL: 18, fuelFromSL: 3.5, distanceFromSL: 27 },
+    { pressureAltitude: 10000, oat: 40, timeFromSL: 25, fuelFromSL: 4.9, distanceFromSL: 38 },
   ],
 
   cruiseTable: [

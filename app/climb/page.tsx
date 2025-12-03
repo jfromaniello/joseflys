@@ -8,6 +8,10 @@ interface ClimbPageProps {
     curr?: string;
     tgt?: string;
     da?: string;
+    pa?: string;
+    alt?: string;
+    qnh?: string;
+    oat?: string;
     wt?: string;
     th?: string;
     wd?: string;
@@ -21,7 +25,11 @@ export default async function ClimbPage({ searchParams }: ClimbPageProps) {
   const params = await searchParams;
   const currentAlt = params.curr || "2000";
   const targetAlt = params.tgt || "6000";
-  const densityAlt = params.da || "3000";
+  const densityAlt = params.da || "";
+  const pressureAlt = params.pa || "";
+  const altitude = params.alt || "";
+  const qnh = params.qnh || "";
+  const oat = params.oat || "";
   const weight = params.wt || "1500";
   const trueCourse = params.th || "090"; // 'th' URL param represents True Course
   const windDir = params.wd || "";
@@ -41,6 +49,10 @@ export default async function ClimbPage({ searchParams }: ClimbPageProps) {
         initialCurrentAlt={currentAlt}
         initialTargetAlt={targetAlt}
         initialDA={densityAlt}
+        initialPA={pressureAlt}
+        initialAlt={altitude}
+        initialQNH={qnh}
+        initialOAT={oat}
         initialWeight={weight}
         initialTH={trueCourse}
         initialWD={windDir}

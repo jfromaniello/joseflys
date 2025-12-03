@@ -4,55 +4,42 @@ export const CESSNA_210: AircraftPerformance = {
   name: "Cessna 210 Centurion",
   model: "C210",
 
+  description: "The Cessna 210 Centurion is a six-seat high-performance single-engine aircraft produced from 1960 to 1986. It was Cessna's first single-engine airplane with retractable landing gear. Known for its speed, range, and load-carrying capability, it became popular for business travel and is often considered a step-up aircraft for pilots transitioning to high-performance flying.",
+
+  wikipediaUrl: "https://en.wikipedia.org/wiki/Cessna_210",
+
   weights: {
     emptyWeight: 2305, // lbs typical for 210L
     standardWeight: 3800, // performance tables at MTOW (210L/M)
     maxGrossWeight: 3800, // lbs (210L/M models, earlier models 3400 lbs)
   },
 
+  // Cumulative climb performance from Sea Level (POH-style)
+  // Based on Cessna 210L POH Section 5
   climbTable: [
-    {
-      altitudeFrom: 0,
-      altitudeTo: 2000,
-      rateOfClimb: 950, // fpm @ SL per POH
-      climbTAS: 105, // KTAS (Vy ~ 92 KIAS)
-      fuelFlow: 21.0, // gph at climb power
-    },
-    {
-      altitudeFrom: 2000,
-      altitudeTo: 4000,
-      rateOfClimb: 870,
-      climbTAS: 106,
-      fuelFlow: 20.5,
-    },
-    {
-      altitudeFrom: 4000,
-      altitudeTo: 6000,
-      rateOfClimb: 785,
-      climbTAS: 107,
-      fuelFlow: 20.0,
-    },
-    {
-      altitudeFrom: 6000,
-      altitudeTo: 8000,
-      rateOfClimb: 695,
-      climbTAS: 108,
-      fuelFlow: 19.5,
-    },
-    {
-      altitudeFrom: 8000,
-      altitudeTo: 10000,
-      rateOfClimb: 600,
-      climbTAS: 109,
-      fuelFlow: 19.0,
-    },
-    {
-      altitudeFrom: 10000,
-      altitudeTo: 12000,
-      rateOfClimb: 500,
-      climbTAS: 110,
-      fuelFlow: 18.5,
-    },
+    // 0°C
+    { pressureAltitude: 0, oat: 0, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 0, timeFromSL: 2, fuelFromSL: 0.7, distanceFromSL: 4 },
+    { pressureAltitude: 4000, oat: 0, timeFromSL: 5, fuelFromSL: 1.5, distanceFromSL: 8 },
+    { pressureAltitude: 6000, oat: 0, timeFromSL: 8, fuelFromSL: 2.5, distanceFromSL: 13 },
+    { pressureAltitude: 8000, oat: 0, timeFromSL: 12, fuelFromSL: 3.6, distanceFromSL: 19 },
+    { pressureAltitude: 10000, oat: 0, timeFromSL: 17, fuelFromSL: 5.0, distanceFromSL: 27 },
+    { pressureAltitude: 12000, oat: 0, timeFromSL: 23, fuelFromSL: 6.6, distanceFromSL: 37 },
+    // 20°C
+    { pressureAltitude: 0, oat: 20, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 20, timeFromSL: 3, fuelFromSL: 0.9, distanceFromSL: 5 },
+    { pressureAltitude: 4000, oat: 20, timeFromSL: 6, fuelFromSL: 1.9, distanceFromSL: 10 },
+    { pressureAltitude: 6000, oat: 20, timeFromSL: 10, fuelFromSL: 3.1, distanceFromSL: 17 },
+    { pressureAltitude: 8000, oat: 20, timeFromSL: 15, fuelFromSL: 4.6, distanceFromSL: 25 },
+    { pressureAltitude: 10000, oat: 20, timeFromSL: 21, fuelFromSL: 6.3, distanceFromSL: 35 },
+    { pressureAltitude: 12000, oat: 20, timeFromSL: 29, fuelFromSL: 8.4, distanceFromSL: 48 },
+    // 40°C
+    { pressureAltitude: 0, oat: 40, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 40, timeFromSL: 4, fuelFromSL: 1.2, distanceFromSL: 6 },
+    { pressureAltitude: 4000, oat: 40, timeFromSL: 8, fuelFromSL: 2.5, distanceFromSL: 14 },
+    { pressureAltitude: 6000, oat: 40, timeFromSL: 14, fuelFromSL: 4.2, distanceFromSL: 23 },
+    { pressureAltitude: 8000, oat: 40, timeFromSL: 21, fuelFromSL: 6.3, distanceFromSL: 35 },
+    { pressureAltitude: 10000, oat: 40, timeFromSL: 31, fuelFromSL: 9.0, distanceFromSL: 51 },
   ],
 
   cruiseTable: [

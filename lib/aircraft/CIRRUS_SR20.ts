@@ -4,55 +4,42 @@ export const CIRRUS_SR20: AircraftPerformance = {
   name: "Cirrus SR20",
   model: "SR20",
 
+  description: "The Cirrus SR20 is a four-seat composite single-engine aircraft produced since 1999. It revolutionized general aviation with its side-yoke controls, glass cockpit (Garmin Perspective), and the Cirrus Airframe Parachute System (CAPS) as standard equipment. Powered by a Continental IO-360-ES producing 215 HP, it combines modern technology with excellent performance and safety.",
+
+  wikipediaUrl: "https://en.wikipedia.org/wiki/Cirrus_SR20",
+
   weights: {
     emptyWeight: 2126, // lbs typical for SR20 G3
     standardWeight: 3050, // performance tables at MTOW (G3 model)
     maxGrossWeight: 3050, // lbs (G3 model, G6 is 3150 lbs)
   },
 
+  // Cumulative climb performance from Sea Level (POH-style)
+  // Based on Cirrus SR20 POH
   climbTable: [
-    {
-      altitudeFrom: 0,
-      altitudeTo: 2000,
-      rateOfClimb: 920, // fpm @ SL per POH
-      climbTAS: 100, // KTAS
-      fuelFlow: 14.5, // gph at climb power
-    },
-    {
-      altitudeFrom: 2000,
-      altitudeTo: 4000,
-      rateOfClimb: 850,
-      climbTAS: 101,
-      fuelFlow: 14.0,
-    },
-    {
-      altitudeFrom: 4000,
-      altitudeTo: 6000,
-      rateOfClimb: 775,
-      climbTAS: 102,
-      fuelFlow: 13.5,
-    },
-    {
-      altitudeFrom: 6000,
-      altitudeTo: 8000,
-      rateOfClimb: 695,
-      climbTAS: 103,
-      fuelFlow: 13.0,
-    },
-    {
-      altitudeFrom: 8000,
-      altitudeTo: 10000,
-      rateOfClimb: 610,
-      climbTAS: 104,
-      fuelFlow: 12.5,
-    },
-    {
-      altitudeFrom: 10000,
-      altitudeTo: 12000,
-      rateOfClimb: 520,
-      climbTAS: 105,
-      fuelFlow: 12.0,
-    },
+    // 0°C
+    { pressureAltitude: 0, oat: 0, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 0, timeFromSL: 2, fuelFromSL: 0.5, distanceFromSL: 4 },
+    { pressureAltitude: 4000, oat: 0, timeFromSL: 5, fuelFromSL: 1.1, distanceFromSL: 8 },
+    { pressureAltitude: 6000, oat: 0, timeFromSL: 8, fuelFromSL: 1.8, distanceFromSL: 14 },
+    { pressureAltitude: 8000, oat: 0, timeFromSL: 12, fuelFromSL: 2.7, distanceFromSL: 20 },
+    { pressureAltitude: 10000, oat: 0, timeFromSL: 17, fuelFromSL: 3.7, distanceFromSL: 29 },
+    { pressureAltitude: 12000, oat: 0, timeFromSL: 23, fuelFromSL: 4.9, distanceFromSL: 39 },
+    // 20°C
+    { pressureAltitude: 0, oat: 20, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 20, timeFromSL: 3, fuelFromSL: 0.7, distanceFromSL: 5 },
+    { pressureAltitude: 4000, oat: 20, timeFromSL: 6, fuelFromSL: 1.4, distanceFromSL: 10 },
+    { pressureAltitude: 6000, oat: 20, timeFromSL: 10, fuelFromSL: 2.3, distanceFromSL: 17 },
+    { pressureAltitude: 8000, oat: 20, timeFromSL: 15, fuelFromSL: 3.4, distanceFromSL: 26 },
+    { pressureAltitude: 10000, oat: 20, timeFromSL: 21, fuelFromSL: 4.7, distanceFromSL: 37 },
+    { pressureAltitude: 12000, oat: 20, timeFromSL: 29, fuelFromSL: 6.2, distanceFromSL: 50 },
+    // 40°C
+    { pressureAltitude: 0, oat: 40, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 40, timeFromSL: 4, fuelFromSL: 0.9, distanceFromSL: 6 },
+    { pressureAltitude: 4000, oat: 40, timeFromSL: 8, fuelFromSL: 1.9, distanceFromSL: 14 },
+    { pressureAltitude: 6000, oat: 40, timeFromSL: 14, fuelFromSL: 3.1, distanceFromSL: 24 },
+    { pressureAltitude: 8000, oat: 40, timeFromSL: 21, fuelFromSL: 4.6, distanceFromSL: 36 },
+    { pressureAltitude: 10000, oat: 40, timeFromSL: 30, fuelFromSL: 6.4, distanceFromSL: 52 },
   ],
 
   cruiseTable: [

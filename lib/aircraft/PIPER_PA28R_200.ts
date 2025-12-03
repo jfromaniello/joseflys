@@ -4,55 +4,42 @@ export const PIPER_PA28R_200: AircraftPerformance = {
   name: "Piper PA-28R-200 Arrow",
   model: "PA28R-200",
 
+  description: "The Piper PA-28R-200 Arrow is a four-seat retractable gear aircraft produced since 1967. It features a 200 HP Lycoming IO-360 fuel-injected engine, constant-speed propeller, and automatic gear extension system. Popular for complex aircraft training and personal transport, it offers improved performance over fixed-gear Cherokees with cruise speeds around 140 knots.",
+
+  wikipediaUrl: "https://en.wikipedia.org/wiki/Piper_PA-28R_Cherokee_Arrow",
+
   weights: {
     emptyWeight: 1627, // lbs typical for PA-28R-200 Arrow II
     standardWeight: 2750, // performance tables at MTOW
     maxGrossWeight: 2750, // lbs
   },
 
+  // Cumulative climb performance from Sea Level (POH-style)
+  // Based on Piper PA-28R-200 Arrow POH
   climbTable: [
-    {
-      altitudeFrom: 0,
-      altitudeTo: 2000,
-      rateOfClimb: 831, // fpm @ SL per POH
-      climbTAS: 95, // KTAS (Vy ~ 95 KIAS)
-      fuelFlow: 14.0, // gph at climb power
-    },
-    {
-      altitudeFrom: 2000,
-      altitudeTo: 4000,
-      rateOfClimb: 765,
-      climbTAS: 96,
-      fuelFlow: 13.5,
-    },
-    {
-      altitudeFrom: 4000,
-      altitudeTo: 6000,
-      rateOfClimb: 695,
-      climbTAS: 97,
-      fuelFlow: 13.0,
-    },
-    {
-      altitudeFrom: 6000,
-      altitudeTo: 8000,
-      rateOfClimb: 620,
-      climbTAS: 98,
-      fuelFlow: 12.5,
-    },
-    {
-      altitudeFrom: 8000,
-      altitudeTo: 10000,
-      rateOfClimb: 540,
-      climbTAS: 99,
-      fuelFlow: 12.0,
-    },
-    {
-      altitudeFrom: 10000,
-      altitudeTo: 12000,
-      rateOfClimb: 450,
-      climbTAS: 100,
-      fuelFlow: 11.5,
-    },
+    // 0°C
+    { pressureAltitude: 0, oat: 0, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 0, timeFromSL: 3, fuelFromSL: 0.7, distanceFromSL: 4 },
+    { pressureAltitude: 4000, oat: 0, timeFromSL: 6, fuelFromSL: 1.4, distanceFromSL: 9 },
+    { pressureAltitude: 6000, oat: 0, timeFromSL: 9, fuelFromSL: 2.2, distanceFromSL: 15 },
+    { pressureAltitude: 8000, oat: 0, timeFromSL: 13, fuelFromSL: 3.1, distanceFromSL: 21 },
+    { pressureAltitude: 10000, oat: 0, timeFromSL: 18, fuelFromSL: 4.2, distanceFromSL: 29 },
+    { pressureAltitude: 12000, oat: 0, timeFromSL: 24, fuelFromSL: 5.5, distanceFromSL: 39 },
+    // 20°C
+    { pressureAltitude: 0, oat: 20, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 20, timeFromSL: 4, fuelFromSL: 0.9, distanceFromSL: 6 },
+    { pressureAltitude: 4000, oat: 20, timeFromSL: 7, fuelFromSL: 1.7, distanceFromSL: 11 },
+    { pressureAltitude: 6000, oat: 20, timeFromSL: 11, fuelFromSL: 2.7, distanceFromSL: 18 },
+    { pressureAltitude: 8000, oat: 20, timeFromSL: 16, fuelFromSL: 3.9, distanceFromSL: 27 },
+    { pressureAltitude: 10000, oat: 20, timeFromSL: 23, fuelFromSL: 5.3, distanceFromSL: 38 },
+    { pressureAltitude: 12000, oat: 20, timeFromSL: 31, fuelFromSL: 7.0, distanceFromSL: 51 },
+    // 40°C
+    { pressureAltitude: 0, oat: 40, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 40, timeFromSL: 5, fuelFromSL: 1.1, distanceFromSL: 7 },
+    { pressureAltitude: 4000, oat: 40, timeFromSL: 10, fuelFromSL: 2.3, distanceFromSL: 15 },
+    { pressureAltitude: 6000, oat: 40, timeFromSL: 16, fuelFromSL: 3.7, distanceFromSL: 25 },
+    { pressureAltitude: 8000, oat: 40, timeFromSL: 23, fuelFromSL: 5.3, distanceFromSL: 37 },
+    { pressureAltitude: 10000, oat: 40, timeFromSL: 33, fuelFromSL: 7.4, distanceFromSL: 53 },
   ],
 
   cruiseTable: [

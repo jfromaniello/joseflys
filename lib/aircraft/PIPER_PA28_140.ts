@@ -4,55 +4,42 @@ export const PIPER_PA28_140: AircraftPerformance = {
   name: "Piper PA-28-140 Cherokee",
   model: "PA28-140",
 
+  description: "The Piper PA-28-140 Cherokee is a four-seat light aircraft produced from 1964 to 1977. Part of the highly successful PA-28 family, it features a low-wing design with a Lycoming O-320 engine producing 140 HP. Known for its stable handling and economical operation, it became one of the most popular training and personal aircraft of its era.",
+
+  wikipediaUrl: "https://en.wikipedia.org/wiki/Piper_PA-28_Cherokee",
+
   weights: {
     emptyWeight: 1180, // lbs typical for PA-28-140 (4-seat config)
     standardWeight: 2150, // performance tables at MTOW
     maxGrossWeight: 2150, // lbs (4-seat certification)
   },
 
+  // Cumulative climb performance from Sea Level (POH-style)
+  // Based on Piper PA-28-140 Cherokee POH
   climbTable: [
-    {
-      altitudeFrom: 0,
-      altitudeTo: 2000,
-      rateOfClimb: 644, // fpm @ SL per POH
-      climbTAS: 79, // KTAS (Vy ~ 79 KIAS)
-      fuelFlow: 11.5, // gph at climb power
-    },
-    {
-      altitudeFrom: 2000,
-      altitudeTo: 4000,
-      rateOfClimb: 590,
-      climbTAS: 80,
-      fuelFlow: 11.0,
-    },
-    {
-      altitudeFrom: 4000,
-      altitudeTo: 6000,
-      rateOfClimb: 530,
-      climbTAS: 81,
-      fuelFlow: 10.5,
-    },
-    {
-      altitudeFrom: 6000,
-      altitudeTo: 8000,
-      rateOfClimb: 465,
-      climbTAS: 82,
-      fuelFlow: 10.0,
-    },
-    {
-      altitudeFrom: 8000,
-      altitudeTo: 10000,
-      rateOfClimb: 395,
-      climbTAS: 83,
-      fuelFlow: 9.5,
-    },
-    {
-      altitudeFrom: 10000,
-      altitudeTo: 12000,
-      rateOfClimb: 315,
-      climbTAS: 84,
-      fuelFlow: 9.0,
-    },
+    // 0°C
+    { pressureAltitude: 0, oat: 0, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 0, timeFromSL: 3, fuelFromSL: 0.6, distanceFromSL: 4 },
+    { pressureAltitude: 4000, oat: 0, timeFromSL: 7, fuelFromSL: 1.3, distanceFromSL: 9 },
+    { pressureAltitude: 6000, oat: 0, timeFromSL: 12, fuelFromSL: 2.1, distanceFromSL: 15 },
+    { pressureAltitude: 8000, oat: 0, timeFromSL: 18, fuelFromSL: 3.1, distanceFromSL: 23 },
+    { pressureAltitude: 10000, oat: 0, timeFromSL: 26, fuelFromSL: 4.4, distanceFromSL: 34 },
+    { pressureAltitude: 12000, oat: 0, timeFromSL: 36, fuelFromSL: 5.9, distanceFromSL: 48 },
+    // 20°C
+    { pressureAltitude: 0, oat: 20, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 20, timeFromSL: 4, fuelFromSL: 0.7, distanceFromSL: 5 },
+    { pressureAltitude: 4000, oat: 20, timeFromSL: 9, fuelFromSL: 1.6, distanceFromSL: 11 },
+    { pressureAltitude: 6000, oat: 20, timeFromSL: 15, fuelFromSL: 2.7, distanceFromSL: 19 },
+    { pressureAltitude: 8000, oat: 20, timeFromSL: 23, fuelFromSL: 4.0, distanceFromSL: 30 },
+    { pressureAltitude: 10000, oat: 20, timeFromSL: 33, fuelFromSL: 5.6, distanceFromSL: 44 },
+    { pressureAltitude: 12000, oat: 20, timeFromSL: 47, fuelFromSL: 7.6, distanceFromSL: 63 },
+    // 40°C
+    { pressureAltitude: 0, oat: 40, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 40, timeFromSL: 5, fuelFromSL: 0.9, distanceFromSL: 6 },
+    { pressureAltitude: 4000, oat: 40, timeFromSL: 12, fuelFromSL: 2.1, distanceFromSL: 15 },
+    { pressureAltitude: 6000, oat: 40, timeFromSL: 20, fuelFromSL: 3.6, distanceFromSL: 26 },
+    { pressureAltitude: 8000, oat: 40, timeFromSL: 32, fuelFromSL: 5.5, distanceFromSL: 42 },
+    { pressureAltitude: 10000, oat: 40, timeFromSL: 48, fuelFromSL: 8.0, distanceFromSL: 64 },
   ],
 
   cruiseTable: [

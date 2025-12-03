@@ -5,48 +5,39 @@ export const CESSNA_170: AircraftPerformance = {
   name: "Cessna 170",
   model: "C170",
 
+  description: "The Cessna 170 is a four-seat single-engine aircraft produced from 1948 to 1956. It was the predecessor to the iconic Cessna 172 and features conventional landing gear (taildragger configuration). Known for its rugged construction and excellent short-field performance, it remains popular among bush pilots and classic aircraft enthusiasts.",
+
+  wikipediaUrl: "https://en.wikipedia.org/wiki/Cessna_170",
+
   weights: {
     emptyWeight: 1205, // lbs :contentReference[oaicite:0]{index=0}
     standardWeight: 2200, // lbs - POH performance usually at max gross
     maxGrossWeight: 2200, // lbs :contentReference[oaicite:1]{index=1}
   },
 
+  // Cumulative climb performance from Sea Level (POH-style)
+  // Estimated based on Cessna 170 characteristics
   climbTable: [
-    {
-      altitudeFrom: 0,
-      altitudeTo: 2000,
-      rateOfClimb: 690, // fpm @ SL gross :contentReference[oaicite:2]{index=2}
-      climbTAS: 75, // KTAS (Vy ~ 70ish KIAS, redondeado)
-      fuelFlow: 10.0, // gph aprox a potencia de ascenso
-    },
-    {
-      altitudeFrom: 2000,
-      altitudeTo: 4000,
-      rateOfClimb: 600,
-      climbTAS: 75,
-      fuelFlow: 9.8,
-    },
-    {
-      altitudeFrom: 4000,
-      altitudeTo: 6000,
-      rateOfClimb: 520,
-      climbTAS: 76,
-      fuelFlow: 9.6,
-    },
-    {
-      altitudeFrom: 6000,
-      altitudeTo: 8000,
-      rateOfClimb: 430,
-      climbTAS: 77,
-      fuelFlow: 9.4,
-    },
-    {
-      altitudeFrom: 8000,
-      altitudeTo: 10000,
-      rateOfClimb: 340,
-      climbTAS: 78,
-      fuelFlow: 9.2,
-    },
+    // 0°C
+    { pressureAltitude: 0, oat: 0, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 0, timeFromSL: 3, fuelFromSL: 0.5, distanceFromSL: 3 },
+    { pressureAltitude: 4000, oat: 0, timeFromSL: 7, fuelFromSL: 1.1, distanceFromSL: 8 },
+    { pressureAltitude: 6000, oat: 0, timeFromSL: 12, fuelFromSL: 1.9, distanceFromSL: 14 },
+    { pressureAltitude: 8000, oat: 0, timeFromSL: 18, fuelFromSL: 2.8, distanceFromSL: 22 },
+    { pressureAltitude: 10000, oat: 0, timeFromSL: 27, fuelFromSL: 4.0, distanceFromSL: 33 },
+    // 20°C
+    { pressureAltitude: 0, oat: 20, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 20, timeFromSL: 4, fuelFromSL: 0.6, distanceFromSL: 4 },
+    { pressureAltitude: 4000, oat: 20, timeFromSL: 9, fuelFromSL: 1.4, distanceFromSL: 10 },
+    { pressureAltitude: 6000, oat: 20, timeFromSL: 15, fuelFromSL: 2.4, distanceFromSL: 18 },
+    { pressureAltitude: 8000, oat: 20, timeFromSL: 23, fuelFromSL: 3.6, distanceFromSL: 28 },
+    { pressureAltitude: 10000, oat: 20, timeFromSL: 35, fuelFromSL: 5.2, distanceFromSL: 43 },
+    // 40°C
+    { pressureAltitude: 0, oat: 40, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+    { pressureAltitude: 2000, oat: 40, timeFromSL: 5, fuelFromSL: 0.8, distanceFromSL: 6 },
+    { pressureAltitude: 4000, oat: 40, timeFromSL: 12, fuelFromSL: 1.9, distanceFromSL: 14 },
+    { pressureAltitude: 6000, oat: 40, timeFromSL: 21, fuelFromSL: 3.3, distanceFromSL: 25 },
+    { pressureAltitude: 8000, oat: 40, timeFromSL: 33, fuelFromSL: 5.2, distanceFromSL: 40 },
   ],
 
   cruiseTable: [
