@@ -6,9 +6,10 @@ import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
 import { Footer } from "../components/Footer";
 import { ShareButton } from "../components/ShareButton";
 import { Tooltip } from "../components/Tooltip";
-import { AtmosphericConditionsInputs, type AtmosphericConditionsData } from "../components/AtmosphericConditionsInputs";
+import { AtmosphericConditionsInputs, type AtmosphericConditionsData, type AtmosphericPreset } from "../components/AtmosphericConditionsInputs";
 import { AircraftSelector } from "../components/AircraftSelector";
 import { AircraftSelectorModal } from "../components/AircraftSelectorModal";
+import { AerodromeSearchInput, type AerodromeResult } from "../components/AerodromeSearchInput";
 import { PRESET_AIRCRAFT, ResolvedAircraftPerformance } from "@/lib/aircraft";
 import {
   calculateTakeoffPerformance,
@@ -17,6 +18,13 @@ import {
   type FlapConfiguration,
   type TakeoffResults,
 } from "@/lib/takeoffCalculations";
+import {
+  type Runway,
+  type SelectedRunway,
+  selectBestRunway,
+  getAllRunwayOptions,
+  surfaceToTakeoffSurface,
+} from "@/lib/runwayUtils";
 import { loadAircraftFromUrl, serializeAircraft, getAircraftByModel } from "@/lib/aircraftStorage";
 import { formatDistance } from "@/lib/formatters";
 import { TakeoffVisualization } from "./TakeoffVisualization";
@@ -71,6 +79,18 @@ export function TakeoffCalculatorClient({
   // Aircraft modal state
   const [isAircraftModalOpen, setIsAircraftModalOpen] = useState(false);
 
+  // Aerodrome & METAR state
+  const [selectedAerodrome, setSelectedAerodrome] = useState<AerodromeResult | null>(null);
+  const [metarInfo, setMetarInfo] = useState<{ raw: string; source: string; station: string; windDir: number | null; windSpeed: number | null } | null>(null);
+  const [loadingMetar, setLoadingMetar] = useState(false);
+  const [atmosphericPreset, setAtmosphericPreset] = useState<AtmosphericPreset | null>(null);
+
+  // Runway state
+  const [availableRunways, setAvailableRunways] = useState<Runway[]>([]);
+  const [selectedRunway, setSelectedRunway] = useState<SelectedRunway | null>(null);
+  const [runwayOptions, setRunwayOptions] = useState<SelectedRunway[]>([]);
+  const [loadingRunways, setLoadingRunways] = useState(false);
+
   // Input state
   const [weight, setWeight] = useState<string>(initialWeight);
   const [flapConfiguration, setFlapConfiguration] = useState<FlapConfiguration>(
@@ -92,6 +112,126 @@ export function TakeoffCalculatorClient({
   const handleAtmosphericChange = useCallback((data: AtmosphericConditionsData) => {
     setAtmosphericData(data);
   }, []);
+
+  // Fetch METAR and runways when aerodrome is selected
+  const handleAerodromeChange = useCallback(async (aerodrome: AerodromeResult | null) => {
+    setSelectedAerodrome(aerodrome);
+    setMetarInfo(null);
+    setAtmosphericPreset(null);
+    setAvailableRunways([]);
+    setSelectedRunway(null);
+    setRunwayOptions([]);
+
+    if (!aerodrome) return;
+
+    // Use aerodrome elevation immediately (we have it from the API)
+    const basePreset: AtmosphericPreset = {
+      altitudeMode: "qnh",
+      altitude: aerodrome.elevation?.toString() || "",
+    };
+
+    let windDir: number | null = null;
+    let windSpeed: number | null = null;
+
+    // Fetch METAR and runways in parallel
+    setLoadingMetar(true);
+    // Only show runway loading if there's an ICAO code to look up
+    setLoadingRunways(!!aerodrome.code);
+
+    // Start both fetches
+    const metarPromise = (async () => {
+      try {
+        const params = new URLSearchParams();
+        if (aerodrome.code) params.set("id", aerodrome.code);
+        params.set("lat", aerodrome.lat.toString());
+        params.set("lon", aerodrome.lon.toString());
+
+        const response = await fetch(`/api/metar?${params}`);
+        const data = await response.json();
+
+        if (data.metar) {
+          const metar = data.metar;
+          windDir = metar.wdir;
+          windSpeed = metar.wspd;
+          setMetarInfo({
+            raw: metar.rawOb,
+            source: data.source === "direct" ? "Direct" : `Nearest (${data.distance} NM)`,
+            station: metar.icaoId,
+            windDir,
+            windSpeed,
+          });
+
+          // Set atmospheric preset from METAR + aerodrome elevation
+          setAtmosphericPreset({
+            ...basePreset,
+            qnh: metar.altim?.toString() || "",
+            oat: metar.temp?.toString() || "",
+          });
+        } else {
+          // No METAR, but still set elevation
+          setAtmosphericPreset(basePreset);
+        }
+      } catch (error) {
+        console.error("Failed to fetch METAR:", error);
+        setAtmosphericPreset(basePreset);
+      } finally {
+        setLoadingMetar(false);
+      }
+      return { windDir, windSpeed };
+    })();
+
+    const runwayPromise = (async () => {
+      if (!aerodrome.code) {
+        return [];
+      }
+      try {
+        const response = await fetch(`/api/runways?icao=${aerodrome.code}`);
+        const data = await response.json();
+        return data.runways || [];
+      } catch (error) {
+        console.error("Failed to fetch runways:", error);
+        return [];
+      }
+    })();
+
+    // Wait for both to complete
+    const [metarResult, runways] = await Promise.all([metarPromise, runwayPromise]);
+
+    // Process runway data
+    if (runways.length > 0) {
+      setAvailableRunways(runways);
+
+      // Calculate all runway options with wind components
+      const options = getAllRunwayOptions(runways, metarResult.windDir, metarResult.windSpeed);
+      setRunwayOptions(options);
+
+      // Auto-select best runway
+      const best = selectBestRunway(runways, metarResult.windDir, metarResult.windSpeed);
+      if (best) {
+        setSelectedRunway(best);
+        // Update form fields from selected runway
+        setRunwayLength(best.length.toString());
+        setSurfaceType(surfaceToTakeoffSurface(best.surface));
+        setRunwaySlope(best.slope.toFixed(1));
+        setHeadwindComponent(best.headwind.toString());
+      }
+    }
+
+    // Only set loading false after all processing is complete
+    setLoadingRunways(false);
+  }, []);
+
+  // Handler for manual runway selection
+  const handleRunwaySelect = useCallback((endId: string) => {
+    const selected = runwayOptions.find((opt) => opt.endId === endId);
+    if (selected) {
+      setSelectedRunway(selected);
+      setRunwayLength(selected.length.toString());
+      setSurfaceType(surfaceToTakeoffSurface(selected.surface));
+      setRunwaySlope(selected.slope.toFixed(1));
+      setHeadwindComponent(selected.headwind.toString());
+    }
+  }, [runwayOptions]);
 
   // Set default weight to standard weight or max gross weight
   useEffect(() => {
@@ -371,6 +511,144 @@ export function TakeoffCalculatorClient({
             </div>
           </div>
 
+          {/* Aerodrome & METAR Section */}
+          <div className="mb-8 pb-8 border-b border-gray-700/50">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/30">
+                <svg className="w-6 h-6" fill="none" stroke="oklch(0.7 0.15 160)" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold" style={{ color: "white" }}>
+                  Aerodrome
+                </h2>
+                <p className="text-sm" style={{ color: "oklch(0.65 0.02 240)" }}>
+                  Auto-fill conditions from METAR (optional)
+                </p>
+              </div>
+            </div>
+
+            <AerodromeSearchInput
+              value={selectedAerodrome}
+              onChange={handleAerodromeChange}
+              label="Search Airport"
+              tooltip="Search for an airport to auto-fill elevation and weather from METAR"
+              placeholder="Search ICAO code or airport name..."
+              showLabel={false}
+            />
+
+            {/* METAR Display */}
+            {loadingMetar && (
+              <div className="mt-4 p-4 rounded-xl bg-slate-900/50 border border-gray-700 animate-pulse">
+                <p className="text-sm" style={{ color: "oklch(0.6 0.02 240)" }}>
+                  Fetching METAR data...
+                </p>
+              </div>
+            )}
+
+            {metarInfo && !loadingMetar && (
+              <div className="mt-4 p-4 rounded-xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/30">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "oklch(0.65 0.15 160)" }}>
+                    METAR ({metarInfo.station}) - {metarInfo.source}
+                  </p>
+                </div>
+                <p className="font-mono text-sm break-all" style={{ color: "oklch(0.85 0.02 240)" }}>
+                  {metarInfo.raw}
+                </p>
+              </div>
+            )}
+
+            {selectedAerodrome && !loadingMetar && !metarInfo && (
+              <div className="mt-4 p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/30">
+                <p className="text-sm" style={{ color: "oklch(0.75 0.1 80)" }}>
+                  No METAR available for this location. Enter conditions manually below.
+                </p>
+              </div>
+            )}
+
+            {/* Runway Selector */}
+            {loadingRunways && (
+              <div className="mt-4 p-4 rounded-xl bg-slate-900/50 border border-gray-700 animate-pulse">
+                <p className="text-sm" style={{ color: "oklch(0.6 0.02 240)" }}>
+                  Loading runway data...
+                </p>
+              </div>
+            )}
+
+            {runwayOptions.length > 0 && !loadingRunways && (
+              <div className="mt-4 p-4 rounded-xl bg-gradient-to-br from-orange-500/10 to-amber-500/10 border border-orange-500/30">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "oklch(0.65 0.15 40)" }}>
+                    Available Runways
+                  </p>
+                  {metarInfo && metarInfo.windDir !== null && metarInfo.windSpeed !== null && (
+                    <p className="text-xs" style={{ color: "oklch(0.6 0.02 240)" }}>
+                      Wind: {String(metarInfo.windDir).padStart(3, '0')}° / {metarInfo.windSpeed} kt
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  {runwayOptions.map((option) => {
+                    const isSelected = selectedRunway?.endId === option.endId;
+                    const isBest = runwayOptions[0]?.endId === option.endId;
+                    return (
+                      <button
+                        key={option.endId}
+                        onClick={() => handleRunwaySelect(option.endId)}
+                        className={`p-3 rounded-lg text-left transition-all cursor-pointer ${
+                          isSelected
+                            ? "bg-orange-500/30 border-2 border-orange-500"
+                            : "bg-slate-800/50 border border-gray-600 hover:border-orange-500/50"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-bold text-lg" style={{ color: "white" }}>
+                            {option.endId}
+                          </span>
+                          {isBest && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/30 text-emerald-400">
+                              BEST
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs space-y-0.5" style={{ color: "oklch(0.65 0.02 240)" }}>
+                          <p>
+                            {option.headwind >= 0 ? (
+                              <span className="text-emerald-400">↑{option.headwind} kt HW</span>
+                            ) : (
+                              <span className="text-red-400">↓{Math.abs(option.headwind)} kt TW</span>
+                            )}
+                            {option.crosswind > 0 && (
+                              <span className="ml-1">
+                                {option.crosswind} kt {option.crosswindDirection}
+                              </span>
+                            )}
+                          </p>
+                          <p>{option.surfaceName} • {option.length.toLocaleString()} ft</p>
+                          {option.slope !== 0 && (
+                            <p>{option.slope > 0 ? "↗" : "↘"} {Math.abs(option.slope).toFixed(1)}% slope</p>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {selectedAerodrome?.code && !loadingRunways && availableRunways.length === 0 && (
+              <div className="mt-4 p-4 rounded-xl bg-slate-900/30 border border-gray-700">
+                <p className="text-sm" style={{ color: "oklch(0.6 0.02 240)" }}>
+                  No runway data available for {selectedAerodrome.code}. Enter runway details manually below.
+                </p>
+              </div>
+            )}
+          </div>
+
           {/* Atmospheric Conditions */}
           <AtmosphericConditionsInputs
             initialAltitudeMode={initialAltitudeMode}
@@ -379,6 +657,7 @@ export function TakeoffCalculatorClient({
             initialQNH={initialQNH}
             initialDensityAlt={initialDA}
             initialOAT={initialOAT}
+            preset={atmosphericPreset}
             onChange={handleAtmosphericChange}
             showCalculatedValues={true}
           />

@@ -10,6 +10,7 @@ interface Aerodrome {
   name: string;
   lat: number;
   lon: number;
+  elevation: number | null;
 }
 
 interface AerodromeData {
@@ -34,37 +35,96 @@ const globalAirports = airportsData as AirportEntry[];
 /**
  * GET /api/aerodromes
  *
- * Query parameters:
- * - minLat: minimum latitude (required)
- * - maxLat: maximum latitude (required)
- * - minLon: minimum longitude (required)
- * - maxLon: maximum longitude (required)
- * - type: filter by type ("AD", "LAD", or omit for both)
+ * Search mode (text search):
+ * - q: search query (searches code and name)
+ * - limit: max results (default 10)
  *
- * Returns all aerodromes/LADs within the bounding box
+ * Bounding box mode:
+ * - minLat, maxLat, minLon, maxLon: bounding box coordinates
+ * - type: filter by type ("AD", "LAD", or omit for both)
  */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const query = searchParams.get("q");
 
+    // Text search mode
+    if (query) {
+      const limit = parseInt(searchParams.get("limit") ?? "10", 10);
+      const normalizedQuery = query.toLowerCase().trim();
+
+      if (normalizedQuery.length < 2) {
+        return NextResponse.json({ count: 0, data: [] });
+      }
+
+      // Search Argentina data by code or name
+      const argMatches = argData.data.filter((aerodrome) => {
+        const codeMatch = aerodrome.code?.toLowerCase().startsWith(normalizedQuery);
+        const nameMatch = aerodrome.name.toLowerCase().includes(normalizedQuery);
+        return codeMatch || nameMatch;
+      });
+
+      // Search global airports by code or name
+      const globalMatches = globalAirports
+        .filter(([code, , , name]) => {
+          const codeMatch = code.toLowerCase().startsWith(normalizedQuery);
+          const nameMatch = name.toLowerCase().includes(normalizedQuery);
+          return codeMatch || nameMatch;
+        })
+        .map(([code, lat, lon, name, elevation]) => ({
+          type: "AD" as const,
+          code,
+          name,
+          lat,
+          lon,
+          elevation: elevation ?? null,
+        }));
+
+      // Combine and dedupe by code (Argentina data takes priority)
+      const seenCodes = new Set(argMatches.map((a) => a.code).filter(Boolean));
+      const dedupedGlobal = globalMatches.filter(
+        (a) => !a.code || !seenCodes.has(a.code)
+      );
+
+      // Sort: exact code matches first, then by name length
+      const allMatches = [...argMatches, ...dedupedGlobal].sort((a, b) => {
+        const aCodeExact = a.code?.toLowerCase() === normalizedQuery ? 0 : 1;
+        const bCodeExact = b.code?.toLowerCase() === normalizedQuery ? 0 : 1;
+        if (aCodeExact !== bCodeExact) return aCodeExact - bCodeExact;
+
+        const aCodeStart = a.code?.toLowerCase().startsWith(normalizedQuery) ? 0 : 1;
+        const bCodeStart = b.code?.toLowerCase().startsWith(normalizedQuery) ? 0 : 1;
+        if (aCodeStart !== bCodeStart) return aCodeStart - bCodeStart;
+
+        return a.name.length - b.name.length;
+      });
+
+      const results = allMatches.slice(0, limit);
+
+      return NextResponse.json({
+        count: results.length,
+        query,
+        data: results,
+      });
+    }
+
+    // Bounding box mode
     const minLat = parseFloat(searchParams.get("minLat") ?? "");
     const maxLat = parseFloat(searchParams.get("maxLat") ?? "");
     const minLon = parseFloat(searchParams.get("minLon") ?? "");
     const maxLon = parseFloat(searchParams.get("maxLon") ?? "");
     const typeFilter = searchParams.get("type") as "AD" | "LAD" | null;
 
-    // Validate required parameters
     if (isNaN(minLat) || isNaN(maxLat) || isNaN(minLon) || isNaN(maxLon)) {
       return NextResponse.json(
         {
           error:
-            "Missing or invalid bounding box parameters. Required: minLat, maxLat, minLon, maxLon",
+            "Required: q (search query) OR bounding box (minLat, maxLat, minLon, maxLon)",
         },
         { status: 400 }
       );
     }
 
-    // Validate bounding box
     if (minLat > maxLat) {
       return NextResponse.json(
         { error: "minLat must be less than or equal to maxLat" },
@@ -104,12 +164,13 @@ export async function GET(request: NextRequest) {
                 lon >= minLon &&
                 lon <= maxLon
             )
-            .map(([code, lat, lon, name]) => ({
+            .map(([code, lat, lon, name, elevation]) => ({
               type: "AD" as const,
               code,
               name,
               lat,
               lon,
+              elevation: elevation ?? null,
             }));
 
     // Combine results (Argentina data first, then global airports)

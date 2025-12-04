@@ -13,6 +13,7 @@ export interface AerodromeData {
   name: string;
   lat: number;
   lon: number;
+  elevation: number | null;
 }
 
 export interface AlternateWithDistance extends AerodromeData {

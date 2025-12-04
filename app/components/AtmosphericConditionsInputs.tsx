@@ -30,6 +30,13 @@ export interface AtmosphericConditionsData {
   daVal: number;
 }
 
+export interface AtmosphericPreset {
+  altitudeMode?: AltitudeMode;
+  altitude?: string;
+  qnh?: string;
+  oat?: string;
+}
+
 interface AtmosphericConditionsInputsProps {
   // Initial values (from URL params)
   initialAltitudeMode?: AltitudeMode;
@@ -38,6 +45,9 @@ interface AtmosphericConditionsInputsProps {
   initialQNH?: string;
   initialDensityAlt?: string;
   initialOAT?: string;
+
+  // External preset to apply (e.g., from METAR)
+  preset?: AtmosphericPreset | null;
 
   // Callback when values change
   onChange: (data: AtmosphericConditionsData) => void;
@@ -56,6 +66,7 @@ export function AtmosphericConditionsInputs({
   initialQNH = "",
   initialDensityAlt = "",
   initialOAT = "",
+  preset,
   onChange,
   showCalculatedValues = false,
   errors = [],
@@ -73,6 +84,16 @@ export function AtmosphericConditionsInputs({
   useEffect(() => {
     onChangeRef.current = onChange;
   }, [onChange]);
+
+  // Apply external preset when it changes
+  useEffect(() => {
+    if (preset) {
+      if (preset.altitudeMode) setAltitudeMode(preset.altitudeMode);
+      if (preset.altitude !== undefined) setAltitude(preset.altitude);
+      if (preset.qnh !== undefined) setQnh(preset.qnh);
+      if (preset.oat !== undefined) setOat(preset.oat);
+    }
+  }, [preset]);
 
   // Calculate derived values whenever inputs change
   useEffect(() => {
