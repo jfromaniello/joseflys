@@ -24,6 +24,7 @@ describe("takeoffCalculations", () => {
         surfaceType: "dry-asphalt",
         runwaySlope: 0,
         headwindComponent: 0,
+        flapConfiguration: "0",
         obstacleHeight: 50,
       };
 
@@ -44,6 +45,7 @@ describe("takeoffCalculations", () => {
         surfaceType: "dry-asphalt",
         runwaySlope: 0,
         headwindComponent: 0,
+        flapConfiguration: "0",
         obstacleHeight: 50,
       };
 
@@ -85,6 +87,7 @@ describe("takeoffCalculations", () => {
         surfaceType: "dry-asphalt",
         runwaySlope: 0,
         headwindComponent: 0,
+        flapConfiguration: "0",
         obstacleHeight: 50,
       };
 
@@ -109,6 +112,7 @@ describe("takeoffCalculations", () => {
         surfaceType: "dry-asphalt",
         runwaySlope: 0,
         headwindComponent: 0,
+        flapConfiguration: "0",
         obstacleHeight: 50,
       };
 
@@ -136,6 +140,7 @@ describe("takeoffCalculations", () => {
         surfaceType: "dry-asphalt",
         runwaySlope: 0,
         headwindComponent: 0,
+        flapConfiguration: "0",
         obstacleHeight: 50,
       };
 
@@ -171,6 +176,7 @@ describe("takeoffCalculations", () => {
         surfaceType: "dry-asphalt",
         runwaySlope: 0,
         headwindComponent: 0,
+        flapConfiguration: "0",
         obstacleHeight: 50,
       };
 
@@ -197,6 +203,7 @@ describe("takeoffCalculations", () => {
         surfaceType: "dry-asphalt",
         runwaySlope: 0,
         headwindComponent: 0,
+        flapConfiguration: "0",
         obstacleHeight: 50,
       };
 
@@ -217,6 +224,7 @@ describe("takeoffCalculations", () => {
         surfaceType: "dry-asphalt",
         runwaySlope: 0,
         headwindComponent: 0,
+        flapConfiguration: "0",
         obstacleHeight: 50,
       };
 
@@ -248,6 +256,7 @@ describe("takeoffCalculations", () => {
         surfaceType: "dry-asphalt",
         runwaySlope: 0,
         headwindComponent: 0,
+        flapConfiguration: "0",
         obstacleHeight: 50,
       };
 
@@ -269,6 +278,7 @@ describe("takeoffCalculations", () => {
         surfaceType: "dry-asphalt",
         runwaySlope: 0,
         headwindComponent: 0,
+        flapConfiguration: "0",
         obstacleHeight: 50,
       };
 
@@ -294,6 +304,7 @@ describe("takeoffCalculations", () => {
         surfaceType: "dry-asphalt",
         runwaySlope: 0,
         headwindComponent: 0,
+        flapConfiguration: "0",
         obstacleHeight: 50,
       };
 
@@ -323,6 +334,7 @@ describe("takeoffCalculations", () => {
         surfaceType: "dry-asphalt",
         runwaySlope: 0,
         headwindComponent: 0,
+        flapConfiguration: "0",
         obstacleHeight: 50,
       };
 
@@ -349,6 +361,7 @@ describe("takeoffCalculations", () => {
         surfaceType: "dry-asphalt",
         runwaySlope: 0,
         headwindComponent: 0,
+        flapConfiguration: "0",
         obstacleHeight: 50,
       };
 
@@ -375,6 +388,7 @@ describe("takeoffCalculations", () => {
         surfaceType: "dry-asphalt",
         runwaySlope: 0,
         headwindComponent: 0,
+        flapConfiguration: "0",
         obstacleHeight: 50,
       };
 
@@ -403,6 +417,7 @@ describe("takeoffCalculations", () => {
         surfaceType: "dry-asphalt",
         runwaySlope: 0,
         headwindComponent: 0,
+        flapConfiguration: "0",
         obstacleHeight: 50,
       };
 
@@ -428,6 +443,7 @@ describe("takeoffCalculations", () => {
         surfaceType: "dry-asphalt",
         runwaySlope: 0,
         headwindComponent: 0,
+        flapConfiguration: "0",
         obstacleHeight: 50,
       };
 
@@ -453,6 +469,7 @@ describe("takeoffCalculations", () => {
         surfaceType: "dry-asphalt",
         runwaySlope: 0,
         headwindComponent: -5,
+        flapConfiguration: "0",
         obstacleHeight: 50,
       };
 
@@ -474,6 +491,7 @@ describe("takeoffCalculations", () => {
         surfaceType: "dry-asphalt",
         runwaySlope: 0,
         headwindComponent: 0,
+        flapConfiguration: "0",
         obstacleHeight: 50,
       };
 
@@ -499,6 +517,7 @@ describe("takeoffCalculations", () => {
         surfaceType: "dry-asphalt",
         runwaySlope: 0,
         headwindComponent: 0,
+        flapConfiguration: "0",
         obstacleHeight: 50,
       };
 
@@ -524,6 +543,7 @@ describe("takeoffCalculations", () => {
         surfaceType: "dry-asphalt",
         runwaySlope: 2,
         headwindComponent: 0,
+        flapConfiguration: "0",
         obstacleHeight: 50,
       };
 
@@ -545,6 +565,7 @@ describe("takeoffCalculations", () => {
         surfaceType: "dry-asphalt",
         runwaySlope: 0,
         headwindComponent: 0,
+        flapConfiguration: "0",
         obstacleHeight: 50,
       };
 
@@ -564,6 +585,7 @@ describe("takeoffCalculations", () => {
         surfaceType: "dry-asphalt",
         runwaySlope: 0,
         headwindComponent: 0,
+        flapConfiguration: "0",
         obstacleHeight: 35,
       };
 
@@ -589,6 +611,7 @@ describe("takeoffCalculations", () => {
         surfaceType: "dry-asphalt",
         runwaySlope: 0,
         headwindComponent: 0,
+        flapConfiguration: "0",
         obstacleHeight: 50,
       };
 
@@ -614,6 +637,7 @@ describe("takeoffCalculations", () => {
         surfaceType: "dry-asphalt",
         runwaySlope: 0,
         headwindComponent: 0,
+        flapConfiguration: "0",
         obstacleHeight: 50,
       };
 
@@ -634,6 +658,7 @@ describe("takeoffCalculations", () => {
         surfaceType: "dry-asphalt",
         runwaySlope: 0,
         headwindComponent: 0,
+        flapConfiguration: "0",
         obstacleHeight: 50,
       };
 
@@ -654,6 +679,7 @@ describe("takeoffCalculations", () => {
         surfaceType: "wet-grass", // Worst surface
         runwaySlope: 2, // Uphill
         headwindComponent: -5, // Tailwind
+        flapConfiguration: "0",
         obstacleHeight: 50,
       };
 
@@ -674,6 +700,7 @@ describe("takeoffCalculations", () => {
         surfaceType: "dry-asphalt",
         runwaySlope: 0,
         headwindComponent: 0,
+        flapConfiguration: "0",
         obstacleHeight: 50,
       };
 
@@ -696,6 +723,7 @@ describe("takeoffCalculations", () => {
         surfaceType: "dry-asphalt",
         runwaySlope: 0,
         headwindComponent: 0,
+        flapConfiguration: "0",
         obstacleHeight: 50,
       };
 
@@ -715,6 +743,7 @@ describe("takeoffCalculations", () => {
         surfaceType: "dry-asphalt",
         runwaySlope: 0,
         headwindComponent: 0,
+        flapConfiguration: "0",
         obstacleHeight: 50,
       };
 
@@ -734,6 +763,7 @@ describe("takeoffCalculations", () => {
         surfaceType: "wet-grass",
         runwaySlope: 0,
         headwindComponent: 0,
+        flapConfiguration: "0",
         obstacleHeight: 50,
       };
 
@@ -796,6 +826,7 @@ describe("takeoffCalculations", () => {
         surfaceType: "dry-asphalt",
         runwaySlope: 0,
         headwindComponent: 0,
+        flapConfiguration: "0",
         obstacleHeight: 50,
       };
 
@@ -815,6 +846,7 @@ describe("takeoffCalculations", () => {
         surfaceType: "dry-asphalt",
         runwaySlope: 0,
         headwindComponent: 0,
+        flapConfiguration: "0",
         obstacleHeight: 50,
       };
 
@@ -834,6 +866,7 @@ describe("takeoffCalculations", () => {
         surfaceType: "dry-asphalt",
         runwaySlope: 0,
         headwindComponent: 0,
+        flapConfiguration: "0",
         obstacleHeight: 50,
       };
 

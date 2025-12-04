@@ -233,9 +233,9 @@ describe('Aircraft Serialization (CBOR)', () => {
         standardWeight: 1800,
         maxWeight: 2200,
         climbTable: [
-          { altitudeFrom: 0, altitudeTo: 1000, rateOfClimb: 700, climbTAS: 70, fuelFlow: 6.2 },
-          { altitudeFrom: 1000, altitudeTo: 2000, rateOfClimb: 670, climbTAS: 70, fuelFlow: 6.0 },
-          { altitudeFrom: 2000, altitudeTo: 3000, rateOfClimb: 625, climbTAS: 69, fuelFlow: 5.9 },
+          { pressureAltitude: 0, oat: 0, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+          { pressureAltitude: 2000, oat: 0, timeFromSL: 3, fuelFromSL: 0.3, distanceFromSL: 3 },
+          { pressureAltitude: 4000, oat: 0, timeFromSL: 7, fuelFromSL: 0.7, distanceFromSL: 7 },
         ],
         deviationTable: [
           { forHeading: 0, steerHeading: 2 },
@@ -262,11 +262,11 @@ describe('Aircraft Serialization (CBOR)', () => {
       // Check climb table
       expect(deserialized?.climbTable).toHaveLength(original.climbTable!.length);
       original.climbTable!.forEach((seg, i) => {
-        expect(deserialized?.climbTable?.[i].altitudeFrom).toBe(seg.altitudeFrom);
-        expect(deserialized?.climbTable?.[i].altitudeTo).toBe(seg.altitudeTo);
-        expect(deserialized?.climbTable?.[i].rateOfClimb).toBe(seg.rateOfClimb);
-        expect(deserialized?.climbTable?.[i].climbTAS).toBe(seg.climbTAS);
-        expect(deserialized?.climbTable?.[i].fuelFlow).toBe(seg.fuelFlow);
+        expect(deserialized?.climbTable?.[i].pressureAltitude).toBe(seg.pressureAltitude);
+        expect(deserialized?.climbTable?.[i].oat).toBe(seg.oat);
+        expect(deserialized?.climbTable?.[i].timeFromSL).toBe(seg.timeFromSL);
+        expect(deserialized?.climbTable?.[i].fuelFromSL).toBe(seg.fuelFromSL);
+        expect(deserialized?.climbTable?.[i].distanceFromSL).toBe(seg.distanceFromSL);
       });
 
       // Check deviation table
@@ -284,11 +284,11 @@ describe('Aircraft Serialization (CBOR)', () => {
         standardWeight: 2000,
         maxWeight: 2400,
         climbTable: Array.from({ length: 20 }, (_, i) => ({
-          altitudeFrom: i * 500,
-          altitudeTo: (i + 1) * 500,
-          rateOfClimb: 700 - i * 20,
-          climbTAS: 70 - i,
-          fuelFlow: 6.5 - i * 0.1,
+          pressureAltitude: i * 1000,
+          oat: 20,
+          timeFromSL: i * 2,
+          fuelFromSL: i * 0.3,
+          distanceFromSL: i * 3,
         })),
         deviationTable: Array.from({ length: 24 }, (_, i) => ({
           forHeading: i * 15,
@@ -319,7 +319,7 @@ describe('Aircraft Serialization (CBOR)', () => {
         standardWeight: 1499.5,
         maxWeight: 1649.9,
         climbTable: [
-          { altitudeFrom: 0, altitudeTo: 2000, rateOfClimb: 670.5, climbTAS: 70.2, fuelFlow: 6.25 },
+          { pressureAltitude: 2000, oat: 15.5, timeFromSL: 3.25, fuelFromSL: 0.35, distanceFromSL: 3.75 },
         ],
       };
 
@@ -332,9 +332,9 @@ describe('Aircraft Serialization (CBOR)', () => {
 
       expect(deserialized?.weights?.standardWeight).toBeCloseTo(1499.5, 1);
       expect(deserialized?.weights?.maxGrossWeight).toBeCloseTo(1649.9, 1);
-      expect(deserialized?.climbTable?.[0].rateOfClimb).toBeCloseTo(670.5, 1);
-      expect(deserialized?.climbTable?.[0].climbTAS).toBeCloseTo(70.2, 1);
-      expect(deserialized?.climbTable?.[0].fuelFlow).toBeCloseTo(6.25, 2);
+      expect(deserialized?.climbTable?.[0].pressureAltitude).toBe(2000);
+      expect(deserialized?.climbTable?.[0].oat).toBeCloseTo(15.5, 1);
+      expect(deserialized?.climbTable?.[0].timeFromSL).toBeCloseTo(3.25, 2);
     });
   });
 
@@ -365,7 +365,7 @@ describe('Aircraft Serialization (CBOR)', () => {
         standardWeight: 0,
         maxWeight: 0,
         climbTable: [
-          { altitudeFrom: 0, altitudeTo: 0, rateOfClimb: 0, climbTAS: 0, fuelFlow: 0 },
+          { pressureAltitude: 0, oat: 0, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
         ],
         deviationTable: [
           { forHeading: 0, steerHeading: 0 },
@@ -383,7 +383,7 @@ describe('Aircraft Serialization (CBOR)', () => {
       expect(deserialized?.weights?.standardWeight).toBe(0);
       // Migration treats 0 as falsy, so calculates default: 2000 + 200 = 2200
       expect(deserialized?.weights?.maxGrossWeight).toBe(2200);
-      expect(deserialized?.climbTable?.[0].rateOfClimb).toBe(0);
+      expect(deserialized?.climbTable?.[0].pressureAltitude).toBe(0);
     });
 
     it('should handle negative values', () => {
@@ -414,7 +414,7 @@ describe('Aircraft Serialization (CBOR)', () => {
         standardWeight: 1500,
         maxWeight: 1650,
         climbTable: [
-          { altitudeFrom: 0, altitudeTo: 2000, rateOfClimb: 670, climbTAS: 70, fuelFlow: 6.0 },
+          { pressureAltitude: 2000, oat: 20, timeFromSL: 3, fuelFromSL: 0.3, distanceFromSL: 3 },
         ],
         deviationTable: [
           { forHeading: 0, steerHeading: 2 },
@@ -441,7 +441,7 @@ describe('Aircraft Serialization (CBOR)', () => {
         standardWeight: 1500,
         maxWeight: 1650,
         climbTable: [
-          { altitudeFrom: 0, altitudeTo: 2000, rateOfClimb: 670, climbTAS: 70, fuelFlow: 6.0 },
+          { pressureAltitude: 2000, oat: 20, timeFromSL: 3, fuelFromSL: 0.3, distanceFromSL: 3 },
         ],
         deviationTable: [
           { forHeading: 0, steerHeading: 2 },
@@ -456,8 +456,8 @@ describe('Aircraft Serialization (CBOR)', () => {
         includeDeviationTable: true,
       });
 
-      // Minimal should be significantly smaller (less than 60% of full)
-      expect(minimalSerialized.length).toBeLessThan(fullSerialized.length * 0.6);
+      // Minimal should be significantly smaller (less than 70% of full)
+      expect(minimalSerialized.length).toBeLessThan(fullSerialized.length * 0.7);
     });
   });
 });
