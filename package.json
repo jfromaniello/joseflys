@@ -27,7 +27,7 @@
     "jspdf-autotable": "^5.0.2",
     "leaflet": "^1.9.4",
     "magvar": "^2.0.1",
-    "next": "16.0.1",
+    "next": "^16.0.7",
     "proj4": "^2.20.0",
     "proj4leaflet": "^1.0.2",
     "react": "19.2.0",
