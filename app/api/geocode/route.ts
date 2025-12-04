@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import airportsData from '../../../data/airports.json';
 
-export const runtime = 'edge';
+// Note: Not using edge runtime due to 2MB size limit (airports.json is 5MB)
 
 // Airport data structure: [code, lat, lon, name, elevation_ft]
 type AirportData = [string, number, number, string, number | null];

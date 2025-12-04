@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import argentinaData from "../../../data/ad-lads/argentina.json";
 import airportsData from "../../../data/airports.json";
 
-export const runtime = "edge";
+// Note: Not using edge runtime due to 2MB size limit (airports.json is 5MB)
 
 interface Aerodrome {
   type: "AD" | "LAD";

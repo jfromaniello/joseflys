@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import runwaysData from "../../../data/runways.json";
 
-export const runtime = "edge";
+// Note: Not using edge runtime due to 2MB size limit (large JSON data)
 
 /**
  * Runway end data (low-end or high-end threshold)
