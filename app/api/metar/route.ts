@@ -1,6 +1,41 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getRedis } from "@/lib/redis";
 
-export const runtime = "edge";
+interface CachedMetar {
+  metar: MetarData | null;
+  source: "direct" | "nearby" | null;
+  searchedId?: string;
+  distance?: number;
+  cachedAt: string;
+}
+
+const CACHE_KEY_PREFIX = "metar:";
+
+/**
+ * Calculate TTL until next METAR is expected.
+ * METARs are typically issued at the top of each hour.
+ * We cache until ~5 minutes after the next hour to allow for delays.
+ */
+function calculateMetarTTL(reportTime: string): number {
+  try {
+    const reportDate = new Date(reportTime);
+    const now = new Date();
+
+    // Next METAR expected at the top of the next hour + 5 min buffer
+    const nextMetar = new Date(reportDate);
+    nextMetar.setHours(nextMetar.getHours() + 1);
+    nextMetar.setMinutes(5, 0, 0);
+
+    const ttlMs = nextMetar.getTime() - now.getTime();
+    const ttlSeconds = Math.floor(ttlMs / 1000);
+
+    // Minimum 60 seconds, maximum 70 minutes
+    return Math.max(60, Math.min(ttlSeconds, 70 * 60));
+  } catch {
+    // Fallback: 30 minutes
+    return 30 * 60;
+  }
+}
 
 interface MetarData {
   icaoId: string;
@@ -8,6 +43,7 @@ interface MetarData {
   dewp: number | null; // °C
   wdir: number | null; // degrees
   wspd: number | null; // knots
+  wgst: number | null; // knots (gusts)
   altim: number | null; // hPa (QNH)
   elev: number | null; // meters
   visib: string | null;
@@ -51,14 +87,31 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const redis = getRedis();
+    const searchedId = id?.toUpperCase();
+    const cacheKey = searchedId ? `${CACHE_KEY_PREFIX}${searchedId}` : null;
+
+    // Try cache first
+    if (cacheKey) {
+      const cached = await redis.get<CachedMetar>(cacheKey);
+      if (cached) {
+        console.log(`[METAR] Cache hit for ${searchedId}`);
+        return NextResponse.json({
+          metar: cached.metar,
+          source: cached.source,
+          searchedId: cached.searchedId,
+          distance: cached.distance,
+          cachedAt: cached.cachedAt,
+        });
+      }
+    }
+
     let metar: MetarData | null = null;
     let source: "direct" | "nearby" | null = null;
-    let searchedId: string | undefined;
     let distance: number | undefined;
 
     // Try direct ICAO lookup first
-    if (id) {
-      searchedId = id.toUpperCase();
+    if (searchedId) {
       const url = `${METAR_API_BASE}?ids=${searchedId}&format=json`;
       console.log(`[METAR] Direct lookup: ${url}`);
 
@@ -137,6 +190,35 @@ export async function GET(request: NextRequest) {
       searchedId,
       distance,
     };
+
+    // Cache the result
+    if (metar) {
+      const ttl = calculateMetarTTL(metar.reportTime);
+      const cacheData: CachedMetar = {
+        ...result,
+        cachedAt: new Date().toISOString(),
+      };
+
+      // Cache under searched ID
+      if (cacheKey) {
+        await redis.set(cacheKey, cacheData, { ex: ttl });
+        console.log(`[METAR] Cached ${searchedId} for ${ttl}s`);
+      }
+
+      // Also cache under the METAR station ID if different
+      const metarId = metar.icaoId.toUpperCase();
+      if (metarId !== searchedId) {
+        const metarCacheKey = `${CACHE_KEY_PREFIX}${metarId}`;
+        const directCacheData: CachedMetar = {
+          metar,
+          source: "direct",
+          searchedId: metarId,
+          cachedAt: new Date().toISOString(),
+        };
+        await redis.set(metarCacheKey, directCacheData, { ex: ttl });
+        console.log(`[METAR] Also cached ${metarId} for ${ttl}s`);
+      }
+    }
 
     return NextResponse.json(result);
   } catch (error) {
