@@ -21,7 +21,7 @@ describe("takeoffCalculations", () => {
         densityAltitude: 0,
         oat: 15,
         runwayLength: 3000,
-        surfaceType: "dry-asphalt",
+        surfaceType: "PG",
         runwaySlope: 0,
         headwindComponent: 0,
         flapConfiguration: "0",
@@ -42,7 +42,7 @@ describe("takeoffCalculations", () => {
         densityAltitude: 5000,
         oat: 15, // ISA temperature at sea level
         runwayLength: 3000,
-        surfaceType: "dry-asphalt",
+        surfaceType: "PG",
         runwaySlope: 0,
         headwindComponent: 0,
         flapConfiguration: "0",
@@ -84,7 +84,7 @@ describe("takeoffCalculations", () => {
         densityAltitude: 12000, // Hot day: DA much higher than PA
         oat: 30, // Very hot
         runwayLength: 5000,
-        surfaceType: "dry-asphalt",
+        surfaceType: "PG",
         runwaySlope: 0,
         headwindComponent: 0,
         flapConfiguration: "0",
@@ -109,7 +109,7 @@ describe("takeoffCalculations", () => {
         densityAltitude: 5000, // Cold day: DA lower than PA
         oat: -20, // Very cold
         runwayLength: 5000,
-        surfaceType: "dry-asphalt",
+        surfaceType: "PG",
         runwaySlope: 0,
         headwindComponent: 0,
         flapConfiguration: "0",
@@ -137,7 +137,7 @@ describe("takeoffCalculations", () => {
         densityAltitude: 6000, // Cold reduces DA
         oat: -12, // Cold day (ISA is -2°C at 8000 ft)
         runwayLength: 5000,
-        surfaceType: "dry-asphalt",
+        surfaceType: "PG",
         runwaySlope: 0,
         headwindComponent: 0,
         flapConfiguration: "0",
@@ -173,7 +173,7 @@ describe("takeoffCalculations", () => {
         densityAltitude: 0,
         oat: 15,
         runwayLength: 3000,
-        surfaceType: "dry-asphalt",
+        surfaceType: "PG",
         runwaySlope: 0,
         headwindComponent: 0,
         flapConfiguration: "0",
@@ -200,7 +200,7 @@ describe("takeoffCalculations", () => {
         densityAltitude: 0,
         oat: 15,
         runwayLength: 3000,
-        surfaceType: "dry-asphalt",
+        surfaceType: "PG",
         runwaySlope: 0,
         headwindComponent: 0,
         flapConfiguration: "0",
@@ -221,7 +221,7 @@ describe("takeoffCalculations", () => {
         densityAltitude: 0,
         oat: 15,
         runwayLength: 3000,
-        surfaceType: "dry-asphalt",
+        surfaceType: "PG",
         runwaySlope: 0,
         headwindComponent: 0,
         flapConfiguration: "0",
@@ -253,7 +253,7 @@ describe("takeoffCalculations", () => {
         densityAltitude: 0,
         oat: 15,
         runwayLength: 3000,
-        surfaceType: "dry-asphalt",
+        surfaceType: "PG",
         runwaySlope: 0,
         headwindComponent: 0,
         flapConfiguration: "0",
@@ -275,7 +275,7 @@ describe("takeoffCalculations", () => {
         densityAltitude: 0,
         oat: 15,
         runwayLength: 3000,
-        surfaceType: "dry-asphalt",
+        surfaceType: "PG",
         runwaySlope: 0,
         headwindComponent: 0,
         flapConfiguration: "0",
@@ -301,7 +301,7 @@ describe("takeoffCalculations", () => {
         densityAltitude: 0,
         oat: 15,
         runwayLength: 3000,
-        surfaceType: "dry-asphalt",
+        surfaceType: "PG",
         runwaySlope: 0,
         headwindComponent: 0,
         flapConfiguration: "0",
@@ -323,31 +323,31 @@ describe("takeoffCalculations", () => {
   });
 
   describe("Surface corrections", () => {
-    it("should increase distance on wet asphalt", () => {
-      const dry: TakeoffInputs = {
+    it("should increase distance on poor pavement", () => {
+      const good: TakeoffInputs = {
         aircraft: testAircraft,
         weight: 1670,
         pressureAltitude: 0,
         densityAltitude: 0,
         oat: 15,
         runwayLength: 3000,
-        surfaceType: "dry-asphalt",
+        surfaceType: "PG",
         runwaySlope: 0,
         headwindComponent: 0,
         flapConfiguration: "0",
         obstacleHeight: 50,
       };
 
-      const wet: TakeoffInputs = {
-        ...dry,
-        surfaceType: "wet-asphalt",
+      const poor: TakeoffInputs = {
+        ...good,
+        surfaceType: "PP",
       };
 
-      const dryResults = calculateTakeoffPerformance(dry);
-      const wetResults = calculateTakeoffPerformance(wet);
+      const goodResults = calculateTakeoffPerformance(good);
+      const poorResults = calculateTakeoffPerformance(poor);
 
-      expect(wetResults.distances.groundRoll).toBeGreaterThan(dryResults.distances.groundRoll);
-      expect(wetResults.distances.groundRoll / dryResults.distances.groundRoll).toBeCloseTo(1.15, 1);
+      expect(poorResults.distances.groundRoll).toBeGreaterThan(goodResults.distances.groundRoll);
+      expect(poorResults.distances.groundRoll / goodResults.distances.groundRoll).toBeCloseTo(1.05, 1);
     });
 
     it("should increase distance on grass", () => {
@@ -358,7 +358,7 @@ describe("takeoffCalculations", () => {
         densityAltitude: 0,
         oat: 15,
         runwayLength: 3000,
-        surfaceType: "dry-asphalt",
+        surfaceType: "PG",
         runwaySlope: 0,
         headwindComponent: 0,
         flapConfiguration: "0",
@@ -367,7 +367,7 @@ describe("takeoffCalculations", () => {
 
       const grass: TakeoffInputs = {
         ...asphalt,
-        surfaceType: "dry-grass",
+        surfaceType: "GG",
       };
 
       const asphaltResults = calculateTakeoffPerformance(asphalt);
@@ -377,7 +377,7 @@ describe("takeoffCalculations", () => {
       expect(grassResults.distances.groundRoll / asphaltResults.distances.groundRoll).toBeCloseTo(1.20, 1);
     });
 
-    it("should have maximum penalty for wet grass", () => {
+    it("should have higher penalty for fair grass", () => {
       const best: TakeoffInputs = {
         aircraft: testAircraft,
         weight: 1670,
@@ -385,23 +385,70 @@ describe("takeoffCalculations", () => {
         densityAltitude: 0,
         oat: 15,
         runwayLength: 3000,
-        surfaceType: "dry-asphalt",
+        surfaceType: "PG",
         runwaySlope: 0,
         headwindComponent: 0,
         flapConfiguration: "0",
         obstacleHeight: 50,
       };
 
-      const worst: TakeoffInputs = {
+      const fairGrass: TakeoffInputs = {
         ...best,
-        surfaceType: "wet-grass",
+        surfaceType: "GF",
       };
 
       const bestResults = calculateTakeoffPerformance(best);
-      const worstResults = calculateTakeoffPerformance(worst);
+      const fairGrassResults = calculateTakeoffPerformance(fairGrass);
 
-      expect(worstResults.distances.groundRoll).toBeGreaterThan(bestResults.distances.groundRoll);
-      expect(worstResults.distances.groundRoll / bestResults.distances.groundRoll).toBeCloseTo(1.30, 1);
+      expect(fairGrassResults.distances.groundRoll).toBeGreaterThan(bestResults.distances.groundRoll);
+      expect(fairGrassResults.distances.groundRoll / bestResults.distances.groundRoll).toBeCloseTo(1.38, 1);
+    });
+
+    it("should have severe penalty for sand", () => {
+      const best: TakeoffInputs = {
+        aircraft: testAircraft,
+        weight: 1670,
+        pressureAltitude: 0,
+        densityAltitude: 0,
+        oat: 15,
+        runwayLength: 3000,
+        surfaceType: "PG",
+        runwaySlope: 0,
+        headwindComponent: 0,
+        flapConfiguration: "0",
+        obstacleHeight: 50,
+      };
+
+      const sand: TakeoffInputs = {
+        ...best,
+        surfaceType: "SD",
+      };
+
+      const bestResults = calculateTakeoffPerformance(best);
+      const sandResults = calculateTakeoffPerformance(sand);
+
+      expect(sandResults.distances.groundRoll).toBeGreaterThan(bestResults.distances.groundRoll);
+      expect(sandResults.distances.groundRoll / bestResults.distances.groundRoll).toBeCloseTo(1.60, 1);
+    });
+
+    it("should return error for water surface", () => {
+      const inputs: TakeoffInputs = {
+        aircraft: testAircraft,
+        weight: 1670,
+        pressureAltitude: 0,
+        densityAltitude: 0,
+        oat: 15,
+        runwayLength: 3000,
+        surfaceType: "WT",
+        runwaySlope: 0,
+        headwindComponent: 0,
+        flapConfiguration: "0",
+        obstacleHeight: 50,
+      };
+
+      const results = calculateTakeoffPerformance(inputs);
+
+      expect(results.errors.some(e => e.includes("Water"))).toBe(true);
     });
   });
 
@@ -414,7 +461,7 @@ describe("takeoffCalculations", () => {
         densityAltitude: 0,
         oat: 15,
         runwayLength: 3000,
-        surfaceType: "dry-asphalt",
+        surfaceType: "PG",
         runwaySlope: 0,
         headwindComponent: 0,
         flapConfiguration: "0",
@@ -440,7 +487,7 @@ describe("takeoffCalculations", () => {
         densityAltitude: 0,
         oat: 15,
         runwayLength: 3000,
-        surfaceType: "dry-asphalt",
+        surfaceType: "PG",
         runwaySlope: 0,
         headwindComponent: 0,
         flapConfiguration: "0",
@@ -466,7 +513,7 @@ describe("takeoffCalculations", () => {
         densityAltitude: 0,
         oat: 15,
         runwayLength: 3000,
-        surfaceType: "dry-asphalt",
+        surfaceType: "PG",
         runwaySlope: 0,
         headwindComponent: -5,
         flapConfiguration: "0",
@@ -488,7 +535,7 @@ describe("takeoffCalculations", () => {
         densityAltitude: 0,
         oat: 15,
         runwayLength: 3000,
-        surfaceType: "dry-asphalt",
+        surfaceType: "PG",
         runwaySlope: 0,
         headwindComponent: 0,
         flapConfiguration: "0",
@@ -514,7 +561,7 @@ describe("takeoffCalculations", () => {
         densityAltitude: 0,
         oat: 15,
         runwayLength: 3000,
-        surfaceType: "dry-asphalt",
+        surfaceType: "PG",
         runwaySlope: 0,
         headwindComponent: 0,
         flapConfiguration: "0",
@@ -540,7 +587,7 @@ describe("takeoffCalculations", () => {
         densityAltitude: 0,
         oat: 15,
         runwayLength: 3000,
-        surfaceType: "dry-asphalt",
+        surfaceType: "PG",
         runwaySlope: 2,
         headwindComponent: 0,
         flapConfiguration: "0",
@@ -562,7 +609,7 @@ describe("takeoffCalculations", () => {
         densityAltitude: 0,
         oat: 15,
         runwayLength: 3000,
-        surfaceType: "dry-asphalt",
+        surfaceType: "PG",
         runwaySlope: 0,
         headwindComponent: 0,
         flapConfiguration: "0",
@@ -582,7 +629,7 @@ describe("takeoffCalculations", () => {
         densityAltitude: 0,
         oat: 15,
         runwayLength: 3000,
-        surfaceType: "dry-asphalt",
+        surfaceType: "PG",
         runwaySlope: 0,
         headwindComponent: 0,
         flapConfiguration: "0",
@@ -608,7 +655,7 @@ describe("takeoffCalculations", () => {
         densityAltitude: 0,
         oat: 15,
         runwayLength: 3000,
-        surfaceType: "dry-asphalt",
+        surfaceType: "PG",
         runwaySlope: 0,
         headwindComponent: 0,
         flapConfiguration: "0",
@@ -634,7 +681,7 @@ describe("takeoffCalculations", () => {
         densityAltitude: 0,
         oat: 15,
         runwayLength: 5000, // Long runway
-        surfaceType: "dry-asphalt",
+        surfaceType: "PG",
         runwaySlope: 0,
         headwindComponent: 0,
         flapConfiguration: "0",
@@ -655,7 +702,7 @@ describe("takeoffCalculations", () => {
         densityAltitude: 10000,
         oat: 30,
         runwayLength: 2000, // Shorter runway at high DA
-        surfaceType: "dry-asphalt",
+        surfaceType: "PG",
         runwaySlope: 0,
         headwindComponent: 0,
         flapConfiguration: "0",
@@ -676,7 +723,7 @@ describe("takeoffCalculations", () => {
         densityAltitude: 12000, // Very high DA
         oat: 35,
         runwayLength: 1500, // Short runway
-        surfaceType: "wet-grass", // Worst surface
+        surfaceType: "GF", // Worst surface
         runwaySlope: 2, // Uphill
         headwindComponent: -5, // Tailwind
         flapConfiguration: "0",
@@ -697,7 +744,7 @@ describe("takeoffCalculations", () => {
         densityAltitude: 0,
         oat: 15,
         runwayLength: 3000,
-        surfaceType: "dry-asphalt",
+        surfaceType: "PG",
         runwaySlope: 0,
         headwindComponent: 0,
         flapConfiguration: "0",
@@ -720,7 +767,7 @@ describe("takeoffCalculations", () => {
         densityAltitude: 10000,
         oat: 30,
         runwayLength: 5000,
-        surfaceType: "dry-asphalt",
+        surfaceType: "PG",
         runwaySlope: 0,
         headwindComponent: 0,
         flapConfiguration: "0",
@@ -740,7 +787,7 @@ describe("takeoffCalculations", () => {
         densityAltitude: 0,
         oat: 15,
         runwayLength: 3000,
-        surfaceType: "dry-asphalt",
+        surfaceType: "PG",
         runwaySlope: 0,
         headwindComponent: 0,
         flapConfiguration: "0",
@@ -752,7 +799,7 @@ describe("takeoffCalculations", () => {
       expect(results.warnings.some(w => w.includes("MTOW"))).toBe(true);
     });
 
-    it("should warn about wet/grass surface", () => {
+    it("should warn about non-pavement surface", () => {
       const inputs: TakeoffInputs = {
         aircraft: testAircraft,
         weight: 1670,
@@ -760,7 +807,7 @@ describe("takeoffCalculations", () => {
         densityAltitude: 0,
         oat: 15,
         runwayLength: 3000,
-        surfaceType: "wet-grass",
+        surfaceType: "GF",
         runwaySlope: 0,
         headwindComponent: 0,
         flapConfiguration: "0",
@@ -769,7 +816,7 @@ describe("takeoffCalculations", () => {
 
       const results = calculateTakeoffPerformance(inputs);
 
-      expect(results.warnings.some(w => w.includes("wet") || w.includes("grass"))).toBe(true);
+      expect(results.warnings.some(w => w.includes("Fair grass") || w.includes("Grass"))).toBe(true);
     });
   });
 
@@ -823,7 +870,7 @@ describe("takeoffCalculations", () => {
         densityAltitude: 0,
         oat: 15,
         runwayLength: 3000,
-        surfaceType: "dry-asphalt",
+        surfaceType: "PG",
         runwaySlope: 0,
         headwindComponent: 0,
         flapConfiguration: "0",
@@ -843,7 +890,7 @@ describe("takeoffCalculations", () => {
         densityAltitude: 0,
         oat: 15,
         runwayLength: 3000,
-        surfaceType: "dry-asphalt",
+        surfaceType: "PG",
         runwaySlope: 0,
         headwindComponent: 0,
         flapConfiguration: "0",
@@ -863,7 +910,7 @@ describe("takeoffCalculations", () => {
         densityAltitude: 0,
         oat: 15,
         runwayLength: 3000,
-        surfaceType: "dry-asphalt",
+        surfaceType: "PG",
         runwaySlope: 0,
         headwindComponent: 0,
         flapConfiguration: "0",

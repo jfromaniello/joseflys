@@ -45,8 +45,24 @@ interface TakeoffCalculatorClientProps {
   initialSlope: string;
   initialWind: string;
   initialObstacle: string;
+  initialAerodrome: string;
+  initialMetarRef: string;
+  initialRunwayEnd: string;
 }
 
+
+/**
+ * Extract METAR reference (ICAO + day/time) from raw METAR string
+ * E.g., "METAR KJFK 041051Z ..." -> "KJFK041051Z"
+ */
+function extractMetarRef(rawMetar: string, icaoId: string): string {
+  // Find the day/time pattern (DDHHMMZ)
+  const match = rawMetar.match(/\b(\d{6}Z)\b/);
+  if (match) {
+    return `${icaoId}${match[1]}`;
+  }
+  return "";
+}
 
 export function TakeoffCalculatorClient({
   initialAircraft,
@@ -63,6 +79,9 @@ export function TakeoffCalculatorClient({
   initialSlope,
   initialWind,
   initialObstacle,
+  initialAerodrome,
+  initialMetarRef,
+  initialRunwayEnd,
 }: TakeoffCalculatorClientProps) {
   // Aircraft state
   const [aircraft, setAircraft] = useState<ResolvedAircraftPerformance | null>(() => {
@@ -84,6 +103,12 @@ export function TakeoffCalculatorClient({
   const [metarInfo, setMetarInfo] = useState<{ raw: string; source: string; station: string; windDir: number | null; windSpeed: number | null } | null>(null);
   const [loadingMetar, setLoadingMetar] = useState(false);
   const [atmosphericPreset, setAtmosphericPreset] = useState<AtmosphericPreset | null>(null);
+  // METAR reference tracking (ICAO + day/time, e.g., "KJFK041051Z")
+  const [storedMetarRef, setStoredMetarRef] = useState<string>(initialMetarRef);
+  const [currentMetarRef, setCurrentMetarRef] = useState<string>("");
+  const [metarHasChanged, setMetarHasChanged] = useState(false);
+  // Flag to prevent URL update until initial aerodrome is loaded
+  const [initialAerodromeLoaded, setInitialAerodromeLoaded] = useState(!initialAerodrome);
 
   // Runway state
   const [availableRunways, setAvailableRunways] = useState<Runway[]>([]);
@@ -97,7 +122,7 @@ export function TakeoffCalculatorClient({
     (initialFlaps as FlapConfiguration) || "0"
   );
   const [runwayLength, setRunwayLength] = useState<string>(initialRunway);
-  const [surfaceType, setSurfaceType] = useState<SurfaceType>(initialSurface as SurfaceType || "dry-asphalt");
+  const [surfaceType, setSurfaceType] = useState<SurfaceType>(initialSurface as SurfaceType || "PG");
   const [runwaySlope, setRunwaySlope] = useState<string>(initialSlope);
   const [headwindComponent, setHeadwindComponent] = useState<string>(initialWind);
   const [obstacleHeight, setObstacleHeight] = useState<string>(initialObstacle);
@@ -114,13 +139,15 @@ export function TakeoffCalculatorClient({
   }, []);
 
   // Fetch METAR and runways when aerodrome is selected
-  const handleAerodromeChange = useCallback(async (aerodrome: AerodromeResult | null) => {
+  const handleAerodromeChange = useCallback(async (aerodrome: AerodromeResult | null, preferredRunwayEnd?: string) => {
     setSelectedAerodrome(aerodrome);
     setMetarInfo(null);
     setAtmosphericPreset(null);
     setAvailableRunways([]);
     setSelectedRunway(null);
     setRunwayOptions([]);
+    setCurrentMetarRef("");
+    setMetarHasChanged(false);
 
     if (!aerodrome) return;
 
@@ -153,6 +180,16 @@ export function TakeoffCalculatorClient({
           const metar = data.metar;
           windDir = metar.wdir;
           windSpeed = metar.wspd;
+
+          // Extract and track METAR reference
+          const newMetarRef = extractMetarRef(metar.rawOb, metar.icaoId);
+          setCurrentMetarRef(newMetarRef);
+
+          // Check if METAR has changed from stored reference
+          if (storedMetarRef && newMetarRef && storedMetarRef !== newMetarRef) {
+            setMetarHasChanged(true);
+          }
+
           setMetarInfo({
             raw: metar.rawOb,
             source: data.source === "direct" ? "Direct" : `Nearest (${data.distance} NM)`,
@@ -205,21 +242,51 @@ export function TakeoffCalculatorClient({
       const options = getAllRunwayOptions(runways, metarResult.windDir, metarResult.windSpeed);
       setRunwayOptions(options);
 
-      // Auto-select best runway
-      const best = selectBestRunway(runways, metarResult.windDir, metarResult.windSpeed);
-      if (best) {
-        setSelectedRunway(best);
+      // Select runway: prefer specified end from URL, otherwise best by wind
+      let selectedOption = preferredRunwayEnd
+        ? options.find((opt) => opt.endId === preferredRunwayEnd)
+        : selectBestRunway(runways, metarResult.windDir, metarResult.windSpeed);
+
+      if (selectedOption) {
+        setSelectedRunway(selectedOption);
         // Update form fields from selected runway
-        setRunwayLength(best.length.toString());
-        setSurfaceType(surfaceToTakeoffSurface(best.surface));
-        setRunwaySlope(best.slope.toFixed(1));
-        setHeadwindComponent(best.headwind.toString());
+        setRunwayLength(selectedOption.length.toString());
+        setSurfaceType(surfaceToTakeoffSurface(selectedOption.surface));
+        setRunwaySlope(selectedOption.slope.toFixed(1));
+        setHeadwindComponent(selectedOption.headwind.toString());
       }
     }
 
     // Only set loading false after all processing is complete
     setLoadingRunways(false);
-  }, []);
+  }, [storedMetarRef]);
+
+  // Load aerodrome from URL on mount
+  useEffect(() => {
+    if (!initialAerodrome) return;
+
+    // Fetch aerodrome data by ICAO code
+    const loadAerodrome = async () => {
+      try {
+        const response = await fetch(`/api/aerodromes?q=${encodeURIComponent(initialAerodrome)}&limit=1`);
+        const data = await response.json();
+
+        if (data.data && data.data.length > 0) {
+          const aerodrome = data.data[0];
+          // Trigger the full aerodrome selection flow with preferred runway
+          await handleAerodromeChange(aerodrome, initialRunwayEnd || undefined);
+        }
+      } catch (error) {
+        console.error("Failed to load aerodrome from URL:", error);
+      } finally {
+        // Mark initial aerodrome as loaded (even if it failed)
+        setInitialAerodromeLoaded(true);
+      }
+    };
+
+    loadAerodrome();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount
 
   // Handler for manual runway selection
   const handleRunwaySelect = useCallback((endId: string) => {
@@ -248,6 +315,7 @@ export function TakeoffCalculatorClient({
   // Update URL when parameters change
   useEffect(() => {
     if (!atmosphericData) return; // Wait for initial atmospheric data
+    if (!initialAerodromeLoaded) return; // Wait for initial aerodrome to load
 
     const params = new URLSearchParams();
 
@@ -288,9 +356,20 @@ export function TakeoffCalculatorClient({
     if (headwindComponent) params.set("wind", headwindComponent);
     if (obstacleHeight) params.set("obstacle", obstacleHeight);
 
+    // Aerodrome and METAR reference
+    if (selectedAerodrome?.code) {
+      params.set("ad", selectedAerodrome.code);
+    }
+    if (currentMetarRef) {
+      params.set("metar", currentMetarRef);
+    }
+    if (selectedRunway?.endId) {
+      params.set("rwy", selectedRunway.endId);
+    }
+
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState(null, "", newUrl);
-  }, [aircraft, weight, flapConfiguration, atmosphericData, runwayLength, surfaceType, runwaySlope, headwindComponent, obstacleHeight]);
+  }, [aircraft, weight, flapConfiguration, atmosphericData, runwayLength, surfaceType, runwaySlope, headwindComponent, obstacleHeight, selectedAerodrome, currentMetarRef, selectedRunway, initialAerodromeLoaded]);
 
   // Parse values
   const weightVal = parseFloat(weight);
@@ -549,15 +628,39 @@ export function TakeoffCalculatorClient({
             )}
 
             {metarInfo && !loadingMetar && (
-              <div className="mt-4 p-4 rounded-xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/30">
+              <div className={`mt-4 p-4 rounded-xl border ${
+                metarHasChanged
+                  ? "bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-amber-500/30"
+                  : "bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border-emerald-500/30"
+              }`}>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "oklch(0.65 0.15 160)" }}>
+                  <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: metarHasChanged ? "oklch(0.65 0.15 70)" : "oklch(0.65 0.15 160)" }}>
                     METAR ({metarInfo.station}) - {metarInfo.source}
+                    {metarHasChanged && (
+                      <span className="ml-2 text-amber-400">(Updated)</span>
+                    )}
                   </p>
+                  {metarHasChanged && (
+                    <button
+                      onClick={() => {
+                        // Update stored reference to current and clear the changed flag
+                        setStoredMetarRef(currentMetarRef);
+                        setMetarHasChanged(false);
+                      }}
+                      className="px-3 py-1 text-xs font-semibold rounded-lg bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 transition-colors cursor-pointer"
+                    >
+                      Use New METAR
+                    </button>
+                  )}
                 </div>
                 <p className="font-mono text-sm break-all" style={{ color: "oklch(0.85 0.02 240)" }}>
                   {metarInfo.raw}
                 </p>
+                {metarHasChanged && storedMetarRef && (
+                  <p className="mt-2 text-xs" style={{ color: "oklch(0.6 0.02 240)" }}>
+                    Link was created with: {storedMetarRef}
+                  </p>
+                )}
               </div>
             )}
 
@@ -718,10 +821,14 @@ export function TakeoffCalculatorClient({
                   onChange={(e) => setSurfaceType(e.target.value as SurfaceType)}
                   className="w-full h-[52px] pl-4 pr-10 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 hover:border-gray-500 text-white cursor-pointer"
                 >
-                  <option value="dry-asphalt">Dry Asphalt/Concrete</option>
-                  <option value="wet-asphalt">Wet Asphalt/Concrete</option>
-                  <option value="dry-grass">Dry Grass</option>
-                  <option value="wet-grass">Wet Grass</option>
+                  <option value="PG">Pavement (Good)</option>
+                  <option value="PP">Pavement (Poor)</option>
+                  <option value="GG">Grass (Good)</option>
+                  <option value="GF">Grass (Fair)</option>
+                  <option value="GV">Gravel</option>
+                  <option value="DT">Dirt</option>
+                  <option value="SD">Sand</option>
+                  <option value="WT">Water (NO-GO)</option>
                 </select>
               </div>
 

@@ -49,29 +49,18 @@ export interface RunwayResponse {
   }[];
 }
 
-// Surface code to name mapping
+// Surface category codes to human-readable names
+// PG = Pavement Good, PP = Pavement Poor, GG = Grass Good, GF = Grass Fair
+// GV = Gravel, DT = Dirt, SD = Sand, WT = Water
 const SURFACE_NAMES: Record<string, string> = {
-  A: "Asphalt",
-  AG: "Asphalt-Graded",
-  ASP: "Asphalt",
-  C: "Concrete",
-  CG: "Concrete-Graded",
-  CON: "Concrete",
-  T: "Turf",
-  TG: "Turf-Graded",
-  TF: "Turf-Fair",
-  TUR: "Turf",
-  G: "Gravel",
-  GR: "Grass",
-  GRA: "Grass",
-  GRV: "Gravel",
-  D: "Dirt",
-  DIR: "Dirt",
-  W: "Water",
-  WAT: "Water",
-  S: "Sand",
-  M: "Mats",
-  PSP: "PSP (Metal)",
+  PG: "Pavement",
+  PP: "Pavement (Poor)",
+  GG: "Grass",
+  GF: "Grass (Fair)",
+  GV: "Gravel",
+  DT: "Dirt",
+  SD: "Sand",
+  WT: "Water",
 };
 
 /**

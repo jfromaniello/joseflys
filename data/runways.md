@@ -47,20 +47,18 @@ OurAirports dataset: https://ourairports.com/data/
 | `hdg` | float | True heading (degrees) |
 | `dt` | int | Displaced threshold (ft), omitted if 0 |
 
-## Surface Codes
+## Surface Categories
 
-| Code | Surface |
-|------|---------|
-| A | Asphalt |
-| AG | Asphalt-Graded |
-| C | Concrete |
-| CG | Concrete-Graded |
-| T | Turf |
-| TG | Turf-Graded |
-| TF | Turf-Fair |
-| G | Gravel |
-| GR | Grass |
-| D | Dirt |
-| W | Water |
-| S | Sand |
-| M | Mats |
+Standardized surface categories for takeoff performance calculations.
+
+| Code | Name | Description | Ground Roll Factor | Obstacle Factor |
+|------|------|-------------|-------------------|-----------------|
+| PG | Pavement Good | Asphalt, concrete in good condition | 1.00 | 1.00 |
+| PP | Pavement Poor | PSP, deteriorated pavement, metal mats | 1.05 | 1.03 |
+| GG | Grass Good | Short, firm turf | 1.20 | 1.14 |
+| GF | Grass Fair | Long grass, bumps, wet conditions | 1.38 | 1.28 |
+| GV | Gravel | Gravel, stone, crushed rock | 1.28 | 1.18 |
+| DT | Dirt | Earth, clay, soil, laterite | 1.25 | 1.15 |
+| SD | Sand | Sand (severe performance penalty) | 1.60 | 1.30 |
+| WT | Water | Water (NO-GO for wheeled aircraft) | ∞ | ∞ |
+| null | Unknown | Unidentified surface | - | - |

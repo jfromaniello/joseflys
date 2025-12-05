@@ -2,6 +2,8 @@
  * Runway utility functions for takeoff calculations
  */
 
+import type { SurfaceType } from "./takeoffCalculations";
+
 /**
  * Runway end data
  */
@@ -215,13 +217,16 @@ export function getAllRunwayOptions(
 }
 
 /**
- * Map runway surface code to takeoff calculation surface type
+ * Map runway surface category to takeoff calculation surface type
+ * Surface categories: PG (Pavement Good), PP (Pavement Poor), GG (Grass Good),
+ * GF (Grass Fair), GV (Gravel), DT (Dirt), SD (Sand), WT (Water)
+ * Returns PG (Pavement Good) as default for unknown surfaces
  */
-export function surfaceToTakeoffSurface(
-  surface: string
-): "dry-asphalt" | "wet-asphalt" | "dry-grass" | "wet-grass" {
-  const asphaltSurfaces = ["A", "AG", "ASP", "C", "CG", "CON", "PSP", "M"];
-  const isAsphalt = asphaltSurfaces.includes(surface);
-  // Default to dry - user can change to wet if needed
-  return isAsphalt ? "dry-asphalt" : "dry-grass";
+export function surfaceToTakeoffSurface(surface: string): SurfaceType {
+  const validSurfaces: SurfaceType[] = ["PG", "PP", "GG", "GF", "GV", "DT", "SD", "WT"];
+  if (validSurfaces.includes(surface as SurfaceType)) {
+    return surface as SurfaceType;
+  }
+  // Default to PG (Pavement Good) for unknown surfaces
+  return "PG";
 }

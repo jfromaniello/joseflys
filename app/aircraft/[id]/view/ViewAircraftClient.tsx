@@ -22,6 +22,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { cumulativeToSegments } from "@/lib/climbCalculations";
 
 interface ViewAircraftClientProps {
   aircraftId: string;
@@ -35,9 +36,12 @@ export function ViewAircraftClient({ aircraftId, initialAircraft }: ViewAircraft
   const [loading, setLoading] = useState(!initialAircraft);
 
   // Chart metric states
-  const [climbChartMetric, setClimbChartMetric] = useState<'time' | 'fuel' | 'distance'>('time');
+  const [climbChartMetric, setClimbChartMetric] = useState<'roc' | 'time' | 'fuel' | 'distance'>('roc');
   const [cruiseChartMetric, setCruiseChartMetric] = useState<'tas' | 'fuelFlow'>('tas');
   const [takeoffChartMetric, setTakeoffChartMetric] = useState<'groundRoll' | 'over50ft'>('groundRoll');
+
+  // Climb table view mode (segment vs cumulative)
+  const [climbTableView, setClimbTableView] = useState<'segment' | 'cumulative'>('segment');
 
   useEffect(() => {
     // If we already have initialAircraft (preset), no need to load
@@ -323,67 +327,160 @@ export function ViewAircraftClient({ aircraftId, initialAircraft }: ViewAircraft
               {/* Climb Tab */}
               <TabPanel>
                 <div className="space-y-6">
-                  <div>
-                    <h3 className="text-lg font-semibold text-white mb-2">Climb Performance Table</h3>
-                    <p className="text-sm text-slate-400 mb-4">
-                      POH-style climb data: cumulative time, fuel, and distance from sea level.
-                    </p>
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-1">Climb Performance Table</h3>
+                      <p className="text-sm text-slate-400">
+                        {climbTableView === 'segment'
+                          ? 'Segment-based format: ROC and deltas per altitude band.'
+                          : 'Cumulative format: time, fuel, and distance from sea level.'}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-slate-400">View:</span>
+                      <div className="flex gap-1 bg-slate-800 rounded-lg p-0.5">
+                        <button
+                          onClick={() => setClimbTableView('segment')}
+                          className={`px-3 py-1 rounded text-xs font-medium transition-colors cursor-pointer ${
+                            climbTableView === 'segment'
+                              ? 'bg-sky-600 text-white'
+                              : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          Segment
+                        </button>
+                        <button
+                          onClick={() => setClimbTableView('cumulative')}
+                          className={`px-3 py-1 rounded text-xs font-medium transition-colors cursor-pointer ${
+                            climbTableView === 'cumulative'
+                              ? 'bg-sky-600 text-white'
+                              : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          Cumulative
+                        </button>
+                      </div>
+                    </div>
                   </div>
 
                   {resolved.climbTable && resolved.climbTable.length > 0 ? (
                     <>
-                      {/* POH-style table */}
-                      <div className="overflow-x-auto rounded-xl border border-slate-700">
-                        <table className="w-full">
-                          <thead className="bg-slate-900/50">
-                            <tr className="border-b border-slate-700">
-                              <th rowSpan={2} className="text-center py-3 px-4 text-slate-300 font-semibold text-sm border-r border-slate-700 w-24">
-                                PA (ft)
-                              </th>
-                              {getClimbUniqueOATs().map(oat => (
-                                <th key={oat} colSpan={3} className="text-center py-2 px-2 text-sky-300 font-semibold text-sm border-r border-slate-700 last:border-r-0">
-                                  {oat}°C
+                      {climbTableView === 'segment' ? (
+                        /* Segment-based table */
+                        (() => {
+                          const segments = cumulativeToSegments(resolved.climbTable);
+                          const oats = [...new Set(segments.map(s => s.oat))].sort((a, b) => a - b);
+                          const segmentRanges = [...new Map(segments.map(s => [`${s.fromAltitude}-${s.toAltitude}`, { from: s.fromAltitude, to: s.toAltitude }])).values()].sort((a, b) => a.from - b.from);
+                          const findSegment = (from: number, to: number, oat: number) => segments.find(s => s.fromAltitude === from && s.toAltitude === to && s.oat === oat);
+                          const formatAlt = (alt: number) => alt === 0 ? 'SL' : alt.toLocaleString();
+
+                          return (
+                            <div className="overflow-x-auto rounded-xl border border-slate-700">
+                              <table className="w-full">
+                                <thead className="bg-slate-900/50">
+                                  <tr className="border-b border-slate-700">
+                                    <th className="text-left py-3 px-4 text-slate-300 font-semibold text-sm border-r border-slate-700 w-32">Segment</th>
+                                    <th className="text-center py-3 px-2 text-slate-300 font-semibold text-sm border-r border-slate-700 w-20">ΔAlt</th>
+                                    {oats.map(oat => (
+                                      <th key={oat} colSpan={4} className="text-center py-2 px-2 text-sky-300 font-semibold text-sm border-r border-slate-700 last:border-r-0">
+                                        {oat}°C
+                                      </th>
+                                    ))}
+                                  </tr>
+                                  <tr className="border-b border-slate-700 bg-slate-800/30">
+                                    <th></th>
+                                    <th></th>
+                                    {oats.map(oat => (
+                                      <Fragment key={oat}>
+                                        <th className="text-center py-2 px-1 text-slate-400 font-medium text-xs">ROC</th>
+                                        <th className="text-center py-2 px-1 text-slate-400 font-medium text-xs">ΔTime</th>
+                                        <th className="text-center py-2 px-1 text-slate-400 font-medium text-xs">ΔDist</th>
+                                        <th className="text-center py-2 px-1 text-slate-400 font-medium text-xs border-r border-slate-700 last:border-r-0">ΔFuel</th>
+                                      </Fragment>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {segmentRanges.map(range => (
+                                    <tr key={`${range.from}-${range.to}`} className="border-b border-slate-700/50 hover:bg-slate-700/20">
+                                      <td className="py-2 px-4 border-r border-slate-700">
+                                        <span className="text-white font-medium text-sm">{formatAlt(range.from)} → {formatAlt(range.to)}</span>
+                                      </td>
+                                      <td className="py-2 px-2 text-center border-r border-slate-700 text-slate-400 text-sm">
+                                        {(range.to - range.from).toLocaleString()}
+                                      </td>
+                                      {oats.map(oat => {
+                                        const seg = findSegment(range.from, range.to, oat);
+                                        return (
+                                          <Fragment key={oat}>
+                                            <td className="py-2 px-1 text-center text-slate-300 text-sm">{seg?.roc ?? '-'}</td>
+                                            <td className="py-2 px-1 text-center text-slate-300 text-sm">{seg?.deltaTime ?? '-'}</td>
+                                            <td className="py-2 px-1 text-center text-slate-300 text-sm">{seg?.deltaDistance ?? '-'}</td>
+                                            <td className="py-2 px-1 text-center text-slate-300 text-sm border-r border-slate-700 last:border-r-0">{seg?.deltaFuel ?? '-'}</td>
+                                          </Fragment>
+                                        );
+                                      })}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          );
+                        })()
+                      ) : (
+                        /* Cumulative POH-style table */
+                        <div className="overflow-x-auto rounded-xl border border-slate-700">
+                          <table className="w-full">
+                            <thead className="bg-slate-900/50">
+                              <tr className="border-b border-slate-700">
+                                <th rowSpan={2} className="text-center py-3 px-4 text-slate-300 font-semibold text-sm border-r border-slate-700 w-24">
+                                  PA (ft)
                                 </th>
-                              ))}
-                            </tr>
-                            <tr className="border-b border-slate-700">
-                              {getClimbUniqueOATs().map(oat => (
-                                <Fragment key={oat}>
-                                  <th className="text-center py-2 px-2 text-slate-400 font-medium text-xs">Time</th>
-                                  <th className="text-center py-2 px-2 text-slate-400 font-medium text-xs">Fuel</th>
-                                  <th className="text-center py-2 px-2 text-slate-400 font-medium text-xs border-r border-slate-700 last:border-r-0">Dist</th>
-                                </Fragment>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {getClimbUniquePAs().map(pa => (
-                              <tr key={pa} className="border-b border-slate-700/50 hover:bg-slate-700/20">
-                                <td className="py-2 px-4 text-center border-r border-slate-700 text-white font-medium">
-                                  {pa.toLocaleString()}
-                                </td>
-                                {getClimbUniqueOATs().map(oat => {
-                                  const entry = findClimbEntry(pa, oat);
-                                  return (
-                                    <Fragment key={oat}>
-                                      <td className="py-2 px-2 text-center text-slate-300 text-sm">{entry?.timeFromSL ?? '-'}</td>
-                                      <td className="py-2 px-2 text-center text-slate-300 text-sm">{entry?.fuelFromSL ?? '-'}</td>
-                                      <td className="py-2 px-2 text-center text-slate-300 text-sm border-r border-slate-700 last:border-r-0">{entry?.distanceFromSL ?? '-'}</td>
-                                    </Fragment>
-                                  );
-                                })}
+                                {getClimbUniqueOATs().map(oat => (
+                                  <th key={oat} colSpan={3} className="text-center py-2 px-2 text-sky-300 font-semibold text-sm border-r border-slate-700 last:border-r-0">
+                                    {oat}°C
+                                  </th>
+                                ))}
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                              <tr className="border-b border-slate-700">
+                                {getClimbUniqueOATs().map(oat => (
+                                  <Fragment key={oat}>
+                                    <th className="text-center py-2 px-2 text-slate-400 font-medium text-xs">Time</th>
+                                    <th className="text-center py-2 px-2 text-slate-400 font-medium text-xs">Fuel</th>
+                                    <th className="text-center py-2 px-2 text-slate-400 font-medium text-xs border-r border-slate-700 last:border-r-0">Dist</th>
+                                  </Fragment>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {getClimbUniquePAs().map(pa => (
+                                <tr key={pa} className="border-b border-slate-700/50 hover:bg-slate-700/20">
+                                  <td className="py-2 px-4 text-center border-r border-slate-700 text-white font-medium">
+                                    {pa.toLocaleString()}
+                                  </td>
+                                  {getClimbUniqueOATs().map(oat => {
+                                    const entry = findClimbEntry(pa, oat);
+                                    return (
+                                      <Fragment key={oat}>
+                                        <td className="py-2 px-2 text-center text-slate-300 text-sm">{entry?.timeFromSL ?? '-'}</td>
+                                        <td className="py-2 px-2 text-center text-slate-300 text-sm">{entry?.fuelFromSL ?? '-'}</td>
+                                        <td className="py-2 px-2 text-center text-slate-300 text-sm border-r border-slate-700 last:border-r-0">{entry?.distanceFromSL ?? '-'}</td>
+                                      </Fragment>
+                                    );
+                                  })}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
 
                       {/* Chart */}
                       <div className="p-4 rounded-xl border border-slate-700 bg-slate-900/30">
                         <div className="flex items-center justify-between mb-4">
                           <h4 className="text-sm font-semibold text-white">Climb Performance Chart</h4>
                           <div className="flex gap-1">
-                            {(['time', 'fuel', 'distance'] as const).map((metric) => (
+                            {(['roc', 'time', 'fuel', 'distance'] as const).map((metric) => (
                               <button
                                 key={metric}
                                 onClick={() => setClimbChartMetric(metric)}
@@ -393,7 +490,7 @@ export function ViewAircraftClient({ aircraftId, initialAircraft }: ViewAircraft
                                     : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                                 }`}
                               >
-                                {metric === 'time' ? 'Time' : metric === 'fuel' ? 'Fuel' : 'Distance'}
+                                {metric === 'roc' ? 'ROC' : metric === 'time' ? 'Time' : metric === 'fuel' ? 'Fuel' : 'Distance'}
                               </button>
                             ))}
                           </div>
@@ -401,20 +498,44 @@ export function ViewAircraftClient({ aircraftId, initialAircraft }: ViewAircraft
                         <div className="h-64">
                           <ResponsiveContainer width="100%" height="100%">
                             <LineChart
-                              data={getClimbUniquePAs().map(pa => {
-                                const point: Record<string, number> = { pa };
-                                getClimbUniqueOATs().forEach(oat => {
-                                  const entry = findClimbEntry(pa, oat);
-                                  if (entry) {
-                                    point[`${oat}°C`] = climbChartMetric === 'time'
-                                      ? entry.timeFromSL
-                                      : climbChartMetric === 'fuel'
-                                        ? entry.fuelFromSL
-                                        : entry.distanceFromSL;
-                                  }
+                              data={(() => {
+                                const oats = getClimbUniqueOATs();
+
+                                if (climbChartMetric === 'roc') {
+                                  const segments = cumulativeToSegments(resolved.climbTable);
+                                  const segmentRanges = [...new Set(segments.map(s => `${s.fromAltitude}-${s.toAltitude}`))];
+
+                                  return segmentRanges.map(rangeKey => {
+                                    const [from, to] = rangeKey.split('-').map(Number);
+                                    const midpoint = (from + to) / 2;
+                                    const point: Record<string, number> = { pa: midpoint };
+
+                                    oats.forEach(oat => {
+                                      const seg = segments.find(s => s.fromAltitude === from && s.toAltitude === to && s.oat === oat);
+                                      if (seg) {
+                                        point[`${oat}°C`] = seg.roc;
+                                      }
+                                    });
+
+                                    return point;
+                                  }).sort((a, b) => a.pa - b.pa);
+                                }
+
+                                return getClimbUniquePAs().map(pa => {
+                                  const point: Record<string, number> = { pa };
+                                  oats.forEach(oat => {
+                                    const entry = findClimbEntry(pa, oat);
+                                    if (entry) {
+                                      point[`${oat}°C`] = climbChartMetric === 'time'
+                                        ? entry.timeFromSL
+                                        : climbChartMetric === 'fuel'
+                                          ? entry.fuelFromSL
+                                          : entry.distanceFromSL;
+                                    }
+                                  });
+                                  return point;
                                 });
-                                return point;
-                              })}
+                              })()}
                               margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                             >
                               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -430,7 +551,7 @@ export function ViewAircraftClient({ aircraftId, initialAircraft }: ViewAircraft
                                 fontSize={12}
                                 domain={['auto', 'auto']}
                                 label={{
-                                  value: climbChartMetric === 'time' ? 'Time (min)' : climbChartMetric === 'fuel' ? 'Fuel (gal)' : 'Distance (NM)',
+                                  value: climbChartMetric === 'roc' ? 'ROC (ft/min)' : climbChartMetric === 'time' ? 'Time (min)' : climbChartMetric === 'fuel' ? 'Fuel (gal)' : 'Distance (NM)',
                                   angle: -90,
                                   position: 'insideLeft',
                                   fill: '#9CA3AF',
@@ -461,6 +582,12 @@ export function ViewAircraftClient({ aircraftId, initialAircraft }: ViewAircraft
                             </LineChart>
                           </ResponsiveContainer>
                         </div>
+                        <p className="text-xs text-slate-500 mt-2 text-center">
+                          {climbChartMetric === 'roc' && 'Rate of climb at each altitude segment by OAT'}
+                          {climbChartMetric === 'time' && 'Time to climb from sea level at each OAT'}
+                          {climbChartMetric === 'fuel' && 'Fuel consumed climbing from sea level at each OAT'}
+                          {climbChartMetric === 'distance' && 'Distance covered climbing from sea level at each OAT'}
+                        </p>
                       </div>
                     </>
                   ) : (

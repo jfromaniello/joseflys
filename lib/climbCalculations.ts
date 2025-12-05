@@ -213,3 +213,164 @@ export function getClimbTableAltitudeRange(
     max: altitudes[altitudes.length - 1],
   };
 }
+
+// ============================================================================
+// Segment-based Climb Table Conversion
+// ============================================================================
+
+/**
+ * A climb segment represents performance between two altitudes
+ */
+export interface ClimbSegment {
+  fromAltitude: number;  // Starting altitude (ft)
+  toAltitude: number;    // Ending altitude (ft)
+  oat: number;           // Temperature (°C)
+  roc: number;           // Rate of climb (ft/min)
+  deltaTime: number;     // Time for this segment (min)
+  deltaFuel: number;     // Fuel for this segment (gal)
+  deltaDistance: number; // Distance for this segment (NM)
+}
+
+/**
+ * Convert cumulative climb table to segment format
+ * Groups by OAT and calculates deltas between consecutive altitudes
+ */
+export function cumulativeToSegments(
+  climbTable: ClimbPerformance[]
+): ClimbSegment[] {
+  if (!climbTable || climbTable.length === 0) {
+    return [];
+  }
+
+  const segments: ClimbSegment[] = [];
+  const oats = getUniqueValues(climbTable, "oat");
+
+  for (const oat of oats) {
+    // Get entries for this OAT, sorted by altitude
+    const entries = climbTable
+      .filter(e => e.oat === oat)
+      .sort((a, b) => a.pressureAltitude - b.pressureAltitude);
+
+    // Create segments between consecutive altitudes
+    for (let i = 0; i < entries.length - 1; i++) {
+      const from = entries[i];
+      const to = entries[i + 1];
+
+      const deltaAlt = to.pressureAltitude - from.pressureAltitude;
+      const deltaTime = to.timeFromSL - from.timeFromSL;
+      const deltaFuel = to.fuelFromSL - from.fuelFromSL;
+      const deltaDistance = to.distanceFromSL - from.distanceFromSL;
+
+      // Calculate ROC (ft/min) = altitude change / time
+      const roc = deltaTime > 0 ? Math.round(deltaAlt / deltaTime) : 0;
+
+      segments.push({
+        fromAltitude: from.pressureAltitude,
+        toAltitude: to.pressureAltitude,
+        oat,
+        roc,
+        deltaTime: Math.round(deltaTime * 10) / 10,
+        deltaFuel: Math.round(deltaFuel * 100) / 100,
+        deltaDistance: Math.round(deltaDistance * 10) / 10,
+      });
+    }
+  }
+
+  return segments;
+}
+
+/**
+ * Convert segment format back to cumulative climb table
+ * Accumulates values from sea level
+ */
+export function segmentsToCumulative(
+  segments: ClimbSegment[]
+): ClimbPerformance[] {
+  if (!segments || segments.length === 0) {
+    return [];
+  }
+
+  const cumulative: ClimbPerformance[] = [];
+  const oats = [...new Set(segments.map(s => s.oat))].sort((a, b) => a - b);
+
+  for (const oat of oats) {
+    // Get segments for this OAT, sorted by fromAltitude
+    const oatSegments = segments
+      .filter(s => s.oat === oat)
+      .sort((a, b) => a.fromAltitude - b.fromAltitude);
+
+    if (oatSegments.length === 0) continue;
+
+    // Add sea level entry (all zeros)
+    const startAlt = oatSegments[0].fromAltitude;
+    cumulative.push({
+      pressureAltitude: startAlt,
+      oat,
+      timeFromSL: 0,
+      fuelFromSL: 0,
+      distanceFromSL: 0,
+    });
+
+    // Accumulate through segments
+    let totalTime = 0;
+    let totalFuel = 0;
+    let totalDistance = 0;
+
+    for (const seg of oatSegments) {
+      totalTime += seg.deltaTime;
+      totalFuel += seg.deltaFuel;
+      totalDistance += seg.deltaDistance;
+
+      cumulative.push({
+        pressureAltitude: seg.toAltitude,
+        oat,
+        timeFromSL: Math.round(totalTime * 10) / 10,
+        fuelFromSL: Math.round(totalFuel * 100) / 100,
+        distanceFromSL: Math.round(totalDistance * 10) / 10,
+      });
+    }
+  }
+
+  return cumulative;
+}
+
+/**
+ * Update a segment and recalculate cumulative values
+ * This is useful when user edits a single segment
+ */
+export function updateSegmentInTable(
+  climbTable: ClimbPerformance[],
+  segment: ClimbSegment
+): ClimbPerformance[] {
+  // Convert to segments, update the matching one, convert back
+  const segments = cumulativeToSegments(climbTable);
+
+  const idx = segments.findIndex(
+    s => s.fromAltitude === segment.fromAltitude &&
+         s.toAltitude === segment.toAltitude &&
+         s.oat === segment.oat
+  );
+
+  if (idx >= 0) {
+    segments[idx] = segment;
+  }
+
+  return segmentsToCumulative(segments);
+}
+
+/**
+ * Calculate deltaTime from ROC and altitude change
+ */
+export function rocToDeltaTime(roc: number, deltaAlt: number): number {
+  if (roc <= 0) return 0;
+  return Math.round((deltaAlt / roc) * 10) / 10;
+}
+
+/**
+ * Estimate deltaDistance from deltaTime and approximate climb speed
+ * Assumes typical climb speed of ~75 KTAS
+ */
+export function estimateDeltaDistance(deltaTime: number, climbSpeedKtas: number = 75): number {
+  // distance (NM) = speed (kt) × time (hr)
+  return Math.round((climbSpeedKtas * (deltaTime / 60)) * 10) / 10;
+}

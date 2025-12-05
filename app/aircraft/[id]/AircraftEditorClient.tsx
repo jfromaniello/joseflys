@@ -29,6 +29,8 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { ClimbTableSegmentEditor } from "@/app/components/ClimbTableSegmentEditor";
+import { cumulativeToSegments } from "@/lib/climbCalculations";
 
 interface AircraftEditorClientProps {
   aircraftId: string;
@@ -56,7 +58,10 @@ export function AircraftEditorClient({ aircraftId }: AircraftEditorClientProps) 
   const [newOATValue, setNewOATValue] = useState("");
 
   // State for climb chart metric selection
-  const [climbChartMetric, setClimbChartMetric] = useState<'time' | 'fuel' | 'distance'>('time');
+  const [climbChartMetric, setClimbChartMetric] = useState<'time' | 'fuel' | 'distance' | 'roc'>('roc');
+
+  // State for climb table view mode (cumulative POH style vs segment based)
+  const [climbTableView, setClimbTableView] = useState<'cumulative' | 'segment'>('segment');
 
   // State for takeoff/landing OAT column inputs
   const [showNewTakeoffOATInput, setShowNewTakeoffOATInput] = useState(false);
@@ -1030,10 +1035,64 @@ export function AircraftEditorClient({ aircraftId }: AircraftEditorClientProps) 
               <TabPanel>
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-lg font-semibold text-white mb-2">Climb Performance Table</h3>
-                    <p className="text-sm text-slate-400 mb-4">
-                      POH-style climb data: cumulative time, fuel, and distance from sea level at each pressure altitude and temperature.
-                    </p>
+                    <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+                      <div>
+                        <h3 className="text-lg font-semibold text-white mb-1">Climb Performance Table</h3>
+                        <p className="text-sm text-slate-400">
+                          {climbTableView === 'segment'
+                            ? 'Segment-based format: ROC and deltas per altitude band. Easier to enter from POH charts.'
+                            : 'Cumulative format: time, fuel, and distance from sea level at each pressure altitude.'}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-400">View:</span>
+                        <div className="flex gap-1 bg-slate-800 rounded-lg p-0.5">
+                          <button
+                            onClick={() => setClimbTableView('segment')}
+                            className={`px-3 py-1 rounded text-xs font-medium transition-colors cursor-pointer ${
+                              climbTableView === 'segment'
+                                ? 'bg-sky-600 text-white'
+                                : 'text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            Segment
+                          </button>
+                          <button
+                            onClick={() => setClimbTableView('cumulative')}
+                            className={`px-3 py-1 rounded text-xs font-medium transition-colors cursor-pointer ${
+                              climbTableView === 'cumulative'
+                                ? 'bg-sky-600 text-white'
+                                : 'text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            Cumulative
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Segment View */}
+                    {climbTableView === 'segment' ? (
+                      <div className="space-y-4">
+                        {aircraft.inherit && parent && !isPreset && (
+                          <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={inheritClimbTable}
+                              onChange={(e) => toggleInheritance('climbTable', e.target.checked)}
+                              className="w-4 h-4 rounded border-slate-600 bg-slate-900 text-sky-600 focus:ring-2 focus:ring-sky-500 cursor-pointer"
+                            />
+                            <span>Use {parent.name} settings</span>
+                          </label>
+                        )}
+                        <ClimbTableSegmentEditor
+                          climbTable={resolved!.climbTable}
+                          onChange={(table) => updateAircraftField({ climbTable: table })}
+                          disabled={isPreset || inheritClimbTable}
+                        />
+                      </div>
+                    ) : (
+                      <>
                     <div className="flex flex-wrap items-center justify-between gap-4">
                       <div className="flex items-center gap-2 flex-wrap">
                         {/* OAT Column chips */}
@@ -1123,7 +1182,6 @@ export function AircraftEditorClient({ aircraftId }: AircraftEditorClientProps) 
                         )}
                       </div>
                     </div>
-                  </div>
 
                   {/* POH-style table: rows = PA, columns = OAT */}
                   <div className="overflow-x-auto rounded-xl border border-slate-700">
@@ -1247,6 +1305,9 @@ export function AircraftEditorClient({ aircraftId }: AircraftEditorClientProps) 
                     <p><strong>Fuel:</strong> Gallons from sea level</p>
                     <p><strong>Dist:</strong> Nautical miles from sea level</p>
                   </div>
+                      </>
+                    )}
+                  </div>
 
                   {/* Climb Performance Chart */}
                   {resolved.climbTable.length > 0 && (
@@ -1254,7 +1315,7 @@ export function AircraftEditorClient({ aircraftId }: AircraftEditorClientProps) 
                       <div className="flex items-center justify-between mb-4">
                         <h4 className="text-sm font-semibold text-white">Climb Performance Chart</h4>
                         <div className="flex gap-1">
-                          {(['time', 'fuel', 'distance'] as const).map((metric) => (
+                          {(['roc', 'time', 'fuel', 'distance'] as const).map((metric) => (
                             <button
                               key={metric}
                               onClick={() => setClimbChartMetric(metric)}
@@ -1264,7 +1325,7 @@ export function AircraftEditorClient({ aircraftId }: AircraftEditorClientProps) 
                                   : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                               }`}
                             >
-                              {metric === 'time' ? 'Time' : metric === 'fuel' ? 'Fuel' : 'Distance'}
+                              {metric === 'roc' ? 'ROC' : metric === 'time' ? 'Time' : metric === 'fuel' ? 'Fuel' : 'Distance'}
                             </button>
                           ))}
                         </div>
@@ -1273,9 +1334,31 @@ export function AircraftEditorClient({ aircraftId }: AircraftEditorClientProps) 
                         <ResponsiveContainer width="100%" height="100%">
                           <LineChart
                             data={(() => {
-                              // Transform climb table data for Recharts
-                              const pas = getUniquePAs();
                               const oats = getUniqueOATs();
+
+                              if (climbChartMetric === 'roc') {
+                                // For ROC, use segment data - plot ROC at midpoint of each segment
+                                const segments = cumulativeToSegments(resolved!.climbTable);
+                                const segmentRanges = [...new Set(segments.map(s => `${s.fromAltitude}-${s.toAltitude}`))];
+
+                                return segmentRanges.map(rangeKey => {
+                                  const [from, to] = rangeKey.split('-').map(Number);
+                                  const midpoint = (from + to) / 2;
+                                  const point: Record<string, number> = { pa: midpoint };
+
+                                  oats.forEach(oat => {
+                                    const seg = segments.find(s => s.fromAltitude === from && s.toAltitude === to && s.oat === oat);
+                                    if (seg) {
+                                      point[`${oat}°C`] = seg.roc;
+                                    }
+                                  });
+
+                                  return point;
+                                }).sort((a, b) => a.pa - b.pa);
+                              }
+
+                              // For cumulative metrics, use original data
+                              const pas = getUniquePAs();
                               return pas.map(pa => {
                                 const point: Record<string, number> = { pa };
                                 oats.forEach(oat => {
@@ -1306,7 +1389,7 @@ export function AircraftEditorClient({ aircraftId }: AircraftEditorClientProps) 
                               fontSize={12}
                               domain={['auto', 'auto']}
                               label={{
-                                value: climbChartMetric === 'time' ? 'Time (min)' : climbChartMetric === 'fuel' ? 'Fuel (gal)' : 'Distance (NM)',
+                                value: climbChartMetric === 'roc' ? 'ROC (ft/min)' : climbChartMetric === 'time' ? 'Time (min)' : climbChartMetric === 'fuel' ? 'Fuel (gal)' : 'Distance (NM)',
                                 angle: -90,
                                 position: 'insideLeft',
                                 fill: '#9CA3AF',
@@ -1339,6 +1422,7 @@ export function AircraftEditorClient({ aircraftId }: AircraftEditorClientProps) 
                         </ResponsiveContainer>
                       </div>
                       <p className="text-xs text-slate-500 mt-2 text-center">
+                        {climbChartMetric === 'roc' && 'Rate of climb at each altitude segment by OAT'}
                         {climbChartMetric === 'time' && 'Time to climb from sea level at each OAT'}
                         {climbChartMetric === 'fuel' && 'Fuel consumed climbing from sea level at each OAT'}
                         {climbChartMetric === 'distance' && 'Distance covered climbing from sea level at each OAT'}

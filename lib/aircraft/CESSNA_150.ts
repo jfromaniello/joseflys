@@ -157,43 +157,45 @@ export const CESSNA_150: AircraftPerformance = {
    *  ------------------------------------------------------------------*/
   takeoffTable: [
     // Sea level
-    { altitude: 0, oat: 0, groundRoll: 710, over50ft: 1340 },
-    { altitude: 0, oat: 10, groundRoll: 735, over50ft: 1385 },
-    { altitude: 0, oat: 20, groundRoll: 760, over50ft: 1435 },
-    { altitude: 0, oat: 30, groundRoll: 790, over50ft: 1490 },
-    { altitude: 0, oat: 40, groundRoll: 825, over50ft: 1555 },
+    { altitude: 0, oat: 0, groundRoll: 678, over50ft: 1278 },
+    { altitude: 0, oat: 10, groundRoll: 716, over50ft: 1349 },
+    { altitude: 0, oat: 20, groundRoll: 754, over50ft: 1421 },
+    { altitude: 0, oat: 30, groundRoll: 792, over50ft: 1492 },
+    { altitude: 0, oat: 40, groundRoll: 830, over50ft: 1563 },
 
     // 1,000 ft PA
-    { altitude: 1000, oat: 0, groundRoll: 745, over50ft: 1410 },
-    { altitude: 1000, oat: 10, groundRoll: 775, over50ft: 1465 },
-    { altitude: 1000, oat: 20, groundRoll: 805, over50ft: 1520 },
-    { altitude: 1000, oat: 30, groundRoll: 840, over50ft: 1590 },
-    { altitude: 1000, oat: 40, groundRoll: 875, over50ft: 1660 },
+    { altitude: 1000, oat: 0, groundRoll: 751, over50ft: 1395 },
+    { altitude: 1000, oat: 10, groundRoll: 793, over50ft: 1472 },
+    { altitude: 1000, oat: 20, groundRoll: 834, over50ft: 1549 },
+    { altitude: 1000, oat: 30, groundRoll: 875, over50ft: 1626 },
+    { altitude: 1000, oat: 40, groundRoll: 917, over50ft: 1703 },
 
     // 2,500 ft PA
-    { altitude: 2500, oat: 0, groundRoll: 805, over50ft: 1540 },
-    { altitude: 2500, oat: 10, groundRoll: 840, over50ft: 1605 },
-    { altitude: 2500, oat: 20, groundRoll: 875, over50ft: 1675 },
-    { altitude: 2500, oat: 30, groundRoll: 915, over50ft: 1750 },
-    { altitude: 2500, oat: 40, groundRoll: 960, over50ft: 1835 },
+    { altitude: 2500, oat: 0, groundRoll: 863, over50ft: 1575 },
+    { altitude: 2500, oat: 10, groundRoll: 910, over50ft: 1660 },
+    { altitude: 2500, oat: 20, groundRoll: 957, over50ft: 1745 },
+    { altitude: 2500, oat: 30, groundRoll: 1004, over50ft: 1831 },
+    { altitude: 2500, oat: 40, groundRoll: 1050, over50ft: 1916 },
 
     // 5,000 ft PA
-    { altitude: 5000, oat: 0, groundRoll: 920, over50ft: 1785 },
-    { altitude: 5000, oat: 10, groundRoll: 965, over50ft: 1870 },
-    { altitude: 5000, oat: 20, groundRoll: 1015, over50ft: 1965 },
-    { altitude: 5000, oat: 30, groundRoll: 1070, over50ft: 2070 },
-    { altitude: 5000, oat: 40, groundRoll: 1130, over50ft: 2190 },
+    { altitude: 5000, oat: 0, groundRoll: 1086, over50ft: 1934 },
+    { altitude: 5000, oat: 10, groundRoll: 1144, over50ft: 2036 },
+    { altitude: 5000, oat: 20, groundRoll: 1201, over50ft: 2138 },
+    { altitude: 5000, oat: 30, groundRoll: 1258, over50ft: 2240 },
+    { altitude: 5000, oat: 40, groundRoll: 1316, over50ft: 2342 },
 
     // 7,500 ft PA
-    { altitude: 7500, oat: 0, groundRoll: 1090, over50ft: 2145 },
-    { altitude: 7500, oat: 10, groundRoll: 1150, over50ft: 2265 },
-    { altitude: 7500, oat: 20, groundRoll: 1220, over50ft: 2405 },
-    { altitude: 7500, oat: 30, groundRoll: 1300, over50ft: 2565 },
-    { altitude: 7500, oat: 40, groundRoll: 1390, over50ft: 2745 },
+    { altitude: 7500, oat: 0, groundRoll: 1360, over50ft: 2440 },
+    { altitude: 7500, oat: 10, groundRoll: 1430, over50ft: 2565 },
+    { altitude: 7500, oat: 20, groundRoll: 1500, over50ft: 2691 },
+    { altitude: 7500, oat: 30, groundRoll: 1570, over50ft: 2816 },
+    { altitude: 7500, oat: 40, groundRoll: 1640, over50ft: 2942 },
 
     // 10,000 ft PA
-    { altitude: 10000, oat: 0, groundRoll: 1330, over50ft: 2650 },
-    { altitude: 10000, oat: 10, groundRoll: 1420, over50ft: 2830 },
-    { altitude: 10000, oat: 20, groundRoll: 1525, over50ft: 3045 },
+    { altitude: 10000, oat: 0, groundRoll: 1646, over50ft: 2969 },
+    { altitude: 10000, oat: 10, groundRoll: 1729, over50ft: 3118 },
+    { altitude: 10000, oat: 20, groundRoll: 1811, over50ft: 3267 },
+    { altitude: 10000, oat: 30, groundRoll: 1894, over50ft: 3416 },
+    { altitude: 10000, oat: 40, groundRoll: 1976, over50ft: 3565 },
   ],
 };

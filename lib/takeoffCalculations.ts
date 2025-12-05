@@ -14,7 +14,12 @@ import { calculateClimbPerformance } from "./climbCalculations";
 // Types & Interfaces
 // ============================================================================
 
-export type SurfaceType = "dry-asphalt" | "wet-asphalt" | "dry-grass" | "wet-grass";
+/**
+ * Surface type codes matching runways.json categories
+ * PG = Pavement Good, PP = Pavement Poor, GG = Grass Good, GF = Grass Fair
+ * GV = Gravel, DT = Dirt, SD = Sand, WT = Water (NO-GO)
+ */
+export type SurfaceType = "PG" | "PP" | "GG" | "GF" | "GV" | "DT" | "SD" | "WT";
 
 export type FlapConfiguration = "0" | "10" | "full";
 
@@ -78,12 +83,21 @@ export interface TakeoffResults {
 // Constants
 // ============================================================================
 
-/** Surface correction factors (multiplier for ground roll) */
-const SURFACE_CORRECTIONS: Record<SurfaceType, number> = {
-  "dry-asphalt": 1.0,
-  "wet-asphalt": 1.15,
-  "dry-grass": 1.20,
-  "wet-grass": 1.30,
+/**
+ * Surface correction factors
+ * groundRoll: multiplier for ground roll distance
+ * obstacle: multiplier for obstacle clearance distance (50 ft)
+ * Based on POH data and industry standards
+ */
+const SURFACE_CORRECTIONS: Record<SurfaceType, { groundRoll: number; obstacle: number }> = {
+  PG: { groundRoll: 1.00, obstacle: 1.00 },  // Pavement Good - asphalt/concrete in good condition
+  PP: { groundRoll: 1.05, obstacle: 1.03 },  // Pavement Poor - PSP, deteriorated
+  GG: { groundRoll: 1.20, obstacle: 1.14 },  // Grass Good - short, firm turf
+  GF: { groundRoll: 1.38, obstacle: 1.28 },  // Grass Fair - long grass, bumps, wet (avg of 1.35-1.40 / 1.25-1.30)
+  GV: { groundRoll: 1.28, obstacle: 1.18 },  // Gravel - (avg of 1.25-1.30 / 1.15-1.20)
+  DT: { groundRoll: 1.25, obstacle: 1.15 },  // Dirt - dry earth/clay (soft soil would be ~1.35)
+  SD: { groundRoll: 1.60, obstacle: 1.30 },  // Sand - severe performance penalty
+  WT: { groundRoll: Infinity, obstacle: Infinity }, // Water - NO-GO for wheeled aircraft
 };
 
 /** Wind correction factors
@@ -266,6 +280,32 @@ export function calculateTakeoffPerformance(inputs: TakeoffInputs): TakeoffResul
     errors.push("Aircraft missing VS (clean stall speed) data");
   }
 
+  // Water surface is NO-GO for wheeled aircraft - return immediately
+  if (inputs.surfaceType === "WT") {
+    return {
+      decision: "NO-GO",
+      vSpeeds: {
+        vs1IAS: 0,
+        vs1TAS: 0,
+        vrIAS: 0,
+        vrTAS: 0,
+        vxIAS: 0,
+        vxTAS: 0,
+        vyIAS: 0,
+        vyTAS: 0,
+      },
+      distances: {
+        groundRoll: 0,
+        obstacleDistance: 0,
+        climbDistance: 0,
+      },
+      safetyMargin: -1,
+      rateOfClimb: 0,
+      warnings: [],
+      errors: ["Water surface is not suitable for wheeled aircraft takeoff"],
+    };
+  }
+
   // -------------------------------------------------------------------------
   // V-Speeds Calculation
   // -------------------------------------------------------------------------
@@ -329,12 +369,39 @@ export function calculateTakeoffPerformance(inputs: TakeoffInputs): TakeoffResul
     warnings.push("Using estimated ground roll (no performance table data available)");
   }
 
-  // Apply corrections
-  let groundRoll = baseGroundRoll;
+  // Apply corrections for conditions BEYOND the aircraft's takeoff table coverage
+  // Get actual table limits from aircraft data, or use defaults if no table
+  let tableMaxPA = 8000;  // Default
+  let tableMaxOAT = 40;   // Default °C
 
-  // Surface correction
-  const surfaceFactor = SURFACE_CORRECTIONS[inputs.surfaceType];
-  groundRoll *= surfaceFactor;
+  if (inputs.aircraft.takeoffTable && inputs.aircraft.takeoffTable.length > 0) {
+    tableMaxPA = Math.max(...inputs.aircraft.takeoffTable.map(e => e.altitude));
+    tableMaxOAT = Math.max(...inputs.aircraft.takeoffTable.map(e => e.oat));
+  }
+
+  // Check if we're beyond table limits and need to extrapolate
+  let beyondTableCorrection = 1.0;
+
+  // OAT beyond table: ~3% increase per °C above table max (based on DA increase ~120ft/°C)
+  if (inputs.oat > tableMaxOAT) {
+    const excessOAT = inputs.oat - tableMaxOAT;
+    beyondTableCorrection *= 1 + (excessOAT * 0.03);
+    warnings.push(`OAT (${Math.round(inputs.oat)}°C) exceeds takeoff table range (max ${tableMaxOAT}°C)`);
+  }
+
+  // PA beyond table: ~12% increase per 1000ft above table max
+  if (inputs.pressureAltitude > tableMaxPA) {
+    const excessPA = inputs.pressureAltitude - tableMaxPA;
+    beyondTableCorrection *= 1 + (excessPA / 1000) * 0.12;
+    warnings.push(`Pressure altitude (${Math.round(inputs.pressureAltitude)} ft) exceeds takeoff table range (max ${tableMaxPA} ft)`);
+  }
+
+  if (beyondTableCorrection > 1.0) {
+    baseGroundRoll *= beyondTableCorrection;
+  }
+
+  // Apply corrections (calculate base values for good pavement first)
+  const surfaceFactors = SURFACE_CORRECTIONS[inputs.surfaceType];
 
   // Wind correction: headwind decreases ground roll, tailwind increases it
   // Asymmetric correction - tailwind is more penalizing than headwind is helpful
@@ -349,15 +416,17 @@ export function calculateTakeoffPerformance(inputs: TakeoffInputs): TakeoffResul
     const corr = tail * TAILWIND_FACTOR_PER_KT;
     windFactor = Math.min(1.6, 1 + corr); // Max 60% increase
   }
-  groundRoll *= windFactor;
+  baseGroundRoll *= windFactor;
 
   // Slope correction (10% per 1% uphill)
   const slopeFactor = 1 + inputs.runwaySlope * SLOPE_CORRECTION_FACTOR;
-  groundRoll *= slopeFactor;
+  baseGroundRoll *= slopeFactor;
 
   // Flap configuration correction
   const flapCorrection = FLAP_CORRECTIONS[inputs.flapConfiguration];
-  groundRoll *= flapCorrection.groundRollFactor;
+  baseGroundRoll *= flapCorrection.groundRollFactor;
+
+  // baseGroundRoll now represents ground roll on good pavement with all corrections
 
   // -------------------------------------------------------------------------
   // Rate of Climb at Obstacle
@@ -410,8 +479,13 @@ export function calculateTakeoffPerformance(inputs: TakeoffInputs): TakeoffResul
   const vxFtPerMin = vxTAS * 101.269; // kt to ft/min (1 kt = 101.269 ft/min)
   const climbDistance = timeToObstacle * vxFtPerMin;
 
-  // Total obstacle clearance distance
-  const obstacleDistance = groundRoll + climbDistance;
+  // Base obstacle distance (on good pavement)
+  const baseObstacleDistance = baseGroundRoll + climbDistance;
+
+  // Apply surface factors to get final distances
+  // POH factors are applied to the total distances from the performance tables
+  const groundRoll = baseGroundRoll * surfaceFactors.groundRoll;
+  const obstacleDistance = baseObstacleDistance * surfaceFactors.obstacle;
 
   const distances: TakeoffDistances = {
     groundRoll,
@@ -451,10 +525,22 @@ export function calculateTakeoffPerformance(inputs: TakeoffInputs): TakeoffResul
     warnings.push(`Tailwind component (${Math.abs(inputs.headwindComponent).toFixed(1)} kt) increases takeoff distance`);
   }
 
-  if (inputs.surfaceType === "wet-asphalt" || inputs.surfaceType === "wet-grass") {
-    warnings.push(`Wet ${inputs.surfaceType.includes("grass") ? "grass" : "runway"} increases ground roll by ${Math.round((surfaceFactor - 1) * 100)}%`);
-  } else if (inputs.surfaceType.includes("grass")) {
-    warnings.push(`Grass surface increases ground roll by ${Math.round((surfaceFactor - 1) * 100)}%`);
+  // Surface warnings
+  const surfaceNames: Record<SurfaceType, string> = {
+    PG: "Pavement",
+    PP: "Poor pavement",
+    GG: "Grass",
+    GF: "Fair grass",
+    GV: "Gravel",
+    DT: "Dirt",
+    SD: "Sand",
+    WT: "Water",
+  };
+  if (surfaceFactors.groundRoll > 1.0) {
+    warnings.push(`${surfaceNames[inputs.surfaceType]} surface increases ground roll by ${Math.round((surfaceFactors.groundRoll - 1) * 100)}%`);
+  }
+  if (inputs.surfaceType === "SD") {
+    warnings.push("Sand surface severely impacts performance - consider abort");
   }
 
   if (inputs.runwaySlope > 1) {

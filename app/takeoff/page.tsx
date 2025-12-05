@@ -19,6 +19,9 @@ interface TakeoffPageProps {
     slope?: string;      // Runway slope (%)
     wind?: string;       // Headwind component (kt, negative = tailwind)
     obstacle?: string;   // Obstacle height (ft)
+    ad?: string;         // Aerodrome ICAO code
+    metar?: string;      // METAR reference: ICAO + day/time (e.g., "KJFK041051Z")
+    rwy?: string;        // Selected runway end ID (e.g., "11")
   }>;
 }
 
@@ -36,10 +39,13 @@ export default async function TakeoffPage({ searchParams }: TakeoffPageProps) {
   const da = params.da || "";
   const oat = params.oat || "";
   const runway = params.runway || "";
-  const surface = params.surface || "dry-asphalt";
+  const surface = params.surface || "PG";
   const slope = params.slope || "0";
   const wind = params.wind || "0";
   const obstacle = params.obstacle || "50";
+  const ad = params.ad || "";
+  const metar = params.metar || "";
+  const rwy = params.rwy || "";
 
   return (
     <Suspense
@@ -64,6 +70,9 @@ export default async function TakeoffPage({ searchParams }: TakeoffPageProps) {
         initialSlope={slope}
         initialWind={wind}
         initialObstacle={obstacle}
+        initialAerodrome={ad}
+        initialMetarRef={metar}
+        initialRunwayEnd={rwy}
       />
     </Suspense>
   );

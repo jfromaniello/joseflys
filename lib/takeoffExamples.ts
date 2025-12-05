@@ -7,6 +7,8 @@
  * 3. Easy - Ideal conditions with plenty of margin
  */
 
+import type { SurfaceType } from "./takeoffCalculations";
+
 export interface TakeoffExample {
   name: string;
   description: string;
@@ -15,7 +17,7 @@ export interface TakeoffExample {
   pa: string;
   oat: string;
   runway: string;
-  surface: "dry-asphalt" | "wet-asphalt" | "dry-grass" | "wet-grass";
+  surface: SurfaceType;
   slope: string;
   wind: string;
   obstacle: string;
@@ -27,13 +29,13 @@ export interface TakeoffExample {
  */
 export const TAKEOFF_EXAMPLE_NO_GO: TakeoffExample = {
   name: "NO GO Scenario",
-  description: "High altitude, short runway with wet grass and upslope - DANGEROUS!",
+  description: "High altitude, short runway with fair grass and upslope - DANGEROUS!",
   aircraft: "C172N",
   weight: "2300", // Max gross weight
   pa: "6000", // High altitude
   oat: "15", // Standard temp
   runway: "2530", // Short runway
-  surface: "wet-grass", // Poor surface
+  surface: "GF", // Fair grass (long, wet, bumpy)
   slope: "2", // Significant upslope
   wind: "0", // No wind
   obstacle: "50", // 50 ft obstacle
@@ -51,7 +53,7 @@ export const TAKEOFF_EXAMPLE_COMPLICATED: TakeoffExample = {
   pa: "6000", // High altitude
   oat: "25", // Warm
   runway: "2800", // Marginal runway
-  surface: "dry-grass", // Grass surface
+  surface: "GG", // Good grass
   slope: "1", // Slight upslope
   wind: "5", // Light headwind
   obstacle: "50", // 50 ft obstacle
@@ -69,7 +71,7 @@ export const TAKEOFF_EXAMPLE_EASY: TakeoffExample = {
   pa: "0", // Sea level
   oat: "10", // Cool (ISA -5°C)
   runway: "5000", // Long runway
-  surface: "dry-asphalt", // Perfect surface
+  surface: "PG", // Pavement good (asphalt/concrete)
   slope: "0", // Level runway
   wind: "15", // 15 kt headwind
   obstacle: "50", // 50 ft obstacle
