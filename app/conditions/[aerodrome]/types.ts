@@ -146,3 +146,74 @@ export const getFlightCatColor = (cat: string | null): string => {
     default: return "text-slate-400 bg-slate-400/10 border-slate-400/30";
   }
 };
+
+// TAF types
+export interface TafCloud {
+  cover: string;
+  base: number | null;
+  type?: string | null;
+}
+
+export interface TafForecast {
+  timeFrom: number;
+  timeTo: number;
+  fcstChange?: string; // FM, BECMG, TEMPO, PROB
+  probability?: number;
+  wdir?: number | null;
+  wspd?: number | null;
+  wgst?: number | null;
+  visib?: string | null;
+  wxString?: string | null;
+  clouds?: TafCloud[];
+}
+
+export interface TafData {
+  icaoId: string;
+  lat: number;
+  lon: number;
+  elev: number;
+  name: string;
+  rawTAF: string;
+  issueTime: string;
+  bulletinTime: string;
+  validTimeFrom: number;
+  validTimeTo: number;
+  fcsts: TafForecast[];
+  remarks?: string;
+}
+
+export interface TafResponse {
+  taf: TafData | null;
+  source: "direct" | "nearby" | null;
+  searchedId?: string;
+  distance?: number;
+}
+
+// Cloud cover abbreviations
+export const CLOUD_COVER: Record<string, string> = {
+  SKC: "Clear",
+  CLR: "Clear",
+  FEW: "Few",
+  SCT: "Scattered",
+  BKN: "Broken",
+  OVC: "Overcast",
+  VV: "Vertical Vis",
+};
+
+// Weather phenomena
+export const WEATHER_PHENOMENA: Record<string, string> = {
+  RA: "Rain",
+  SN: "Snow",
+  DZ: "Drizzle",
+  FG: "Fog",
+  BR: "Mist",
+  HZ: "Haze",
+  TS: "Thunderstorm",
+  SH: "Showers",
+  GR: "Hail",
+  GS: "Small Hail",
+  FZ: "Freezing",
+  "+": "Heavy",
+  "-": "Light",
+  VC: "Vicinity",
+};

@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Navbar } from "@/app/components/Navbar";
 import { AerodromeSearchInput, AerodromeResult } from "@/app/components/AerodromeSearchInput";
-import { MetarData, MetarResponse, Runway, OpenMeteoData, TomorrowData } from "./types";
+import { MetarData, MetarResponse, Runway, OpenMeteoData, TomorrowData, TafData, TafResponse } from "./types";
 import { MetarCard } from "./MetarCard";
+import { TafCard } from "./TafCard";
 import { AerodromeInfoCard } from "./AerodromeInfoCard";
 import { WeatherCard } from "./WeatherCard";
 import { LocationMap } from "./LocationMap";
@@ -29,6 +30,12 @@ export function ConditionsClient({ aerodromeCode }: ConditionsClientProps) {
   const [metarDistance, setMetarDistance] = useState<number | null>(null);
   const [loadingMetar, setLoadingMetar] = useState(true);
   const [metarError, setMetarError] = useState<string | null>(null);
+
+  // TAF
+  const [taf, setTaf] = useState<TafData | null>(null);
+  const [tafSource, setTafSource] = useState<"direct" | "nearby" | null>(null);
+  const [tafDistance, setTafDistance] = useState<number | null>(null);
+  const [loadingTaf, setLoadingTaf] = useState(true);
 
   // Runways
   const [runways, setRunways] = useState<Runway[]>([]);
@@ -72,9 +79,10 @@ export function ConditionsClient({ aerodromeCode }: ConditionsClientProps) {
     fetchAerodrome();
   }, [aerodromeCode]);
 
-  // Fetch METAR, Runways, Open-Meteo, and Tomorrow.io
+  // Fetch METAR, TAF, Runways, Open-Meteo, and Tomorrow.io
   const fetchData = async () => {
     setLoadingMetar(true);
+    setLoadingTaf(true);
     setLoadingRunways(true);
     setLoadingOpenMeteo(true);
     setMetarError(null);
@@ -83,9 +91,10 @@ export function ConditionsClient({ aerodromeCode }: ConditionsClientProps) {
     const lon = aerodrome?.lon;
 
     try {
-      // Fetch METAR, Runways, Open-Meteo, and Tomorrow.io in parallel
-      const [metarRes, runwaysRes, openMeteoRes, tomorrowRes] = await Promise.all([
+      // Fetch METAR, TAF, Runways, Open-Meteo, and Tomorrow.io in parallel
+      const [metarRes, tafRes, runwaysRes, openMeteoRes, tomorrowRes] = await Promise.all([
         fetch(`/api/metar?id=${aerodromeCode}${lat ? `&lat=${lat}&lon=${lon}` : ""}`),
+        fetch(`/api/taf?id=${aerodromeCode}${lat ? `&lat=${lat}&lon=${lon}` : ""}`),
         fetch(`/api/runways?icao=${aerodromeCode}`),
         lat && lon
           ? fetch(
@@ -105,6 +114,14 @@ export function ConditionsClient({ aerodromeCode }: ConditionsClientProps) {
         setMetarDistance(metarData.distance || null);
       } else {
         setMetarError("No METAR data available");
+      }
+
+      // Process TAF
+      if (tafRes.ok) {
+        const tafData: TafResponse = await tafRes.json();
+        setTaf(tafData.taf);
+        setTafSource(tafData.source);
+        setTafDistance(tafData.distance || null);
       }
 
       // Process Runways
@@ -136,6 +153,7 @@ export function ConditionsClient({ aerodromeCode }: ConditionsClientProps) {
       setMetarError("Failed to fetch weather data");
     } finally {
       setLoadingMetar(false);
+      setLoadingTaf(false);
       setLoadingRunways(false);
       setLoadingOpenMeteo(false);
     }
@@ -201,6 +219,14 @@ export function ConditionsClient({ aerodromeCode }: ConditionsClientProps) {
             loading={loadingMetar}
             error={metarError}
             onRefresh={fetchData}
+          />
+
+          {/* TAF Card */}
+          <TafCard
+            taf={taf}
+            tafSource={tafSource}
+            tafDistance={tafDistance}
+            loading={loadingTaf}
           />
 
           {/* Aerodrome Info Card (Location + Runways) */}
