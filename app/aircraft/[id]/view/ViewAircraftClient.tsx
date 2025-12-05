@@ -29,11 +29,52 @@ interface ViewAircraftClientProps {
   initialAircraft?: ResolvedAircraftPerformance | null;
 }
 
+// Map hash fragments to tab indices
+const TAB_HASH_MAP: Record<string, number> = {
+  overview: 0,
+  climb: 1,
+  cruise: 2,
+  takeoff: 3,
+  landing: 3,
+  "takeoff-landing": 3,
+  deviation: 4,
+  compass: 4,
+};
+
+// Tab names for updating the hash
+const TAB_NAMES = ["overview", "climb", "cruise", "takeoff", "deviation"];
+
 export function ViewAircraftClient({ aircraftId, initialAircraft }: ViewAircraftClientProps) {
   const router = useRouter();
   // Use initialAircraft for SSR, loading only needed for custom aircraft
   const [resolved, setResolved] = useState<ResolvedAircraftPerformance | null>(initialAircraft ?? null);
   const [loading, setLoading] = useState(!initialAircraft);
+
+  // Tab selection state - read from hash on mount
+  const [selectedTabIndex, setSelectedTabIndex] = useState(() => {
+    if (typeof window === "undefined") return 0;
+    const hash = window.location.hash.slice(1).toLowerCase();
+    return TAB_HASH_MAP[hash] ?? 0;
+  });
+
+  // Update hash when tab changes
+  const handleTabChange = (index: number) => {
+    setSelectedTabIndex(index);
+    const tabName = TAB_NAMES[index];
+    if (tabName && typeof window !== "undefined") {
+      window.history.replaceState(null, "", `#${tabName}`);
+    }
+  };
+
+  // Read hash on mount (for SSR hydration)
+  useEffect(() => {
+    const hash = window.location.hash.slice(1).toLowerCase();
+    const tabIndex = TAB_HASH_MAP[hash];
+    if (tabIndex !== undefined && tabIndex !== selectedTabIndex) {
+      setSelectedTabIndex(tabIndex);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount
 
   // Chart metric states
   const [climbChartMetric, setClimbChartMetric] = useState<'roc' | 'time' | 'fuel' | 'distance'>('roc');
@@ -179,7 +220,7 @@ export function ViewAircraftClient({ aircraftId, initialAircraft }: ViewAircraft
 
         {/* Tabs */}
         <div className="rounded-2xl p-6 sm:p-8 shadow-2xl bg-slate-800/50 backdrop-blur-sm border border-gray-700">
-          <TabGroup>
+          <TabGroup selectedIndex={selectedTabIndex} onChange={handleTabChange}>
             <TabList className="flex gap-2 border-b border-slate-700 mb-6 overflow-x-auto pb-2">
               {["Overview", "Climb", "Cruise", "Takeoff/Landing", "Compass Deviation"].map((tab) => (
                 <Tab key={tab} as={Fragment}>
