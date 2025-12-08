@@ -1,6 +1,13 @@
-import { Suspense } from "react";
-import { ConditionsClient } from "./ConditionsClient";
 import type { Metadata } from "next";
+import {
+  fetchMetar,
+  fetchTaf,
+  getRunways,
+  fetchTomorrow,
+  fetchOpenMeteo,
+  getAerodromeByCode,
+} from "@/lib/clients";
+import { ConditionsView } from "./ConditionsView";
 
 interface ConditionsPageProps {
   params: Promise<{
@@ -18,16 +25,40 @@ export async function generateMetadata({ params }: ConditionsPageProps): Promise
 
 export default async function ConditionsDetailPage({ params }: ConditionsPageProps) {
   const { aerodrome } = await params;
+  const aerodromeCode = aerodrome.toUpperCase();
+
+  // Get aerodrome info first (needed for lat/lon)
+  const aerodromeInfo = getAerodromeByCode(aerodromeCode);
+  const lat = aerodromeInfo?.lat;
+  const lon = aerodromeInfo?.lon;
+
+  // Fetch all data in parallel
+  const [metarResult, tafResult, runwaysResult, tomorrowResult, openMeteoResult] = await Promise.all([
+    fetchMetar(aerodromeCode, lat, lon),
+    fetchTaf(aerodromeCode, lat, lon),
+    Promise.resolve(getRunways(aerodromeCode)),
+    lat !== undefined && lon !== undefined
+      ? fetchTomorrow(aerodromeCode, lat, lon)
+      : Promise.resolve({ current: null, hourly: [] }),
+    lat !== undefined && lon !== undefined
+      ? fetchOpenMeteo(lat, lon)
+      : Promise.resolve(null),
+  ]);
 
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-900 via-blue-950 to-slate-900">
-          <div className="text-white">Loading...</div>
-        </div>
-      }
-    >
-      <ConditionsClient aerodromeCode={aerodrome.toUpperCase()} />
-    </Suspense>
+    <ConditionsView
+      aerodromeCode={aerodromeCode}
+      aerodrome={aerodromeInfo}
+      metar={metarResult.metar}
+      metarSource={metarResult.source}
+      metarDistance={metarResult.distance ?? null}
+      taf={tafResult.taf}
+      tafSource={tafResult.source}
+      tafDistance={tafResult.distance ?? null}
+      runways={runwaysResult.runways}
+      tomorrow={tomorrowResult.current ? { current: tomorrowResult.current, hourly: tomorrowResult.hourly } : null}
+      openMeteo={openMeteoResult}
+      fetchedAt={new Date().toISOString()}
+    />
   );
 }

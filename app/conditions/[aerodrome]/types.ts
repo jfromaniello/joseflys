@@ -1,100 +1,23 @@
-export interface RunwayEnd {
-  id: string;
-  heading: number | null;
-  elevation: number | null;
-  displacedThreshold: number;
-  lat: number | null;
-  lon: number | null;
-}
+// Re-export types from clients
+export type { MetarData, MetarResult } from "@/lib/clients/metar";
+export type { TafData, TafForecast, TafResult } from "@/lib/clients/taf";
+export type { RunwayResponse as Runway } from "@/lib/clients/runways";
+export type { OpenMeteoData, OpenMeteoCurrent, OpenMeteoHourly } from "@/lib/clients/open-meteo";
+export type { TomorrowValues, TomorrowTimelineItem, TomorrowResult } from "@/lib/clients/tomorrow";
+export type { Aerodrome } from "@/lib/clients/aerodromes";
 
-export interface Runway {
-  id: string;
-  length: number;
-  width: number;
-  surface: string;
-  surfaceName: string;
-  lighted: boolean;
-  closed: boolean;
-  ends: RunwayEnd[];
-}
+// Import types needed for TomorrowData interface
+import type { TomorrowValues, TomorrowTimelineItem } from "@/lib/clients/tomorrow";
 
-export interface MetarData {
-  icaoId: string;
-  temp: number | null;
-  dewp: number | null;
-  wdir: number | null;
-  wspd: number | null;
-  wgst: number | null;
-  altim: number | null;
-  visib: string | null;
-  rawOb: string;
-  reportTime: string;
-  lat: number;
-  lon: number;
-  name: string;
-  fltCat: string | null;
-}
-
-export interface MetarResponse {
-  metar: MetarData | null;
-  source: "direct" | "nearby" | null;
-  searchedId?: string;
-  distance?: number;
-}
-
-export interface OpenMeteoData {
-  current: {
-    temperature_2m: number;
-    relative_humidity_2m: number;
-    apparent_temperature: number;
-    cloud_cover: number;
-    surface_pressure: number;
-    wind_speed_10m: number;
-    wind_direction_10m: number;
-    wind_gusts_10m: number;
-  };
-  hourly: {
-    time: string[];
-    temperature_2m: number[];
-    cloud_cover: number[];
-    cloud_cover_low: number[];
-    cloud_cover_mid: number[];
-    cloud_cover_high: number[];
-    visibility: number[];
-    wind_speed_10m: number[];
-    wind_direction_10m: number[];
-  };
-  elevation: number;
-}
-
-// Tomorrow.io API types
-export interface TomorrowWeatherValues {
-  temperature?: number | null;
-  temperatureApparent?: number | null;
-  humidity?: number | null;
-  dewPoint?: number | null;
-  windSpeed?: number | null;
-  windGust?: number | null;
-  windDirection?: number | null;
-  pressureSeaLevel?: number | null;
-  pressureSurfaceLevel?: number | null;
-  visibility?: number | null;
-  cloudCover?: number | null;
-  cloudBase?: number | null;
-  cloudCeiling?: number | null;
-  weatherCode?: number | null;
-  precipitationProbability?: number | null;
-  uvIndex?: number | null;
-}
-
-export interface TomorrowHourlyItem {
-  time: string;
-  values: TomorrowWeatherValues;
-}
+// Legacy type aliases for backward compatibility
+export type MetarResponse = import("@/lib/clients/metar").MetarResult;
+export type TafResponse = import("@/lib/clients/taf").TafResult;
+export type TomorrowWeatherValues = TomorrowValues;
+export type TomorrowHourlyItem = TomorrowTimelineItem;
 
 export interface TomorrowData {
-  current: TomorrowWeatherValues;
-  hourly: TomorrowHourlyItem[];
+  current: TomorrowValues | null;
+  hourly: TomorrowTimelineItem[];
 }
 
 // Weather code descriptions for Tomorrow.io
@@ -146,48 +69,6 @@ export const getFlightCatColor = (cat: string | null): string => {
     default: return "text-slate-400 bg-slate-400/10 border-slate-400/30";
   }
 };
-
-// TAF types
-export interface TafCloud {
-  cover: string;
-  base: number | null;
-  type?: string | null;
-}
-
-export interface TafForecast {
-  timeFrom: number;
-  timeTo: number;
-  fcstChange?: string; // FM, BECMG, TEMPO, PROB
-  probability?: number;
-  wdir?: number | null;
-  wspd?: number | null;
-  wgst?: number | null;
-  visib?: string | null;
-  wxString?: string | null;
-  clouds?: TafCloud[];
-}
-
-export interface TafData {
-  icaoId: string;
-  lat: number;
-  lon: number;
-  elev: number;
-  name: string;
-  rawTAF: string;
-  issueTime: string;
-  bulletinTime: string;
-  validTimeFrom: number;
-  validTimeTo: number;
-  fcsts: TafForecast[];
-  remarks?: string;
-}
-
-export interface TafResponse {
-  taf: TafData | null;
-  source: "direct" | "nearby" | null;
-  searchedId?: string;
-  distance?: number;
-}
 
 // Cloud cover abbreviations
 export const CLOUD_COVER: Record<string, string> = {

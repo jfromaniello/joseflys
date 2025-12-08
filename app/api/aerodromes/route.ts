@@ -1,36 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import argentinaData from "../../../data/ad-lads/argentina.json";
-import airportsData from "../../../data/airports.json";
+import { searchAerodromes, getAerodromesByBbox } from "@/lib/clients";
 
 // Note: Not using edge runtime due to 2MB size limit (airports.json is 5MB)
-
-interface Aerodrome {
-  type: "AD" | "LAD";
-  code: string | null;
-  name: string;
-  lat: number;
-  lon: number;
-  elevation: number | null;
-}
-
-interface AerodromeData {
-  version: string;
-  source: string;
-  generatedAt: string;
-  count: {
-    total: number;
-    ad: number;
-    lad: number;
-  };
-  data: Aerodrome[];
-}
-
-// Argentina AD/LAD data
-const argData = argentinaData as AerodromeData;
-
-// Global airports: [code, lat, lon, name, elevation]
-type AirportEntry = [string, number, number, string, number | null];
-const globalAirports = airportsData as AirportEntry[];
 
 /**
  * GET /api/aerodromes
@@ -51,61 +22,8 @@ export async function GET(request: NextRequest) {
     // Text search mode
     if (query) {
       const limit = parseInt(searchParams.get("limit") ?? "10", 10);
-      const normalizedQuery = query.toLowerCase().trim();
-
-      if (normalizedQuery.length < 2) {
-        return NextResponse.json({ count: 0, data: [] });
-      }
-
-      // Search Argentina data by code or name
-      const argMatches = argData.data.filter((aerodrome) => {
-        const codeMatch = aerodrome.code?.toLowerCase().startsWith(normalizedQuery);
-        const nameMatch = aerodrome.name.toLowerCase().includes(normalizedQuery);
-        return codeMatch || nameMatch;
-      });
-
-      // Search global airports by code or name
-      const globalMatches = globalAirports
-        .filter(([code, , , name]) => {
-          const codeMatch = code.toLowerCase().startsWith(normalizedQuery);
-          const nameMatch = name.toLowerCase().includes(normalizedQuery);
-          return codeMatch || nameMatch;
-        })
-        .map(([code, lat, lon, name, elevation]) => ({
-          type: "AD" as const,
-          code,
-          name,
-          lat,
-          lon,
-          elevation: elevation ?? null,
-        }));
-
-      // Combine and dedupe by code (Argentina data takes priority)
-      const seenCodes = new Set(argMatches.map((a) => a.code).filter(Boolean));
-      const dedupedGlobal = globalMatches.filter(
-        (a) => !a.code || !seenCodes.has(a.code)
-      );
-
-      // Sort: exact code matches first, then by name length
-      const allMatches = [...argMatches, ...dedupedGlobal].sort((a, b) => {
-        const aCodeExact = a.code?.toLowerCase() === normalizedQuery ? 0 : 1;
-        const bCodeExact = b.code?.toLowerCase() === normalizedQuery ? 0 : 1;
-        if (aCodeExact !== bCodeExact) return aCodeExact - bCodeExact;
-
-        const aCodeStart = a.code?.toLowerCase().startsWith(normalizedQuery) ? 0 : 1;
-        const bCodeStart = b.code?.toLowerCase().startsWith(normalizedQuery) ? 0 : 1;
-        if (aCodeStart !== bCodeStart) return aCodeStart - bCodeStart;
-
-        return a.name.length - b.name.length;
-      });
-
-      const results = allMatches.slice(0, limit);
-
-      return NextResponse.json({
-        count: results.length,
-        query,
-        data: results,
-      });
+      const result = searchAerodromes(query, limit);
+      return NextResponse.json(result);
     }
 
     // Bounding box mode
@@ -138,50 +56,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Filter Argentina data by bounding box and type
-    const argResults = argData.data.filter((aerodrome) => {
-      const inBounds =
-        aerodrome.lat >= minLat &&
-        aerodrome.lat <= maxLat &&
-        aerodrome.lon >= minLon &&
-        aerodrome.lon <= maxLon;
+    const result = getAerodromesByBbox(
+      minLat,
+      maxLat,
+      minLon,
+      maxLon,
+      typeFilter ?? undefined
+    );
 
-      if (!inBounds) return false;
-      if (typeFilter && aerodrome.type !== typeFilter) return false;
-
-      return true;
-    });
-
-    // Filter global airports by bounding box (only if type is AD or not filtered)
-    const globalResults: Aerodrome[] =
-      typeFilter === "LAD"
-        ? []
-        : globalAirports
-            .filter(
-              ([, lat, lon]) =>
-                lat >= minLat &&
-                lat <= maxLat &&
-                lon >= minLon &&
-                lon <= maxLon
-            )
-            .map(([code, lat, lon, name, elevation]) => ({
-              type: "AD" as const,
-              code,
-              name,
-              lat,
-              lon,
-              elevation: elevation ?? null,
-            }));
-
-    // Combine results (Argentina data first, then global airports)
-    const results = [...argResults, ...globalResults];
-
-    return NextResponse.json({
-      count: results.length,
-      bounds: { minLat, maxLat, minLon, maxLon },
-      filter: typeFilter,
-      data: results,
-    });
+    return NextResponse.json(result);
   } catch (error) {
     console.error("Aerodromes API error:", error);
     return NextResponse.json(
