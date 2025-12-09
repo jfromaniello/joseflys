@@ -41,6 +41,7 @@ import {
 import { compressForUrl } from "@/lib/urlCompression";
 import { formatCourse, formatWind, formatDistance } from "@/lib/formatters";
 import { LegAlternates } from "@/app/components/LegAlternates";
+import { TripSummaryCard } from "@/app/components/TripSummaryCard";
 
 interface FlightPlanDetailClientProps {
   flightPlanId: string;
@@ -398,6 +399,14 @@ export function FlightPlanDetailClient({
               </div>
             </div>
           </div>
+
+          {/* AI Trip Summary */}
+          <TripSummaryCard
+            flightPlan={flightPlan}
+            legResults={legResults}
+            alternativeLegs={alternativeLegs}
+            mainRouteTotals={mainRouteTotals}
+          />
 
           {/* Legs List */}
           {flightPlan.legs.length === 0 ? (
