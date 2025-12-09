@@ -8,14 +8,16 @@ interface ISAPageProps {
     elev?: string;
     qnh?: string;
     temp?: string;
+    explain?: string;
   }>;
 }
 
 export default async function ISAPage({ searchParams }: ISAPageProps) {
   const params = await searchParams;
-  const elevation = params.elev || "2000";
-  const qnh = params.qnh || "1013";
-  const temp = params.temp || "15";
+  const elevation = params.elev || "";
+  const qnh = params.qnh || "";
+  const temp = params.temp || "";
+  const showExplanation = params.explain === "1";
 
   return (
     <Suspense
@@ -29,6 +31,7 @@ export default async function ISAPage({ searchParams }: ISAPageProps) {
         initialElevation={elevation}
         initialQnh={qnh}
         initialTemp={temp}
+        initialShowExplanation={showExplanation}
       />
     </Suspense>
   );

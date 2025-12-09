@@ -7,24 +7,12 @@
  * 2. calculateTASFromIAS() - Good accuracy, uses IAS and ISA temperature assumptions
  */
 
-// ============================================================================
-// ISA Constants (shared by all calculations)
-// ============================================================================
-
-/** ISA sea level temperature in Kelvin (15°C) */
-const T0 = 288.15;
-
-/** ISA sea level pressure in Pascals */
-const P0 = 101325.0;
-
-/** Standard gravity in m/s² */
-const g0 = 9.80665;
-
-/** Specific gas constant for dry air in J/(kg·K) */
-const R = 287.05287;
-
-/** Temperature lapse rate in troposphere (K/m) */
-const L = 0.0065;
+import {
+  isaPressure,
+  isaTemperatureK,
+  airDensity,
+  ISA_SEA_LEVEL_DENSITY,
+} from "./isaCalculations";
 
 // ============================================================================
 // Main TAS Calculation Functions
@@ -43,7 +31,7 @@ const L = 0.0065;
  *
  * @param casKt - Calibrated Airspeed in knots
  * @param oatC - Outside Air Temperature in degrees Celsius (actual, not ISA)
- * @param hFt - Pressure altitude in feet
+ * @param pressureAltitudeFt - Pressure altitude in feet
  * @returns True Airspeed in knots
  *
  * @example
@@ -51,22 +39,13 @@ const L = 0.0065;
  * const tas = calculateTAS(120, 5, 10000);
  * // Returns approximately 140 knots
  */
-export function calculateTAS(casKt: number, oatC: number, hFt: number): number {
-  // Unit conversions
-  const hM = hFt * 0.3048;
-  const tAct = oatC + 273.15; // K
-
-  // ISA pressure at altitude (troposphere)
-  const exp = g0 / (R * L);
-  const pIsa = P0 * Math.pow(1 - (L * hM) / T0, exp);
-
-  // Densities
-  const rho0 = P0 / (R * T0);
-  const rho = pIsa / (R * tAct);
+export function calculateTAS(casKt: number, oatC: number, pressureAltitudeFt: number): number {
+  const pressurePa = isaPressure(pressureAltitudeFt);
+  const temperatureK = oatC + 273.15;
+  const rho = airDensity(pressurePa, temperatureK);
 
   // TAS = CAS × √(ρ₀/ρ)
-  const tasKt = casKt * Math.sqrt(rho0 / rho);
-  return tasKt;
+  return casKt * Math.sqrt(ISA_SEA_LEVEL_DENSITY / rho);
 }
 
 /**
@@ -93,20 +72,10 @@ export function calculateTAS(casKt: number, oatC: number, hFt: number): number {
  * // Returns approximately 139 knots (assumes ISA temperature)
  */
 export function calculateTASFromIAS(ias: number, densityAltitudeFt: number): number {
-  // Convert DA to meters
-  const hM = densityAltitudeFt * 0.3048;
-
-  // Calculate ISA temperature at this altitude
-  const tIsa = T0 - L * hM;
-
-  // Calculate ISA pressure at altitude (troposphere)
-  const exp = g0 / (R * L);
-  const pIsa = P0 * Math.pow(1 - (L * hM) / T0, exp);
-
-  // Densities
-  const rho0 = P0 / (R * T0);
-  const rho = pIsa / (R * tIsa);
+  const pressurePa = isaPressure(densityAltitudeFt);
+  const temperatureK = isaTemperatureK(densityAltitudeFt);
+  const rho = airDensity(pressurePa, temperatureK);
 
   // TAS = IAS × √(ρ₀/ρ)
-  return ias * Math.sqrt(rho0 / rho);
+  return ias * Math.sqrt(ISA_SEA_LEVEL_DENSITY / rho);
 }
