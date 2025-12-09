@@ -181,6 +181,27 @@ export function calculateDA(pa: number, tempC: number, isaTemp: number): number 
 }
 
 /**
+ * Calculate Pressure Altitude from Density Altitude and OAT
+ * This is the inverse of calculateDA.
+ *
+ * Given: DA = PA + 118.8 * (OAT - ISA_temp)
+ * Where: ISA_temp = 15 - 1.98 * PA / 1000
+ *
+ * Substituting and solving for PA:
+ * DA = PA + 118.8 * (OAT - 15 + 1.98 * PA / 1000)
+ * DA = PA + 118.8 * OAT - 1782 + 0.235224 * PA
+ * DA = 1.235224 * PA + 118.8 * OAT - 1782
+ * PA = (DA - 118.8 * OAT + 1782) / 1.235224
+ *
+ * @param da - Density altitude in feet
+ * @param tempC - Actual temperature in Celsius
+ * @returns Pressure altitude in feet
+ */
+export function calculatePAFromDA(da: number, tempC: number): number {
+  return (da - 118.8 * tempC + 1782) / 1.235224;
+}
+
+/**
  * Complete ISA calculation from elevation, QNH, and temperature
  * Returns all relevant values
  */

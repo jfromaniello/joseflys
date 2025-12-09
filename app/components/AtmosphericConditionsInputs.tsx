@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Tooltip } from "./Tooltip";
 import { formatDistance } from "@/lib/formatters";
-import { calculatePA, calculateDA, calculateISATemp, isInHg } from "@/lib/isaCalculations";
+import { calculatePA, calculateDA, calculateISATemp, calculatePAFromDA, isInHg } from "@/lib/isaCalculations";
 
 export type AltitudeMode = "pa" | "qnh" | "da";
 
@@ -88,6 +88,7 @@ export function AtmosphericConditionsInputs({
   // Apply external preset when it changes
   useEffect(() => {
     if (preset) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (preset.altitudeMode) setAltitudeMode(preset.altitudeMode);
       if (preset.altitude !== undefined) setAltitude(preset.altitude);
       if (preset.qnh !== undefined) setQnh(preset.qnh);
@@ -127,11 +128,7 @@ export function AtmosphericConditionsInputs({
     } else if (altitudeMode === "da" && !isNaN(daVal)) {
       actualDA = daVal;
       if (!isNaN(oatVal)) {
-        // Calculate PA from DA and OAT using the relationship:
-        // DA = PA + 120 * (OAT - ISA_temp_at_PA)
-        // Where ISA_temp_at_PA = 15 - 0.002 * PA
-        // Solving: PA = (DA - 120 * OAT + 1800) / 1.24
-        actualPA = (daVal - 120 * oatVal + 1800) / 1.24;
+        actualPA = calculatePAFromDA(daVal, oatVal);
       } else {
         actualPA = daVal; // Without OAT, assume ISA conditions (PA = DA)
       }
@@ -188,8 +185,7 @@ export function AtmosphericConditionsInputs({
   } else if (altitudeMode === "da" && !isNaN(daVal)) {
     displayDA = daVal;
     if (!isNaN(oatVal)) {
-      // Calculate PA from DA and OAT
-      displayPA = (daVal - 120 * oatVal + 1800) / 1.24;
+      displayPA = calculatePAFromDA(daVal, oatVal);
     } else {
       displayPA = daVal;
     }
