@@ -5,13 +5,18 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Navbar } from "@/app/components/Navbar";
 import { AerodromeSearchInput, AerodromeResult } from "@/app/components/AerodromeSearchInput";
-import { MetarData, TafData, Runway, OpenMeteoData, TomorrowData, Aerodrome } from "./types";
+import { MetarData, TafData, Runway, OpenMeteoData, TomorrowData, Aerodrome, Notam } from "./types";
 import { MetarCard } from "./MetarCard";
 import { TafCard } from "./TafCard";
 import { AerodromeInfoCard } from "./AerodromeInfoCard";
 import { WeatherCard } from "./WeatherCard";
 import { LocationMap } from "./LocationMap";
 import { WindyEmbed } from "./WindyEmbed";
+import { NotamCard } from "./NotamCard";
+import { AISummaryCard } from "./AISummaryCard";
+import { SunTimesCard } from "./SunTimesCard";
+import { selectBestRunway } from "@/lib/runwayUtils";
+import { getSunPosition } from "@/lib/sun";
 
 interface ConditionsViewProps {
   aerodromeCode: string;
@@ -25,6 +30,7 @@ interface ConditionsViewProps {
   runways: Runway[];
   tomorrow: TomorrowData | null;
   openMeteo: OpenMeteoData | null;
+  notams: Notam[] | null;
   fetchedAt: string;
 }
 
@@ -40,6 +46,7 @@ export function ConditionsView({
   runways,
   tomorrow,
   openMeteo,
+  notams,
   fetchedAt,
 }: ConditionsViewProps) {
   const router = useRouter();
@@ -80,6 +87,37 @@ export function ConditionsView({
 
   const lastUpdate = new Date(fetchedAt);
 
+  // Get best runway for AI summary
+  const bestRunway = metar && runways.length > 0
+    ? selectBestRunway(runways, metar.wdir, metar.wspd)
+    : null;
+
+  // Get sun position for VFR night warning
+  const sunPosition = aerodrome
+    ? getSunPosition(aerodrome.lat, aerodrome.lon)
+    : null;
+
+  // Prepare recommended runway data for AI summary
+  const recommendedRunway = bestRunway
+    ? {
+        endId: bestRunway.endId,
+        headwind: bestRunway.headwind,
+        crosswind: bestRunway.crosswind,
+      }
+    : null;
+
+  // Prepare weather data for AI summary (convert null to undefined for type compatibility)
+  const weatherForAI = openMeteo || tomorrow
+    ? {
+        temperature: openMeteo?.current?.temperature_2m ?? tomorrow?.current?.temperature ?? undefined,
+        humidity: openMeteo?.current?.relative_humidity_2m ?? tomorrow?.current?.humidity ?? undefined,
+        windSpeed: openMeteo?.current?.wind_speed_10m ?? tomorrow?.current?.windSpeed ?? undefined,
+        windDirection: openMeteo?.current?.wind_direction_10m ?? tomorrow?.current?.windDirection ?? undefined,
+        cloudCover: openMeteo?.current?.cloud_cover ?? tomorrow?.current?.cloudCover ?? undefined,
+        visibility: tomorrow?.current?.visibility ?? undefined,
+      }
+    : null;
+
   return (
     <main className="min-h-screen bg-linear-to-br from-slate-900 via-blue-950 to-slate-900">
       <Navbar currentPage="conditions" />
@@ -104,7 +142,7 @@ export function ConditionsView({
             </div>
             <div className="w-full md:w-72">
               <AerodromeSearchInput
-                value={aerodromeResult}
+                value={null}
                 onChange={handleAerodromeChange}
                 placeholder="Change airport..."
                 showLabel={false}
@@ -121,7 +159,13 @@ export function ConditionsView({
             loading={refreshing}
             error={!metar && !refreshing ? "No METAR data available" : null}
             onRefresh={handleRefresh}
+            isVfrLegal={sunPosition?.isVfrLegal ?? true}
           />
+
+          {/* Sun Times Card */}
+          {aerodrome && (
+            <SunTimesCard lat={aerodrome.lat} lon={aerodrome.lon} />
+          )}
 
           {/* TAF Card */}
           <TafCard
@@ -130,6 +174,11 @@ export function ConditionsView({
             tafDistance={tafDistance}
             loading={refreshing}
           />
+
+          {/* NOTAM Card (only if enabled) */}
+          {notams !== null && (
+            <NotamCard notams={notams} loading={refreshing} />
+          )}
 
           {/* Aerodrome Info Card (Location + Runways) */}
           {aerodrome && (
@@ -153,6 +202,49 @@ export function ConditionsView({
 
           {/* Windy Embed */}
           {aerodrome && <WindyEmbed aerodrome={aerodromeResult!} />}
+
+          {/* AI Summary */}
+          <AISummaryCard
+            aerodromeCode={aerodromeCode}
+            aerodrome={aerodrome ? {
+              name: aerodrome.name,
+              type: aerodrome.type,
+              elevation: aerodrome.elevation,
+              lat: aerodrome.lat,
+              lon: aerodrome.lon,
+            } : null}
+            metar={metar ? {
+              rawOb: metar.rawOb,
+              temp: metar.temp,
+              dewp: metar.dewp,
+              wdir: metar.wdir,
+              wspd: metar.wspd,
+              wgst: metar.wgst,
+              altim: metar.altim,
+              visib: metar.visib,
+              fltCat: metar.fltCat,
+            } : null}
+            taf={taf ? { rawTAF: taf.rawTAF } : null}
+            runways={runways.map(r => ({
+              id: r.id,
+              length: r.length,
+              width: r.width,
+              surface: r.surface,
+              lighted: r.lighted,
+              closed: r.closed,
+            }))}
+            recommendedRunway={recommendedRunway}
+            notams={notams}
+            weather={weatherForAI}
+            sunTimes={sunPosition ? {
+              civilDawn: sunPosition.times.civilDawn.toISOString(),
+              sunrise: sunPosition.times.sunrise.toISOString(),
+              sunset: sunPosition.times.sunset.toISOString(),
+              civilDusk: sunPosition.times.civilDusk.toISOString(),
+              isVfrLegal: sunPosition.isVfrLegal,
+              phase: sunPosition.phase,
+            } : null}
+          />
 
           {/* Quick Links */}
           <div className="flex flex-wrap gap-3 justify-center">

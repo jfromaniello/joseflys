@@ -6,8 +6,12 @@ import {
   fetchTomorrow,
   fetchOpenMeteo,
   getAerodromeByCode,
+  fetchNotams,
 } from "@/lib/clients";
 import { ConditionsView } from "./ConditionsView";
+
+// Check if NOTAM fetching is enabled
+const NOTAM_ENABLED = !!process.env.NOTAM_SEARCH_URL;
 
 interface ConditionsPageProps {
   params: Promise<{
@@ -33,7 +37,7 @@ export default async function ConditionsDetailPage({ params }: ConditionsPagePro
   const lon = aerodromeInfo?.lon;
 
   // Fetch all data in parallel
-  const [metarResult, tafResult, runwaysResult, tomorrowResult, openMeteoResult] = await Promise.all([
+  const [metarResult, tafResult, runwaysResult, tomorrowResult, openMeteoResult, notamsResult] = await Promise.all([
     fetchMetar(aerodromeCode, lat, lon),
     fetchTaf(aerodromeCode, lat, lon),
     Promise.resolve(getRunways(aerodromeCode)),
@@ -42,6 +46,12 @@ export default async function ConditionsDetailPage({ params }: ConditionsPagePro
       : Promise.resolve({ current: null, hourly: [] }),
     lat !== undefined && lon !== undefined
       ? fetchOpenMeteo(lat, lon)
+      : Promise.resolve(null),
+    NOTAM_ENABLED
+      ? fetchNotams(aerodromeCode).catch((err) => {
+          console.error("[NOTAM] Failed to fetch:", err);
+          return [];
+        })
       : Promise.resolve(null),
   ]);
 
@@ -58,6 +68,7 @@ export default async function ConditionsDetailPage({ params }: ConditionsPagePro
       runways={runwaysResult.runways}
       tomorrow={tomorrowResult.current ? { current: tomorrowResult.current, hourly: tomorrowResult.hourly } : null}
       openMeteo={openMeteoResult}
+      notams={notamsResult}
       fetchedAt={new Date().toISOString()}
     />
   );

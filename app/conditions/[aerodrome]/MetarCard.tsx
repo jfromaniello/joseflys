@@ -1,4 +1,4 @@
-import { ArrowPathIcon } from "@heroicons/react/24/outline";
+import { ArrowPathIcon, MoonIcon } from "@heroicons/react/24/outline";
 import { MetarData, Runway, getFlightCatColor } from "./types";
 import { selectBestRunway } from "@/lib/runwayUtils";
 
@@ -10,6 +10,7 @@ interface MetarCardProps {
   loading: boolean;
   error: string | null;
   onRefresh: () => void;
+  isVfrLegal?: boolean;
 }
 
 export function MetarCard({
@@ -20,6 +21,7 @@ export function MetarCard({
   loading,
   error,
   onRefresh,
+  isVfrLegal = true,
 }: MetarCardProps) {
   // Format wind
   const formatWind = () => {
@@ -76,8 +78,16 @@ export function MetarCard({
             {/* Flight Category */}
             <div className="text-center p-3 rounded-lg bg-slate-900/30">
               <div className="text-xs text-slate-400 mb-1">Category</div>
-              <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${getFlightCatColor(metar.fltCat)}`}>
-                {metar.fltCat || "N/A"}
+              <div className="flex flex-col items-center gap-1">
+                <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${getFlightCatColor(metar.fltCat)}`}>
+                  {metar.fltCat || "N/A"}
+                </div>
+                {!isVfrLegal && (metar.fltCat === "VFR" || metar.fltCat === "MVFR") && (
+                  <div className="flex items-center gap-1 text-xs text-amber-400">
+                    <MoonIcon className="w-3 h-3" />
+                    <span>Night</span>
+                  </div>
+                )}
               </div>
             </div>
 

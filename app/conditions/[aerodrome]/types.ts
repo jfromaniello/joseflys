@@ -5,6 +5,7 @@ export type { RunwayResponse as Runway } from "@/lib/clients/runways";
 export type { OpenMeteoData, OpenMeteoCurrent, OpenMeteoHourly } from "@/lib/clients/open-meteo";
 export type { TomorrowValues, TomorrowTimelineItem, TomorrowResult } from "@/lib/clients/tomorrow";
 export type { Aerodrome } from "@/lib/clients/aerodromes";
+export type { Notam } from "@/lib/clients/notams";
 
 // Import types needed for TomorrowData interface
 import type { TomorrowValues, TomorrowTimelineItem } from "@/lib/clients/tomorrow";
