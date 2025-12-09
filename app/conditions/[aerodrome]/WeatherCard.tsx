@@ -1,9 +1,22 @@
 import { OpenMeteoData, TomorrowData } from "./types";
+import { calculatePA, calculateDA, calculateISATemp } from "@/lib/isaCalculations";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Area,
+  ComposedChart,
+} from "recharts";
 
 interface WeatherCardProps {
   openMeteo: OpenMeteoData | null;
   tomorrow: TomorrowData | null;
   loading: boolean;
+  elevation?: number | null;
 }
 
 // SVG Icons for aviation weather
@@ -61,7 +74,15 @@ const HumidityIcon = () => (
   </svg>
 );
 
-export function WeatherCard({ openMeteo, tomorrow, loading }: WeatherCardProps) {
+// Altitude Icon for PA/DA
+const AltitudeIcon = () => (
+  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <path d="M3 17l6-6 4 4 8-8" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M17 7h4v4" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+export function WeatherCard({ openMeteo, tomorrow, loading, elevation }: WeatherCardProps) {
   if (loading) {
     return (
       <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6 mb-6">
@@ -91,6 +112,15 @@ export function WeatherCard({ openMeteo, tomorrow, loading }: WeatherCardProps) 
   const temperatureApparent = hasTomorrowData ? tw?.temperatureApparent : openMeteo?.current.apparent_temperature;
   const humidity = hasTomorrowData ? tw?.humidity : openMeteo?.current.relative_humidity_2m;
   const pressure = hasTomorrowData ? tw?.pressureSeaLevel : openMeteo?.current.surface_pressure;
+
+  // Calculate PA and DA from online weather
+  const pressureAltitude = pressure && elevation != null
+    ? Math.round(calculatePA(elevation, pressure))
+    : null;
+
+  const densityAltitude = pressureAltitude != null && temperature != null && elevation != null
+    ? Math.round(calculateDA(pressureAltitude, temperature, calculateISATemp(elevation)))
+    : null;
 
   // Wind - Tomorrow.io returns m/s, convert to knots
   let windSpeed: number | null | undefined;
@@ -200,7 +230,8 @@ export function WeatherCard({ openMeteo, tomorrow, loading }: WeatherCardProps) 
 
         {/* Current Conditions */}
         {(temperature !== null && temperature !== undefined) && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {/* Row 1: Temperature, Wind, Humidity */}
             {/* Temperature */}
             <div className="bg-slate-900/30 rounded-lg p-3 flex items-center gap-3">
               <div className="text-amber-400">
@@ -234,6 +265,20 @@ export function WeatherCard({ openMeteo, tomorrow, loading }: WeatherCardProps) 
               </div>
             </div>
 
+            {/* Humidity */}
+            <div className="bg-slate-900/30 rounded-lg p-3 flex items-center gap-3">
+              <div className="text-blue-400">
+                <HumidityIcon />
+              </div>
+              <div>
+                <div className="text-xs text-slate-400">Humidity</div>
+                <div className="text-white font-medium">
+                  {humidity !== null && humidity !== undefined ? `${Math.round(humidity)}%` : "N/A"}
+                </div>
+              </div>
+            </div>
+
+            {/* Row 2: Pressure, Pressure Altitude, Density Altitude */}
             {/* Pressure */}
             <div className="bg-slate-900/30 rounded-lg p-3 flex items-center gap-3">
               <div className="text-emerald-400">
@@ -247,88 +292,173 @@ export function WeatherCard({ openMeteo, tomorrow, loading }: WeatherCardProps) 
               </div>
             </div>
 
-            {/* Humidity */}
+            {/* Pressure Altitude */}
             <div className="bg-slate-900/30 rounded-lg p-3 flex items-center gap-3">
-              <div className="text-blue-400">
-                <HumidityIcon />
+              <div className="text-violet-400">
+                <AltitudeIcon />
               </div>
               <div>
-                <div className="text-xs text-slate-400">Humidity</div>
+                <div className="text-xs text-slate-400">Pressure Alt</div>
                 <div className="text-white font-medium">
-                  {humidity !== null && humidity !== undefined ? `${Math.round(humidity)}%` : "N/A"}
+                  {pressureAltitude !== null ? `${pressureAltitude.toLocaleString()} ft` : "N/A"}
                 </div>
+                {elevation != null && (
+                  <div className="text-xs text-slate-500">Field: {elevation.toLocaleString()} ft</div>
+                )}
+              </div>
+            </div>
+
+            {/* Density Altitude */}
+            <div className="bg-slate-900/30 rounded-lg p-3 flex items-center gap-3">
+              <div className={
+                densityAltitude !== null && densityAltitude > 8000
+                  ? "text-red-400"
+                  : densityAltitude !== null && densityAltitude > 6000
+                  ? "text-amber-400"
+                  : "text-orange-400"
+              }>
+                <AltitudeIcon />
+              </div>
+              <div>
+                <div className="text-xs text-slate-400">Density Alt</div>
+                <div className={`font-medium ${
+                  densityAltitude !== null && densityAltitude > 8000
+                    ? "text-red-400"
+                    : densityAltitude !== null && densityAltitude > 6000
+                    ? "text-amber-400"
+                    : "text-white"
+                }`}>
+                  {densityAltitude !== null ? `${densityAltitude.toLocaleString()} ft` : "N/A"}
+                </div>
+                {densityAltitude !== null && pressureAltitude !== null && (
+                  <div className="text-xs text-slate-500">
+                    {densityAltitude > pressureAltitude ? "+" : ""}{(densityAltitude - pressureAltitude).toLocaleString()} ft ISA dev
+                  </div>
+                )}
               </div>
             </div>
           </div>
         )}
 
-        {/* Hourly Forecast - prefer Tomorrow.io */}
-        {usesTomorrowHourly ? (
+        {/* Hourly Forecast Chart */}
+        {(usesTomorrowHourly || openMeteo) && (
           <div className="bg-slate-900/30 rounded-lg p-4">
-            <div className="text-xs text-slate-400 mb-3 uppercase tracking-wide">Hourly Forecast</div>
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {twHourly.slice(0, 12).map((item) => {
-                const hour = new Date(item.time).getHours();
-                const temp = item.values.temperature;
-                const wind = item.values.windSpeed ? Math.round(item.values.windSpeed * 1.94384) : null;
-                const clouds = item.values.cloudCover;
-                return (
-                  <div
-                    key={item.time}
-                    className="flex-shrink-0 text-center p-2 rounded-lg bg-slate-800/50 min-w-[56px]"
-                  >
-                    <div className="text-xs text-slate-500 font-medium">{String(hour).padStart(2, "0")}h</div>
-                    <div className="text-sm text-white font-bold my-1">
-                      {temp !== null && temp !== undefined ? `${Math.round(temp)}°` : "-"}
-                    </div>
-                    <div className="text-xs text-slate-400">
-                      {wind !== null ? `${wind} kt` : "-"}
-                    </div>
-                    {clouds !== null && clouds !== undefined && (
-                      <div
-                        className="text-xs mt-1 font-medium"
-                        style={{
-                          color: clouds < 25 ? "#4ade80" : clouds < 75 ? "#fbbf24" : "#94a3b8",
-                        }}
-                      >
-                        {Math.round(clouds)}%
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+            <div className="text-xs text-slate-400 mb-3 uppercase tracking-wide">12-Hour Forecast</div>
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart
+                  data={(() => {
+                    if (usesTomorrowHourly) {
+                      return twHourly.slice(0, 12).map((item) => ({
+                        hour: `${String(new Date(item.time).getHours()).padStart(2, "0")}h`,
+                        temp: item.values.temperature != null ? Math.round(item.values.temperature) : null,
+                        wind: item.values.windSpeed != null ? Math.round(item.values.windSpeed * 1.94384) : null,
+                        clouds: item.values.cloudCover != null ? Math.round(item.values.cloudCover) : null,
+                      }));
+                    } else if (openMeteo) {
+                      return openMeteo.hourly.time.slice(0, 12).map((time, i) => ({
+                        hour: `${String(new Date(time).getHours()).padStart(2, "0")}h`,
+                        temp: Math.round(openMeteo.hourly.temperature_2m[i]),
+                        wind: Math.round(openMeteo.hourly.wind_speed_10m[i]),
+                        clouds: openMeteo.hourly.cloud_cover[i],
+                      }));
+                    }
+                    return [];
+                  })()}
+                  margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+                  <XAxis
+                    dataKey="hour"
+                    stroke="#6B7280"
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    yAxisId="temp"
+                    orientation="left"
+                    stroke="#F59E0B"
+                    fontSize={10}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(value) => `${value}°`}
+                    domain={['dataMin - 2', 'dataMax + 2']}
+                  />
+                  <YAxis
+                    yAxisId="wind"
+                    orientation="right"
+                    stroke="#38BDF8"
+                    fontSize={10}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(value) => `${value}`}
+                    domain={[0, 'dataMax + 5']}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#1E293B',
+                      border: '1px solid #475569',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                    }}
+                    labelStyle={{ color: '#F1F5F9', fontWeight: 'bold' }}
+                    formatter={(value: number, name: string) => {
+                      if (name === 'temp') return [`${value}°C`, 'Temperature'];
+                      if (name === 'wind') return [`${value} kt`, 'Wind'];
+                      if (name === 'clouds') return [`${value}%`, 'Clouds'];
+                      return [value, name];
+                    }}
+                  />
+                  {/* Cloud cover as background area */}
+                  <Area
+                    yAxisId="temp"
+                    type="stepAfter"
+                    dataKey="clouds"
+                    stroke="none"
+                    fill="#94A3B8"
+                    fillOpacity={0.15}
+                    name="clouds"
+                  />
+                  {/* Temperature line */}
+                  <Line
+                    yAxisId="temp"
+                    type="monotone"
+                    dataKey="temp"
+                    stroke="#F59E0B"
+                    strokeWidth={2}
+                    dot={{ fill: '#F59E0B', strokeWidth: 0, r: 3 }}
+                    activeDot={{ r: 5, fill: '#F59E0B' }}
+                    name="temp"
+                  />
+                  {/* Wind line */}
+                  <Line
+                    yAxisId="wind"
+                    type="monotone"
+                    dataKey="wind"
+                    stroke="#38BDF8"
+                    strokeWidth={2}
+                    dot={{ fill: '#38BDF8', strokeWidth: 0, r: 3 }}
+                    activeDot={{ r: 5, fill: '#38BDF8' }}
+                    name="wind"
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
             </div>
-          </div>
-        ) : openMeteo && (
-          <div className="bg-slate-900/30 rounded-lg p-4">
-            <div className="text-xs text-slate-400 mb-3 uppercase tracking-wide">Hourly Forecast</div>
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {openMeteo.hourly.time.slice(0, 12).map((time, i) => {
-                const hour = new Date(time).getHours();
-                const cloudPct = openMeteo.hourly.cloud_cover[i];
-                return (
-                  <div
-                    key={time}
-                    className="flex-shrink-0 text-center p-2 rounded-lg bg-slate-800/50 min-w-[56px]"
-                  >
-                    <div className="text-xs text-slate-500 font-medium">{String(hour).padStart(2, "0")}h</div>
-                    <div className="text-sm text-white font-bold my-1">
-                      {Math.round(openMeteo.hourly.temperature_2m[i])}°
-                    </div>
-                    <div className="text-xs text-slate-400">
-                      {Math.round(openMeteo.hourly.wind_speed_10m[i])} kt
-                    </div>
-                    <div
-                      className="text-xs mt-1 font-medium"
-                      style={{
-                        color: cloudPct < 25 ? "#4ade80" : cloudPct < 75 ? "#fbbf24" : "#94a3b8",
-                      }}
-                    >
-                      {cloudPct}%
-                    </div>
-                  </div>
-                );
-              })}
+            {/* Legend */}
+            <div className="flex justify-center gap-6 mt-2 text-xs">
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-0.5 bg-amber-500 rounded"></div>
+                <span className="text-slate-400">Temperature (°C)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-0.5 bg-sky-400 rounded"></div>
+                <span className="text-slate-400">Wind (kt)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 bg-slate-400/20 rounded"></div>
+                <span className="text-slate-400">Clouds</span>
+              </div>
             </div>
           </div>
         )}

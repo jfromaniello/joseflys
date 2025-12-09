@@ -160,6 +160,7 @@ export function ConditionsView({
             error={!metar && !refreshing ? "No METAR data available" : null}
             onRefresh={handleRefresh}
             isVfrLegal={sunPosition?.isVfrLegal ?? true}
+            elevation={aerodrome?.elevation}
           />
 
           {/* Sun Times Card */}
@@ -195,6 +196,7 @@ export function ConditionsView({
             openMeteo={openMeteo}
             tomorrow={tomorrow}
             loading={refreshing}
+            elevation={aerodrome?.elevation}
           />
 
           {/* Map Card */}
