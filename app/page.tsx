@@ -19,8 +19,8 @@ export default function Home() {
           className="text-base sm:text-lg md:text-xl mb-6 leading-relaxed max-w-2xl mx-auto"
           style={{ color: "oklch(0.7 0.02 240)" }}
         >
-          Professional flight planning tools for accurate navigation. Plan complete flight legs with waypoints,
-          calculate TAS, compass course, wind correction, distance & bearing, and fuel consumption.
+          Experimental tools to help with flight planning calculations. Use as a reference alongside
+          official sources and your aircraft&apos;s POH - not as your primary planning tool.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3 text-sm" style={{ color: "oklch(0.6 0.02 240)" }}>
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/50 border border-gray-700">
@@ -814,17 +814,23 @@ export default function Home() {
         {/* Info Box */}
         <div className="mt-12 p-6 rounded-xl bg-slate-900/30 border border-gray-700">
           <p
-            className="text-sm text-center leading-relaxed"
+            className="text-sm text-center leading-relaxed mb-3"
             style={{ color: "oklch(0.6 0.02 240)" }}
           >
-            Experimental aviation calculators based on ISA standard atmosphere,
-            WGS-84 geodesic algorithms, and wind triangle principles. Plan complete flight legs
-            with waypoints, ETAs, and fuel consumption. All calculations are performed client-side for instant results.
+            Calculations use ISA standard atmosphere, WGS-84 geodesic algorithms, and wind triangle principles.
+            All processing is performed client-side for instant results.
+          </p>
+          <p
+            className="text-xs text-center leading-relaxed"
+            style={{ color: "oklch(0.55 0.08 60)" }}
+          >
+            This tool is provided for educational and reference purposes only. Always cross-check
+            results with certified flight planning tools and official documentation before flight.
           </p>
         </div>
       </main>
 
-      <Footer description="Aviation tools for flight planning, performance, and navigation. Professional calculators for TAS, wind correction, distance & bearing, and fuel consumption" />
+      <Footer description="Experimental aviation tools for flight planning reference. Calculators for TAS, wind correction, distance & bearing, and fuel consumption." />
     </PageLayout>
   );
 }
