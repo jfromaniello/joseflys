@@ -100,21 +100,34 @@ function buildPrompt(data: SummaryRequest): string {
     });
   }
 
-  // Recommended runway
+  // Recommended runway (based on wind only - must be cross-referenced with NOTAMs!)
   if (data.recommendedRunway) {
-    parts.push(`\nRecommended Runway: ${data.recommendedRunway.endId}`);
+    parts.push(`\nRecommended Runway (wind-based): ${data.recommendedRunway.endId}`);
     parts.push(`- Headwind: ${data.recommendedRunway.headwind} kt`);
     parts.push(`- Crosswind: ${data.recommendedRunway.crosswind} kt`);
+    parts.push(`⚠️ NOTE: This recommendation is based on wind only. You MUST check NOTAMs below for any closures or restrictions affecting this runway before recommending it.`);
   }
 
-  // NOTAMs
+  // NOTAMs - separate runway NOTAMs for visibility
   if (data.notams && data.notams.length > 0) {
-    parts.push(`\nActive NOTAMs (${data.notams.length}):`);
-    data.notams.slice(0, 10).forEach((notam) => {
-      parts.push(`- [${notam.keyword}] ${notam.traditionalMessageFrom4thWord?.substring(0, 100)}...`);
-    });
-    if (data.notams.length > 10) {
-      parts.push(`... and ${data.notams.length - 10} more`);
+    const runwayNotams = data.notams.filter((n) => n.keyword === "RWY");
+    const otherNotams = data.notams.filter((n) => n.keyword !== "RWY");
+
+    if (runwayNotams.length > 0) {
+      parts.push(`\n⚠️ RUNWAY NOTAMs (${runwayNotams.length}) - CHECK BEFORE RECOMMENDING RUNWAY:`);
+      runwayNotams.forEach((notam) => {
+        parts.push(`- ${notam.traditionalMessageFrom4thWord?.substring(0, 150)}`);
+      });
+    }
+
+    if (otherNotams.length > 0) {
+      parts.push(`\nOther Active NOTAMs (${otherNotams.length}):`);
+      otherNotams.slice(0, 8).forEach((notam) => {
+        parts.push(`- [${notam.keyword}] ${notam.traditionalMessageFrom4thWord?.substring(0, 100)}...`);
+      });
+      if (otherNotams.length > 8) {
+        parts.push(`... and ${otherNotams.length - 8} more`);
+      }
     }
   }
 
@@ -153,6 +166,7 @@ Guidelines:
 - Be concise and actionable (max 150 words total)
 - Use aviation terminology appropriately but remain accessible
 - Highlight any safety-critical information first
+- CRITICAL: Cross-reference NOTAMs with the recommended runway. If a NOTAM indicates the recommended runway is CLOSED, LIMITED, or has restrictions (taxi only, construction, etc.), you MUST recommend an alternative runway or clearly state no suitable runway is available. Never recommend a closed or restricted runway.
 - If it's night or civil twilight, prominently mention VFR restrictions and when VFR operations can resume/must end
 - If the runway is not lighted but it's dark, warn about this
 - If conditions are VFR during daytime with no significant concerns, keep it brief
