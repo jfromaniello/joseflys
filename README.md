@@ -10,6 +10,16 @@
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/jfromaniello/joseflys)
 
+## Motivations
+
+This project began as a study aid during my PPL training (2025). While studying navigation, aerodynamics performance and meteorology, I found that implementing the calculations myself was the best way to really understand the material.
+
+The goal is to keep the math open and auditable. Unlike official tools which often hide the formula logic, this app is designed to let you see exactly how the results are derived. You should be able to cross-check everything here by hand.
+
+**Disclaimer**: This is for educational use only. Always rely on official sources (POH, charts) for actual flight planning.
+
+The project is open source and completely free (no ads/tracking). If you spot an error or have ideas on how to improve it, feel free to reach out or open a PR.
+
 ## Features
 
 ### 🛫 TAS Calculator

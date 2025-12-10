@@ -811,23 +811,41 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Info Box */}
-        <div className="mt-12 p-6 rounded-xl bg-slate-900/30 border border-gray-700">
-          <p
-            className="text-sm text-center leading-relaxed mb-3"
-            style={{ color: "oklch(0.6 0.02 240)" }}
-          >
-            Calculations use ISA standard atmosphere, WGS-84 geodesic algorithms, and wind triangle principles.
-            All processing is performed client-side for instant results.
-          </p>
-          <p
-            className="text-xs text-center leading-relaxed"
-            style={{ color: "oklch(0.55 0.08 60)" }}
-          >
-            This tool is provided for educational and reference purposes only. Always cross-check
-            results with certified flight planning tools and official documentation before flight.
-          </p>
-        </div>
+        {/* Motivations Section */}
+        <section id="motivations" className="mt-12 p-8 rounded-2xl bg-slate-800/30 border border-gray-700 scroll-mt-4">
+          <h2 className="text-xl font-bold mb-4" style={{ color: "white" }}>
+            Why I Built This
+          </h2>
+          <div className="space-y-4 text-sm leading-relaxed" style={{ color: "oklch(0.7 0.02 240)" }}>
+            <p>
+              This project began as a study aid during my PPL training (2025). While studying navigation,
+              aerodynamics performance and meteorology, I found that implementing the calculations myself
+              was the best way to really understand the material.
+            </p>
+            <p>
+              The goal is to keep the math open and auditable. Unlike official tools which often hide
+              the formula logic, this app is designed to let you see exactly how the results are derived.
+              You should be able to cross-check everything here by hand.
+            </p>
+            <p style={{ color: "oklch(0.55 0.08 60)" }}>
+              <strong>Disclaimer:</strong> This is for educational use only. Always rely on official
+              sources (POH, charts) for actual flight planning.
+            </p>
+            <p>
+              The project is open source and completely free (no ads/tracking). If you spot an error
+              or have ideas on how to improve it, feel free to{" "}
+              <a
+                href="https://github.com/jfromaniello/joseflys"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:no-underline"
+                style={{ color: "oklch(0.65 0.15 230)" }}
+              >
+                reach out or open a PR
+              </a>.
+            </p>
+          </div>
+        </section>
       </main>
 
       <Footer description="Experimental aviation tools for flight planning reference. Calculators for TAS, wind correction, distance & bearing, and fuel consumption." />
