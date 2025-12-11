@@ -1,6 +1,9 @@
 import { MapPinIcon, ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
 import { AerodromeResult } from "@/app/components/AerodromeSearchInput";
-import { Runway, MetarData, SURFACE_NAMES } from "./types";
+import { Runway, SURFACE_NAMES, Notam } from "./types";
+import { CardAnchor } from "./CardAnchor";
+import { AerodromeDescription } from "./AerodromeDescription";
+import { decode } from "@rovacc/notam-decoder";
 
 // Surface icons
 const PavedIcon = () => (
@@ -70,45 +73,83 @@ const SURFACE_INFO: Record<string, SurfaceInfo> = {
   WT: { icon: WaterIcon, label: "Water", color: "text-blue-400", bgColor: "bg-blue-400/10" },
 };
 
+/**
+ * Parse NOTAMs to find closed or limited runways
+ */
+function getClosedRunwaysFromNotams(notams: Notam[] | null): Set<string> {
+  const closedRunways = new Set<string>();
+
+  if (!notams) return closedRunways;
+
+  const now = new Date();
+
+  for (const notam of notams) {
+    if (notam.cancelledOrExpired || notam.status === "Cancelled") continue;
+    if (!notam.icaoMessage) continue;
+
+    try {
+      const decoded = decode(notam.icaoMessage);
+      const code = decoded.code?.toUpperCase() || "";
+      if (!code.startsWith("QMRLC") && !code.startsWith("QMRLT")) continue;
+
+      const { dateBegin, dateEnd, permanent } = decoded.duration || {};
+      if (!permanent) {
+        if (dateBegin && now < new Date(dateBegin)) continue;
+        if (dateEnd && now > new Date(dateEnd)) continue;
+      }
+
+      const text = decoded.text?.toUpperCase() || "";
+      const runwayPattern = /(?:RWY|RUNWAY)\s+(\d{2}[LRC]?(?:\s*\/\s*\d{2}[LRC]?)?)/g;
+
+      let match;
+      while ((match = runwayPattern.exec(text)) !== null) {
+        const runwayId = match[1].replace(/\s+/g, "");
+        closedRunways.add(runwayId);
+        if (runwayId.includes("/")) {
+          const [end1, end2] = runwayId.split("/");
+          closedRunways.add(end1);
+          closedRunways.add(end2);
+        }
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return closedRunways;
+}
+
+function isRunwayClosed(runway: Runway, closedRunways: Set<string>): boolean {
+  if (runway.closed) return true;
+  if (closedRunways.has(runway.id)) return true;
+  for (const end of runway.ends) {
+    if (closedRunways.has(end.id)) return true;
+  }
+  return false;
+}
+
+function isRunwayEndClosed(endId: string, runwayId: string, closedRunways: Set<string>): boolean {
+  return closedRunways.has(endId) || closedRunways.has(runwayId);
+}
+
 interface AerodromeInfoCardProps {
   aerodrome: AerodromeResult;
   runways: Runway[];
-  metar: MetarData | null;
+  notams: Notam[] | null;
   loadingRunways: boolean;
 }
 
-export function AerodromeInfoCard({ aerodrome, runways, metar, loadingRunways }: AerodromeInfoCardProps) {
+export function AerodromeInfoCard({ aerodrome, runways, notams, loadingRunways }: AerodromeInfoCardProps) {
+  const closedRunways = getClosedRunwaysFromNotams(notams);
+
   return (
     <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6 mb-6">
-      {/* Location Info */}
-      <div className="flex items-start justify-between mb-6">
-        <div className="flex items-start gap-3">
-          <MapPinIcon className="w-5 h-5 text-sky-400 mt-0.5 flex-shrink-0" />
-          <div>
-            <h2 className="text-lg font-semibold text-white mb-2">Aerodrome Info</h2>
-            <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
-              <div>
-                <span className="text-slate-400">Latitude:</span>
-                <span className="text-white ml-2">{aerodrome.lat.toFixed(4)}°</span>
-              </div>
-              <div>
-                <span className="text-slate-400">Longitude:</span>
-                <span className="text-white ml-2">{aerodrome.lon.toFixed(4)}°</span>
-              </div>
-              <div>
-                <span className="text-slate-400">Elevation:</span>
-                <span className="text-white ml-2">
-                  {aerodrome.elevation !== null ? `${aerodrome.elevation} ft` : "Unknown"}
-                </span>
-              </div>
-              <div>
-                <span className="text-slate-400">Type:</span>
-                <span className="text-white ml-2">
-                  {aerodrome.type === "AD" ? "Aerodrome" : "Landing Area"}
-                </span>
-              </div>
-            </div>
-          </div>
+      {/* Header */}
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <MapPinIcon className="w-5 h-5 text-sky-400 flex-shrink-0" />
+          <h2 className="text-lg font-semibold text-white">Aerodrome Info</h2>
+          <CardAnchor id="aerodrome" />
         </div>
         <a
           href={`https://www.google.com/maps?q=${aerodrome.lat},${aerodrome.lon}`}
@@ -121,6 +162,30 @@ export function AerodromeInfoCard({ aerodrome, runways, metar, loadingRunways }:
         </a>
       </div>
 
+      {/* Location Info */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2 text-sm mb-6">
+        <div>
+          <span className="text-slate-400">Latitude:</span>
+          <span className="text-white ml-2">{aerodrome.lat.toFixed(4)}°</span>
+        </div>
+        <div>
+          <span className="text-slate-400">Longitude:</span>
+          <span className="text-white ml-2">{aerodrome.lon.toFixed(4)}°</span>
+        </div>
+        <div>
+          <span className="text-slate-400">Elevation:</span>
+          <span className="text-white ml-2">
+            {aerodrome.elevation !== null ? `${aerodrome.elevation} ft` : "Unknown"}
+          </span>
+        </div>
+        <div>
+          <span className="text-slate-400">Type:</span>
+          <span className="text-white ml-2">
+            {aerodrome.type === "AD" ? "Aerodrome" : "Landing Area"}
+          </span>
+        </div>
+      </div>
+
       {/* Runways */}
       <div className="border-t border-slate-700 pt-4">
         <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-3">Runways</h3>
@@ -131,97 +196,103 @@ export function AerodromeInfoCard({ aerodrome, runways, metar, loadingRunways }:
           <div className="text-slate-500 text-sm">No runway data available</div>
         ) : (
           <div className="space-y-3">
-            {runways.map((runway) => (
-              <div
-                key={runway.id}
-                className="bg-slate-900/30 rounded-lg p-3"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl font-bold text-white">{runway.id}</span>
+            {runways.map((runway) => {
+              const isClosed = isRunwayClosed(runway, closedRunways);
+
+              return (
+                <div
+                  key={runway.id}
+                  className={`bg-slate-900/30 rounded-lg p-3 ${isClosed ? "opacity-60" : ""}`}
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className={`text-lg font-bold ${isClosed ? "text-slate-500 line-through" : "text-white"}`}>
+                      {runway.id}
+                    </span>
+                    {(() => {
+                      const info = SURFACE_INFO[runway.surface];
+                      if (info) {
+                        const Icon = info.icon;
+                        return (
+                          <span className={`flex items-center gap-1.5 ${info.color}`}>
+                            <Icon />
+                            <span className="text-sm">{info.label}</span>
+                          </span>
+                        );
+                      }
+                      return (
+                        <span className="text-sm text-slate-400">
+                          {SURFACE_NAMES[runway.surface] || runway.surfaceName}
+                        </span>
+                      );
+                    })()}
                     {runway.lighted && (
-                      <span className="px-1.5 py-0.5 text-xs bg-yellow-400/10 text-yellow-400 rounded">
-                        Lighted
-                      </span>
+                      <span className="text-xs text-yellow-400">Lighted</span>
                     )}
-                    {runway.closed && (
-                      <span className="px-1.5 py-0.5 text-xs bg-red-400/10 text-red-400 rounded">
+                    {isClosed && (
+                      <span className="px-1.5 py-0.5 text-xs bg-red-400/20 text-red-400 rounded font-medium">
                         Closed
                       </span>
                     )}
                   </div>
-                  {(() => {
-                    const info = SURFACE_INFO[runway.surface];
-                    if (info) {
-                      const Icon = info.icon;
-                      return (
-                        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${info.bgColor}`}>
-                          <span className={info.color}><Icon /></span>
-                          <span className={`text-sm font-medium ${info.color}`}>{info.label}</span>
-                        </div>
-                      );
-                    }
-                    return (
-                      <span className="text-sm text-slate-400 px-3 py-1.5 bg-slate-700/30 rounded-lg">
-                        {SURFACE_NAMES[runway.surface] || runway.surfaceName}
-                      </span>
-                    );
-                  })()}
-                </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                  <div>
-                    <span className="text-slate-400">Length:</span>
-                    <span className="text-white ml-1">{runway.length.toLocaleString()} ft</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400">Width:</span>
-                    <span className="text-white ml-1">{runway.width} ft</span>
-                  </div>
-                  {runway.ends.map((end) => (
-                    <div key={end.id}>
-                      <span className="text-slate-400">RWY {end.id}:</span>
-                      <span className="text-white ml-1">
-                        {end.heading !== null ? `${String(Math.round(end.heading)).padStart(3, "0")}°` : "N/A"}
-                      </span>
-                      {end.elevation !== null && (
-                        <span className="text-slate-500 ml-1 text-xs">({end.elevation} ft)</span>
-                      )}
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm mt-1">
+                    <div>
+                      <span className="text-slate-500">Length:</span>
+                      <span className="text-white ml-1">{runway.length.toLocaleString()} ft</span>
                     </div>
-                  ))}
-                </div>
-
-                {/* Wind components if METAR available */}
-                {metar && metar.wdir !== null && metar.wspd !== null && (
-                  <div className="mt-2 pt-2 border-t border-slate-700/50">
-                    <div className="flex flex-wrap gap-3 text-sm">
-                      {runway.ends.map((end) => {
-                        if (end.heading === null) return null;
-
-                        const windAngle = ((metar.wdir! - end.heading + 360) % 360) * (Math.PI / 180);
-                        const headwind = Math.round(metar.wspd! * Math.cos(windAngle));
-                        const crosswind = Math.round(Math.abs(metar.wspd! * Math.sin(windAngle)));
-                        const crossDir = Math.sin(windAngle) > 0 ? "R" : "L";
-
+                    <div>
+                      {runway.ends[0] && (() => {
+                        const end = runway.ends[0];
+                        const endClosed = isRunwayEndClosed(end.id, runway.id, closedRunways);
                         return (
-                          <div key={end.id} className="flex items-center gap-1.5">
-                            <span className="text-slate-400">{end.id}:</span>
-                            <span className={headwind >= 0 ? "text-green-400" : "text-red-400"}>
-                              {headwind >= 0 ? `+${headwind}` : headwind} HW
+                          <>
+                            <span className={endClosed ? "text-slate-600 line-through" : "text-slate-500"}>
+                              RWY {end.id}:
                             </span>
-                            <span className="text-amber-400">
-                              {crosswind}{crossDir} XW
+                            <span className={`ml-1 ${endClosed ? "text-slate-600 line-through" : "text-white"}`}>
+                              {end.heading !== null ? `${String(Math.round(end.heading)).padStart(3, "0")}°` : "N/A"}
                             </span>
-                          </div>
+                          </>
                         );
-                      })}
+                      })()}
+                    </div>
+                    <div>
+                      <span className="text-slate-500">Width:</span>
+                      <span className="text-white ml-1">{runway.width} ft</span>
+                    </div>
+                    <div>
+                      {runway.ends[1] && (() => {
+                        const end = runway.ends[1];
+                        const endClosed = isRunwayEndClosed(end.id, runway.id, closedRunways);
+                        return (
+                          <>
+                            <span className={endClosed ? "text-slate-600 line-through" : "text-slate-500"}>
+                              RWY {end.id}:
+                            </span>
+                            <span className={`ml-1 ${endClosed ? "text-slate-600 line-through" : "text-white"}`}>
+                              {end.heading !== null ? `${String(Math.round(end.heading)).padStart(3, "0")}°` : "N/A"}
+                            </span>
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
-                )}
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </div>
         )}
+
+        {/* AI-generated description */}
+        <AerodromeDescription
+          code={aerodrome.code}
+          name={aerodrome.name}
+          type={aerodrome.type}
+          lat={aerodrome.lat}
+          lon={aerodrome.lon}
+          elevation={aerodrome.elevation}
+          runways={runways}
+        />
       </div>
     </div>
   );

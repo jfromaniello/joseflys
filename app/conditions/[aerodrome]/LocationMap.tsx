@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import type { Icon } from "leaflet";
 import { AerodromeResult } from "@/app/components/AerodromeSearchInput";
+import { CardAnchor } from "./CardAnchor";
 
 // Dynamic import for Leaflet (SSR issues)
 const MapContainer = dynamic(() => import("react-leaflet").then(mod => mod.MapContainer), { ssr: false });
@@ -35,7 +36,10 @@ interface LocationMapProps {
 export function LocationMap({ aerodrome }: LocationMapProps) {
   return (
     <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6 mb-6">
-      <h2 className="text-lg font-semibold text-white mb-4">Location Map</h2>
+      <div className="flex items-center gap-2 mb-4">
+        <h2 className="text-lg font-semibold text-white">Location Map</h2>
+        <CardAnchor id="map" />
+      </div>
       <div className="h-80 rounded-lg overflow-hidden">
         <MapContainer
           center={[aerodrome.lat, aerodrome.lon]}

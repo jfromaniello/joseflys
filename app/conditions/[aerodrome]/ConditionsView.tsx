@@ -9,6 +9,7 @@ import { MetarData, TafData, Runway, OpenMeteoData, TomorrowData, Aerodrome, Not
 import { MetarCard } from "./MetarCard";
 import { TafCard } from "./TafCard";
 import { AerodromeInfoCard } from "./AerodromeInfoCard";
+import { OverviewCard } from "./OverviewCard";
 import { WeatherCard } from "./WeatherCard";
 import { LocationMap } from "./LocationMap";
 import { WindyEmbed } from "./WindyEmbed";
@@ -150,103 +151,142 @@ export function ConditionsView({
             </div>
           </div>
 
+          {/* Overview Card - First! */}
+          {aerodrome && (
+            <div id="overview" className="scroll-mt-20">
+              <OverviewCard
+                metar={metar}
+                runways={runways}
+                notams={notams}
+                elevation={aerodrome.elevation}
+                lat={aerodrome.lat}
+                lon={aerodrome.lon}
+                openMeteo={openMeteo}
+                tomorrow={tomorrow}
+              />
+            </div>
+          )}
+
           {/* METAR Card */}
-          <MetarCard
-            metar={metar}
-            metarSource={metarSource}
-            metarDistance={metarDistance}
-            runways={runways}
-            loading={refreshing}
-            error={!metar && !refreshing ? "No METAR data available" : null}
-            onRefresh={handleRefresh}
-            isVfrLegal={sunPosition?.isVfrLegal ?? true}
-            elevation={aerodrome?.elevation}
-          />
+          <div id="metar" className="scroll-mt-20">
+            <MetarCard
+              metar={metar}
+              metarSource={metarSource}
+              metarDistance={metarDistance}
+              loading={refreshing}
+              error={!metar && !refreshing ? "No METAR data available" : null}
+              onRefresh={handleRefresh}
+              isVfrLegal={sunPosition?.isVfrLegal ?? true}
+              elevation={aerodrome?.elevation}
+            />
+          </div>
 
           {/* Sun Times Card */}
           {aerodrome && (
-            <SunTimesCard lat={aerodrome.lat} lon={aerodrome.lon} />
+            <div id="sun" className="scroll-mt-20">
+              <SunTimesCard lat={aerodrome.lat} lon={aerodrome.lon} />
+            </div>
           )}
 
           {/* TAF Card */}
-          <TafCard
-            taf={taf}
-            tafSource={tafSource}
-            tafDistance={tafDistance}
-            loading={refreshing}
-          />
+          <div id="taf" className="scroll-mt-20">
+            <TafCard
+              taf={taf}
+              tafSource={tafSource}
+              tafDistance={tafDistance}
+              loading={refreshing}
+            />
+          </div>
 
           {/* NOTAM Card (only if enabled) */}
           {notams !== null && (
-            <NotamCard notams={notams} loading={refreshing} />
-          )}
-
-          {/* Aerodrome Info Card (Location + Runways) */}
-          {aerodrome && (
-            <AerodromeInfoCard
-              aerodrome={aerodromeResult!}
-              runways={runways}
-              metar={metar}
-              loadingRunways={false}
-            />
+            <div id="notam" className="scroll-mt-20">
+              <NotamCard notams={notams} loading={refreshing} />
+            </div>
           )}
 
           {/* Online Weather Card */}
-          <WeatherCard
-            openMeteo={openMeteo}
-            tomorrow={tomorrow}
-            loading={refreshing}
-            elevation={aerodrome?.elevation}
-          />
+          <div id="weather" className="scroll-mt-20">
+            <WeatherCard
+              openMeteo={openMeteo}
+              tomorrow={tomorrow}
+              loading={refreshing}
+              elevation={aerodrome?.elevation}
+              lat={aerodrome?.lat}
+              lon={aerodrome?.lon}
+            />
+          </div>
+
+          {/* Aerodrome Info Card (static data - location, runways) */}
+          {aerodrome && (
+            <div id="aerodrome" className="scroll-mt-20">
+              <AerodromeInfoCard
+                aerodrome={aerodromeResult!}
+                runways={runways}
+                notams={notams}
+                loadingRunways={false}
+              />
+            </div>
+          )}
 
           {/* Map Card */}
-          {aerodrome && mapReady && <LocationMap aerodrome={aerodromeResult!} />}
+          {aerodrome && mapReady && (
+            <div id="map" className="scroll-mt-20">
+              <LocationMap aerodrome={aerodromeResult!} />
+            </div>
+          )}
 
           {/* Windy Embed */}
-          {aerodrome && <WindyEmbed aerodrome={aerodromeResult!} />}
+          {aerodrome && (
+            <div id="windy" className="scroll-mt-20">
+              <WindyEmbed aerodrome={aerodromeResult!} />
+            </div>
+          )}
 
           {/* AI Summary */}
-          <AISummaryCard
-            aerodromeCode={aerodromeCode}
-            aerodrome={aerodrome ? {
-              name: aerodrome.name,
-              type: aerodrome.type,
-              elevation: aerodrome.elevation,
-              lat: aerodrome.lat,
-              lon: aerodrome.lon,
-            } : null}
-            metar={metar ? {
-              rawOb: metar.rawOb,
-              temp: metar.temp,
-              dewp: metar.dewp,
-              wdir: metar.wdir,
-              wspd: metar.wspd,
-              wgst: metar.wgst,
-              altim: metar.altim,
-              visib: metar.visib,
-              fltCat: metar.fltCat,
-            } : null}
-            taf={taf ? { rawTAF: taf.rawTAF } : null}
-            runways={runways.map(r => ({
-              id: r.id,
-              length: r.length,
-              width: r.width,
-              surface: r.surface,
-              lighted: r.lighted,
-              closed: r.closed,
-            }))}
-            recommendedRunway={recommendedRunway}
-            notams={notams}
-            weather={weatherForAI}
-            sunTimes={sunPosition ? {
-              civilDawn: sunPosition.times.civilDawn.toISOString(),
-              sunrise: sunPosition.times.sunrise.toISOString(),
-              sunset: sunPosition.times.sunset.toISOString(),
-              civilDusk: sunPosition.times.civilDusk.toISOString(),
-              isVfrLegal: sunPosition.isVfrLegal,
-              phase: sunPosition.phase,
-            } : null}
-          />
+          <div id="summary" className="scroll-mt-20">
+            <AISummaryCard
+              aerodromeCode={aerodromeCode}
+              aerodrome={aerodrome ? {
+                name: aerodrome.name,
+                type: aerodrome.type,
+                elevation: aerodrome.elevation,
+                lat: aerodrome.lat,
+                lon: aerodrome.lon,
+              } : null}
+              metar={metar ? {
+                rawOb: metar.rawOb,
+                temp: metar.temp,
+                dewp: metar.dewp,
+                wdir: metar.wdir,
+                wspd: metar.wspd,
+                wgst: metar.wgst,
+                altim: metar.altim,
+                visib: metar.visib,
+                fltCat: metar.fltCat,
+              } : null}
+              taf={taf ? { rawTAF: taf.rawTAF } : null}
+              runways={runways.map(r => ({
+                id: r.id,
+                length: r.length,
+                width: r.width,
+                surface: r.surface,
+                lighted: r.lighted,
+                closed: r.closed,
+              }))}
+              recommendedRunway={recommendedRunway}
+              notams={notams}
+              weather={weatherForAI}
+              sunTimes={sunPosition ? {
+                civilDawn: sunPosition.times.civilDawn.toISOString(),
+                sunrise: sunPosition.times.sunrise.toISOString(),
+                sunset: sunPosition.times.sunset.toISOString(),
+                civilDusk: sunPosition.times.civilDusk.toISOString(),
+                isVfrLegal: sunPosition.isVfrLegal,
+                phase: sunPosition.phase,
+              } : null}
+            />
+          </div>
 
           {/* Quick Links */}
           <div className="flex flex-wrap gap-3 justify-center">

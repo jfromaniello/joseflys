@@ -1,4 +1,5 @@
 import { TafData, TafForecast, CLOUD_COVER } from "./types";
+import { CardAnchor } from "./CardAnchor";
 
 interface TafCardProps {
   taf: TafData | null;
@@ -99,7 +100,10 @@ export function TafCard({ taf, tafSource, tafDistance, loading }: TafCardProps) 
   return (
     <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6 mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-white">TAF Forecast</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-white">TAF Forecast</h2>
+          <CardAnchor id="taf" />
+        </div>
         <div className="text-xs text-slate-400">
           Valid: {formatDate(taf.validTimeFrom)} {formatTime(taf.validTimeFrom)} → {formatTime(taf.validTimeTo)}
         </div>

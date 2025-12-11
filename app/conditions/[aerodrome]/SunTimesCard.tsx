@@ -8,6 +8,7 @@ import {
   getTimeUntil,
   type SunPosition,
 } from "@/lib/sun";
+import { CardAnchor } from "./CardAnchor";
 
 interface SunTimesCardProps {
   lat: number;
@@ -73,7 +74,10 @@ export function SunTimesCard({ lat, lon }: SunTimesCardProps) {
   return (
     <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6 mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-white">Sun Times</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-white">Sun Times</h2>
+          <CardAnchor id="sun" />
+        </div>
         <div
           className={`flex items-center gap-2 px-3 py-1 rounded-full border ${phaseInfo.bgColor} ${phaseInfo.borderColor}`}
         >

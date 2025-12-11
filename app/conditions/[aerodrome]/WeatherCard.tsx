@@ -1,7 +1,8 @@
 import { OpenMeteoData, TomorrowData } from "./types";
 import { calculatePA, calculateDA, calculateISATemp } from "@/lib/isaCalculations";
+import { CardAnchor } from "./CardAnchor";
+import { getSunPosition } from "@/lib/sun";
 import {
-  LineChart,
   Line,
   XAxis,
   YAxis,
@@ -10,6 +11,7 @@ import {
   ResponsiveContainer,
   Area,
   ComposedChart,
+  ReferenceLine,
 } from "recharts";
 
 interface WeatherCardProps {
@@ -17,6 +19,8 @@ interface WeatherCardProps {
   tomorrow: TomorrowData | null;
   loading: boolean;
   elevation?: number | null;
+  lat?: number;
+  lon?: number;
 }
 
 // SVG Icons for aviation weather
@@ -82,7 +86,7 @@ const AltitudeIcon = () => (
   </svg>
 );
 
-export function WeatherCard({ openMeteo, tomorrow, loading, elevation }: WeatherCardProps) {
+export function WeatherCard({ openMeteo, tomorrow, loading, elevation, lat, lon }: WeatherCardProps) {
   if (loading) {
     return (
       <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6 mb-6">
@@ -176,7 +180,10 @@ export function WeatherCard({ openMeteo, tomorrow, loading, elevation }: Weather
 
   return (
     <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6 mb-6">
-      <h2 className="text-lg font-semibold text-white mb-4">Online Weather</h2>
+      <div className="flex items-center gap-2 mb-4">
+        <h2 className="text-lg font-semibold text-white">Online Weather</h2>
+        <CardAnchor id="weather" />
+      </div>
 
       <div className="space-y-4">
         {/* Aviation Critical Data - from Tomorrow.io only */}
@@ -341,127 +348,193 @@ export function WeatherCard({ openMeteo, tomorrow, loading, elevation }: Weather
         )}
 
         {/* Hourly Forecast Chart */}
-        {(usesTomorrowHourly || openMeteo) && (
-          <div className="bg-slate-900/30 rounded-lg p-4">
-            <div className="text-xs text-slate-400 mb-3 uppercase tracking-wide">12-Hour Forecast</div>
-            <div className="h-48">
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart
-                  data={(() => {
-                    if (usesTomorrowHourly) {
-                      return twHourly.slice(0, 12).map((item) => ({
-                        hour: `${String(new Date(item.time).getHours()).padStart(2, "0")}h`,
-                        temp: item.values.temperature != null ? Math.round(item.values.temperature) : null,
-                        wind: item.values.windSpeed != null ? Math.round(item.values.windSpeed * 1.94384) : null,
-                        clouds: item.values.cloudCover != null ? Math.round(item.values.cloudCover) : null,
-                      }));
-                    } else if (openMeteo) {
-                      return openMeteo.hourly.time.slice(0, 12).map((time, i) => ({
-                        hour: `${String(new Date(time).getHours()).padStart(2, "0")}h`,
-                        temp: Math.round(openMeteo.hourly.temperature_2m[i]),
-                        wind: Math.round(openMeteo.hourly.wind_speed_10m[i]),
-                        clouds: openMeteo.hourly.cloud_cover[i],
-                      }));
-                    }
-                    return [];
-                  })()}
-                  margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
-                  <XAxis
-                    dataKey="hour"
-                    stroke="#6B7280"
-                    fontSize={11}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
-                    yAxisId="temp"
-                    orientation="left"
-                    stroke="#F59E0B"
-                    fontSize={10}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(value) => `${value}°`}
-                    domain={['dataMin - 2', 'dataMax + 2']}
-                  />
-                  <YAxis
-                    yAxisId="wind"
-                    orientation="right"
-                    stroke="#38BDF8"
-                    fontSize={10}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(value) => `${value}`}
-                    domain={[0, 'dataMax + 5']}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#1E293B',
-                      border: '1px solid #475569',
-                      borderRadius: '8px',
-                      fontSize: '12px',
-                    }}
-                    labelStyle={{ color: '#F1F5F9', fontWeight: 'bold' }}
-                    formatter={(value: number, name: string) => {
-                      if (name === 'temp') return [`${value}°C`, 'Temperature'];
-                      if (name === 'wind') return [`${value} kt`, 'Wind'];
-                      if (name === 'clouds') return [`${value}%`, 'Clouds'];
-                      return [value, name];
-                    }}
-                  />
-                  {/* Cloud cover as background area */}
-                  <Area
-                    yAxisId="temp"
-                    type="stepAfter"
-                    dataKey="clouds"
-                    stroke="none"
-                    fill="#94A3B8"
-                    fillOpacity={0.15}
-                    name="clouds"
-                  />
-                  {/* Temperature line */}
-                  <Line
-                    yAxisId="temp"
-                    type="monotone"
-                    dataKey="temp"
-                    stroke="#F59E0B"
-                    strokeWidth={2}
-                    dot={{ fill: '#F59E0B', strokeWidth: 0, r: 3 }}
-                    activeDot={{ r: 5, fill: '#F59E0B' }}
-                    name="temp"
-                  />
-                  {/* Wind line */}
-                  <Line
-                    yAxisId="wind"
-                    type="monotone"
-                    dataKey="wind"
-                    stroke="#38BDF8"
-                    strokeWidth={2}
-                    dot={{ fill: '#38BDF8', strokeWidth: 0, r: 3 }}
-                    activeDot={{ r: 5, fill: '#38BDF8' }}
-                    name="wind"
-                  />
-                </ComposedChart>
-              </ResponsiveContainer>
+        {(usesTomorrowHourly || openMeteo) && (() => {
+          // Build chart data with timestamps
+          const chartData = (() => {
+            if (usesTomorrowHourly) {
+              return twHourly.slice(0, 12).map((item) => {
+                const date = new Date(item.time);
+                return {
+                  hour: `${String(date.getHours()).padStart(2, "0")}h`,
+                  timestamp: date.getTime(),
+                  temp: item.values.temperature != null ? Math.round(item.values.temperature) : null,
+                  wind: item.values.windSpeed != null ? Math.round(item.values.windSpeed * 1.94384) : null,
+                  clouds: item.values.cloudCover != null ? Math.round(item.values.cloudCover) : null,
+                };
+              });
+            } else if (openMeteo) {
+              return openMeteo.hourly.time.slice(0, 12).map((time, i) => {
+                const date = new Date(time);
+                return {
+                  hour: `${String(date.getHours()).padStart(2, "0")}h`,
+                  timestamp: date.getTime(),
+                  temp: Math.round(openMeteo.hourly.temperature_2m[i]),
+                  wind: Math.round(openMeteo.hourly.wind_speed_10m[i]),
+                  clouds: openMeteo.hourly.cloud_cover[i],
+                };
+              });
+            }
+            return [];
+          })();
+
+          // Calculate sun times reference lines
+          const sunLines: { hour: string; label: string; color: string; dash?: string }[] = [];
+          if (lat != null && lon != null && chartData.length > 0) {
+            const sunPosition = getSunPosition(lat, lon);
+            const firstHour = chartData[0].timestamp;
+            const lastHour = chartData[chartData.length - 1].timestamp;
+
+            const sunEvents = [
+              { time: sunPosition.times.civilDawn, label: "Dawn", color: "#F97316", dash: "3 3" },
+              { time: sunPosition.times.sunrise, label: "Sunrise", color: "#FBBF24" },
+              { time: sunPosition.times.sunset, label: "Sunset", color: "#F97316" },
+              { time: sunPosition.times.civilDusk, label: "Dusk", color: "#8B5CF6", dash: "3 3" },
+            ];
+
+            for (const event of sunEvents) {
+              const eventTime = event.time.getTime();
+              if (eventTime >= firstHour && eventTime <= lastHour) {
+                // Find the closest hour label
+                const eventHour = event.time.getHours();
+                const hourLabel = `${String(eventHour).padStart(2, "0")}h`;
+                sunLines.push({
+                  hour: hourLabel,
+                  label: event.label,
+                  color: event.color,
+                  dash: event.dash,
+                });
+              }
+            }
+          }
+
+          return (
+            <div className="bg-slate-900/30 rounded-lg p-4">
+              <div className="text-xs text-slate-400 mb-3 uppercase tracking-wide">12-Hour Forecast</div>
+              <div className="h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart
+                    data={chartData}
+                    margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+                    <XAxis
+                      dataKey="hour"
+                      stroke="#6B7280"
+                      fontSize={11}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      yAxisId="temp"
+                      orientation="left"
+                      stroke="#F59E0B"
+                      fontSize={10}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(value) => `${value}°`}
+                      domain={['dataMin - 2', 'dataMax + 2']}
+                    />
+                    <YAxis
+                      yAxisId="wind"
+                      orientation="right"
+                      stroke="#38BDF8"
+                      fontSize={10}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(value) => `${value}`}
+                      domain={[0, 'dataMax + 5']}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#1E293B',
+                        border: '1px solid #475569',
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                      }}
+                      labelStyle={{ color: '#F1F5F9', fontWeight: 'bold' }}
+                      formatter={(value: number, name: string) => {
+                        if (name === 'temp') return [`${value}°C`, 'Temperature'];
+                        if (name === 'wind') return [`${value} kt`, 'Wind'];
+                        if (name === 'clouds') return [`${value}%`, 'Clouds'];
+                        return [value, name];
+                      }}
+                    />
+                    {/* Sun time reference lines */}
+                    {sunLines.map((line) => (
+                      <ReferenceLine
+                        key={line.label}
+                        x={line.hour}
+                        yAxisId="temp"
+                        stroke={line.color}
+                        strokeWidth={2}
+                        strokeDasharray={line.dash}
+                        label={{
+                          value: line.label,
+                          position: 'top',
+                          fill: line.color,
+                          fontSize: 10,
+                        }}
+                      />
+                    ))}
+                    {/* Cloud cover as background area */}
+                    <Area
+                      yAxisId="temp"
+                      type="stepAfter"
+                      dataKey="clouds"
+                      stroke="none"
+                      fill="#94A3B8"
+                      fillOpacity={0.15}
+                      name="clouds"
+                    />
+                    {/* Temperature line */}
+                    <Line
+                      yAxisId="temp"
+                      type="monotone"
+                      dataKey="temp"
+                      stroke="#F59E0B"
+                      strokeWidth={2}
+                      dot={{ fill: '#F59E0B', strokeWidth: 0, r: 3 }}
+                      activeDot={{ r: 5, fill: '#F59E0B' }}
+                      name="temp"
+                    />
+                    {/* Wind line */}
+                    <Line
+                      yAxisId="wind"
+                      type="monotone"
+                      dataKey="wind"
+                      stroke="#38BDF8"
+                      strokeWidth={2}
+                      dot={{ fill: '#38BDF8', strokeWidth: 0, r: 3 }}
+                      activeDot={{ r: 5, fill: '#38BDF8' }}
+                      name="wind"
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+              {/* Legend */}
+              <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 mt-2 text-xs">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-0.5 bg-amber-500 rounded"></div>
+                  <span className="text-slate-400">Temperature (°C)</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-0.5 bg-sky-400 rounded"></div>
+                  <span className="text-slate-400">Wind (kt)</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 bg-slate-400/20 rounded"></div>
+                  <span className="text-slate-400">Clouds</span>
+                </div>
+                {sunLines.length > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-0.5 bg-yellow-400 rounded"></div>
+                    <span className="text-slate-400">Sun events</span>
+                  </div>
+                )}
+              </div>
             </div>
-            {/* Legend */}
-            <div className="flex justify-center gap-6 mt-2 text-xs">
-              <div className="flex items-center gap-1.5">
-                <div className="w-3 h-0.5 bg-amber-500 rounded"></div>
-                <span className="text-slate-400">Temperature (°C)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-3 h-0.5 bg-sky-400 rounded"></div>
-                <span className="text-slate-400">Wind (kt)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 bg-slate-400/20 rounded"></div>
-                <span className="text-slate-400">Clouds</span>
-              </div>
-            </div>
-          </div>
-        )}
+          );
+        })()}
       </div>
     </div>
   );

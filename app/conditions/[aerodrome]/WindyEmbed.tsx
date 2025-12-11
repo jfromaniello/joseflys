@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { AerodromeResult } from "@/app/components/AerodromeSearchInput";
+import { CardAnchor } from "./CardAnchor";
 
 interface WindyEmbedProps {
   aerodrome: AerodromeResult;
@@ -59,7 +60,10 @@ export function WindyEmbed({ aerodrome }: WindyEmbedProps) {
   return (
     <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6 mb-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-        <h2 className="text-lg font-semibold text-white">Windy Weather Map</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-white">Windy Weather Map</h2>
+          <CardAnchor id="windy" />
+        </div>
         <div className="flex gap-1 bg-slate-900/50 rounded-lg p-1">
           {overlayOptions.map((opt) => (
             <button

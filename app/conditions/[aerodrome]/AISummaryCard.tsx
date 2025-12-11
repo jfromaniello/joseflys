@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { SparklesIcon } from "@heroicons/react/24/outline";
+import { CardAnchor } from "./CardAnchor";
 
 interface AISummaryCardProps {
   aerodromeCode: string;
@@ -139,6 +140,7 @@ export function AISummaryCard({
       <div className="flex items-center gap-2 mb-4">
         <SparklesIcon className="w-5 h-5 text-purple-400" />
         <h2 className="text-lg font-semibold text-white">AI Briefing</h2>
+        <CardAnchor id="summary" />
         {cached && (
           <span className="text-xs text-purple-400/60 ml-auto">cached</span>
         )}
