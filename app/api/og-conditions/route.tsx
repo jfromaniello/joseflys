@@ -5,7 +5,7 @@ import { selectBestRunway } from '@/lib/runwayUtils';
 import { getSunTimes, isVfrLegal, getDaylightPhase } from '@/lib/sun';
 import { calculatePA, calculateDA, calculateISATemp } from '@/lib/isaCalculations';
 
-export const runtime = 'edge';
+// export const runtime = 'edge';
 
 export async function GET(request: NextRequest) {
   try {
