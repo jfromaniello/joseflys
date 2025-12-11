@@ -1,9 +1,8 @@
 import { MapPinIcon, ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
 import { AerodromeResult } from "@/app/components/AerodromeSearchInput";
-import { Runway, MetarData, SURFACE_NAMES, Notam } from "./types";
-import { selectBestRunway, SelectedRunway } from "@/lib/runwayUtils";
-import { WindRoseRunway } from "./WindRoseRunway";
+import { Runway, SURFACE_NAMES, Notam } from "./types";
 import { CardAnchor } from "./CardAnchor";
+import { AerodromeDescription } from "./AerodromeDescription";
 import { decode } from "@rovacc/notam-decoder";
 
 // Surface icons
@@ -75,9 +74,7 @@ const SURFACE_INFO: Record<string, SurfaceInfo> = {
 };
 
 /**
- * Parse NOTAMs to find closed or limited runways using @rovacc/notam-decoder
- * Returns a Set of runway identifiers that are closed/limited (e.g., "05", "23", "01/19")
- * Only includes NOTAMs that are currently active (within their validity period)
+ * Parse NOTAMs to find closed or limited runways
  */
 function getClosedRunwaysFromNotams(notams: Notam[] | null): Set<string> {
   const closedRunways = new Set<string>();
@@ -87,31 +84,20 @@ function getClosedRunwaysFromNotams(notams: Notam[] | null): Set<string> {
   const now = new Date();
 
   for (const notam of notams) {
-    // Skip cancelled/expired NOTAMs
     if (notam.cancelledOrExpired || notam.status === "Cancelled") continue;
-
-    // Try to decode the ICAO message
     if (!notam.icaoMessage) continue;
 
     try {
       const decoded = decode(notam.icaoMessage);
-
-      // Check if it's a runway closure or limitation NOTAM
-      // QMRLC = Runway Closed, QMRLT = Runway Limited
       const code = decoded.code?.toUpperCase() || "";
       if (!code.startsWith("QMRLC") && !code.startsWith("QMRLT")) continue;
 
-      // Check if NOTAM is currently active (within validity period)
       const { dateBegin, dateEnd, permanent } = decoded.duration || {};
-
-      // If not permanent, check if we're within the validity period
       if (!permanent) {
-        if (dateBegin && now < new Date(dateBegin)) continue; // Not yet active
-        if (dateEnd && now > new Date(dateEnd)) continue; // Already expired
+        if (dateBegin && now < new Date(dateBegin)) continue;
+        if (dateEnd && now > new Date(dateEnd)) continue;
       }
 
-      // Extract runway numbers from the decoded text
-      // The decoder expands "RWY 01/19" to "RUNWAY 01/19"
       const text = decoded.text?.toUpperCase() || "";
       const runwayPattern = /(?:RWY|RUNWAY)\s+(\d{2}[LRC]?(?:\s*\/\s*\d{2}[LRC]?)?)/g;
 
@@ -119,7 +105,6 @@ function getClosedRunwaysFromNotams(notams: Notam[] | null): Set<string> {
       while ((match = runwayPattern.exec(text)) !== null) {
         const runwayId = match[1].replace(/\s+/g, "");
         closedRunways.add(runwayId);
-        // Also add individual ends
         if (runwayId.includes("/")) {
           const [end1, end2] = runwayId.split("/");
           closedRunways.add(end1);
@@ -127,7 +112,6 @@ function getClosedRunwaysFromNotams(notams: Notam[] | null): Set<string> {
         }
       }
     } catch {
-      // If decoding fails, skip this NOTAM
       continue;
     }
   }
@@ -135,9 +119,6 @@ function getClosedRunwaysFromNotams(notams: Notam[] | null): Set<string> {
   return closedRunways;
 }
 
-/**
- * Check if a runway or any of its ends is closed
- */
 function isRunwayClosed(runway: Runway, closedRunways: Set<string>): boolean {
   if (runway.closed) return true;
   if (closedRunways.has(runway.id)) return true;
@@ -147,9 +128,6 @@ function isRunwayClosed(runway: Runway, closedRunways: Set<string>): boolean {
   return false;
 }
 
-/**
- * Check if a specific runway end is closed
- */
 function isRunwayEndClosed(endId: string, runwayId: string, closedRunways: Set<string>): boolean {
   return closedRunways.has(endId) || closedRunways.has(runwayId);
 }
@@ -157,20 +135,12 @@ function isRunwayEndClosed(endId: string, runwayId: string, closedRunways: Set<s
 interface AerodromeInfoCardProps {
   aerodrome: AerodromeResult;
   runways: Runway[];
-  metar: MetarData | null;
   notams: Notam[] | null;
   loadingRunways: boolean;
 }
 
-export function AerodromeInfoCard({ aerodrome, runways, metar, notams, loadingRunways }: AerodromeInfoCardProps) {
-  // Get closed runways from NOTAMs
+export function AerodromeInfoCard({ aerodrome, runways, notams, loadingRunways }: AerodromeInfoCardProps) {
   const closedRunways = getClosedRunwaysFromNotams(notams);
-
-  // Get best runway (excluding closed ones)
-  const availableRunways = runways.filter(r => !isRunwayClosed(r, closedRunways));
-  const bestRunway: SelectedRunway | null = metar && availableRunways.length > 0
-    ? selectBestRunway(availableRunways, metar.wdir, metar.wspd)
-    : null;
 
   return (
     <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6 mb-6">
@@ -216,169 +186,113 @@ export function AerodromeInfoCard({ aerodrome, runways, metar, notams, loadingRu
         </div>
       </div>
 
-      {/* Main content: Runways + Wind Rose */}
+      {/* Runways */}
       <div className="border-t border-slate-700 pt-4">
-        <div className="flex flex-col lg:flex-row lg:gap-8">
-          {/* Left side: Runways */}
-          <div className="flex-1">
-            <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-3">Runways</h3>
+        <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-3">Runways</h3>
 
-            {loadingRunways ? (
-              <div className="text-slate-400 text-center py-4">Loading runway data...</div>
-            ) : runways.length === 0 ? (
-              <div className="text-slate-500 text-sm">No runway data available</div>
-            ) : (
-              <div className="space-y-3">
-                {runways.map((runway) => {
-                  const isClosed = isRunwayClosed(runway, closedRunways);
+        {loadingRunways ? (
+          <div className="text-slate-400 text-center py-4">Loading runway data...</div>
+        ) : runways.length === 0 ? (
+          <div className="text-slate-500 text-sm">No runway data available</div>
+        ) : (
+          <div className="space-y-3">
+            {runways.map((runway) => {
+              const isClosed = isRunwayClosed(runway, closedRunways);
 
-                  return (
-                    <div
-                      key={runway.id}
-                      className={`bg-slate-900/30 rounded-lg p-3 ${isClosed ? "opacity-60" : ""}`}
-                    >
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className={`text-lg font-bold ${isClosed ? "text-slate-500 line-through" : "text-white"}`}>
-                          {runway.id}
-                        </span>
-                        {(() => {
-                          const info = SURFACE_INFO[runway.surface];
-                          if (info) {
-                            const Icon = info.icon;
-                            return (
-                              <span className={`flex items-center gap-1.5 ${info.color}`}>
-                                <Icon />
-                                <span className="text-sm">{info.label}</span>
-                              </span>
-                            );
-                          }
-                          return (
-                            <span className="text-sm text-slate-400">
-                              {SURFACE_NAMES[runway.surface] || runway.surfaceName}
-                            </span>
-                          );
-                        })()}
-                        {runway.lighted && (
-                          <span className="text-xs text-yellow-400">Lighted</span>
-                        )}
-                        {isClosed && (
-                          <span className="px-1.5 py-0.5 text-xs bg-red-400/20 text-red-400 rounded font-medium">
-                            Closed
+              return (
+                <div
+                  key={runway.id}
+                  className={`bg-slate-900/30 rounded-lg p-3 ${isClosed ? "opacity-60" : ""}`}
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className={`text-lg font-bold ${isClosed ? "text-slate-500 line-through" : "text-white"}`}>
+                      {runway.id}
+                    </span>
+                    {(() => {
+                      const info = SURFACE_INFO[runway.surface];
+                      if (info) {
+                        const Icon = info.icon;
+                        return (
+                          <span className={`flex items-center gap-1.5 ${info.color}`}>
+                            <Icon />
+                            <span className="text-sm">{info.label}</span>
                           </span>
-                        )}
-                      </div>
+                        );
+                      }
+                      return (
+                        <span className="text-sm text-slate-400">
+                          {SURFACE_NAMES[runway.surface] || runway.surfaceName}
+                        </span>
+                      );
+                    })()}
+                    {runway.lighted && (
+                      <span className="text-xs text-yellow-400">Lighted</span>
+                    )}
+                    {isClosed && (
+                      <span className="px-1.5 py-0.5 text-xs bg-red-400/20 text-red-400 rounded font-medium">
+                        Closed
+                      </span>
+                    )}
+                  </div>
 
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm mt-1">
-                        <div>
-                          <span className="text-slate-500">Length:</span>
-                          <span className="text-white ml-1">{runway.length.toLocaleString()} ft</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-500">Width:</span>
-                          <span className="text-white ml-1">{runway.width} ft</span>
-                        </div>
-                        {runway.ends.map((end) => {
-                          const endClosed = isRunwayEndClosed(end.id, runway.id, closedRunways);
-                          return (
-                            <div key={end.id}>
-                              <span className={endClosed ? "text-slate-600 line-through" : "text-slate-500"}>
-                                RWY {end.id}:
-                              </span>
-                              <span className={`ml-1 ${endClosed ? "text-slate-600 line-through" : "text-white"}`}>
-                                {end.heading !== null ? `${String(Math.round(end.heading)).padStart(3, "0")}°` : "N/A"}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      {/* Wind components if METAR available */}
-                      {metar && metar.wdir !== null && metar.wspd !== null && !isClosed && (
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm mt-2 pt-2 border-t border-slate-700/50">
-                          {runway.ends.map((end) => {
-                            if (end.heading === null) return null;
-                            const endClosed = isRunwayEndClosed(end.id, runway.id, closedRunways);
-                            if (endClosed) return null;
-
-                            const windAngle = ((metar.wdir! - end.heading + 360) % 360) * (Math.PI / 180);
-                            const headwind = Math.round(metar.wspd! * Math.cos(windAngle));
-                            const crosswind = Math.round(Math.abs(metar.wspd! * Math.sin(windAngle)));
-                            const crossDir = Math.sin(windAngle) > 0 ? "R" : "L";
-
-                            return (
-                              <div key={end.id}>
-                                <span className="text-slate-500">{end.id}:</span>
-                                <span className={`ml-1 ${headwind >= 0 ? "text-green-400" : "text-red-400"}`}>
-                                  {headwind >= 0 ? `+${headwind}` : headwind} HW
-                                </span>
-                                <span className="text-slate-500 mx-1">·</span>
-                                <span className="text-amber-400">{crosswind}{crossDir} XW</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm mt-1">
+                    <div>
+                      <span className="text-slate-500">Length:</span>
+                      <span className="text-white ml-1">{runway.length.toLocaleString()} ft</span>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Right side: Wind Rose with Recommended Runway (desktop) */}
-          {bestRunway && metar && (
-            <div className="hidden lg:flex flex-col items-center justify-center mt-6 lg:mt-0">
-              <div className="text-center mb-2">
-                <div className="text-xs text-emerald-400 uppercase tracking-wide">Recommended</div>
-                <div className="text-2xl font-bold text-white">RWY {bestRunway.endId}</div>
-                <div className="text-sm mt-1">
-                  <span className={bestRunway.headwind >= 0 ? "text-emerald-400" : "text-red-400"}>
-                    {bestRunway.headwind >= 0 ? `+${bestRunway.headwind}` : bestRunway.headwind} kt HW
-                  </span>
-                  {bestRunway.crosswind > 0 && (
-                    <span className="text-amber-400 ml-2">
-                      {bestRunway.crosswind} kt XW {bestRunway.crosswindDirection}
-                    </span>
-                  )}
+                    <div>
+                      {runway.ends[0] && (() => {
+                        const end = runway.ends[0];
+                        const endClosed = isRunwayEndClosed(end.id, runway.id, closedRunways);
+                        return (
+                          <>
+                            <span className={endClosed ? "text-slate-600 line-through" : "text-slate-500"}>
+                              RWY {end.id}:
+                            </span>
+                            <span className={`ml-1 ${endClosed ? "text-slate-600 line-through" : "text-white"}`}>
+                              {end.heading !== null ? `${String(Math.round(end.heading)).padStart(3, "0")}°` : "N/A"}
+                            </span>
+                          </>
+                        );
+                      })()}
+                    </div>
+                    <div>
+                      <span className="text-slate-500">Width:</span>
+                      <span className="text-white ml-1">{runway.width} ft</span>
+                    </div>
+                    <div>
+                      {runway.ends[1] && (() => {
+                        const end = runway.ends[1];
+                        const endClosed = isRunwayEndClosed(end.id, runway.id, closedRunways);
+                        return (
+                          <>
+                            <span className={endClosed ? "text-slate-600 line-through" : "text-slate-500"}>
+                              RWY {end.id}:
+                            </span>
+                            <span className={`ml-1 ${endClosed ? "text-slate-600 line-through" : "text-white"}`}>
+                              {end.heading !== null ? `${String(Math.round(end.heading)).padStart(3, "0")}°` : "N/A"}
+                            </span>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <WindRoseRunway
-                windDir={metar.wdir}
-                windSpeed={metar.wspd}
-                runway={bestRunway}
-                size={280}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Mobile: Recommended Runway + Wind Rose */}
-        {bestRunway && metar && (
-          <div className="lg:hidden mt-6 pt-4 border-t border-slate-700">
-            <div className="flex flex-col items-center">
-              <div className="text-center mb-2">
-                <div className="text-xs text-emerald-400 uppercase tracking-wide">Recommended</div>
-                <div className="text-2xl font-bold text-white">RWY {bestRunway.endId}</div>
-                <div className="text-sm mt-1">
-                  <span className={bestRunway.headwind >= 0 ? "text-emerald-400" : "text-red-400"}>
-                    {bestRunway.headwind >= 0 ? `+${bestRunway.headwind}` : bestRunway.headwind} kt HW
-                  </span>
-                  {bestRunway.crosswind > 0 && (
-                    <span className="text-amber-400 ml-2">
-                      {bestRunway.crosswind} kt XW {bestRunway.crosswindDirection}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <WindRoseRunway
-                windDir={metar.wdir}
-                windSpeed={metar.wspd}
-                runway={bestRunway}
-                size={240}
-              />
-            </div>
+              );
+            })}
           </div>
         )}
+
+        {/* AI-generated description */}
+        <AerodromeDescription
+          code={aerodrome.code}
+          name={aerodrome.name}
+          type={aerodrome.type}
+          lat={aerodrome.lat}
+          lon={aerodrome.lon}
+          elevation={aerodrome.elevation}
+          runways={runways}
+        />
       </div>
     </div>
   );

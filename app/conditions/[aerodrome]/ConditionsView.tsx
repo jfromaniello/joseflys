@@ -9,6 +9,7 @@ import { MetarData, TafData, Runway, OpenMeteoData, TomorrowData, Aerodrome, Not
 import { MetarCard } from "./MetarCard";
 import { TafCard } from "./TafCard";
 import { AerodromeInfoCard } from "./AerodromeInfoCard";
+import { OverviewCard } from "./OverviewCard";
 import { WeatherCard } from "./WeatherCard";
 import { LocationMap } from "./LocationMap";
 import { WindyEmbed } from "./WindyEmbed";
@@ -150,15 +151,18 @@ export function ConditionsView({
             </div>
           </div>
 
-          {/* Aerodrome Info Card (Location + Runways + Wind Rose) - First! */}
+          {/* Overview Card - First! */}
           {aerodrome && (
-            <div id="aerodrome" className="scroll-mt-20">
-              <AerodromeInfoCard
-                aerodrome={aerodromeResult!}
-                runways={runways}
+            <div id="overview" className="scroll-mt-20">
+              <OverviewCard
                 metar={metar}
+                runways={runways}
                 notams={notams}
-                loadingRunways={false}
+                elevation={aerodrome.elevation}
+                lat={aerodrome.lat}
+                lon={aerodrome.lon}
+                openMeteo={openMeteo}
+                tomorrow={tomorrow}
               />
             </div>
           )}
@@ -208,8 +212,22 @@ export function ConditionsView({
               tomorrow={tomorrow}
               loading={refreshing}
               elevation={aerodrome?.elevation}
+              lat={aerodrome?.lat}
+              lon={aerodrome?.lon}
             />
           </div>
+
+          {/* Aerodrome Info Card (static data - location, runways) */}
+          {aerodrome && (
+            <div id="aerodrome" className="scroll-mt-20">
+              <AerodromeInfoCard
+                aerodrome={aerodromeResult!}
+                runways={runways}
+                notams={notams}
+                loadingRunways={false}
+              />
+            </div>
+          )}
 
           {/* Map Card */}
           {aerodrome && mapReady && (
