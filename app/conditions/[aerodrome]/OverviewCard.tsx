@@ -7,7 +7,7 @@ import { selectBestRunway, SelectedRunway } from "@/lib/runwayUtils";
 import { WindRoseRunway } from "./WindRoseRunway";
 import { CardAnchor } from "./CardAnchor";
 import { calculatePA, calculateDA, calculateISATemp } from "@/lib/isaCalculations";
-import { getSunPosition, formatSunTime, getTimeUntil, type SunPosition } from "@/lib/sun";
+import { getSunPosition, getTimeUntil, type SunPosition } from "@/lib/sun";
 import { decode } from "@rovacc/notam-decoder";
 
 // Icons
@@ -178,6 +178,11 @@ export function OverviewCard({ metar, runways, notams, elevation, lat, lon, open
     // Handle "P6SM" or "6+" (greater than 6 SM)
     if (visib === "P6SM" || visib === "6+") {
       return { km: ">10", sm: ">6" };
+    }
+
+    // Handle "10+" or "10" (10 SM visibility, common US format)
+    if (visib === "10+" || visib === "10") {
+      return { km: "16", sm: "10" };
     }
 
     // Handle fractions like "1/2SM", "1 1/2SM"
