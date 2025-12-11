@@ -52,20 +52,65 @@ export async function GET(request: NextRequest) {
       ? `${String(metar.wdir).padStart(3, '0')}°/${metar.wspd}${metar.wgst ? `G${metar.wgst}` : ''} kt`
       : 'Calm';
 
-    // Format visibility
-    const formatVisibility = (visib: string | null) => {
+    // Format visibility - returns { km, sm } or null
+    const formatVisibility = (visib: string | null): { km: string; sm: string } | null => {
       if (!visib) return null;
       const v = visib.trim();
-      if (v === 'P6SM' || v === '6+') return '>10 km';
+
+      // Handle "P6SM" or "6+" (greater than 6 SM)
+      if (v === 'P6SM' || v === '6+') {
+        return { km: '>10', sm: '>6' };
+      }
+
+      // Handle "10+" or "10" (10 SM visibility, common US format)
+      if (v === '10+' || v === '10') {
+        return { km: '16', sm: '10' };
+      }
+
+      // Handle fractions like "1/2SM", "1 1/2SM"
+      const fractionMatch = v.match(/^(\d+)?\s*(\d+)\/(\d+)\s*SM$/i);
+      if (fractionMatch) {
+        const whole = fractionMatch[1] ? parseInt(fractionMatch[1]) : 0;
+        const num = parseInt(fractionMatch[2]);
+        const den = parseInt(fractionMatch[3]);
+        const sm = whole + num / den;
+        const km = sm * 1.60934;
+        return {
+          km: km < 1 ? km.toFixed(1) : Math.round(km).toString(),
+          sm: sm < 1 ? sm.toFixed(2) : sm.toFixed(1)
+        };
+      }
+
+      // Handle simple numbers like "10SM", "3SM"
       const simpleMatch = v.match(/^(\d+(?:\.\d+)?)\s*SM$/i);
       if (simpleMatch) {
         const sm = parseFloat(simpleMatch[1]);
         const km = sm * 1.60934;
-        return `${km >= 10 ? Math.round(km) : km.toFixed(1)} km`;
+        return {
+          km: km >= 10 ? Math.round(km).toString() : km.toFixed(1),
+          sm: sm.toString()
+        };
       }
-      return v;
+
+      // Handle meters (e.g., "9999" for 10km+, or "5000" for 5km)
+      const metersMatch = v.match(/^(\d{4})$/);
+      if (metersMatch) {
+        const meters = parseInt(metersMatch[1]);
+        if (meters >= 9999) {
+          return { km: '>10', sm: '>6' };
+        }
+        const km = meters / 1000;
+        const sm = km / 1.60934;
+        return {
+          km: km.toFixed(1),
+          sm: sm.toFixed(1)
+        };
+      }
+
+      return null;
     };
-    const visibilityStr = formatVisibility(metar?.visib ?? null);
+    const visibility = formatVisibility(metar?.visib ?? null);
+    const visibilityStr = visibility ? `${visibility.km} KM (${visibility.sm} SM)` : metar?.visib ?? null;
 
     // Flight category color and label
     const showNightWarning = isNight && (metar?.fltCat === 'VFR' || metar?.fltCat === 'MVFR');
