@@ -1,5 +1,6 @@
 import { OpenMeteoData, TomorrowData } from "./types";
 import { calculatePA, calculateDA, calculateISATemp } from "@/lib/isaCalculations";
+import { CardAnchor } from "./CardAnchor";
 import {
   LineChart,
   Line,
@@ -176,7 +177,10 @@ export function WeatherCard({ openMeteo, tomorrow, loading, elevation }: Weather
 
   return (
     <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6 mb-6">
-      <h2 className="text-lg font-semibold text-white mb-4">Online Weather</h2>
+      <div className="flex items-center gap-2 mb-4">
+        <h2 className="text-lg font-semibold text-white">Online Weather</h2>
+        <CardAnchor id="weather" />
+      </div>
 
       <div className="space-y-4">
         {/* Aviation Critical Data - from Tomorrow.io only */}

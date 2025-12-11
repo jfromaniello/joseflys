@@ -1,6 +1,6 @@
 import { ArrowPathIcon, MoonIcon } from "@heroicons/react/24/outline";
-import { MetarData, Runway, getFlightCatColor } from "./types";
-import { selectBestRunway } from "@/lib/runwayUtils";
+import { CardAnchor } from "./CardAnchor";
+import { MetarData, getFlightCatColor } from "./types";
 import { calculatePA, calculateDA, calculateISATemp } from "@/lib/isaCalculations";
 
 // Icons for METAR data display
@@ -43,7 +43,6 @@ interface MetarCardProps {
   metar: MetarData | null;
   metarSource: "direct" | "nearby" | null;
   metarDistance: number | null;
-  runways: Runway[];
   loading: boolean;
   error: string | null;
   onRefresh: () => void;
@@ -55,7 +54,6 @@ export function MetarCard({
   metar,
   metarSource,
   metarDistance,
-  runways,
   loading,
   error,
   onRefresh,
@@ -75,11 +73,6 @@ export function MetarCard({
     return wind;
   };
 
-  // Get best runway based on wind
-  const bestRunway = metar && runways.length > 0
-    ? selectBestRunway(runways, metar.wdir, metar.wspd)
-    : null;
-
   // Calculate PA and DA from METAR
   const pressureAltitude = metar?.altim && elevation != null
     ? Math.round(calculatePA(elevation, metar.altim))
@@ -92,7 +85,10 @@ export function MetarCard({
   return (
     <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6 mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-white">Current METAR</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-white">Current METAR</h2>
+          <CardAnchor id="metar" />
+        </div>
         <button
           onClick={onRefresh}
           disabled={loading}
@@ -250,37 +246,6 @@ export function MetarCard({
           {metar.visib && (
             <div className="text-sm text-slate-400">
               <span className="text-slate-500">Visibility:</span> {metar.visib}
-            </div>
-          )}
-
-          {/* Recommended Runway */}
-          {bestRunway && (
-            <div className="bg-emerald-900/20 border border-emerald-700/30 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <svg className="w-6 h-6 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path d="M12 19V5M5 12l7-7 7 7" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  <div>
-                    <div className="text-xs text-emerald-400 uppercase tracking-wide">Recommended Runway</div>
-                    <div className="text-2xl font-bold text-white">RWY {bestRunway.endId}</div>
-                  </div>
-                </div>
-                <div className="text-right text-sm">
-                  <div className="text-emerald-400">
-                    {bestRunway.headwind >= 0 ? (
-                      <span>+{bestRunway.headwind} kt headwind</span>
-                    ) : (
-                      <span className="text-red-400">{bestRunway.headwind} kt tailwind</span>
-                    )}
-                  </div>
-                  {bestRunway.crosswind > 0 && (
-                    <div className="text-amber-400">
-                      {bestRunway.crosswind} kt crosswind {bestRunway.crosswindDirection}
-                    </div>
-                  )}
-                </div>
-              </div>
             </div>
           )}
 

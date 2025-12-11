@@ -21,9 +21,26 @@ interface ConditionsPageProps {
 
 export async function generateMetadata({ params }: ConditionsPageProps): Promise<Metadata> {
   const { aerodrome } = await params;
+  const code = aerodrome.toUpperCase();
+  const aerodromeInfo = getAerodromeByCode(code);
+  const title = `${code} Conditions | JoseFlys`;
+  const description = `Current weather, METAR, and runway information for ${aerodromeInfo?.name || code}`;
+  const ogImageUrl = `/api/og-conditions?code=${code}`;
+
   return {
-    title: `${aerodrome.toUpperCase()} Conditions | JoseFlys`,
-    description: `Current weather, METAR, and runway information for ${aerodrome.toUpperCase()}`,
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      images: [{ url: ogImageUrl, width: 1200, height: 630 }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [ogImageUrl],
+    },
   };
 }
 

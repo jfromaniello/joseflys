@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { decode, DecodedNotam } from "@rovacc/notam-decoder";
 import { Notam } from "./types";
+import { CardAnchor } from "./CardAnchor";
 
 interface NotamCardProps {
   notams: Notam[];
@@ -261,7 +262,10 @@ export function NotamCard({ notams, loading }: NotamCardProps) {
   return (
     <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6 mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-white">NOTAMs</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-white">NOTAMs</h2>
+          <CardAnchor id="notam" />
+        </div>
         <span className="text-xs text-slate-400">
           {activeNotams.length} active NOTAM{activeNotams.length !== 1 ? "s" : ""}
         </span>
