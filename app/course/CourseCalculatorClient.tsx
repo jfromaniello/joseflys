@@ -31,6 +31,9 @@ export function CourseCalculatorClient({
   initialPlane,
   initialDesc,
   initialSpeedUnit,
+  customHeader,
+  additionalContent,
+  footerDescription,
 }: CourseCalculatorProps) {
   const [trueCourse, setTrueCourse] = useState<string>(initialTh);
   const [tas, setTas] = useState<string>(initialTas);
@@ -165,11 +168,15 @@ export function CourseCalculatorClient({
 
   return (
     <PageLayout currentPage="course">
-      <CalculatorPageHeader
-        title="Course Calculator"
-        description="Calculate wind correction angle, ground speed, and compass heading from true heading and wind conditions"
-        subtitle={description || undefined}
-      />
+      {customHeader ? (
+        customHeader
+      ) : (
+        <CalculatorPageHeader
+          title="Course Calculator"
+          description="Calculate wind correction angle, ground speed, and compass heading from true heading and wind conditions"
+          subtitle={description || undefined}
+        />
+      )}
 
       <main className="w-full max-w-4xl">
         <div className="rounded-2xl p-6 sm:p-8 shadow-2xl bg-slate-800/50 backdrop-blur-sm border border-gray-700">
@@ -782,7 +789,10 @@ export function CourseCalculatorClient({
 
       </main>
 
-      <Footer description="Aviation calculations based on wind triangle principles" />
+      {/* Additional content (for SEO pages) */}
+      {additionalContent}
+
+      <Footer description={footerDescription || "Aviation calculations based on wind triangle principles"} />
 
       {/* Distance Calculator Modal */}
       <DistanceCalculatorModal

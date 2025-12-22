@@ -1,3 +1,5 @@
+import { ReactNode } from "react";
+
 /**
  * Shared types for Course Calculator
  * Used by both server-side (ClientWrapper) and client-side (CourseCalculatorClient) components
@@ -20,4 +22,10 @@ export interface CourseCalculatorProps {
   initialDepTime: string;
   initialElapsedMin: string;
   initialPrevFuel: string;
+  /** Optional custom header content (replaces default header) */
+  customHeader?: ReactNode;
+  /** Optional content to render after the calculator, before the footer */
+  additionalContent?: ReactNode;
+  /** Optional custom footer description */
+  footerDescription?: string;
 }
