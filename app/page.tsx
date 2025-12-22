@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { PageLayout } from "./components/PageLayout";
 import { Footer } from "./components/Footer";
+import { ShareButtons } from "./components/ShareButtons";
 
 export default function Home() {
   return (
@@ -251,7 +252,7 @@ export default function Home() {
                 </div>
                 <div className="flex-1">
                   <h3 className="text-2xl font-bold mb-2" style={{ color: "white" }}>
-                    Flight Planning
+                    Time &amp; Fuel Calculator
                   </h3>
                   <p
                     className="text-sm leading-relaxed"
@@ -811,8 +812,128 @@ export default function Home() {
           </div>
         </section>
 
+        {/* About These Tools Section */}
+        <section className="mt-12 p-8 rounded-2xl bg-slate-800/30 border border-gray-700">
+          <h2 className="text-xl font-bold mb-4" style={{ color: "white" }}>
+            About These Aviation Tools
+          </h2>
+          <div className="space-y-4 text-sm leading-relaxed" style={{ color: "oklch(0.7 0.02 240)" }}>
+            <p>
+              These aviation tools are designed to help pilots with essential flight planning calculations. 
+              Whether you are preparing for a VFR cross-country flight or studying for your pilot license, 
+              these calculators cover the core navigation and performance calculations every pilot needs to understand.
+            </p>
+            <p>
+              Flight planning involves determining the route, calculating headings and ground speed based on wind, 
+              estimating fuel consumption, and ensuring safe aircraft performance. These tools automate those 
+              calculations while showing you the underlying formulas, so you can verify results and deepen your 
+              understanding of aviation navigation principles.
+            </p>
+            <p>
+              All distance and bearing calculations use the WGS-84 geodesic model for maximum accuracy. 
+              Performance calculations follow the ISA (International Standard Atmosphere) model. The tools 
+              work entirely offline once loaded, making them reliable for preflight planning anywhere.
+            </p>
+          </div>
+        </section>
+
+        {/* How Flight Planning Works Section */}
+        <section className="mt-8 p-8 rounded-2xl bg-slate-800/30 border border-gray-700">
+          <h2 className="text-xl font-bold mb-4" style={{ color: "white" }}>
+            How Flight Planning Works
+          </h2>
+          <div className="space-y-4 text-sm leading-relaxed" style={{ color: "oklch(0.7 0.02 240)" }}>
+            <p>
+              Flight planning is a systematic process that ensures safe and efficient navigation from 
+              departure to destination. Every VFR pilot learns to calculate courses, correct for wind, 
+              estimate fuel requirements, and verify aircraft performance before takeoff.
+            </p>
+            
+            <h3 className="text-base font-semibold mt-6 mb-2" style={{ color: "oklch(0.85 0.02 240)" }}>
+              Course and Heading Calculations
+            </h3>
+            <p>
+              The foundation of flight planning starts with determining the true course between two points. 
+              This involves measuring the angle from true north to the intended track. Pilots then apply 
+              magnetic variation to convert true course to magnetic course, and finally apply wind correction 
+              angle (WCA) to determine the heading to fly. The wind correction angle compensates for crosswind 
+              drift, ensuring the aircraft tracks the desired ground path despite wind displacement.
+            </p>
+
+            <h3 className="text-base font-semibold mt-6 mb-2" style={{ color: "oklch(0.85 0.02 240)" }}>
+              Ground Speed and Time Estimates
+            </h3>
+            <p>
+              Wind affects not only heading but also ground speed. A headwind component reduces ground speed 
+              below true airspeed, while a tailwind increases it. Accurate ground speed calculation is essential 
+              for estimating time en route (ETE) and fuel consumption. The flight planning tools here calculate 
+              these values using vector trigonometry, the same method taught in navigation courses worldwide.
+            </p>
+
+            <h3 className="text-base font-semibold mt-6 mb-2" style={{ color: "oklch(0.85 0.02 240)" }}>
+              Fuel Planning and Reserves
+            </h3>
+            <p>
+              Safe flight planning requires careful fuel calculation. Pilots must account for taxi fuel, 
+              climb fuel, cruise fuel consumption, descent, approach, and mandatory reserves. These aviation 
+              tools help calculate fuel requirements based on flight time and fuel flow rate, though pilots 
+              should always cross-reference with their aircraft POH (Pilot Operating Handbook) for accurate 
+              fuel consumption figures at different power settings and altitudes.
+            </p>
+
+            <h3 className="text-base font-semibold mt-6 mb-2" style={{ color: "oklch(0.85 0.02 240)" }}>
+              Aircraft Performance Calculations
+            </h3>
+            <p>
+              Beyond navigation, flight planning includes performance verification. Takeoff distance, climb 
+              performance, and stall speeds all vary with density altitude, aircraft weight, and configuration. 
+              The performance calculators here help estimate these values, but remember that actual performance 
+              depends on many factors including runway surface, slope, and pilot technique.
+            </p>
+          </div>
+        </section>
+
+        {/* Technical Standards Section */}
+        <section className="mt-8 p-8 rounded-2xl bg-slate-800/30 border border-gray-700">
+          <h2 className="text-xl font-bold mb-4" style={{ color: "white" }}>
+            Technical Standards Used
+          </h2>
+          <div className="space-y-4 text-sm leading-relaxed" style={{ color: "oklch(0.7 0.02 240)" }}>
+            <h3 className="text-base font-semibold mb-2" style={{ color: "oklch(0.85 0.02 240)" }}>
+              WGS-84 Geodesic Model
+            </h3>
+            <p>
+              All distance and bearing calculations use the WGS-84 (World Geodetic System 1984) ellipsoid model. 
+              This is the same reference system used by GPS and modern aviation navigation systems. Unlike 
+              simple spherical calculations, WGS-84 accounts for Earth&apos;s true shape as an oblate spheroid, 
+              providing accuracy within meters for geodesic distance calculations anywhere on the planet.
+            </p>
+
+            <h3 className="text-base font-semibold mt-6 mb-2" style={{ color: "oklch(0.85 0.02 240)" }}>
+              ISA Standard Atmosphere
+            </h3>
+            <p>
+              Performance calculations use the International Standard Atmosphere (ISA) model. ISA defines 
+              standard conditions at sea level as 15°C temperature and 1013.25 hPa pressure, with temperature 
+              decreasing at 1.98°C per 1000 feet in the troposphere. This standard allows pilots to calculate 
+              density altitude and predict aircraft performance under non-standard conditions by comparing 
+              actual conditions to ISA values.
+            </p>
+
+            <h3 className="text-base font-semibold mt-6 mb-2" style={{ color: "oklch(0.85 0.02 240)" }}>
+              Magnetic Variation
+            </h3>
+            <p>
+              The tools use the World Magnetic Model (WMM) to calculate magnetic variation at any location. 
+              Magnetic variation (also called declination) is the angle between true north and magnetic north, 
+              which varies by location and changes slowly over time. Accurate magnetic variation is essential 
+              for converting between true and magnetic courses in flight planning.
+            </p>
+          </div>
+        </section>
+
         {/* Motivations Section */}
-        <section id="motivations" className="mt-12 p-8 rounded-2xl bg-slate-800/30 border border-gray-700 scroll-mt-4">
+        <section id="motivations" className="mt-8 p-8 rounded-2xl bg-slate-800/30 border border-gray-700 scroll-mt-4">
           <h2 className="text-xl font-bold mb-4" style={{ color: "white" }}>
             Why I Built This
           </h2>
@@ -823,13 +944,15 @@ export default function Home() {
               was the best way to really understand the material.
             </p>
             <p>
-              The goal is to keep the math open and auditable. Unlike official tools which often hide
-              the formula logic, this app is designed to let you see exactly how the results are derived.
-              You should be able to cross-check everything here by hand.
+              The goal is to keep the math open and auditable. Unlike official flight planning tools which 
+              often hide the formula logic, this app is designed to let you see exactly how the results are 
+              derived. You should be able to cross-check everything here by hand using the same formulas 
+              taught in aviation ground school.
             </p>
             <p style={{ color: "oklch(0.55 0.08 60)" }}>
-              <strong>Disclaimer:</strong> This is for educational use only. Always rely on official
-              sources (POH, charts) for actual flight planning.
+              <strong>Disclaimer:</strong> These aviation tools are for educational use only. Always rely on 
+              official sources (POH, charts, certified flight planning software) for actual flight planning 
+              and navigation.
             </p>
             <p>
               The project is open source and completely free (no ads/tracking). If you spot an error
@@ -846,6 +969,12 @@ export default function Home() {
             </p>
           </div>
         </section>
+
+        {/* Share */}
+        <div className="mt-8 flex items-center justify-center gap-4 text-sm" style={{ color: "oklch(0.55 0.02 240)" }}>
+          <span>Share:</span>
+          <ShareButtons />
+        </div>
       </main>
 
       <Footer description="Experimental aviation tools for flight planning reference. Calculators for TAS, wind correction, distance & bearing, and fuel consumption." />

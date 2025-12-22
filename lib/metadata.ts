@@ -94,7 +94,7 @@ export function createRootMetadata(): Metadata {
   return {
     title: "Aviation Tools for Flight Planning | TAS, Course & Performance",
     description:
-      "Aviation tools for flight planning, performance, and navigation. Calculate TAS, compass course, wind correction, distance & bearing, fuel consumption, leg planning. Based on ISA and WGS-84.",
+      "Aviation tools for flight planning and navigation. Calculate TAS, wind correction, compass course, distance, bearing & fuel. ISA and WGS-84 based.",
     keywords: [
       "aviation calculator",
       "flight planning calculator",
