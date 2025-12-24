@@ -4,7 +4,7 @@ import { useState, Fragment } from "react";
 import Link from "next/link";
 import { Dialog, Transition, TransitionChild, DialogPanel, Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/react";
 
-type Page = "home" | "tas" | "course" | "leg" | "conversions" | "planning" | "route" | "local-chart" | "segments" | "isa" | "climb" | "vstall" | "takeoff" | "my-planes" | "flight-plans" | "conditions";
+type Page = "home" | "tas" | "course" | "leg" | "conversions" | "planning" | "route" | "local-chart" | "segments" | "isa" | "climb" | "vstall" | "takeoff" | "my-planes" | "flight-plans" | "conditions" | "sky-art";
 
 interface NavbarProps {
   currentPage: Page;
@@ -154,6 +154,16 @@ const educational = [
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+      </svg>
+    ),
+  },
+  {
+    id: "sky-art" as const,
+    name: "Sky Art",
+    href: "/sky-art",
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
       </svg>
     ),
   },
