@@ -279,7 +279,7 @@ export function Navbar({ currentPage }: NavbarProps) {
                   leaveFrom="transform opacity-100 scale-100"
                   leaveTo="transform opacity-0 scale-95"
                 >
-                  <MenuItems className="absolute right-0 mt-2 w-64 origin-top-right rounded-xl bg-slate-900 shadow-xl border border-gray-700 ring-1 ring-black ring-opacity-5 focus:outline-none overflow-hidden">
+                  <MenuItems className="absolute right-0 mt-2 w-64 origin-top-right rounded-xl bg-slate-900 shadow-xl border border-gray-700 ring-1 ring-black ring-opacity-5 focus:outline-none overflow-hidden max-h-[calc(100vh-5rem)] overflow-y-auto">
                     <div className="py-1">
                       {/* Flight Planning */}
                       <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
