@@ -247,9 +247,28 @@ export function SkyArtClient({
               ))}
             </select>
             {selectedTemplate && (
-              <p className="mt-2 text-sm text-gray-400">
-                {selectedTemplate.description} - Suggested size: {selectedTemplate.suggestedWidthNM} NM
-              </p>
+              <div className="mt-2">
+                <p className="text-sm text-gray-400">
+                  {selectedTemplate.description} - Suggested size: {selectedTemplate.suggestedWidthNM} NM
+                </p>
+                {selectedTemplate.attribution && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Flight path by{" "}
+                    {selectedTemplate.attribution.url ? (
+                      <a
+                        href={selectedTemplate.attribution.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:text-blue-300 underline"
+                      >
+                        {selectedTemplate.attribution.creator}
+                      </a>
+                    ) : (
+                      <span>{selectedTemplate.attribution.creator}</span>
+                    )}
+                  </p>
+                )}
+              </div>
             )}
           </div>
 
