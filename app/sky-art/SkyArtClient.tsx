@@ -13,13 +13,11 @@ import {
   svgPathToGeoPath,
   generateSkyArtGPX,
   type SkyArtPath,
-} from "@/lib/skyArtCalculations";
-import {
   skyArtTemplates,
   getTemplateById,
   getTemplateCategories,
   type SkyArtTemplate,
-} from "@/lib/skyArtTemplates";
+} from "@/lib/skyArt";
 
 // Dynamically import map component (uses browser-only APIs)
 const SkyArtMap = dynamic(

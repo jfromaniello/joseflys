@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { MapContainer, TileLayer, Polyline, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
-import type { GeoPoint } from "@/lib/skyArtCalculations";
+import type { GeoPoint } from "@/lib/skyArt";
 
 interface SkyArtMapProps {
   strokes: GeoPoint[][];

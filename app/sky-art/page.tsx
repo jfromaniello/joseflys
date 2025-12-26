@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { SkyArtClient } from "./SkyArtClient";
-import { getTemplateById, skyArtTemplates } from "@/lib/skyArtTemplates";
+import { getTemplateById, skyArtTemplates } from "@/lib/skyArt";
 
 export { generateMetadata } from "./metadata";
 
