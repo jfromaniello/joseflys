@@ -13,6 +13,8 @@ const withSerwist = withSerwistInit({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: false, // Disabled for Cesium 3D compatibility
+  // External packages that should not be bundled (native modules)
+  serverExternalPackages: ['better-sqlite3'],
   // Include SQLite database in serverless function bundle
   outputFileTracingIncludes: {
     '/api/argentina-search': ['./data/aerodromes.db'],
