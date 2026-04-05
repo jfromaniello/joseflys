@@ -7,6 +7,7 @@
 
 import Database from "better-sqlite3";
 import * as turf from "@turf/turf";
+import type { Feature, Polygon } from "geojson";
 import path from "path";
 import fs from "fs";
 
@@ -91,7 +92,9 @@ function findProvince(lat: number, lon: number, provinces: Province[]): string |
 
   for (const province of provinces) {
     try {
-      if (turf.booleanPointInPolygon(point, province.polygon)) {
+      // Cast needed because booleanPointInPolygon types don't include MultiPolygon,
+      // but it works at runtime
+      if (turf.booleanPointInPolygon(point, province.polygon as Feature<Polygon>)) {
         return province.name;
       }
     } catch {

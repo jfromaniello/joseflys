@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { Suspense } from "react";
 import { ArgentinaMapClient } from "./ArgentinaMapClient";
 
 export const metadata: Metadata = {
@@ -13,5 +14,9 @@ export const metadata: Metadata = {
 };
 
 export default function ArgentinaPage() {
-  return <ArgentinaMapClient />;
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-screen">Cargando...</div>}>
+      <ArgentinaMapClient />
+    </Suspense>
+  );
 }

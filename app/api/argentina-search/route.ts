@@ -2,9 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { getDb, searchCombined, getAllAerodromes, type FeatureType, FEATURE_TYPES, REGION_PROVINCES } from "@/lib/aerodromesDb";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy initialization to avoid build-time errors
+let openai: OpenAI | null = null;
+
+function getOpenAI(): OpenAI {
+  if (!openai) {
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openai;
+}
 
 interface ParsedQuery {
   features: { type: FeatureType; maxDistanceKm: number }[];
@@ -70,7 +78,7 @@ Examples:
 "pistas para pescar truchas en la patagonia" → provinceOrRegion: "patagonia", features: [{type: "river", maxDistanceKm: 10}, {type: "mountain", maxDistanceKm: 15}]`;
 
 async function parseQueryWithLLM(query: string): Promise<ParsedQuery> {
-  const response = await openai.chat.completions.create({
+  const response = await getOpenAI().chat.completions.create({
     model: "gpt-4o-mini",
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
