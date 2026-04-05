@@ -1,7 +1,5 @@
-import Database from "better-sqlite3";
-import path from "path";
-
-const DB_PATH = path.join(process.cwd(), "data", "aerodromes.db");
+import aerodromesData from "@/data/aerodromes.json";
+import nearbyFeaturesData from "@/data/nearby_features.json";
 
 // Feature types we index from OSM
 export const FEATURE_TYPES = [
@@ -36,6 +34,7 @@ export const REGION_PROVINCES: Record<string, string[]> = {
 };
 
 export interface NearbyFeature {
+  id: number;
   aerodrome_id: number;
   feature_type: FeatureType;
   feature_name: string | null;
@@ -48,44 +47,16 @@ export interface AerodromeWithFeatures extends Aerodrome {
   };
 }
 
-let db: Database.Database | null = null;
+// Type the imported data
+const aerodromes = aerodromesData as Aerodrome[];
+const nearbyFeatures = nearbyFeaturesData as NearbyFeature[];
 
-export function getDb(): Database.Database {
-  if (!db) {
-    // Open in readonly mode for Vercel compatibility (read-only filesystem)
-    db = new Database(DB_PATH, { readonly: true, fileMustExist: true });
-  }
-  return db;
-}
-
-export function initDb(): void {
-  const db = getDb();
-
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS aerodromes (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      code TEXT,
-      name TEXT NOT NULL,
-      type TEXT NOT NULL CHECK (type IN ('AD', 'LAD')),
-      lat REAL NOT NULL,
-      lon REAL NOT NULL,
-      elevation INTEGER
-    );
-
-    CREATE TABLE IF NOT EXISTS nearby_features (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      aerodrome_id INTEGER NOT NULL,
-      feature_type TEXT NOT NULL,
-      feature_name TEXT,
-      distance_km REAL NOT NULL,
-      FOREIGN KEY (aerodrome_id) REFERENCES aerodromes(id)
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_aerodromes_code ON aerodromes(code);
-    CREATE INDEX IF NOT EXISTS idx_aerodromes_type ON aerodromes(type);
-    CREATE INDEX IF NOT EXISTS idx_features_type_dist ON nearby_features(feature_type, distance_km);
-    CREATE INDEX IF NOT EXISTS idx_features_aerodrome ON nearby_features(aerodrome_id);
-  `);
+// Build index for faster lookups
+const featuresByAerodrome = new Map<number, NearbyFeature[]>();
+for (const feature of nearbyFeatures) {
+  const existing = featuresByAerodrome.get(feature.aerodrome_id) || [];
+  existing.push(feature);
+  featuresByAerodrome.set(feature.aerodrome_id, existing);
 }
 
 // Query functions
@@ -94,72 +65,55 @@ export function searchByFeature(
   maxDistanceKm: number,
   aerodromeType?: "AD" | "LAD"
 ): Aerodrome[] {
-  const db = getDb();
+  const matchingAerodromeIds = new Set<number>();
 
-  let query = `
-    SELECT DISTINCT a.* FROM aerodromes a
-    JOIN nearby_features nf ON a.id = nf.aerodrome_id
-    WHERE nf.feature_type = ? AND nf.distance_km <= ?
-  `;
-
-  const params: (string | number)[] = [featureType, maxDistanceKm];
-
-  if (aerodromeType) {
-    query += " AND a.type = ?";
-    params.push(aerodromeType);
+  for (const feature of nearbyFeatures) {
+    if (feature.feature_type === featureType && feature.distance_km <= maxDistanceKm) {
+      matchingAerodromeIds.add(feature.aerodrome_id);
+    }
   }
 
-  query += " ORDER BY nf.distance_km ASC";
-
-  return db.prepare(query).all(...params) as Aerodrome[];
+  return aerodromes.filter(a =>
+    matchingAerodromeIds.has(a.id) &&
+    (!aerodromeType || a.type === aerodromeType)
+  );
 }
 
 export function searchByMultipleFeatures(
   criteria: { featureType: FeatureType; maxDistanceKm: number }[],
   aerodromeType?: "AD" | "LAD"
 ): Aerodrome[] {
-  const db = getDb();
-
   if (criteria.length === 0) return [];
 
-  // Build query with multiple JOINs
-  let query = "SELECT DISTINCT a.* FROM aerodromes a";
-
-  criteria.forEach((_, i) => {
-    query += ` JOIN nearby_features nf${i} ON a.id = nf${i}.aerodrome_id`;
+  // Find aerodromes that match ALL criteria
+  const matchingSets = criteria.map(c => {
+    const ids = new Set<number>();
+    for (const feature of nearbyFeatures) {
+      if (feature.feature_type === c.featureType && feature.distance_km <= c.maxDistanceKm) {
+        ids.add(feature.aerodrome_id);
+      }
+    }
+    return ids;
   });
 
-  query += " WHERE 1=1";
-
-  const params: (string | number)[] = [];
-
-  criteria.forEach((c, i) => {
-    query += ` AND nf${i}.feature_type = ? AND nf${i}.distance_km <= ?`;
-    params.push(c.featureType, c.maxDistanceKm);
+  // Intersect all sets
+  const intersection = matchingSets.reduce((acc, set) => {
+    return new Set([...acc].filter(id => set.has(id)));
   });
 
-  if (aerodromeType) {
-    query += " AND a.type = ?";
-    params.push(aerodromeType);
-  }
-
-  return db.prepare(query).all(...params) as Aerodrome[];
+  return aerodromes.filter(a =>
+    intersection.has(a.id) &&
+    (!aerodromeType || a.type === aerodromeType)
+  );
 }
 
 export function getAerodromeWithFeatures(id: number): AerodromeWithFeatures | null {
-  const db = getDb();
-
-  const aerodrome = db
-    .prepare("SELECT * FROM aerodromes WHERE id = ?")
-    .get(id) as Aerodrome | undefined;
-
+  const aerodrome = aerodromes.find(a => a.id === id);
   if (!aerodrome) return null;
 
-  const features = db
-    .prepare("SELECT * FROM nearby_features WHERE aerodrome_id = ?")
-    .all(id) as NearbyFeature[];
-
+  const features = featuresByAerodrome.get(id) || [];
   const nearby: AerodromeWithFeatures["nearby"] = {};
+
   for (const f of features) {
     nearby[f.feature_type] = {
       name: f.feature_name,
@@ -171,8 +125,7 @@ export function getAerodromeWithFeatures(id: number): AerodromeWithFeatures | nu
 }
 
 export function getAllAerodromes(): Aerodrome[] {
-  const db = getDb();
-  return db.prepare("SELECT * FROM aerodromes").all() as Aerodrome[];
+  return aerodromes;
 }
 
 export function getStats(): {
@@ -181,31 +134,27 @@ export function getStats(): {
   totalLAD: number;
   featuresIndexed: { [K in FeatureType]?: number };
 } {
-  const db = getDb();
-
-  const total = db
-    .prepare("SELECT COUNT(*) as count FROM aerodromes")
-    .get() as { count: number };
-
-  const byType = db
-    .prepare("SELECT type, COUNT(*) as count FROM aerodromes GROUP BY type")
-    .all() as { type: string; count: number }[];
-
-  const features = db
-    .prepare(
-      "SELECT feature_type, COUNT(DISTINCT aerodrome_id) as count FROM nearby_features GROUP BY feature_type"
-    )
-    .all() as { feature_type: FeatureType; count: number }[];
+  const totalAD = aerodromes.filter(a => a.type === "AD").length;
+  const totalLAD = aerodromes.filter(a => a.type === "LAD").length;
 
   const featuresIndexed: { [K in FeatureType]?: number } = {};
-  for (const f of features) {
-    featuresIndexed[f.feature_type] = f.count;
+  const countedAerodromes = new Map<FeatureType, Set<number>>();
+
+  for (const f of nearbyFeatures) {
+    if (!countedAerodromes.has(f.feature_type)) {
+      countedAerodromes.set(f.feature_type, new Set());
+    }
+    countedAerodromes.get(f.feature_type)!.add(f.aerodrome_id);
+  }
+
+  for (const [type, ids] of countedAerodromes) {
+    featuresIndexed[type] = ids.size;
   }
 
   return {
-    totalAerodromes: total.count,
-    totalAD: byType.find((t) => t.type === "AD")?.count ?? 0,
-    totalLAD: byType.find((t) => t.type === "LAD")?.count ?? 0,
+    totalAerodromes: aerodromes.length,
+    totalAD,
+    totalLAD,
     featuresIndexed,
   };
 }
@@ -215,32 +164,29 @@ export function searchByProvince(
   provinceOrRegion: string,
   aerodromeType?: "AD" | "LAD"
 ): Aerodrome[] {
-  const db = getDb();
-
-  // Check if it's a region name
   const regionKey = provinceOrRegion.toLowerCase();
   const provinces = REGION_PROVINCES[regionKey];
 
-  let query: string;
-  let params: string[];
+  let filtered: Aerodrome[];
 
   if (provinces) {
     // It's a region - search multiple provinces
-    const placeholders = provinces.map(() => "?").join(", ");
-    query = `SELECT * FROM aerodromes WHERE province IN (${placeholders})`;
-    params = [...provinces];
+    filtered = aerodromes.filter(a =>
+      a.province && provinces.includes(a.province)
+    );
   } else {
     // It's a single province - fuzzy match
-    query = `SELECT * FROM aerodromes WHERE province LIKE ?`;
-    params = [`%${provinceOrRegion}%`];
+    const searchLower = provinceOrRegion.toLowerCase();
+    filtered = aerodromes.filter(a =>
+      a.province && a.province.toLowerCase().includes(searchLower)
+    );
   }
 
   if (aerodromeType) {
-    query += " AND type = ?";
-    params.push(aerodromeType);
+    filtered = filtered.filter(a => a.type === aerodromeType);
   }
 
-  return db.prepare(query).all(...params) as Aerodrome[];
+  return filtered;
 }
 
 // Combined search: features + province/region
@@ -251,50 +197,58 @@ export function searchCombined(
     aerodromeType?: "AD" | "LAD";
   }
 ): Aerodrome[] {
-  const db = getDb();
   const { features, provinceOrRegion, aerodromeType } = criteria;
 
-  // Start building query
-  let query = "SELECT DISTINCT a.* FROM aerodromes a";
-  const params: (string | number)[] = [];
+  let results = [...aerodromes];
 
-  // Add feature joins if needed
+  // Filter by features if provided
   if (features && features.length > 0) {
-    features.forEach((_, i) => {
-      query += ` JOIN nearby_features nf${i} ON a.id = nf${i}.aerodrome_id`;
+    const matchingSets = features.map(f => {
+      const ids = new Set<number>();
+      for (const nf of nearbyFeatures) {
+        if (nf.feature_type === f.featureType && nf.distance_km <= f.maxDistanceKm) {
+          ids.add(nf.aerodrome_id);
+        }
+      }
+      return ids;
     });
+
+    // Intersect all sets
+    const intersection = matchingSets.reduce((acc, set) => {
+      return new Set([...acc].filter(id => set.has(id)));
+    });
+
+    results = results.filter(a => intersection.has(a.id));
   }
 
-  query += " WHERE 1=1";
-
-  // Add feature conditions
-  if (features && features.length > 0) {
-    features.forEach((f, i) => {
-      query += ` AND nf${i}.feature_type = ? AND nf${i}.distance_km <= ?`;
-      params.push(f.featureType, f.maxDistanceKm);
-    });
-  }
-
-  // Add province/region condition
+  // Filter by province/region if provided
   if (provinceOrRegion) {
     const regionKey = provinceOrRegion.toLowerCase();
     const provinces = REGION_PROVINCES[regionKey];
 
     if (provinces) {
-      const placeholders = provinces.map(() => "?").join(", ");
-      query += ` AND a.province IN (${placeholders})`;
-      params.push(...provinces);
+      results = results.filter(a => a.province && provinces.includes(a.province));
     } else {
-      query += " AND a.province LIKE ?";
-      params.push(`%${provinceOrRegion}%`);
+      const searchLower = provinceOrRegion.toLowerCase();
+      results = results.filter(a =>
+        a.province && a.province.toLowerCase().includes(searchLower)
+      );
     }
   }
 
-  // Add type condition
+  // Filter by type if provided
   if (aerodromeType) {
-    query += " AND a.type = ?";
-    params.push(aerodromeType);
+    results = results.filter(a => a.type === aerodromeType);
   }
 
-  return db.prepare(query).all(...params) as Aerodrome[];
+  return results;
+}
+
+// Legacy functions for compatibility
+export function getDb(): null {
+  return null;
+}
+
+export function initDb(): void {
+  // No-op - data is loaded from JSON
 }

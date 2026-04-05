@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
-import { getDb, searchCombined, getAllAerodromes, type FeatureType, FEATURE_TYPES, REGION_PROVINCES } from "@/lib/aerodromesDb";
+import { searchCombined, getAllAerodromes, type FeatureType, FEATURE_TYPES } from "@/lib/aerodromesDb";
 
 // Lazy initialization to avoid build-time errors
 let openai: OpenAI | null = null;
@@ -145,9 +145,6 @@ export async function POST(request: NextRequest) {
 
     // Parse query with LLM
     const parsed = await parseQueryWithLLM(query);
-
-    // Initialize DB
-    getDb();
 
     // Search based on parsed criteria
     let results;
