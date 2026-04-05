@@ -181,10 +181,24 @@ export function ArgentinaMapClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlQuery = searchParams.get("q");
+  const urlMapStyle = searchParams.get("map") as MapStyle | null;
 
   const [filter, setFilter] = useState<FilterType>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [mapStyle, setMapStyle] = useState<MapStyle>("street");
+  const [mapStyle, setMapStyle] = useState<MapStyle>(urlMapStyle === "satellite" ? "satellite" : "street");
+
+  // Update URL when map style changes
+  const handleMapStyleChange = useCallback((style: MapStyle) => {
+    setMapStyle(style);
+    const params = new URLSearchParams(searchParams.toString());
+    if (style === "satellite") {
+      params.set("map", "satellite");
+    } else {
+      params.delete("map");
+    }
+    const newUrl = params.toString() ? `/argentina?${params.toString()}` : "/argentina";
+    router.push(newUrl, { scroll: false });
+  }, [router, searchParams]);
 
   // LLM search state
   const [llmSearching, setLlmSearching] = useState(false);
@@ -392,7 +406,7 @@ export function ArgentinaMapClient() {
               {/* Map style toggle */}
               <div className="flex gap-2">
                 <button
-                  onClick={() => setMapStyle("street")}
+                  onClick={() => handleMapStyleChange("street")}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
                     mapStyle === "street"
                       ? "bg-sky-600 text-white"
@@ -402,7 +416,7 @@ export function ArgentinaMapClient() {
                   Mapa
                 </button>
                 <button
-                  onClick={() => setMapStyle("satellite")}
+                  onClick={() => handleMapStyleChange("satellite")}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
                     mapStyle === "satellite"
                       ? "bg-sky-600 text-white"
