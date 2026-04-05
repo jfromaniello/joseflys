@@ -53,9 +53,9 @@ export async function GET(request: NextRequest) {
       : 'Calm';
 
     // Format visibility - returns { km, sm } or null
-    const formatVisibility = (visib: string | null): { km: string; sm: string } | null => {
-      if (!visib) return null;
-      const v = visib.trim();
+    const formatVisibility = (visib: string | number | null): { km: string; sm: string } | null => {
+      if (visib === null || visib === undefined) return null;
+      const v = String(visib).trim();
 
       // Handle "P6SM" or "6+" (greater than 6 SM)
       if (v === 'P6SM' || v === '6+') {
@@ -104,6 +104,17 @@ export async function GET(request: NextRequest) {
         return {
           km: km.toFixed(1),
           sm: sm.toFixed(1)
+        };
+      }
+
+      // Handle plain numeric values (API returns SM as number, e.g., "0.19", "2.5")
+      const numericMatch = v.match(/^(\d+(?:\.\d+)?)$/);
+      if (numericMatch) {
+        const sm = parseFloat(numericMatch[1]);
+        const km = sm * 1.60934;
+        return {
+          km: km < 1 ? km.toFixed(1) : km >= 10 ? Math.round(km).toString() : km.toFixed(1),
+          sm: sm < 1 ? sm.toFixed(2) : sm.toFixed(1)
         };
       }
 
