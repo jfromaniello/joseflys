@@ -220,7 +220,7 @@ interface LLMSearchResult {
 }
 
 const data = argentinaData as {
-  count: { total: number; ad: number; lad: number };
+  count: { total: number; ad: number; heliport: number; lad: number; ladh: number };
   data: Aerodrome[];
 };
 
@@ -381,11 +381,10 @@ export function ArgentinaMapClient() {
           {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-white mb-3">
-              Argentina - Aerodromos y LADs
+              Argentina - Aerodromos y Helipuertos
             </h1>
             <p className="text-slate-400">
-              {data.count.ad} aerodromos (AD) y {data.count.lad} Lugares Aptos
-              Denunciados (LAD)
+              {data.count.ad} AD + {data.count.heliport} Helipuertos + {data.count.lad} LAD + {data.count.ladh} LADH = {data.count.total} ubicaciones
             </p>
           </div>
 
@@ -637,16 +636,24 @@ export function ArgentinaMapClient() {
               <span>Aerodromo (AD)</span>
             </div>
             <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full bg-sky-500 border-2 border-white shadow"></div>
+              <span>Helipuerto</span>
+            </div>
+            <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded-full bg-emerald-400 border-2 border-white shadow"></div>
-              <span>Lugar Apto Denunciado (LAD)</span>
+              <span>LAD</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3.5 h-3.5 rounded-full bg-amber-500 border-2 border-white shadow"></div>
+              <span>LADH</span>
             </div>
           </div>
 
           {/* Note */}
           <div className="mt-6 p-4 rounded-xl bg-slate-900/30 border border-slate-700">
             <p className="text-xs text-slate-500 text-center">
-              Datos de ANAC Argentina. Los LADs son pistas privadas registradas.
-              Haz click en un marcador para ver detalles.
+              Fuentes: OurAirports (AD, Helipuertos) y ANAC Argentina (LAD, LADH).
+              LAD = Lugar Apto Denunciado. LADH = LAD Helipuerto.
             </p>
           </div>
         </div>
