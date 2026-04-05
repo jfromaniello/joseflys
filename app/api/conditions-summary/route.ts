@@ -47,6 +47,8 @@ interface SummaryRequest {
   notams?: Array<{
     keyword: string;
     traditionalMessageFrom4thWord: string;
+    startDate: string;
+    endDate: string;
   }>;
   weather?: {
     temperature?: number;
@@ -108,25 +110,40 @@ function buildPrompt(data: SummaryRequest): string {
     parts.push(`⚠️ NOTE: This recommendation is based on wind only. You MUST check NOTAMs below for any closures or restrictions affecting this runway before recommending it.`);
   }
 
-  // NOTAMs - separate runway NOTAMs for visibility
+  // NOTAMs - filter to only currently active ones, separate runway NOTAMs for visibility
   if (data.notams && data.notams.length > 0) {
-    const runwayNotams = data.notams.filter((n) => n.keyword === "RWY");
-    const otherNotams = data.notams.filter((n) => n.keyword !== "RWY");
+    const now = new Date();
+    const activeNotams = data.notams.filter((n) => {
+      const start = new Date(n.startDate);
+      const end = new Date(n.endDate);
+      return start <= now && now <= end;
+    });
 
-    if (runwayNotams.length > 0) {
-      parts.push(`\n⚠️ RUNWAY NOTAMs (${runwayNotams.length}) - CHECK BEFORE RECOMMENDING RUNWAY:`);
-      runwayNotams.forEach((notam) => {
-        parts.push(`- ${notam.traditionalMessageFrom4thWord?.substring(0, 150)}`);
-      });
-    }
+    if (activeNotams.length === 0) {
+      parts.push(`\nNOTAMs: No currently active NOTAMs (${data.notams.length} total, but none effective at this time)`);
+    } else {
+      const runwayNotams = activeNotams.filter((n) => n.keyword === "RWY");
+      const otherNotams = activeNotams.filter((n) => n.keyword !== "RWY");
 
-    if (otherNotams.length > 0) {
-      parts.push(`\nOther Active NOTAMs (${otherNotams.length}):`);
-      otherNotams.slice(0, 8).forEach((notam) => {
-        parts.push(`- [${notam.keyword}] ${notam.traditionalMessageFrom4thWord?.substring(0, 100)}...`);
-      });
-      if (otherNotams.length > 8) {
-        parts.push(`... and ${otherNotams.length - 8} more`);
+      if (runwayNotams.length > 0) {
+        parts.push(`\n⚠️ RUNWAY NOTAMs (${runwayNotams.length} currently active) - CHECK BEFORE RECOMMENDING RUNWAY:`);
+        runwayNotams.forEach((notam) => {
+          const end = new Date(notam.endDate);
+          const endStr = end.toISOString().slice(0, 16).replace("T", " ") + "Z";
+          parts.push(`- ${notam.traditionalMessageFrom4thWord?.substring(0, 150)} [until ${endStr}]`);
+        });
+      }
+
+      if (otherNotams.length > 0) {
+        parts.push(`\nOther Active NOTAMs (${otherNotams.length}):`);
+        otherNotams.slice(0, 8).forEach((notam) => {
+          const end = new Date(notam.endDate);
+          const endStr = end.toISOString().slice(0, 16).replace("T", " ") + "Z";
+          parts.push(`- [${notam.keyword}] ${notam.traditionalMessageFrom4thWord?.substring(0, 100)}... [until ${endStr}]`);
+        });
+        if (otherNotams.length > 8) {
+          parts.push(`... and ${otherNotams.length - 8} more`);
+        }
       }
     }
   }

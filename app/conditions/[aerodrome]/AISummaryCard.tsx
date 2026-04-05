@@ -43,6 +43,8 @@ interface AISummaryCardProps {
   notams: Array<{
     keyword: string;
     traditionalMessageFrom4thWord: string;
+    startDate: string;
+    endDate: string;
   }> | null;
   weather: {
     temperature?: number;
@@ -100,6 +102,8 @@ export function AISummaryCard({
             notams: notams?.map((n) => ({
               keyword: n.keyword,
               traditionalMessageFrom4thWord: n.traditionalMessageFrom4thWord,
+              startDate: n.startDate,
+              endDate: n.endDate,
             })),
             weather,
             sunTimes,
