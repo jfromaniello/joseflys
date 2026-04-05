@@ -50,11 +50,15 @@ const LLMSearchInput = memo(function LLMSearchInput({
     return (
       <div className="flex items-center gap-3">
         <div className="flex-1 px-4 py-3 rounded-lg bg-amber-900/30 border border-amber-600/50 text-amber-100 flex items-center justify-between">
-          <span className="truncate">{activeQuery}</span>
+          <span className="truncate">
+            <span className="text-amber-400 font-medium">Busqueda:</span>{" "}
+            {activeQuery}
+          </span>
           <button
             type="button"
             onClick={handleClear}
             className="ml-3 text-amber-300 hover:text-white cursor-pointer flex-shrink-0"
+            title="Limpiar busqueda"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -151,6 +155,11 @@ const TILE_LAYERS = {
     url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
     attribution: '&copy; <a href="https://www.esri.com/">Esri</a> World Imagery',
   },
+  hybrid: {
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    labelsUrl: "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
+    attribution: '&copy; <a href="https://www.esri.com/">Esri</a> World Imagery',
+  },
 };
 
 interface Aerodrome {
@@ -163,7 +172,7 @@ interface Aerodrome {
 }
 
 type FilterType = "all" | "AD" | "LAD";
-type MapStyle = "street" | "satellite";
+type MapStyle = "street" | "satellite" | "hybrid";
 
 interface LLMSearchResult {
   query: string;
@@ -185,16 +194,18 @@ export function ArgentinaMapClient() {
 
   const [filter, setFilter] = useState<FilterType>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [mapStyle, setMapStyle] = useState<MapStyle>(urlMapStyle === "satellite" ? "satellite" : "street");
+  const [mapStyle, setMapStyle] = useState<MapStyle>(
+    urlMapStyle === "satellite" ? "satellite" : urlMapStyle === "hybrid" ? "hybrid" : "street"
+  );
 
   // Update URL when map style changes
   const handleMapStyleChange = useCallback((style: MapStyle) => {
     setMapStyle(style);
     const params = new URLSearchParams(searchParams.toString());
-    if (style === "satellite") {
-      params.set("map", "satellite");
-    } else {
+    if (style === "street") {
       params.delete("map");
+    } else {
+      params.set("map", style);
     }
     const newUrl = params.toString() ? `/argentina?${params.toString()}` : "/argentina";
     router.push(newUrl, { scroll: false });
@@ -407,7 +418,7 @@ export function ArgentinaMapClient() {
               <div className="flex gap-2">
                 <button
                   onClick={() => handleMapStyleChange("street")}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
                     mapStyle === "street"
                       ? "bg-sky-600 text-white"
                       : "bg-slate-700 text-slate-300 hover:bg-slate-600"
@@ -416,8 +427,18 @@ export function ArgentinaMapClient() {
                   Mapa
                 </button>
                 <button
+                  onClick={() => handleMapStyleChange("hybrid")}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                    mapStyle === "hybrid"
+                      ? "bg-sky-600 text-white"
+                      : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                  }`}
+                >
+                  Hibrido
+                </button>
+                <button
                   onClick={() => handleMapStyleChange("satellite")}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
                     mapStyle === "satellite"
                       ? "bg-sky-600 text-white"
                       : "bg-slate-700 text-slate-300 hover:bg-slate-600"
@@ -439,10 +460,16 @@ export function ArgentinaMapClient() {
                 scrollWheelZoom={true}
               >
                 <TileLayer
-                  key={mapStyle}
+                  key={`base-${mapStyle}`}
                   attribution={TILE_LAYERS[mapStyle].attribution}
                   url={TILE_LAYERS[mapStyle].url}
                 />
+                {mapStyle === "hybrid" && (
+                  <TileLayer
+                    key="hybrid-labels"
+                    url={TILE_LAYERS.hybrid.labelsUrl}
+                  />
+                )}
                 <MarkerClusterGroup
                   chunkedLoading
                   maxClusterRadius={10}
