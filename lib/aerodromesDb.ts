@@ -52,8 +52,8 @@ let db: Database.Database | null = null;
 
 export function getDb(): Database.Database {
   if (!db) {
-    db = new Database(DB_PATH);
-    db.pragma("journal_mode = WAL");
+    // Open in readonly mode for Vercel compatibility (read-only filesystem)
+    db = new Database(DB_PATH, { readonly: true, fileMustExist: true });
   }
   return db;
 }
