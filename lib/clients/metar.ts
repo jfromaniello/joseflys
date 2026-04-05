@@ -9,7 +9,7 @@ export interface MetarData {
   wgst: number | null;
   altim: number | null;
   elev: number | null;
-  visib: string | null;
+  visib: string | number | null; // API returns string (e.g., "6+") or number (e.g., 0.19)
   rawOb: string;
   reportTime: string;
   lat: number;

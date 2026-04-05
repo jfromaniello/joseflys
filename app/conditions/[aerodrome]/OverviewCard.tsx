@@ -171,9 +171,10 @@ export function OverviewCard({ metar, runways, notams, elevation, lat, lon, open
 
   // Format visibility - parse METAR visib string and show in KM and SM
   const formatVisibility = (): { km: string; sm: string } | null => {
-    if (!metar?.visib) return null;
+    if (metar?.visib === null || metar?.visib === undefined) return null;
 
-    const visib = metar.visib.trim();
+    // API can return visib as number or string - normalize to string
+    const visib = String(metar.visib).trim();
 
     // Handle "P6SM" or "6+" (greater than 6 SM)
     if (visib === "P6SM" || visib === "6+") {
@@ -222,6 +223,17 @@ export function OverviewCard({ metar, runways, notams, elevation, lat, lon, open
       return {
         km: km.toFixed(1),
         sm: sm.toFixed(1)
+      };
+    }
+
+    // Handle plain numeric values (API returns SM as number, e.g., "0.19", "2.5")
+    const numericMatch = visib.match(/^(\d+(?:\.\d+)?)$/);
+    if (numericMatch) {
+      const sm = parseFloat(numericMatch[1]);
+      const km = sm * 1.60934;
+      return {
+        km: km < 1 ? km.toFixed(1) : km >= 10 ? Math.round(km).toString() : km.toFixed(1),
+        sm: sm < 1 ? sm.toFixed(2) : sm.toFixed(1)
       };
     }
 
