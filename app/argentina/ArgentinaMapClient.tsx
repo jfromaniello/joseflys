@@ -140,6 +140,8 @@ const MarkerClusterGroup = dynamic(
 // Fix for Leaflet default marker icon not loading in webpack/Next.js
 let adIcon: L.DivIcon | undefined;
 let ladIcon: L.DivIcon | undefined;
+let heliportIcon: L.DivIcon | undefined;
+let ladhIcon: L.DivIcon | undefined;
 if (typeof window !== "undefined") {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const L = require("leaflet");
@@ -159,6 +161,22 @@ if (typeof window !== "undefined") {
     html: '<div style="background: #34d399; width: 18px; height: 18px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
     iconSize: [18, 18],
     iconAnchor: [9, 9],
+  });
+
+  // HELIPORT - Heliport (sky blue, medium)
+  heliportIcon = L.divIcon({
+    className: "heliport-marker",
+    html: '<div style="background: #0ea5e9; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+  });
+
+  // LADH - LAD Heliport (amber/orange, small)
+  ladhIcon = L.divIcon({
+    className: "ladh-marker",
+    html: '<div style="background: #f59e0b; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
   });
 }
 
@@ -180,15 +198,18 @@ const TILE_LAYERS = {
 };
 
 interface Aerodrome {
-  type: "AD" | "LAD";
+  type: "AD" | "LAD" | "HELIPORT" | "LADH";
   code: string | null;
   name: string;
   lat: number;
   lon: number;
   elevation: number | null;
+  province?: string | null;
+  surface?: string | null;
 }
 
-type FilterType = "all" | "AD" | "LAD";
+type AerodromeType = "AD" | "LAD" | "HELIPORT" | "LADH";
+type FilterType = "all" | AerodromeType;
 type MapStyle = "street" | "satellite" | "hybrid";
 
 interface LLMSearchResult {
@@ -334,7 +355,9 @@ export function ArgentinaMapClient() {
     return {
       all: filtered.length,
       AD: filtered.filter((a) => a.type === "AD").length,
+      HELIPORT: filtered.filter((a) => a.type === "HELIPORT").length,
       LAD: filtered.filter((a) => a.type === "LAD").length,
+      LADH: filtered.filter((a) => a.type === "LADH").length,
     };
   }, [searchQuery]);
 
@@ -398,10 +421,10 @@ export function ArgentinaMapClient() {
               </div>
 
               {/* Filter buttons */}
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => setFilter("all")}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
                     filter === "all"
                       ? "bg-blue-600 text-white"
                       : "bg-slate-700 text-slate-300 hover:bg-slate-600"
@@ -411,7 +434,7 @@ export function ArgentinaMapClient() {
                 </button>
                 <button
                   onClick={() => setFilter("AD")}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
                     filter === "AD"
                       ? "bg-purple-600 text-white"
                       : "bg-slate-700 text-slate-300 hover:bg-slate-600"
@@ -420,14 +443,34 @@ export function ArgentinaMapClient() {
                   AD ({counts.AD})
                 </button>
                 <button
+                  onClick={() => setFilter("HELIPORT")}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                    filter === "HELIPORT"
+                      ? "bg-sky-600 text-white"
+                      : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                  }`}
+                >
+                  Helipuertos ({counts.HELIPORT})
+                </button>
+                <button
                   onClick={() => setFilter("LAD")}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
                     filter === "LAD"
                       ? "bg-emerald-600 text-white"
                       : "bg-slate-700 text-slate-300 hover:bg-slate-600"
                   }`}
                 >
                   LAD ({counts.LAD})
+                </button>
+                <button
+                  onClick={() => setFilter("LADH")}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                    filter === "LADH"
+                      ? "bg-amber-600 text-white"
+                      : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                  }`}
+                >
+                  LADH ({counts.LADH})
                 </button>
               </div>
 
@@ -494,58 +537,83 @@ export function ArgentinaMapClient() {
                   spiderfyOnMaxZoom={true}
                   showCoverageOnHover={false}
                 >
-                  {filteredData.map((aerodrome, index) => (
-                    <Marker
-                      key={`${aerodrome.lat}-${aerodrome.lon}-${index}`}
-                      position={[aerodrome.lat, aerodrome.lon]}
-                      icon={aerodrome.type === "AD" ? adIcon : ladIcon}
-                    >
-                      <Popup>
-                        <div className="min-w-[200px]">
-                          <div className="font-bold text-base mb-1">
-                            {aerodrome.code && (
-                              <span className="text-purple-600">
-                                {aerodrome.code} -{" "}
-                              </span>
-                            )}
-                            {aerodrome.name}
-                          </div>
-                          <div className="text-sm text-gray-600 space-y-1">
-                            <div>
-                              <span
-                                className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
-                                  aerodrome.type === "AD"
-                                    ? "bg-purple-100 text-purple-700"
-                                    : "bg-emerald-100 text-emerald-700"
-                                }`}
-                              >
-                                {aerodrome.type === "AD"
-                                  ? "Aerodromo"
-                                  : "LAD"}
-                              </span>
+                  {filteredData.map((aerodrome, index) => {
+                    // Select icon based on type
+                    const icon = {
+                      AD: adIcon,
+                      HELIPORT: heliportIcon,
+                      LAD: ladIcon,
+                      LADH: ladhIcon,
+                    }[aerodrome.type] || ladIcon;
+
+                    // Badge styling per type
+                    const badgeStyles = {
+                      AD: "bg-purple-100 text-purple-700",
+                      HELIPORT: "bg-sky-100 text-sky-700",
+                      LAD: "bg-emerald-100 text-emerald-700",
+                      LADH: "bg-amber-100 text-amber-700",
+                    };
+
+                    const typeLabels = {
+                      AD: "Aerodromo",
+                      HELIPORT: "Helipuerto",
+                      LAD: "LAD",
+                      LADH: "LAD Helipuerto",
+                    };
+
+                    return (
+                      <Marker
+                        key={`${aerodrome.lat}-${aerodrome.lon}-${index}`}
+                        position={[aerodrome.lat, aerodrome.lon]}
+                        icon={icon}
+                      >
+                        <Popup>
+                          <div className="min-w-[200px]">
+                            <div className="font-bold text-base mb-1">
+                              {aerodrome.code && (
+                                <span className="text-purple-600">
+                                  {aerodrome.code} -{" "}
+                                </span>
+                              )}
+                              {aerodrome.name}
                             </div>
-                            {aerodrome.elevation !== null && (
-                              <div>Elevacion: {aerodrome.elevation} ft</div>
-                            )}
-                            <div>
-                              {aerodrome.lat.toFixed(4)}°,{" "}
-                              {aerodrome.lon.toFixed(4)}°
-                            </div>
-                            {aerodrome.code && (
-                              <div className="pt-2">
-                                <Link
-                                  href={`/conditions/${aerodrome.code}`}
-                                  className="text-blue-600 hover:text-blue-800 underline"
+                            <div className="text-sm text-gray-600 space-y-1">
+                              <div>
+                                <span
+                                  className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${badgeStyles[aerodrome.type]}`}
                                 >
-                                  Ver condiciones
-                                </Link>
+                                  {typeLabels[aerodrome.type]}
+                                </span>
                               </div>
-                            )}
+                              {aerodrome.elevation !== null && (
+                                <div>Elevacion: {aerodrome.elevation} m</div>
+                              )}
+                              {aerodrome.surface && (
+                                <div>Superficie: {aerodrome.surface}</div>
+                              )}
+                              {aerodrome.province && (
+                                <div>Provincia: {aerodrome.province}</div>
+                              )}
+                              <div>
+                                {aerodrome.lat.toFixed(4)}°,{" "}
+                                {aerodrome.lon.toFixed(4)}°
+                              </div>
+                              {aerodrome.code && aerodrome.type === "AD" && (
+                                <div className="pt-2">
+                                  <Link
+                                    href={`/conditions/${aerodrome.code}`}
+                                    className="text-blue-600 hover:text-blue-800 underline"
+                                  >
+                                    Ver condiciones
+                                  </Link>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </Popup>
-                    </Marker>
-                  ))}
+                        </Popup>
+                      </Marker>
+                    );
+                  })}
                 </MarkerClusterGroup>
               </MapContainer>
             </div>

@@ -5,8 +5,10 @@ import { XMarkIcon } from "@heroicons/react/24/outline";
 import { Tooltip } from "./Tooltip";
 import { useDropdownKeyboardNavigation } from "@/lib/useDropdownKeyboardNavigation";
 
+export type AerodromeType = "AD" | "LAD" | "HELIPORT" | "LADH";
+
 export interface AerodromeResult {
-  type: "AD" | "LAD";
+  type: AerodromeType;
   code: string | null;
   name: string;
   lat: number;

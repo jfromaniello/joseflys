@@ -62,3 +62,8 @@ data/osm-cache/
 # SQLite WAL files
 *.db-shm
 *.db-wal
+# Data source files (can be regenerated)
+scripts/data-sources/*.pdf
+scripts/data-sources/*.csv
+scripts/data-sources/*.txt
+

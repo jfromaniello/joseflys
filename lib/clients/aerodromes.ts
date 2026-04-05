@@ -1,23 +1,32 @@
 import argentinaData from "@/data/ad-lads/argentina.json";
 import airportsData from "@/data/airports.json";
 
+export type AerodromeType = "AD" | "LAD" | "HELIPORT" | "LADH";
+
 export interface Aerodrome {
-  type: "AD" | "LAD";
+  type: AerodromeType;
   code: string | null;
   name: string;
   lat: number;
   lon: number;
   elevation: number | null;
+  province?: string | null;
+  surface?: string | null;
 }
 
 interface AerodromeData {
   version: string;
-  source: string;
   generatedAt: string;
+  sources: {
+    ourairports: { url: string; description: string; provides: string[] };
+    anac: { url: string; file: string; description: string; provides: string[] };
+  };
   count: {
     total: number;
     ad: number;
+    heliport: number;
     lad: number;
+    ladh: number;
   };
   data: Aerodrome[];
 }
@@ -41,7 +50,7 @@ export interface BboxAerodromesResult {
     minLon: number;
     maxLon: number;
   };
-  filter: "AD" | "LAD" | null;
+  filter: AerodromeType | null;
   data: Aerodrome[];
 }
 
@@ -150,7 +159,7 @@ export function getAerodromesByBbox(
   maxLat: number,
   minLon: number,
   maxLon: number,
-  typeFilter?: "AD" | "LAD"
+  typeFilter?: AerodromeType
 ): BboxAerodromesResult {
   // Filter Argentina data
   const argResults = argData.data.filter((aerodrome) => {

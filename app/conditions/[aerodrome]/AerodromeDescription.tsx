@@ -4,10 +4,12 @@ import { useState, useEffect } from "react";
 import { SparklesIcon } from "@heroicons/react/24/outline";
 import { Runway } from "./types";
 
+type AerodromeType = "AD" | "LAD" | "HELIPORT" | "LADH";
+
 interface AerodromeDescriptionProps {
   code: string | null;
   name: string;
-  type: "AD" | "LA" | "LAD";
+  type: AerodromeType;
   lat: number;
   lon: number;
   elevation: number | null;
