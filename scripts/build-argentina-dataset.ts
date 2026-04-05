@@ -109,6 +109,29 @@ interface ANACLadEntry {
 }
 
 // =============================================================================
+// RUNWAY DATA TYPES (from runways.json)
+// =============================================================================
+
+interface RunwayEndData {
+  id: string;
+  lat?: number;
+  lon?: number;
+  elev?: number;
+  hdg?: number;
+  dt?: number;
+}
+
+interface RawRunwayData {
+  l?: number; // length in feet
+  w?: number; // width in feet
+  s?: string; // surface code
+  lit?: number;
+  cls?: number; // closed
+  le?: RunwayEndData;
+  he?: RunwayEndData;
+}
+
+// =============================================================================
 // CONSTANTS
 // =============================================================================
 
@@ -138,6 +161,69 @@ const REGION_TO_PROVINCE: Record<string, string> = {
   "AR-Y": "Jujuy",
   "AR-Z": "Santa Cruz",
 };
+
+const SURFACE_CODE_TO_NAME: Record<string, string> = {
+  PG: "ASFALTO",
+  PP: "ASFALTO",
+  GG: "CESPED",
+  GF: "CESPED",
+  GV: "GRAVA",
+  DT: "TIERRA",
+  SD: "ARENA",
+  WT: "AGUA",
+  CON: "CONCRETO",
+  ASP: "ASFALTO",
+};
+
+// =============================================================================
+// RUNWAY CONVERTER
+// =============================================================================
+
+/**
+ * Convert runways.json format to our Runway format
+ * Converts feet to meters and extracts headings
+ */
+function convertRunways(rawRunways: RawRunwayData[]): Runway[] {
+  return rawRunways
+    .filter((rwy) => !rwy.cls && rwy.le && rwy.l) // Skip closed runways
+    .map((rwy) => {
+      // Convert feet to meters
+      const lengthM = Math.round((rwy.l || 0) * 0.3048);
+      const widthM = Math.round((rwy.w || 0) * 0.3048);
+
+      // Get headings - estimate from runway ID if not provided
+      let heading1 = rwy.le?.hdg;
+      let heading2 = rwy.he?.hdg;
+
+      if (heading1 === undefined && rwy.le?.id) {
+        const match = rwy.le.id.match(/^(\d+)/);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (num >= 1 && num <= 36) heading1 = num * 10;
+        }
+      }
+
+      if (heading2 === undefined && rwy.he?.id) {
+        const match = rwy.he.id.match(/^(\d+)/);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (num >= 1 && num <= 36) heading2 = num * 10;
+        }
+      }
+
+      // Use runway IDs as heading numbers if available (e.g., "13" -> 13, "31" -> 31)
+      const h1 = rwy.le?.id ? parseInt(rwy.le.id.replace(/[LRC]/g, ""), 10) : Math.round((heading1 || 0) / 10);
+      const h2 = rwy.he?.id ? parseInt(rwy.he.id.replace(/[LRC]/g, ""), 10) : Math.round((heading2 || 0) / 10);
+
+      return {
+        heading1: isNaN(h1) ? 0 : h1,
+        heading2: isNaN(h2) ? 0 : h2,
+        dimensions: `${lengthM}x${widthM}`,
+        length: lengthM,
+        width: widthM,
+      };
+    });
+}
 
 // =============================================================================
 // CSV PARSER
@@ -202,7 +288,7 @@ async function buildDataset() {
   // ---------------------------------------------------------------------------
   // STEP 1: Load OurAirports data
   // ---------------------------------------------------------------------------
-  console.log("\n[1/4] Loading OurAirports data...");
+  console.log("\n[1/5] Loading OurAirports data...");
 
   const ourAirportsPath = path.join(scriptsDir, "data-sources", "ourairports-argentina.csv");
   if (!fs.existsSync(ourAirportsPath)) {
@@ -216,9 +302,9 @@ async function buildDataset() {
   console.log(`  Loaded ${ourAirportsData.length} entries from OurAirports`);
 
   // ---------------------------------------------------------------------------
-  // STEP 2: Load ANAC LAD data
+  // STEP 2: Load ANAC LAD data and runways.json
   // ---------------------------------------------------------------------------
-  console.log("\n[2/4] Loading ANAC LAD data...");
+  console.log("\n[2/5] Loading ANAC LAD data...");
 
   const anacPath = path.join(scriptsDir, "data-sources", "lad-anac-parsed.json");
   if (!fs.existsSync(anacPath)) {
@@ -231,13 +317,29 @@ async function buildDataset() {
   console.log(`  Loaded ${anacData.length} entries from ANAC PDF`);
 
   // ---------------------------------------------------------------------------
-  // STEP 3: Process and merge data
+  // STEP 3: Load runways.json for AD runway data
   // ---------------------------------------------------------------------------
-  console.log("\n[3/4] Processing and merging data...");
+  console.log("\n[3/5] Loading runways.json...");
+
+  const runwaysPath = path.join(dataDir, "runways.json");
+  let runwaysData: Record<string, RawRunwayData[]> = {};
+
+  if (fs.existsSync(runwaysPath)) {
+    runwaysData = JSON.parse(fs.readFileSync(runwaysPath, "utf-8"));
+    const argRunways = Object.keys(runwaysData).filter((k) => k.startsWith("SA"));
+    console.log(`  Loaded runways.json with ${argRunways.length} Argentine airports`);
+  } else {
+    console.log("  WARNING: runways.json not found, ADs will have no runway data");
+  }
+
+  // ---------------------------------------------------------------------------
+  // STEP 4: Process and merge data
+  // ---------------------------------------------------------------------------
+  console.log("\n[4/5] Processing and merging data...");
 
   const aerodromes: Aerodrome[] = [];
   const stats = {
-    ourairports: { ad: 0, heliport: 0, skipped: 0 },
+    ourairports: { ad: 0, heliport: 0, skipped: 0, withRunways: 0 },
     anac: { lad: 0, ladh: 0 },
   };
 
@@ -268,6 +370,25 @@ async function buildDataset() {
       .replace(/ International$/i, " Intl")
       .trim();
 
+    // Try to find runway data from runways.json using ICAO code
+    let runways: Runway[] = [];
+    let surface: string | null = null;
+    const icaoCode = entry.gps_code || entry.icao_code;
+
+    if (icaoCode && runwaysData[icaoCode]) {
+      const rawRunways = runwaysData[icaoCode];
+      runways = convertRunways(rawRunways);
+
+      // Get surface from first runway
+      if (rawRunways.length > 0 && rawRunways[0].s) {
+        surface = SURFACE_CODE_TO_NAME[rawRunways[0].s] || rawRunways[0].s;
+      }
+
+      if (runways.length > 0) {
+        stats.ourairports.withRunways++;
+      }
+    }
+
     aerodromes.push({
       type: isHeliport ? "HELIPORT" : "AD",
       code,
@@ -277,8 +398,8 @@ async function buildDataset() {
       elevation,
       province: REGION_TO_PROVINCE[entry.iso_region] || null,
       municipality: entry.municipality || null,
-      surface: null,
-      runways: [],
+      surface,
+      runways,
       region: null,
       source: "ourairports",
     });
@@ -326,9 +447,9 @@ async function buildDataset() {
   });
 
   // ---------------------------------------------------------------------------
-  // STEP 4: Write output
+  // STEP 5: Write output
   // ---------------------------------------------------------------------------
-  console.log("\n[4/4] Writing output files...");
+  console.log("\n[5/5] Writing output files...");
 
   const output = {
     version: "2.0",
@@ -389,9 +510,9 @@ async function buildDataset() {
   console.log("=".repeat(70));
   console.log("\nDataset Summary:");
   console.log(`  Total entries: ${output.count.total}`);
-  console.log(`  ├─ AD (Airports):        ${output.count.ad}`);
+  console.log(`  ├─ AD (Airports):        ${output.count.ad} (${stats.ourairports.withRunways} with runway data)`);
   console.log(`  ├─ HELIPORT:             ${output.count.heliport}`);
-  console.log(`  ├─ LAD (Private strips): ${output.count.lad}`);
+  console.log(`  ├─ LAD (Private strips): ${output.count.lad} (all with runway data from PDF)`);
   console.log(`  └─ LADH (LAD Heliports): ${output.count.ladh}`);
   console.log(`\n  Skipped from OurAirports: ${stats.ourairports.skipped} (closed/invalid)`);
 

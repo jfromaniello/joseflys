@@ -1,6 +1,6 @@
 {
   "version": "2.0",
-  "generatedAt": "2026-04-05T18:25:07.242Z",
+  "generatedAt": "2026-04-05T23:24:57.531Z",
   "sources": {
     "ourairports": {
       "url": "https://ourairports.com/data/",
@@ -65,8 +65,16 @@
       "elevation": 277,
       "province": "Santa Cruz",
       "municipality": "Rio Turbio",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 6,
+          "heading2": 24,
+          "dimensions": "1932x30",
+          "length": 1932,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -233,8 +241,16 @@
       "elevation": 63,
       "province": "Formosa",
       "municipality": "Clorinda",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 1,
+          "heading2": 19,
+          "dimensions": "1200x30",
+          "length": 1200,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -289,8 +305,16 @@
       "elevation": 80,
       "province": "Chaco",
       "municipality": "Presidencia Roca",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 16,
+          "heading2": 34,
+          "dimensions": "1500x25",
+          "length": 1500,
+          "width": 25
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -415,8 +439,16 @@
       "elevation": 5,
       "province": "CABA",
       "municipality": "Buenos Aires",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 13,
+          "heading2": 31,
+          "dimensions": "2350x45",
+          "length": 2350,
+          "width": 45
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -709,8 +741,16 @@
       "elevation": 43,
       "province": "Chubut",
       "municipality": "Rawson",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 6,
+          "heading2": 24,
+          "dimensions": "2560x45",
+          "length": 2560,
+          "width": 45
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -835,8 +875,16 @@
       "elevation": 900,
       "province": "Catamarca",
       "municipality": "Andalgalá",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 7,
+          "heading2": 25,
+          "dimensions": "1530x30",
+          "length": 1530,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -891,8 +939,16 @@
       "elevation": 26,
       "province": "Río Negro",
       "municipality": "San Antonio Oeste",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 12,
+          "heading2": 30,
+          "dimensions": "1800x30",
+          "length": 1800,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -905,8 +961,16 @@
       "elevation": 177,
       "province": "Misiones",
       "municipality": "Apóstoles",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 6,
+          "heading2": 24,
+          "dimensions": "1850x30",
+          "length": 1850,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -919,8 +983,23 @@
       "elevation": 421,
       "province": "Córdoba",
       "municipality": "Rio Cuarto",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 5,
+          "heading2": 23,
+          "dimensions": "2265x45",
+          "length": 2265,
+          "width": 45
+        },
+        {
+          "heading1": 18,
+          "heading2": 36,
+          "dimensions": "2075x40",
+          "length": 2075,
+          "width": 40
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -1045,8 +1124,16 @@
       "elevation": 22,
       "province": "Buenos Aires",
       "municipality": "Mar del Plata",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 13,
+          "heading2": 31,
+          "dimensions": "2200x45",
+          "length": 2200,
+          "width": 45
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -1073,8 +1160,16 @@
       "elevation": 783,
       "province": "Neuquén",
       "municipality": "Chapelco/San Martin de los Andes",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 6,
+          "heading2": 24,
+          "dimensions": "2501x45",
+          "length": 2501,
+          "width": 45
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -1115,8 +1210,23 @@
       "elevation": 146,
       "province": "Buenos Aires",
       "municipality": "Azul",
-      "surface": null,
-      "runways": [],
+      "surface": "CESPED",
+      "runways": [
+        {
+          "heading1": 17,
+          "heading2": 35,
+          "dimensions": "1400x30",
+          "length": 1400,
+          "width": 30
+        },
+        {
+          "heading1": 9,
+          "heading2": 27,
+          "dimensions": "600x30",
+          "length": 600,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -1185,8 +1295,16 @@
       "elevation": 120,
       "province": "Buenos Aires",
       "municipality": "Balcarce",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 9,
+          "heading2": 27,
+          "dimensions": "950x30",
+          "length": 950,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -1269,8 +1387,23 @@
       "elevation": 131,
       "province": "Córdoba",
       "municipality": "Bell Ville",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 18,
+          "heading2": 36,
+          "dimensions": "1662x24",
+          "length": 1662,
+          "width": 24
+        },
+        {
+          "heading1": 18,
+          "heading2": 36,
+          "dimensions": "1113x17",
+          "length": 1113,
+          "width": 17
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -1283,8 +1416,16 @@
       "elevation": 55,
       "province": "Corrientes",
       "municipality": "Bella Vista",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 17,
+          "heading2": 35,
+          "dimensions": "1100x30",
+          "length": 1100,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -1325,8 +1466,23 @@
       "elevation": 208,
       "province": "Buenos Aires",
       "municipality": "Benito Juarez",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 18,
+          "heading2": 36,
+          "dimensions": "1060x30",
+          "length": 1060,
+          "width": 30
+        },
+        {
+          "heading1": 8,
+          "heading2": 26,
+          "dimensions": "1030x30",
+          "length": 1030,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -1339,8 +1495,16 @@
       "elevation": 815,
       "province": "Misiones",
       "municipality": "Bernardo de Irigoyen",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 2,
+          "heading2": 20,
+          "dimensions": "700x30",
+          "length": 700,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -1423,8 +1587,23 @@
       "elevation": 94,
       "province": "Buenos Aires",
       "municipality": "Bolívar",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 14,
+          "heading2": 32,
+          "dimensions": "1124x26",
+          "length": 1124,
+          "width": 26
+        },
+        {
+          "heading1": 2,
+          "heading2": 20,
+          "dimensions": "1200x30",
+          "length": 1200,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -1479,8 +1658,16 @@
       "elevation": 234,
       "province": "Buenos Aires",
       "municipality": "Coronel Suarez",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 17,
+          "heading2": 35,
+          "dimensions": "1300x30",
+          "length": 1300,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -1493,8 +1680,16 @@
       "elevation": 710,
       "province": "San Luis",
       "municipality": "San Luis",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 19,
+          "heading2": 1,
+          "dimensions": "2950x30",
+          "length": 2950,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -1619,8 +1814,16 @@
       "elevation": 2509,
       "province": "Salta",
       "municipality": "Cachi",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 3,
+          "heading2": 21,
+          "dimensions": "1550x23",
+          "length": 1550,
+          "width": 23
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -1703,8 +1906,16 @@
       "elevation": 442,
       "province": "Jujuy",
       "municipality": "Calilegua",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 8,
+          "heading2": 26,
+          "dimensions": "1790x23",
+          "length": 1790,
+          "width": 23
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -1787,8 +1998,16 @@
       "elevation": 24,
       "province": "Buenos Aires",
       "municipality": "Campo de Mayo",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 18,
+          "heading2": 36,
+          "dimensions": "1800x30",
+          "length": 1800,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -1871,8 +2090,23 @@
       "elevation": 90,
       "province": "Santa Cruz",
       "municipality": "Cañadon Seco",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 10,
+          "heading2": 28,
+          "dimensions": "1100x20",
+          "length": 1100,
+          "width": 20
+        },
+        {
+          "heading1": 6,
+          "heading2": 24,
+          "dimensions": "1100x20",
+          "length": 1100,
+          "width": 20
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -1913,8 +2147,16 @@
       "elevation": 62,
       "province": "Santa Cruz",
       "municipality": "San Julian",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 7,
+          "heading2": 25,
+          "dimensions": "2000x40",
+          "length": 2000,
+          "width": 40
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -1927,8 +2169,16 @@
       "elevation": 438,
       "province": "La Rioja",
       "municipality": "La Rioja",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 3,
+          "heading2": 21,
+          "dimensions": "2860x30",
+          "length": 2860,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -1941,8 +2191,16 @@
       "elevation": 486,
       "province": "Córdoba",
       "municipality": "Córdoba",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 16,
+          "heading2": 34,
+          "dimensions": "1290x30",
+          "length": 1290,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -2109,8 +2367,16 @@
       "elevation": 279,
       "province": "Misiones",
       "municipality": "Puerto Iguazu",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 13,
+          "heading2": 31,
+          "dimensions": "3300x45",
+          "length": 3300,
+          "width": 45
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -2123,8 +2389,16 @@
       "elevation": 1657,
       "province": "Neuquén",
       "municipality": "Lafontaine",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 4,
+          "heading2": 22,
+          "dimensions": "1600x30",
+          "length": 1600,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -2151,8 +2425,16 @@
       "elevation": 87,
       "province": "Santa Fe",
       "municipality": "Ceres",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 5,
+          "heading2": 23,
+          "dimensions": "1350x45",
+          "length": 1350,
+          "width": 45
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -2319,8 +2601,16 @@
       "elevation": 945,
       "province": "La Rioja",
       "municipality": "Chilecito",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 17,
+          "heading2": 35,
+          "dimensions": "2100x34",
+          "length": 2100,
+          "width": 34
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -2347,8 +2637,16 @@
       "elevation": 196,
       "province": "Río Negro",
       "municipality": "Choele Choel",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 9,
+          "heading2": 27,
+          "dimensions": "2000x45",
+          "length": 2000,
+          "width": 45
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -2375,8 +2673,16 @@
       "elevation": 850,
       "province": "Neuquén",
       "municipality": "Chos Malal",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 12,
+          "heading2": 30,
+          "dimensions": "1500x30",
+          "length": 1500,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -2501,8 +2807,30 @@
       "elevation": 75,
       "province": "Buenos Aires",
       "municipality": "Bahía Blanca",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 16,
+          "heading2": 34,
+          "dimensions": "2615x60",
+          "length": 2615,
+          "width": 60
+        },
+        {
+          "heading1": 16,
+          "heading2": 34,
+          "dimensions": "1498x30",
+          "length": 1498,
+          "width": 30
+        },
+        {
+          "heading1": 6,
+          "heading2": 24,
+          "dimensions": "2030x33",
+          "length": 2030,
+          "width": 33
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -2515,8 +2843,16 @@
       "elevation": 24,
       "province": "Santa Cruz",
       "municipality": "Comandante Luis Piedrabuena",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 8,
+          "heading2": 26,
+          "dimensions": "1200x20",
+          "length": 1200,
+          "width": 20
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -2543,8 +2879,23 @@
       "elevation": 1428,
       "province": "Mendoza",
       "municipality": "Malargue",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 14,
+          "heading2": 32,
+          "dimensions": "2650x30",
+          "length": 2650,
+          "width": 30
+        },
+        {
+          "heading1": 9,
+          "heading2": 27,
+          "dimensions": "1450x20",
+          "length": 1450,
+          "width": 20
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -2557,8 +2908,16 @@
       "elevation": 85,
       "province": "Buenos Aires",
       "municipality": "Pehuajó",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 18,
+          "heading2": 36,
+          "dimensions": "1500x30",
+          "length": 1500,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -2571,8 +2930,16 @@
       "elevation": 34,
       "province": "Entre Ríos",
       "municipality": "Concordia",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 4,
+          "heading2": 22,
+          "dimensions": "1600x30",
+          "length": 1600,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -2683,8 +3050,16 @@
       "elevation": 464,
       "province": "Catamarca",
       "municipality": "Catamarca",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 2,
+          "heading2": 20,
+          "dimensions": "2800x30",
+          "length": 2800,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -2711,8 +3086,16 @@
       "elevation": 432,
       "province": "Córdoba",
       "municipality": "Cordoba",
-      "surface": null,
-      "runways": [],
+      "surface": "CESPED",
+      "runways": [
+        {
+          "heading1": 5,
+          "heading2": 23,
+          "dimensions": "1160x50",
+          "length": 1160,
+          "width": 50
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -2767,8 +3150,16 @@
       "elevation": 62,
       "province": "Corrientes",
       "municipality": "Corrientes",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 2,
+          "heading2": 20,
+          "dimensions": "2100x45",
+          "length": 2100,
+          "width": 45
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -2837,8 +3228,16 @@
       "elevation": 70,
       "province": "Corrientes",
       "municipality": "Curuzu Cuatia",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 1,
+          "heading2": 19,
+          "dimensions": "2150x30",
+          "length": 2150,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -2879,8 +3278,23 @@
       "elevation": 650,
       "province": "Neuquén",
       "municipality": "Cutral-Co",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 3,
+          "heading2": 21,
+          "dimensions": "1235x30",
+          "length": 1235,
+          "width": 30
+        },
+        {
+          "heading1": 7,
+          "heading2": 25,
+          "dimensions": "1694x30",
+          "length": 1694,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -2893,8 +3307,16 @@
       "elevation": 697,
       "province": "Chubut",
       "municipality": "Alto Rio Senguerr",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 8,
+          "heading2": 26,
+          "dimensions": "1400x40",
+          "length": 1400,
+          "width": 40
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -3005,8 +3427,23 @@
       "elevation": 10,
       "province": "Buenos Aires",
       "municipality": "Dolores",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 19,
+          "heading2": 1,
+          "dimensions": "1158x30",
+          "length": 1158,
+          "width": 30
+        },
+        {
+          "heading1": 5,
+          "heading2": 23,
+          "dimensions": "860x30",
+          "length": 860,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -3019,8 +3456,16 @@
       "elevation": 597,
       "province": "San Juan",
       "municipality": "San Juan",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 18,
+          "heading2": 36,
+          "dimensions": "2460x45",
+          "length": 2460,
+          "width": 45
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -3117,8 +3562,16 @@
       "elevation": 260,
       "province": "Río Negro",
       "municipality": "General Roca",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 9,
+          "heading2": 27,
+          "dimensions": "2156x45",
+          "length": 2156,
+          "width": 45
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -3187,8 +3640,16 @@
       "elevation": 348,
       "province": "Río Negro",
       "municipality": "El Bolsón",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 18,
+          "heading2": 36,
+          "dimensions": "1300x30",
+          "length": 1300,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -3201,8 +3662,16 @@
       "elevation": 204,
       "province": "Santa Cruz",
       "municipality": "El Calafate",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 7,
+          "heading2": 25,
+          "dimensions": "2550x45",
+          "length": 2550,
+          "width": 45
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -3285,8 +3754,16 @@
       "elevation": 209,
       "province": "Misiones",
       "municipality": "El Dorado",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 1,
+          "heading2": 19,
+          "dimensions": "1431x30",
+          "length": 1431,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -3355,8 +3832,30 @@
       "elevation": 718,
       "province": "Chubut",
       "municipality": "El Maitén",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 10,
+          "heading2": 28,
+          "dimensions": "1060x30",
+          "length": 1060,
+          "width": 30
+        },
+        {
+          "heading1": 2,
+          "heading2": 20,
+          "dimensions": "960x30",
+          "length": 960,
+          "width": 30
+        },
+        {
+          "heading1": 6,
+          "heading2": 24,
+          "dimensions": "1512x30",
+          "length": 1512,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -3425,8 +3924,16 @@
       "elevation": 18,
       "province": "Buenos Aires",
       "municipality": "El Palomar",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 17,
+          "heading2": 35,
+          "dimensions": "2110x45",
+          "length": 2110,
+          "width": 45
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -3467,8 +3974,16 @@
       "elevation": 870,
       "province": "Neuquén",
       "municipality": "Buta Ranquil",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 10,
+          "heading2": 28,
+          "dimensions": "1790x23",
+          "length": 1790,
+          "width": 23
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -3523,8 +4038,16 @@
       "elevation": 130,
       "province": "Chubut",
       "municipality": "Puerto Madryn",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 5,
+          "heading2": 23,
+          "dimensions": "2500x45",
+          "length": 2500,
+          "width": 45
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -3579,8 +4102,23 @@
       "elevation": 502,
       "province": "Córdoba",
       "municipality": "Córdoba",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 2,
+          "heading2": 20,
+          "dimensions": "1341x49",
+          "length": 1341,
+          "width": 49
+        },
+        {
+          "heading1": 7,
+          "heading2": 25,
+          "dimensions": "1565x45",
+          "length": 1565,
+          "width": 45
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -3607,8 +4145,23 @@
       "elevation": 799,
       "province": "Chubut",
       "municipality": "Esquel",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 5,
+          "heading2": 23,
+          "dimensions": "2400x40",
+          "length": 2400,
+          "width": 40
+        },
+        {
+          "heading1": 8,
+          "heading2": 26,
+          "dimensions": "1200x30",
+          "length": 1200,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -4055,8 +4608,16 @@
       "elevation": 139,
       "province": "Buenos Aires",
       "municipality": "Tandil",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 5,
+          "heading2": 23,
+          "dimensions": "1400x23",
+          "length": 1400,
+          "width": 23
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -4545,8 +5106,23 @@
       "elevation": 20,
       "province": "Buenos Aires",
       "municipality": "Buenos Aires (Ezeiza)",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 11,
+          "heading2": 29,
+          "dimensions": "3300x60",
+          "length": 3300,
+          "width": 60
+        },
+        {
+          "heading1": 17,
+          "heading2": 35,
+          "dimensions": "3105x45",
+          "length": 3105,
+          "width": 45
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -4587,8 +5163,16 @@
       "elevation": 1533,
       "province": "Catamarca",
       "municipality": "Fiambala",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 18,
+          "heading2": 36,
+          "dimensions": "1900x20",
+          "length": 1900,
+          "width": 20
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -4713,8 +5297,16 @@
       "elevation": 59,
       "province": "Formosa",
       "municipality": "Formosa",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 4,
+          "heading2": 22,
+          "dimensions": "1800x40",
+          "length": 1800,
+          "width": 40
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -4755,8 +5347,16 @@
       "elevation": 330,
       "province": "Santiago del Estero",
       "municipality": "Frias",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 13,
+          "heading2": 31,
+          "dimensions": "1500x30",
+          "length": 1500,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -5007,8 +5607,16 @@
       "elevation": 277,
       "province": "La Pampa",
       "municipality": "General Acha",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 4,
+          "heading2": 22,
+          "dimensions": "900x23",
+          "length": 900,
+          "width": 23
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -5021,8 +5629,16 @@
       "elevation": 454,
       "province": "Mendoza",
       "municipality": "General Alvear",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 17,
+          "heading2": 35,
+          "dimensions": "1500x30",
+          "length": 1500,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -5091,8 +5707,16 @@
       "elevation": 449,
       "province": "Salta",
       "municipality": "Tartagal",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 2,
+          "heading2": 20,
+          "dimensions": "1500x30",
+          "length": 1500,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -5105,8 +5729,16 @@
       "elevation": 58,
       "province": "Chubut",
       "municipality": "Comodoro Rivadavia",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 7,
+          "heading2": 25,
+          "dimensions": "2810x50",
+          "length": 2810,
+          "width": 50
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -5175,8 +5807,23 @@
       "elevation": 140,
       "province": "La Pampa",
       "municipality": "General Pico",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 3,
+          "heading2": 21,
+          "dimensions": "850x50",
+          "length": 850,
+          "width": 50
+        },
+        {
+          "heading1": 16,
+          "heading2": 34,
+          "dimensions": "2350x45",
+          "length": 2350,
+          "width": 45
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -5245,8 +5892,16 @@
       "elevation": 74,
       "province": "Entre Ríos",
       "municipality": "Parana",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 1,
+          "heading2": 19,
+          "dimensions": "2100x45",
+          "length": 2100,
+          "width": 45
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -5287,8 +5942,23 @@
       "elevation": 6,
       "province": "Río Negro",
       "municipality": "Viedma / Carmen de Patagones",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 10,
+          "heading2": 28,
+          "dimensions": "2550x45",
+          "length": 2550,
+          "width": 45
+        },
+        {
+          "heading1": 2,
+          "heading2": 20,
+          "dimensions": "1510x45",
+          "length": 1510,
+          "width": 45
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -5315,8 +5985,16 @@
       "elevation": 109,
       "province": "Santa Cruz",
       "municipality": "Gobernador Gregores",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 9,
+          "heading2": 27,
+          "dimensions": "1500x30",
+          "length": 1500,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -5329,8 +6007,16 @@
       "elevation": 920,
       "province": "Jujuy",
       "municipality": "San Salvador de Jujuy",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 16,
+          "heading2": 34,
+          "dimensions": "2956x40",
+          "length": 2956,
+          "width": 40
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -5385,8 +6071,16 @@
       "elevation": 704,
       "province": "Mendoza",
       "municipality": "Mendoza",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 18,
+          "heading2": 36,
+          "dimensions": "2835x54",
+          "length": 2835,
+          "width": 54
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -5399,8 +6093,16 @@
       "elevation": 39,
       "province": "Corrientes",
       "municipality": "Goya",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 4,
+          "heading2": 22,
+          "dimensions": "2260x45",
+          "length": 2260,
+          "width": 45
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -5497,8 +6199,16 @@
       "elevation": 23,
       "province": "Entre Ríos",
       "municipality": "Gualeguaychu",
-      "surface": null,
-      "runways": [],
+      "surface": "TIERRA",
+      "runways": [
+        {
+          "heading1": 1,
+          "heading2": 19,
+          "dimensions": "1330x30",
+          "length": 1330,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -5595,8 +6305,16 @@
       "elevation": 20,
       "province": "Tierra del Fuego",
       "municipality": "Rio Grande",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 7,
+          "heading2": 25,
+          "dimensions": "2000x40",
+          "length": 2000,
+          "width": 40
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -5623,8 +6341,16 @@
       "elevation": 175,
       "province": "Buenos Aires",
       "municipality": "Tandil",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 1,
+          "heading2": 19,
+          "dimensions": "2550x48",
+          "length": 2550,
+          "width": 48
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -5721,8 +6447,23 @@
       "elevation": 489,
       "province": "Córdoba",
       "municipality": "Cordoba",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 1,
+          "heading2": 19,
+          "dimensions": "3200x45",
+          "length": 3200,
+          "width": 45
+        },
+        {
+          "heading1": 5,
+          "heading2": 23,
+          "dimensions": "2200x45",
+          "length": 2200,
+          "width": 45
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -5735,8 +6476,16 @@
       "elevation": 892,
       "province": "Río Negro",
       "municipality": "Ingeniero Jacobacci",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 7,
+          "heading2": 25,
+          "dimensions": "2100x30",
+          "length": 2100,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -5973,8 +6722,23 @@
       "elevation": 734,
       "province": "Chubut",
       "municipality": "Chubut",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 6,
+          "heading2": 24,
+          "dimensions": "1200x30",
+          "length": 1200,
+          "width": 30
+        },
+        {
+          "heading1": 9,
+          "heading2": 27,
+          "dimensions": "1500x30",
+          "length": 1500,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -6015,8 +6779,16 @@
       "elevation": 1234,
       "province": "Jujuy",
       "municipality": "San Salvador de Jujuy",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 11,
+          "heading2": 29,
+          "dimensions": "1234x24",
+          "length": 1234,
+          "width": 24
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -6169,8 +6941,16 @@
       "elevation": 1138,
       "province": "Córdoba",
       "municipality": "La Cumbre",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 14,
+          "heading2": 32,
+          "dimensions": "1250x45",
+          "length": 1250,
+          "width": 45
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -6421,8 +7201,16 @@
       "elevation": 22,
       "province": "Buenos Aires",
       "municipality": "La Plata",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 2,
+          "heading2": 20,
+          "dimensions": "1427x45",
+          "length": 1427,
+          "width": 45
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -6435,8 +7223,16 @@
       "elevation": 942,
       "province": "Mendoza",
       "municipality": "La Puntilla",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 5,
+          "heading2": 23,
+          "dimensions": "1189x20",
+          "length": 1189,
+          "width": 20
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -6449,8 +7245,16 @@
       "elevation": 3479,
       "province": "Jujuy",
       "municipality": "La Quiaca",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 16,
+          "heading2": 34,
+          "dimensions": "2700x30",
+          "length": 2700,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -6519,8 +7323,16 @@
       "elevation": 137,
       "province": "Córdoba",
       "municipality": "Laboulaye",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 16,
+          "heading2": 34,
+          "dimensions": "2673x29",
+          "length": 2673,
+          "width": 29
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -6617,8 +7429,16 @@
       "elevation": 271,
       "province": "Chubut",
       "municipality": "Sarmiento",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 9,
+          "heading2": 27,
+          "dimensions": "981x30",
+          "length": 981,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -6813,8 +7633,23 @@
       "elevation": 34,
       "province": "Buenos Aires",
       "municipality": "Las Flores",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 1,
+          "heading2": 19,
+          "dimensions": "1000x30",
+          "length": 1000,
+          "width": 30
+        },
+        {
+          "heading1": 9,
+          "heading2": 27,
+          "dimensions": "1100x30",
+          "length": 1100,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -6827,8 +7662,16 @@
       "elevation": 330,
       "province": "Santa Cruz",
       "municipality": "Las Heras",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 9,
+          "heading2": 27,
+          "dimensions": "1400x17",
+          "length": 1400,
+          "width": 17
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -6855,8 +7698,16 @@
       "elevation": 850,
       "province": "Neuquén",
       "municipality": "Las Lajas",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 10,
+          "heading2": 28,
+          "dimensions": "1600x30",
+          "length": 1600,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -6995,8 +7846,16 @@
       "elevation": 131,
       "province": "Misiones",
       "municipality": "Posadas",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 2,
+          "heading2": 20,
+          "dimensions": "2252x30",
+          "length": 2252,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -7121,8 +7980,16 @@
       "elevation": 1200,
       "province": "Catamarca",
       "municipality": "Londres/Belén",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 7,
+          "heading2": 25,
+          "dimensions": "1650x23",
+          "length": 1650,
+          "width": 23
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -7359,8 +8226,16 @@
       "elevation": 888,
       "province": "Río Negro",
       "municipality": "Maquinchao",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 6,
+          "heading2": 24,
+          "dimensions": "1150x30",
+          "length": 1150,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -7387,8 +8262,16 @@
       "elevation": 110,
       "province": "Córdoba",
       "municipality": "Marcos Juarez",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 7,
+          "heading2": 25,
+          "dimensions": "1200x30",
+          "length": 1200,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -7415,7 +8298,7 @@
       "elevation": 32,
       "province": "Buenos Aires",
       "municipality": "General Sarmiento",
-      "surface": null,
+      "surface": "ASFALTO",
       "runways": [],
       "region": null,
       "source": "ourairports"
@@ -7443,8 +8326,23 @@
       "elevation": 1246,
       "province": "Salta",
       "municipality": "Salta",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 2,
+          "heading2": 20,
+          "dimensions": "3000x45",
+          "length": 3000,
+          "width": 45
+        },
+        {
+          "heading1": 6,
+          "heading2": 24,
+          "dimensions": "2400x30",
+          "length": 2400,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -7457,8 +8355,23 @@
       "elevation": 3,
       "province": "Buenos Aires",
       "municipality": "La Matanza",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 17,
+          "heading2": 35,
+          "dimensions": "1035x50",
+          "length": 1035,
+          "width": 50
+        },
+        {
+          "heading1": 9,
+          "heading2": 27,
+          "dimensions": "650x23",
+          "length": 650,
+          "width": 23
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -7527,8 +8440,16 @@
       "elevation": 109,
       "province": "Corrientes",
       "municipality": "Mercedes",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 3,
+          "heading2": 21,
+          "dimensions": "1801x30",
+          "length": 1801,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -7611,8 +8532,23 @@
       "elevation": 52,
       "province": "Corrientes",
       "municipality": "Monte Caseros",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 18,
+          "heading2": 36,
+          "dimensions": "1240x30",
+          "length": 1240,
+          "width": 30
+        },
+        {
+          "heading1": 18,
+          "heading2": 36,
+          "dimensions": "1318x30",
+          "length": 1318,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -7695,8 +8631,16 @@
       "elevation": 29,
       "province": "Buenos Aires",
       "municipality": "Morón",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 2,
+          "heading2": 20,
+          "dimensions": "2850x40",
+          "length": 2850,
+          "width": 40
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -7723,8 +8667,16 @@
       "elevation": 92,
       "province": "Buenos Aires",
       "municipality": "Trenque Lauquen",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 2,
+          "heading2": 20,
+          "dimensions": "1199x30",
+          "length": 1199,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -7765,8 +8717,30 @@
       "elevation": 22,
       "province": "Buenos Aires",
       "municipality": "Necochea",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 13,
+          "heading2": 31,
+          "dimensions": "799x18",
+          "length": 799,
+          "width": 18
+        },
+        {
+          "heading1": 17,
+          "heading2": 35,
+          "dimensions": "1100x30",
+          "length": 1100,
+          "width": 30
+        },
+        {
+          "heading1": 18,
+          "heading2": 36,
+          "dimensions": "1500x30",
+          "length": 1500,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -7849,8 +8823,23 @@
       "elevation": 75,
       "province": "Buenos Aires",
       "municipality": "Nueve de Julio",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 13,
+          "heading2": 31,
+          "dimensions": "1199x30",
+          "length": 1199,
+          "width": 30
+        },
+        {
+          "heading1": 18,
+          "heading2": 36,
+          "dimensions": "799x30",
+          "length": 799,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -7863,8 +8852,16 @@
       "elevation": 343,
       "province": "Misiones",
       "municipality": "Oberá",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 17,
+          "heading2": 35,
+          "dimensions": "1800x30",
+          "length": 1800,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -7877,8 +8874,23 @@
       "elevation": 168,
       "province": "Buenos Aires",
       "municipality": "Olavarria",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 4,
+          "heading2": 22,
+          "dimensions": "2200x45",
+          "length": 2200,
+          "width": 45
+        },
+        {
+          "heading1": 13,
+          "heading2": 31,
+          "dimensions": "1060x45",
+          "length": 1060,
+          "width": 45
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -7919,8 +8931,16 @@
       "elevation": 357,
       "province": "Salta",
       "municipality": "Orán",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 1,
+          "heading2": 19,
+          "dimensions": "1475x30",
+          "length": 1475,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -8031,8 +9051,16 @@
       "elevation": 70,
       "province": "Corrientes",
       "municipality": "Paso de los Libres",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 18,
+          "heading2": 36,
+          "dimensions": "2260x45",
+          "length": 2260,
+          "width": 45
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -8087,8 +9115,23 @@
       "elevation": 72,
       "province": "Buenos Aires",
       "municipality": "Pergamino",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 13,
+          "heading2": 31,
+          "dimensions": "870x23",
+          "length": 870,
+          "width": 23
+        },
+        {
+          "heading1": 4,
+          "heading2": 22,
+          "dimensions": "1200x30",
+          "length": 1200,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -8101,8 +9144,30 @@
       "elevation": 430,
       "province": "Santa Cruz",
       "municipality": "Perito Moreno",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 7,
+          "heading2": 25,
+          "dimensions": "850x40",
+          "length": 850,
+          "width": 40
+        },
+        {
+          "heading1": 10,
+          "heading2": 28,
+          "dimensions": "1700x30",
+          "length": 1700,
+          "width": 30
+        },
+        {
+          "heading1": 11,
+          "heading2": 29,
+          "dimensions": "1343x30",
+          "length": 1343,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -8185,8 +9250,16 @@
       "elevation": 649,
       "province": "Neuquén",
       "municipality": "Piedra del Aguila",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 5,
+          "heading2": 23,
+          "dimensions": "1065x20",
+          "length": 1065,
+          "width": 20
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -8199,8 +9272,23 @@
       "elevation": 304,
       "province": "Buenos Aires",
       "municipality": "Pigüé",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 18,
+          "heading2": 36,
+          "dimensions": "1480x30",
+          "length": 1480,
+          "width": 30
+        },
+        {
+          "heading1": 4,
+          "heading2": 22,
+          "dimensions": "1110x30",
+          "length": 1110,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -8241,8 +9329,16 @@
       "elevation": 19,
       "province": "Santa Cruz",
       "municipality": "Rio Gallegos",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 7,
+          "heading2": 25,
+          "dimensions": "3549x45",
+          "length": 3549,
+          "width": 45
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -8353,8 +9449,16 @@
       "elevation": 273,
       "province": "Neuquén",
       "municipality": "Neuquén",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 9,
+          "heading2": 27,
+          "dimensions": "2570x45",
+          "length": 2570,
+          "width": 45
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -8423,8 +9527,16 @@
       "elevation": 82,
       "province": "Santa Cruz",
       "municipality": "Puerto Deseado",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 6,
+          "heading2": 24,
+          "dimensions": "1500x30",
+          "length": 1500,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -8647,8 +9759,16 @@
       "elevation": 121,
       "province": "La Pampa",
       "municipality": "Quemu Quemu",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 17,
+          "heading2": 35,
+          "dimensions": "750x20",
+          "length": 750,
+          "width": 20
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -8675,8 +9795,16 @@
       "elevation": 2,
       "province": "Buenos Aires",
       "municipality": "Quilmes",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 18,
+          "heading2": 36,
+          "dimensions": "1000x30",
+          "length": 1000,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -8689,8 +9817,30 @@
       "elevation": 99,
       "province": "Santa Fe",
       "municipality": "Rafaela",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 1,
+          "heading2": 19,
+          "dimensions": "1107x44",
+          "length": 1107,
+          "width": 44
+        },
+        {
+          "heading1": 1,
+          "heading2": 19,
+          "dimensions": "1125x23",
+          "length": 1125,
+          "width": 23
+        },
+        {
+          "heading1": 6,
+          "heading2": 24,
+          "dimensions": "1099x42",
+          "length": 1099,
+          "width": 42
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -8759,8 +9909,23 @@
       "elevation": 49,
       "province": "Santa Fe",
       "municipality": "Reconquista",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 2,
+          "heading2": 20,
+          "dimensions": "1250x34",
+          "length": 1250,
+          "width": 34
+        },
+        {
+          "heading1": 10,
+          "heading2": 28,
+          "dimensions": "2800x50",
+          "length": 2800,
+          "width": 50
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -8773,8 +9938,16 @@
       "elevation": 53,
       "province": "Chaco",
       "municipality": "Resistencia",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 3,
+          "heading2": 21,
+          "dimensions": "2770x45",
+          "length": 2770,
+          "width": 45
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -8787,8 +9960,16 @@
       "elevation": 600,
       "province": "Neuquén",
       "municipality": "Rincon de los Sauces",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 10,
+          "heading2": 28,
+          "dimensions": "1500x30",
+          "length": 1500,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -8857,8 +10038,23 @@
       "elevation": 84,
       "province": "Río Negro",
       "municipality": "Rio Colorado",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 11,
+          "heading2": 29,
+          "dimensions": "680x30",
+          "length": 680,
+          "width": 30
+        },
+        {
+          "heading1": 5,
+          "heading2": 23,
+          "dimensions": "1380x30",
+          "length": 1380,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -8871,8 +10067,23 @@
       "elevation": 434,
       "province": "Córdoba",
       "municipality": "Rio Cuarto",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 1,
+          "heading2": 19,
+          "dimensions": "930x19",
+          "length": 930,
+          "width": 19
+        },
+        {
+          "heading1": 1,
+          "heading2": 19,
+          "dimensions": "848x50",
+          "length": 848,
+          "width": 50
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -8885,8 +10096,16 @@
       "elevation": 544,
       "province": "Chubut",
       "municipality": "Rio Mayo",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 9,
+          "heading2": 27,
+          "dimensions": "1500x30",
+          "length": 1500,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -8913,8 +10132,16 @@
       "elevation": 380,
       "province": "Córdoba",
       "municipality": "Rio Tercero",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 18,
+          "heading2": 36,
+          "dimensions": "970x30",
+          "length": 970,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -8997,8 +10224,16 @@
       "elevation": 26,
       "province": "Santa Fe",
       "municipality": "Rosario",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 2,
+          "heading2": 20,
+          "dimensions": "3000x45",
+          "length": 3000,
+          "width": 45
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -9067,8 +10302,23 @@
       "elevation": 45,
       "province": "Buenos Aires",
       "municipality": "Saladillo",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 13,
+          "heading2": 31,
+          "dimensions": "1000x30",
+          "length": 1000,
+          "width": 30
+        },
+        {
+          "heading1": 18,
+          "heading2": 36,
+          "dimensions": "1199x23",
+          "length": 1199,
+          "width": 23
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -9193,7 +10443,7 @@
       "elevation": 30,
       "province": "Buenos Aires",
       "municipality": "San Antonio de Areco",
-      "surface": null,
+      "surface": "GRAVA",
       "runways": [],
       "region": null,
       "source": "ourairports"
@@ -9277,8 +10527,16 @@
       "elevation": 3,
       "province": "Buenos Aires",
       "municipality": "San Fernando",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 5,
+          "heading2": 23,
+          "dimensions": "1801x30",
+          "length": 1801,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -9361,8 +10619,16 @@
       "elevation": 634,
       "province": "San Juan",
       "municipality": "San Juan",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 18,
+          "heading2": 36,
+          "dimensions": "1650x30",
+          "length": 1650,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -9403,8 +10669,23 @@
       "elevation": 30,
       "province": "Buenos Aires",
       "municipality": "San Nicolas",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 18,
+          "heading2": 36,
+          "dimensions": "1080x30",
+          "length": 1080,
+          "width": 30
+        },
+        {
+          "heading1": 9,
+          "heading2": 27,
+          "dimensions": "809x23",
+          "length": 809,
+          "width": 23
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -9473,8 +10754,16 @@
       "elevation": 111,
       "province": "Santa Cruz",
       "municipality": "Puerto Santa Cruz",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 7,
+          "heading2": 25,
+          "dimensions": "2000x30",
+          "length": 2000,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -9529,8 +10818,16 @@
       "elevation": 1800,
       "province": "Catamarca",
       "municipality": "Santa Maria",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 18,
+          "heading2": 36,
+          "dimensions": "1800x30",
+          "length": 1800,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -9557,8 +10854,16 @@
       "elevation": 54,
       "province": "Buenos Aires",
       "municipality": "Saladillo",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 3,
+          "heading2": 21,
+          "dimensions": "1500x18",
+          "length": 1500,
+          "width": 18
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -9571,8 +10876,16 @@
       "elevation": 192,
       "province": "La Pampa",
       "municipality": "Santa Rosa",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 1,
+          "heading2": 19,
+          "dimensions": "2300x30",
+          "length": 2300,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -9599,8 +10912,16 @@
       "elevation": 3,
       "province": "Buenos Aires",
       "municipality": "Santa Teresita",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 17,
+          "heading2": 35,
+          "dimensions": "1500x30",
+          "length": 1500,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -9613,8 +10934,16 @@
       "elevation": 280,
       "province": "Salta",
       "municipality": "Salta",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 18,
+          "heading2": 36,
+          "dimensions": "1100x18",
+          "length": 1100,
+          "width": 18
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -9683,8 +11012,16 @@
       "elevation": 17,
       "province": "Santa Fe",
       "municipality": "Santa Fe",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 3,
+          "heading2": 21,
+          "dimensions": "2325x30",
+          "length": 2325,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -9753,8 +11090,16 @@
       "elevation": 210,
       "province": "Río Negro",
       "municipality": "Sierra Grande",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 2,
+          "heading2": 20,
+          "dimensions": "1400x30",
+          "length": 1400,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -9865,8 +11210,16 @@
       "elevation": 753,
       "province": "Mendoza",
       "municipality": "San Rafael",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 11,
+          "heading2": 29,
+          "dimensions": "2110x30",
+          "length": 2110,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -9879,8 +11232,16 @@
       "elevation": 91,
       "province": "Santa Fe",
       "municipality": "Sunchales",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 11,
+          "heading2": 29,
+          "dimensions": "2000x30",
+          "length": 2000,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -9935,8 +11296,16 @@
       "elevation": 455,
       "province": "Tucumán",
       "municipality": "San Miguel de Tucumán",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 2,
+          "heading2": 20,
+          "dimensions": "3500x45",
+          "length": 3500,
+          "width": 45
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -9949,8 +11318,16 @@
       "elevation": 846,
       "province": "Río Negro",
       "municipality": "San Carlos de Bariloche",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 11,
+          "heading2": 29,
+          "dimensions": "2348x48",
+          "length": 2348,
+          "width": 48
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -9963,8 +11340,16 @@
       "elevation": 94,
       "province": "Chaco",
       "municipality": "Presidencia Roque Sáenz Peña",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 3,
+          "heading2": 21,
+          "dimensions": "1800x33",
+          "length": 1800,
+          "width": 33
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -9977,8 +11362,16 @@
       "elevation": 285,
       "province": "Santiago del Estero",
       "municipality": "Termas de Río Hondo",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 1,
+          "heading2": 19,
+          "dimensions": "2509x30",
+          "length": 2509,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -10131,8 +11524,37 @@
       "elevation": 39,
       "province": "Chubut",
       "municipality": "Trelew",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 1,
+          "heading2": 19,
+          "dimensions": "1370x24",
+          "length": 1370,
+          "width": 24
+        },
+        {
+          "heading1": 4,
+          "heading2": 22,
+          "dimensions": "1622x35",
+          "length": 1622,
+          "width": 35
+        },
+        {
+          "heading1": 13,
+          "heading2": 31,
+          "dimensions": "1749x40",
+          "length": 1749,
+          "width": 40
+        },
+        {
+          "heading1": 8,
+          "heading2": 26,
+          "dimensions": "1650x30",
+          "length": 1650,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -10159,8 +11581,30 @@
       "elevation": 122,
       "province": "Buenos Aires",
       "municipality": "Tres Arroyos",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 14,
+          "heading2": 32,
+          "dimensions": "900x23",
+          "length": 900,
+          "width": 23
+        },
+        {
+          "heading1": 18,
+          "heading2": 36,
+          "dimensions": "1199x30",
+          "length": 1199,
+          "width": 30
+        },
+        {
+          "heading1": 4,
+          "heading2": 22,
+          "dimensions": "750x23",
+          "length": 750,
+          "width": 23
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -10229,8 +11673,16 @@
       "elevation": 31,
       "province": "Tierra del Fuego",
       "municipality": "Ushuaia",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 7,
+          "heading2": 25,
+          "dimensions": "2800x45",
+          "length": 2800,
+          "width": 45
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -10299,8 +11751,16 @@
       "elevation": 616,
       "province": "San Luis",
       "municipality": "Merlo",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 2,
+          "heading2": 20,
+          "dimensions": "2550x45",
+          "length": 2550,
+          "width": 45
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -10355,8 +11815,16 @@
       "elevation": 347,
       "province": "La Pampa",
       "municipality": "Colonia Veinticinco de Mayo",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 4,
+          "heading2": 22,
+          "dimensions": "1250x25",
+          "length": 1250,
+          "width": 25
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -10425,8 +11893,16 @@
       "elevation": 200,
       "province": "Santiago del Estero",
       "municipality": "Santiago del Estero",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 3,
+          "heading2": 21,
+          "dimensions": "2422x45",
+          "length": 2422,
+          "width": 45
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -10467,8 +11943,16 @@
       "elevation": 75,
       "province": "Chaco",
       "municipality": "Villa Angela",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 13,
+          "heading2": 31,
+          "dimensions": "1200x30",
+          "length": 1200,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -10481,8 +11965,16 @@
       "elevation": null,
       "province": "Córdoba",
       "municipality": "Villa de María de Río Seco",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 3,
+          "heading2": 21,
+          "dimensions": "1100x30",
+          "length": 1100,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -10523,8 +12015,16 @@
       "elevation": 563,
       "province": "Córdoba",
       "municipality": "Villa Dolores",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 17,
+          "heading2": 35,
+          "dimensions": "1400x23",
+          "length": 1400,
+          "width": 23
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -10565,8 +12065,16 @@
       "elevation": 10,
       "province": "Buenos Aires",
       "municipality": "Villa Gesell",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 11,
+          "heading2": 29,
+          "dimensions": "1591x28",
+          "length": 1591,
+          "width": 28
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -10607,8 +12115,16 @@
       "elevation": 75,
       "province": "Santa Fe",
       "municipality": "Villa Minetti",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 1,
+          "heading2": 19,
+          "dimensions": "1000x26",
+          "length": 1000,
+          "width": 26
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -10649,8 +12165,23 @@
       "elevation": 485,
       "province": "San Luis",
       "municipality": "Villa Mercedes",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 10,
+          "heading2": 28,
+          "dimensions": "2400x45",
+          "length": 2400,
+          "width": 45
+        },
+        {
+          "heading1": 6,
+          "heading2": 24,
+          "dimensions": "2400x50",
+          "length": 2400,
+          "width": 50
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -10691,8 +12222,16 @@
       "elevation": 40,
       "province": "Entre Ríos",
       "municipality": "Villaguay",
-      "surface": null,
-      "runways": [],
+      "surface": "GRAVA",
+      "runways": [
+        {
+          "heading1": 18,
+          "heading2": 36,
+          "dimensions": "1190x30",
+          "length": 1190,
+          "width": 30
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },
@@ -10733,8 +12272,16 @@
       "elevation": 1015,
       "province": "Neuquén",
       "municipality": "Zapala",
-      "surface": null,
-      "runways": [],
+      "surface": "ASFALTO",
+      "runways": [
+        {
+          "heading1": 9,
+          "heading2": 27,
+          "dimensions": "2200x40",
+          "length": 2200,
+          "width": 40
+        }
+      ],
       "region": null,
       "source": "ourairports"
     },

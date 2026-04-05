@@ -231,6 +231,14 @@ const TILE_LAYERS = {
   },
 };
 
+interface Runway {
+  heading1: number;
+  heading2: number;
+  dimensions: string;
+  length: number;
+  width: number;
+}
+
 interface Aerodrome {
   type: "AD" | "LAD" | "HELIPORT" | "LADH";
   code: string | null;
@@ -240,6 +248,7 @@ interface Aerodrome {
   elevation: number | null;
   province?: string | null;
   surface?: string | null;
+  runways?: Runway[];
 }
 
 type AerodromeType = "AD" | "LAD" | "HELIPORT" | "LADH";
@@ -667,6 +676,18 @@ export function ArgentinaMapClient() {
                               )}
                               {aerodrome.surface && (
                                 <div>Superficie: {aerodrome.surface}</div>
+                              )}
+                              {aerodrome.runways && aerodrome.runways.length > 0 && (
+                                <div>
+                                  <span className="font-medium">
+                                    {aerodrome.runways.length === 1 ? "Pista:" : "Pistas:"}
+                                  </span>
+                                  {aerodrome.runways.map((rwy, i) => (
+                                    <div key={i} className="ml-2 text-xs">
+                                      {String(rwy.heading1).padStart(2, "0")}/{String(rwy.heading2).padStart(2, "0")} - {rwy.length}x{rwy.width}m
+                                    </div>
+                                  ))}
+                                </div>
                               )}
                               {aerodrome.province && (
                                 <div>Provincia: {aerodrome.province}</div>
