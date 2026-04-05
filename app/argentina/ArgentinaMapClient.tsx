@@ -1,10 +1,98 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, memo, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Navbar } from "@/app/components/Navbar";
 import argentinaData from "@/data/ad-lads/argentina.json";
+
+// Separate search input component to prevent map re-renders
+const LLMSearchInput = memo(function LLMSearchInput({
+  onSearch,
+  onClear,
+  isSearching,
+  activeQuery,
+  initialQuery,
+}: {
+  onSearch: (query: string) => void;
+  onClear: () => void;
+  isSearching: boolean;
+  activeQuery: string | null;
+  initialQuery?: string;
+}) {
+  const [query, setQuery] = useState(initialQuery || "");
+  const [isEditing, setIsEditing] = useState(!activeQuery);
+
+  // Sync with initialQuery when it changes (from URL)
+  useEffect(() => {
+    if (initialQuery && !activeQuery) {
+      setQuery(initialQuery);
+    }
+  }, [initialQuery, activeQuery]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (query.length >= 3) {
+      onSearch(query);
+      setIsEditing(false);
+    }
+  };
+
+  const handleClear = () => {
+    setQuery("");
+    setIsEditing(true);
+    onClear();
+  };
+
+  // Show fixed label when there's an active query
+  if (activeQuery && !isEditing && !isSearching) {
+    return (
+      <div className="flex items-center gap-3">
+        <div className="flex-1 px-4 py-3 rounded-lg bg-amber-900/30 border border-amber-600/50 text-amber-100 flex items-center justify-between">
+          <span className="truncate">{activeQuery}</span>
+          <button
+            type="button"
+            onClick={handleClear}
+            className="ml-3 text-amber-300 hover:text-white cursor-pointer flex-shrink-0"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+      <div className="flex-1 relative">
+        <input
+          type="text"
+          placeholder="Buscar con IA: ej. 'pistas en la patagonia', 'LADs cerca de lagos'..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="w-full px-4 py-3 pr-10 rounded-lg bg-slate-900/50 border border-amber-600/50 text-white placeholder-slate-400 focus:outline-none focus:border-amber-500"
+        />
+      </div>
+      <button
+        type="submit"
+        disabled={isSearching || query.length < 3}
+        className="px-6 py-3 rounded-lg bg-amber-600 text-white font-medium hover:bg-amber-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
+      >
+        {isSearching ? (
+          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+        ) : (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+          </svg>
+        )}
+        Buscar
+      </button>
+    </form>
+  );
+});
 
 // Dynamic imports for Leaflet (SSR issues)
 const MapContainer = dynamic(
@@ -77,18 +165,100 @@ interface Aerodrome {
 type FilterType = "all" | "AD" | "LAD";
 type MapStyle = "street" | "satellite";
 
+interface LLMSearchResult {
+  query: string;
+  explanation: string;
+  count: number;
+  results: Aerodrome[];
+}
+
 const data = argentinaData as {
   count: { total: number; ad: number; lad: number };
   data: Aerodrome[];
 };
 
 export function ArgentinaMapClient() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const urlQuery = searchParams.get("q");
+
   const [filter, setFilter] = useState<FilterType>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [mapStyle, setMapStyle] = useState<MapStyle>("street");
 
-  // Filter data based on type and search
+  // LLM search state
+  const [llmSearching, setLlmSearching] = useState(false);
+  const [llmResult, setLlmResult] = useState<LLMSearchResult | null>(null);
+  const [llmError, setLlmError] = useState<string | null>(null);
+  const [activeQuery, setActiveQuery] = useState<string | null>(null);
+
+  // LLM search function
+  const handleLLMSearch = useCallback(async (query: string) => {
+    setLlmSearching(true);
+    setLlmError(null);
+
+    try {
+      const response = await fetch("/api/argentina-search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Error en la búsqueda");
+      }
+
+      const result = await response.json();
+      setLlmResult(result);
+      setActiveQuery(query);
+
+      // Update URL
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("q", query);
+      router.push(`/argentina?${params.toString()}`, { scroll: false });
+    } catch (error) {
+      setLlmError(error instanceof Error ? error.message : "Error desconocido");
+      setLlmResult(null);
+    } finally {
+      setLlmSearching(false);
+    }
+  }, [router, searchParams]);
+
+  // Clear LLM search
+  const handleLLMClear = useCallback(() => {
+    setLlmResult(null);
+    setLlmError(null);
+    setActiveQuery(null);
+
+    // Remove q from URL
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("q");
+    const newUrl = params.toString() ? `/argentina?${params.toString()}` : "/argentina";
+    router.push(newUrl, { scroll: false });
+  }, [router, searchParams]);
+
+  // Execute search from URL on mount
+  useEffect(() => {
+    if (urlQuery && !llmResult && !llmSearching) {
+      handleLLMSearch(urlQuery);
+    }
+  }, [urlQuery, llmResult, llmSearching, handleLLMSearch]);
+
+  // Filter data based on type and search (or use LLM results)
   const filteredData = useMemo(() => {
+    // If LLM search has results, use those
+    if (llmResult && llmResult.results.length > 0) {
+      let result = llmResult.results;
+
+      // Still apply type filter on top of LLM results
+      if (filter !== "all") {
+        result = result.filter((a) => a.type === filter);
+      }
+
+      return result;
+    }
+
+    // Otherwise use normal filtering
     let result = data.data;
 
     // Filter by type
@@ -107,7 +277,7 @@ export function ArgentinaMapClient() {
     }
 
     return result;
-  }, [filter, searchQuery]);
+  }, [filter, searchQuery, llmResult]);
 
   // Count by type
   const counts = useMemo(() => {
@@ -143,17 +313,45 @@ export function ArgentinaMapClient() {
             </p>
           </div>
 
+          {/* Smart Search */}
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-4 mb-4">
+            <LLMSearchInput
+              onSearch={handleLLMSearch}
+              onClear={handleLLMClear}
+              isSearching={llmSearching}
+              activeQuery={activeQuery}
+              initialQuery={urlQuery || undefined}
+            />
+
+            {/* LLM Result info */}
+            {llmResult && (
+              <div className="mt-3 p-3 rounded-lg bg-amber-900/30 border border-amber-700/50">
+                <p className="text-sm text-amber-200">
+                  <span className="font-medium">{llmResult.count} resultados</span>
+                  {" - "}{llmResult.explanation}
+                </p>
+              </div>
+            )}
+
+            {llmError && (
+              <div className="mt-3 p-3 rounded-lg bg-red-900/30 border border-red-700/50">
+                <p className="text-sm text-red-300">{llmError}</p>
+              </div>
+            )}
+          </div>
+
           {/* Controls */}
           <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-4 mb-6">
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-              {/* Search */}
+              {/* Search by name */}
               <div className="w-full sm:w-64">
                 <input
                   type="text"
-                  placeholder="Buscar por nombre o codigo..."
+                  placeholder="Filtrar por nombre o codigo..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-4 py-2 rounded-lg bg-slate-900/50 border border-slate-600 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                  disabled={!!llmResult}
+                  className="w-full px-4 py-2 rounded-lg bg-slate-900/50 border border-slate-600 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
 

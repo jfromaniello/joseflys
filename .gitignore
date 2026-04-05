@@ -55,3 +55,10 @@ next-env.d.ts
 /public/cesium
 
 .claude/hooks
+
+# OSM cache (large files)
+data/osm-cache/
+
+# SQLite WAL files
+*.db-shm
+*.db-wal
