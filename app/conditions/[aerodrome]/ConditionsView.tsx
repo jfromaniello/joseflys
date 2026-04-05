@@ -262,7 +262,7 @@ export function ConditionsView({
                 wspd: metar.wspd,
                 wgst: metar.wgst,
                 altim: metar.altim,
-                visib: metar.visib,
+                visib: metar.visib !== null ? String(metar.visib) : null,
                 fltCat: metar.fltCat,
               } : null}
               taf={taf ? { rawTAF: taf.rawTAF } : null}
