@@ -22,12 +22,14 @@ const LLMSearchInput = memo(function LLMSearchInput({
   initialQuery?: string;
 }) {
   const [query, setQuery] = useState(initialQuery || "");
-  const [isEditing, setIsEditing] = useState(!activeQuery);
+  // Don't start in editing mode if there's an initialQuery from URL
+  const [isEditing, setIsEditing] = useState(!activeQuery && !initialQuery);
 
   // Sync with initialQuery when it changes (from URL)
   useEffect(() => {
     if (initialQuery && !activeQuery) {
       setQuery(initialQuery);
+      setIsEditing(false);
     }
   }, [initialQuery, activeQuery]);
 
@@ -44,6 +46,21 @@ const LLMSearchInput = memo(function LLMSearchInput({
     setIsEditing(true);
     onClear();
   };
+
+  // Show loading state when searching from URL
+  if (isSearching && initialQuery && !activeQuery) {
+    return (
+      <div className="flex items-center gap-3">
+        <div className="flex-1 px-4 py-3 rounded-lg bg-amber-900/30 border border-amber-600/50 text-amber-100 flex items-center gap-3">
+          <div className="w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
+          <span className="truncate">
+            <span className="text-amber-400 font-medium">Buscando:</span>{" "}
+            {initialQuery}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   // Show fixed label when there's an active query
   if (activeQuery && !isEditing && !isSearching) {
