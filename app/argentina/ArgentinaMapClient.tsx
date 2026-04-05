@@ -287,8 +287,12 @@ export function ArgentinaMapClient() {
     }
   }, [router, searchParams]);
 
+  // Track if user explicitly cleared the search
+  const [wasCleared, setWasCleared] = useState(false);
+
   // Clear LLM search
   const handleLLMClear = useCallback(() => {
+    setWasCleared(true);
     setLlmResult(null);
     setLlmError(null);
     setActiveQuery(null);
@@ -300,12 +304,19 @@ export function ArgentinaMapClient() {
     router.push(newUrl, { scroll: false });
   }, [router, searchParams]);
 
-  // Execute search from URL on mount
+  // Reset wasCleared when URL query changes (user navigated or typed new search)
   useEffect(() => {
-    if (urlQuery && !llmResult && !llmSearching) {
+    if (!urlQuery) {
+      setWasCleared(false);
+    }
+  }, [urlQuery]);
+
+  // Execute search from URL on mount (but not if user just cleared)
+  useEffect(() => {
+    if (urlQuery && !llmResult && !llmSearching && !wasCleared) {
       handleLLMSearch(urlQuery);
     }
-  }, [urlQuery, llmResult, llmSearching, handleLLMSearch]);
+  }, [urlQuery, llmResult, llmSearching, wasCleared, handleLLMSearch]);
 
   // Filter data based on type and search (or use LLM results)
   const filteredData = useMemo(() => {
