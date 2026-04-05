@@ -384,6 +384,63 @@ export default function Home() {
                 </svg>
               </div>
             </Link>
+
+            {/* Argentina Map Card */}
+            <Link
+              href="/argentina"
+              className="group block p-8 rounded-2xl bg-slate-800/50 backdrop-blur-sm border-2 border-gray-700 hover:border-sky-500/50 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <div className="flex items-start gap-4 mb-4">
+                <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-linear-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/30 group-hover:border-sky-500/50 transition-colors">
+                  <svg
+                    className="w-8 h-8"
+                    fill="none"
+                    stroke="oklch(0.65 0.15 230)"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-2xl font-bold mb-2" style={{ color: "white" }}>
+                    Argentina Map
+                  </h3>
+                  <p
+                    className="text-sm leading-relaxed"
+                    style={{ color: "oklch(0.65 0.02 240)" }}
+                  >
+                    Interactive map with 1468 aerodromes and LADs in Argentina.
+                    AI-powered search to find airstrips by location and features
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-sm font-medium" style={{ color: "oklch(0.65 0.15 230)" }}>
+                Explore Map
+                <svg
+                  className="w-4 h-4 group-hover:translate-x-1 transition-transform"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M14 5l7 7m0 0l-7 7m7-7H3"
+                  />
+                </svg>
+              </div>
+            </Link>
           </div>
         </section>
 
