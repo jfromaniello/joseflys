@@ -137,6 +137,40 @@ const MarkerClusterGroup = dynamic(
   { ssr: false }
 );
 
+// Component to handle map focusing when loc param is present
+const MapFocusController = dynamic(
+  () => Promise.all([import("react-leaflet"), import("leaflet")]).then(([mod, L]) => {
+    const { useMap } = mod;
+    // eslint-disable-next-line react/display-name
+    return ({ focusLat, focusLon }: { focusLat: number | null; focusLon: number | null }) => {
+      const map = useMap();
+      const React = require("react");
+
+      React.useEffect(() => {
+        if (focusLat !== null && focusLon !== null && !isNaN(focusLat) && !isNaN(focusLon)) {
+          // Center map on the location with zoom
+          map.setView([focusLat, focusLon], 12);
+
+          // Find and open the popup for this marker after a short delay
+          setTimeout(() => {
+            map.eachLayer((layer) => {
+              if (layer instanceof L.Marker) {
+                const pos = layer.getLatLng();
+                if (Math.abs(pos.lat - focusLat) < 0.0001 && Math.abs(pos.lng - focusLon) < 0.0001) {
+                  layer.openPopup();
+                }
+              }
+            });
+          }, 500);
+        }
+      }, [map, focusLat, focusLon]);
+
+      return null;
+    };
+  }),
+  { ssr: false }
+);
+
 // Fix for Leaflet default marker icon not loading in webpack/Next.js
 let adIcon: L.DivIcon | undefined;
 let ladIcon: L.DivIcon | undefined;
@@ -209,7 +243,7 @@ interface Aerodrome {
 }
 
 type AerodromeType = "AD" | "LAD" | "HELIPORT" | "LADH";
-type FilterType = "all" | AerodromeType;
+const ALL_TYPES: AerodromeType[] = ["AD", "HELIPORT", "LAD", "LADH"];
 type MapStyle = "street" | "satellite" | "hybrid";
 
 interface LLMSearchResult {
@@ -229,12 +263,49 @@ export function ArgentinaMapClient() {
   const searchParams = useSearchParams();
   const urlQuery = searchParams.get("q");
   const urlMapStyle = searchParams.get("map") as MapStyle | null;
+  const urlLoc = searchParams.get("loc"); // Format: "lat,lon" for focusing on aerodrome
 
-  const [filter, setFilter] = useState<FilterType>("all");
+  // Parse URL filters (e.g., "AD,LAD" or empty for all)
+  const urlFilters = searchParams.get("types");
+  const initialFilters = urlFilters
+    ? new Set(urlFilters.split(",").filter(t => ALL_TYPES.includes(t as AerodromeType)) as AerodromeType[])
+    : new Set(ALL_TYPES);
+
+  const [selectedTypes, setSelectedTypes] = useState<Set<AerodromeType>>(initialFilters);
   const [searchQuery, setSearchQuery] = useState("");
   const [mapStyle, setMapStyle] = useState<MapStyle>(
     urlMapStyle === "satellite" ? "satellite" : urlMapStyle === "hybrid" ? "hybrid" : "street"
   );
+  const [focusedAerodrome, setFocusedAerodrome] = useState<{ lat: number; lon: number } | null>(
+    urlLoc ? { lat: parseFloat(urlLoc.split(",")[0]), lon: parseFloat(urlLoc.split(",")[1]) } : null
+  );
+
+  // Toggle a type in the filter
+  const toggleType = useCallback((type: AerodromeType) => {
+    setSelectedTypes(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(type)) {
+        // Don't allow deselecting all types
+        if (newSet.size > 1) {
+          newSet.delete(type);
+        }
+      } else {
+        newSet.add(type);
+      }
+
+      // Update URL
+      const params = new URLSearchParams(searchParams.toString());
+      if (newSet.size === ALL_TYPES.length) {
+        params.delete("types");
+      } else {
+        params.set("types", Array.from(newSet).join(","));
+      }
+      const newUrl = params.toString() ? `/argentina?${params.toString()}` : "/argentina";
+      router.push(newUrl, { scroll: false });
+
+      return newSet;
+    });
+  }, [router, searchParams]);
 
   // Update URL when map style changes
   const handleMapStyleChange = useCallback((style: MapStyle) => {
@@ -325,8 +396,8 @@ export function ArgentinaMapClient() {
       let result = llmResult.results;
 
       // Still apply type filter on top of LLM results
-      if (filter !== "all") {
-        result = result.filter((a) => a.type === filter);
+      if (selectedTypes.size < ALL_TYPES.length) {
+        result = result.filter((a) => selectedTypes.has(a.type));
       }
 
       return result;
@@ -335,9 +406,9 @@ export function ArgentinaMapClient() {
     // Otherwise use normal filtering
     let result = data.data;
 
-    // Filter by type
-    if (filter !== "all") {
-      result = result.filter((a) => a.type === filter);
+    // Filter by selected types
+    if (selectedTypes.size < ALL_TYPES.length) {
+      result = result.filter((a) => selectedTypes.has(a.type));
     }
 
     // Filter by search query
@@ -351,7 +422,7 @@ export function ArgentinaMapClient() {
     }
 
     return result;
-  }, [filter, searchQuery, llmResult]);
+  }, [selectedTypes, searchQuery, llmResult]);
 
   // Count by type
   const counts = useMemo(() => {
@@ -430,22 +501,12 @@ export function ArgentinaMapClient() {
                 />
               </div>
 
-              {/* Filter buttons */}
+              {/* Filter buttons - multi-select */}
               <div className="flex flex-wrap gap-2">
                 <button
-                  onClick={() => setFilter("all")}
+                  onClick={() => toggleType("AD")}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
-                    filter === "all"
-                      ? "bg-blue-600 text-white"
-                      : "bg-slate-700 text-slate-300 hover:bg-slate-600"
-                  }`}
-                >
-                  Todos ({counts.all})
-                </button>
-                <button
-                  onClick={() => setFilter("AD")}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
-                    filter === "AD"
+                    selectedTypes.has("AD")
                       ? "bg-purple-600 text-white"
                       : "bg-slate-700 text-slate-300 hover:bg-slate-600"
                   }`}
@@ -453,9 +514,9 @@ export function ArgentinaMapClient() {
                   AD ({counts.AD})
                 </button>
                 <button
-                  onClick={() => setFilter("HELIPORT")}
+                  onClick={() => toggleType("HELIPORT")}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
-                    filter === "HELIPORT"
+                    selectedTypes.has("HELIPORT")
                       ? "bg-sky-600 text-white"
                       : "bg-slate-700 text-slate-300 hover:bg-slate-600"
                   }`}
@@ -463,9 +524,9 @@ export function ArgentinaMapClient() {
                   Helipuertos ({counts.HELIPORT})
                 </button>
                 <button
-                  onClick={() => setFilter("LAD")}
+                  onClick={() => toggleType("LAD")}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
-                    filter === "LAD"
+                    selectedTypes.has("LAD")
                       ? "bg-emerald-600 text-white"
                       : "bg-slate-700 text-slate-300 hover:bg-slate-600"
                   }`}
@@ -473,9 +534,9 @@ export function ArgentinaMapClient() {
                   LAD ({counts.LAD})
                 </button>
                 <button
-                  onClick={() => setFilter("LADH")}
+                  onClick={() => toggleType("LADH")}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
-                    filter === "LADH"
+                    selectedTypes.has("LADH")
                       ? "bg-amber-600 text-white"
                       : "bg-slate-700 text-slate-300 hover:bg-slate-600"
                   }`}
@@ -538,6 +599,12 @@ export function ArgentinaMapClient() {
                   <TileLayer
                     key="hybrid-labels"
                     url={TILE_LAYERS.hybrid.labelsUrl}
+                  />
+                )}
+                {focusedAerodrome && (
+                  <MapFocusController
+                    focusLat={focusedAerodrome.lat}
+                    focusLon={focusedAerodrome.lon}
                   />
                 )}
                 <MarkerClusterGroup
@@ -618,6 +685,51 @@ export function ArgentinaMapClient() {
                                   </Link>
                                 </div>
                               )}
+                              <div className="pt-2 border-t border-gray-200 mt-2">
+                                <button
+                                  onClick={async (e) => {
+                                    const url = new URL(window.location.href);
+                                    url.searchParams.set("loc", `${aerodrome.lat},${aerodrome.lon}`);
+                                    const shareUrl = url.toString();
+                                    const btn = e.currentTarget;
+
+                                    // Try Web Share API first (mobile)
+                                    if (typeof navigator.share === 'function') {
+                                      try {
+                                        await navigator.share({
+                                          title: `${aerodrome.name} - Aeródromos Argentina`,
+                                          text: `${aerodrome.code ? `${aerodrome.code} - ` : ''}${aerodrome.name}`,
+                                          url: shareUrl,
+                                        });
+                                        return;
+                                      } catch (err) {
+                                        // User cancelled sharing
+                                        if ((err as Error).name === 'AbortError') return;
+                                        // NotAllowedError = not triggered by user gesture, try clipboard
+                                        // Other errors = also try clipboard
+                                        console.log('Share failed:', err);
+                                      }
+                                    }
+
+                                    // Fallback: copy to clipboard
+                                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                                      await navigator.clipboard.writeText(shareUrl);
+                                      const originalText = btn.innerText;
+                                      btn.innerText = "¡Copiado!";
+                                      setTimeout(() => { btn.innerText = originalText; }, 1500);
+                                    } else {
+                                      // Ultimate fallback: prompt user to copy manually
+                                      window.prompt("Copia este enlace:", shareUrl);
+                                    }
+                                  }}
+                                  className="text-sm text-gray-500 hover:text-blue-600 flex items-center gap-1 cursor-pointer"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                                  </svg>
+                                  Compartir ubicación
+                                </button>
+                              </div>
                             </div>
                           </div>
                         </Popup>
