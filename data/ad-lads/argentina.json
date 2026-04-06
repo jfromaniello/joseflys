@@ -14392,7 +14392,7 @@
       "lat": -27.09361111111111,
       "lon": -61.572500000000005,
       "elevation": 112,
-      "province": null,
+      "province": "Chaco",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -14414,7 +14414,7 @@
       "lat": -31.804166666666667,
       "lon": -59.00833333333333,
       "elevation": 49,
-      "province": "BUENOS",
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -14436,7 +14436,7 @@
       "lat": -33.933055555555555,
       "lon": -64.40305555555557,
       "elevation": 100,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -14458,7 +14458,7 @@
       "lat": -27.078055555555554,
       "lon": -61.26305555555555,
       "elevation": 109,
-      "province": null,
+      "province": "Chaco",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -14480,7 +14480,7 @@
       "lat": -34.41583333333333,
       "lon": -58.893055555555556,
       "elevation": 21,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -14502,7 +14502,7 @@
       "lat": -33.72361111111111,
       "lon": -62.69027777777777,
       "elevation": 127,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -14524,7 +14524,7 @@
       "lat": -39.92333333333333,
       "lon": -64.91000000000001,
       "elevation": 74,
-      "province": null,
+      "province": "Río Negro",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -14546,7 +14546,7 @@
       "lat": -25.545555555555556,
       "lon": -62.611666666666665,
       "elevation": 118,
-      "province": null,
+      "province": "Chaco",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -14568,7 +14568,7 @@
       "lat": -38.50055555555556,
       "lon": -58.69,
       "elevation": 21,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -14590,7 +14590,7 @@
       "lat": -30.134722222222223,
       "lon": -63.78444444444444,
       "elevation": 433,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -14612,7 +14612,7 @@
       "lat": -27.016666666666666,
       "lon": -61.18333333333333,
       "elevation": 103,
-      "province": null,
+      "province": "Chaco",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -14634,7 +14634,7 @@
       "lat": -35.016666666666666,
       "lon": -60.25,
       "elevation": 47,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -14656,7 +14656,7 @@
       "lat": -35.87777777777778,
       "lon": -60.07777777777778,
       "elevation": 55,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -14678,7 +14678,7 @@
       "lat": -25.538611111111113,
       "lon": -64.83583333333333,
       "elevation": 700,
-      "province": null,
+      "province": "Catamarca",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -14700,7 +14700,7 @@
       "lat": -25.57,
       "lon": -66.39250000000001,
       "elevation": 2190,
-      "province": null,
+      "province": "Catamarca",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -14722,7 +14722,7 @@
       "lat": -28.795,
       "lon": -66.91333333333334,
       "elevation": 1309,
-      "province": null,
+      "province": "San Juan",
       "municipality": null,
       "surface": "ASFALTO",
       "runways": [
@@ -14744,7 +14744,7 @@
       "lat": -26.06833333333333,
       "lon": -67.40333333333334,
       "elevation": 3300,
-      "province": null,
+      "province": "Catamarca",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -14766,7 +14766,7 @@
       "lat": -24.95888888888889,
       "lon": -67.68083333333334,
       "elevation": 3469,
-      "province": null,
+      "province": "Salta",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -14788,7 +14788,7 @@
       "lat": -30.1875,
       "lon": -59.9325,
       "elevation": 125,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -14810,7 +14810,7 @@
       "lat": -32.458333333333336,
       "lon": -58.980555555555554,
       "elevation": 43,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -14832,7 +14832,7 @@
       "lat": -42.41027777777778,
       "lon": -71.3736111111111,
       "elevation": 675,
-      "province": null,
+      "province": "Chubut",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -14854,7 +14854,7 @@
       "lat": -28.92888888888889,
       "lon": -61.98555555555556,
       "elevation": 290,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -14876,7 +14876,7 @@
       "lat": -33.18222222222222,
       "lon": -62.73555555555556,
       "elevation": 100,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -14898,7 +14898,7 @@
       "lat": -32.41916666666666,
       "lon": -61.794444444444444,
       "elevation": 128,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -14920,7 +14920,7 @@
       "lat": -35.32222222222222,
       "lon": -59.60527777777778,
       "elevation": 36,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -14942,7 +14942,7 @@
       "lat": -36.233333333333334,
       "lon": -59.36805555555556,
       "elevation": 57,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -14964,7 +14964,7 @@
       "lat": -33.68277777777777,
       "lon": -63.54333333333333,
       "elevation": 15,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -14986,7 +14986,7 @@
       "lat": -36.61083333333333,
       "lon": -63.00833333333333,
       "elevation": 122,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15008,7 +15008,7 @@
       "lat": -27.14472222222222,
       "lon": -61.765,
       "elevation": 167,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15030,7 +15030,7 @@
       "lat": -45.90861111111111,
       "lon": -68.44472222222223,
       "elevation": 700,
-      "province": null,
+      "province": "Chubut",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15052,7 +15052,7 @@
       "lat": -31.673055555555557,
       "lon": -63.183055555555555,
       "elevation": 253,
-      "province": "LA",
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15074,7 +15074,7 @@
       "lat": -33.97138888888889,
       "lon": -59.52916666666667,
       "elevation": 26,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15096,7 +15096,7 @@
       "lat": -28.168055555555558,
       "lon": -65.22416666666666,
       "elevation": 527,
-      "province": null,
+      "province": "Catamarca",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15118,7 +15118,7 @@
       "lat": -26.60777777777778,
       "lon": -62.844166666666666,
       "elevation": 185,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15140,7 +15140,7 @@
       "lat": -27.86527777777778,
       "lon": -59.92305555555555,
       "elevation": 60,
-      "province": "LA",
+      "province": "Chaco",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15162,7 +15162,7 @@
       "lat": -34.81472222222222,
       "lon": -61.71416666666667,
       "elevation": 90,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15184,7 +15184,7 @@
       "lat": -35.57083333333334,
       "lon": -61.74444444444445,
       "elevation": 73,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15206,7 +15206,7 @@
       "lat": -34.623333333333335,
       "lon": -60.098888888888894,
       "elevation": 76,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15228,7 +15228,7 @@
       "lat": -33.96611111111111,
       "lon": -59.844722222222224,
       "elevation": 55,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15250,7 +15250,7 @@
       "lat": -26.653333333333332,
       "lon": -54.749722222222225,
       "elevation": 783,
-      "province": null,
+      "province": "Misiones",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15272,7 +15272,7 @@
       "lat": -35.60638888888889,
       "lon": -61.348888888888894,
       "elevation": 84,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15294,7 +15294,7 @@
       "lat": -36.099722222222226,
       "lon": -57.867222222222225,
       "elevation": 10,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15316,7 +15316,7 @@
       "lat": -25.941666666666666,
       "lon": -60.625,
       "elevation": 109,
-      "province": null,
+      "province": "Chaco",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15338,7 +15338,7 @@
       "lat": -37.86666666666667,
       "lon": -70.98333333333333,
       "elevation": 1629,
-      "province": null,
+      "province": "Neuquén",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15360,7 +15360,7 @@
       "lat": -32.72944444444445,
       "lon": -58.45138888888889,
       "elevation": 23,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15382,7 +15382,7 @@
       "lat": -46.83277777777778,
       "lon": -70.29861111111111,
       "elevation": 588,
-      "province": null,
+      "province": "Santa Cruz",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15404,7 +15404,7 @@
       "lat": -28.620555555555555,
       "lon": -58.1625,
       "elevation": 62,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15426,7 +15426,7 @@
       "lat": -48.37361111111111,
       "lon": -68.1061111111111,
       "elevation": 177,
-      "province": null,
+      "province": "Santa Cruz",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15448,7 +15448,7 @@
       "lat": -28.783333333333335,
       "lon": -57.55,
       "elevation": 87,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15470,7 +15470,7 @@
       "lat": -31.359444444444446,
       "lon": -65.485,
       "elevation": 339,
-      "province": null,
+      "province": "La Rioja",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15492,7 +15492,7 @@
       "lat": -32.03861111111111,
       "lon": -63.37694444444445,
       "elevation": 229,
-      "province": "LA",
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15514,7 +15514,7 @@
       "lat": -30.176111111111112,
       "lon": -62.10444444444445,
       "elevation": 55,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15536,7 +15536,7 @@
       "lat": -29.554722222222225,
       "lon": -60.00833333333333,
       "elevation": 200,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15580,7 +15580,7 @@
       "lat": -24.572499999999998,
       "lon": -62.234722222222224,
       "elevation": 186,
-      "province": null,
+      "province": "Chaco",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15602,7 +15602,7 @@
       "lat": -34.20527777777778,
       "lon": -61.53388888888889,
       "elevation": 89,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15624,7 +15624,7 @@
       "lat": -30.68,
       "lon": -64.78888888888889,
       "elevation": 501,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15646,7 +15646,7 @@
       "lat": -38.80305555555555,
       "lon": -61.645833333333336,
       "elevation": 76,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15668,7 +15668,7 @@
       "lat": -29.66,
       "lon": -57.90138888888889,
       "elevation": 68,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15690,7 +15690,7 @@
       "lat": -32.62083333333334,
       "lon": -63.58888888888889,
       "elevation": 200,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15712,7 +15712,7 @@
       "lat": -35.34666666666667,
       "lon": -64.12444444444444,
       "elevation": 176,
-      "province": null,
+      "province": "La Pampa",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15734,7 +15734,7 @@
       "lat": -33.53861111111111,
       "lon": -62.57222222222222,
       "elevation": 127,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15756,7 +15756,7 @@
       "lat": -27.26722222222222,
       "lon": -59.16694444444444,
       "elevation": 55,
-      "province": "LA",
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15778,7 +15778,7 @@
       "lat": -34.19083333333333,
       "lon": -65.76305555555555,
       "elevation": 492,
-      "province": null,
+      "province": "San Luis",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15800,7 +15800,7 @@
       "lat": -32.06666666666667,
       "lon": -64.0925,
       "elevation": 420,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15822,7 +15822,7 @@
       "lat": -28.144444444444446,
       "lon": -58.760555555555555,
       "elevation": 64,
-      "province": "BUENOS",
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15844,7 +15844,7 @@
       "lat": -31.535555555555558,
       "lon": -63.14472222222222,
       "elevation": 246,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15866,7 +15866,7 @@
       "lat": -31.70888888888889,
       "lon": -59.89222222222222,
       "elevation": 93,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15888,7 +15888,7 @@
       "lat": -37.56805555555556,
       "lon": -59.49333333333333,
       "elevation": 232,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15910,7 +15910,7 @@
       "lat": -33.39861111111111,
       "lon": -63.50111111111111,
       "elevation": 170,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15932,7 +15932,7 @@
       "lat": -35.5,
       "lon": -61.78333333333333,
       "elevation": 84,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15954,7 +15954,7 @@
       "lat": -29.115000000000002,
       "lon": -61.934999999999995,
       "elevation": 74,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15976,7 +15976,7 @@
       "lat": -25.866666666666667,
       "lon": -58.666666666666664,
       "elevation": 72,
-      "province": null,
+      "province": "Chaco",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -15998,7 +15998,7 @@
       "lat": -28.43611111111111,
       "lon": -58.41083333333333,
       "elevation": 88,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16020,7 +16020,7 @@
       "lat": -36.99166666666667,
       "lon": -64.5886111111111,
       "elevation": 266,
-      "province": null,
+      "province": "La Pampa",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16042,7 +16042,7 @@
       "lat": -35.15972222222222,
       "lon": -63.264722222222225,
       "elevation": 110,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16064,7 +16064,7 @@
       "lat": -28.935,
       "lon": -58.66166666666666,
       "elevation": 60,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16086,7 +16086,7 @@
       "lat": -28.45,
       "lon": -56.96666666666667,
       "elevation": 70,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16108,7 +16108,7 @@
       "lat": -27.533333333333335,
       "lon": -58.583333333333336,
       "elevation": 62,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16152,7 +16152,7 @@
       "lat": -33.97666666666667,
       "lon": -65.43222222222222,
       "elevation": 465,
-      "province": "LA",
+      "province": "San Luis",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16174,7 +16174,7 @@
       "lat": -29.31861111111111,
       "lon": -58.3575,
       "elevation": 86,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16196,7 +16196,7 @@
       "lat": -29.583333333333332,
       "lon": -63.46666666666667,
       "elevation": 440,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16218,7 +16218,7 @@
       "lat": -32.709722222222226,
       "lon": -58.29416666666666,
       "elevation": 16,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16262,7 +16262,7 @@
       "lat": -37.3,
       "lon": -64.88333333333334,
       "elevation": 325,
-      "province": null,
+      "province": "La Pampa",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16284,7 +16284,7 @@
       "lat": -35.23277777777778,
       "lon": -61.68861111111111,
       "elevation": 96,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16306,7 +16306,7 @@
       "lat": -26.86916666666667,
       "lon": -58.64388888888889,
       "elevation": 300,
-      "province": null,
+      "province": "Chaco",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16328,7 +16328,7 @@
       "lat": -37.91972222222222,
       "lon": -57.83416666666667,
       "elevation": 220,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16350,7 +16350,7 @@
       "lat": -34.24027777777778,
       "lon": -64.76388888888889,
       "elevation": 250,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16372,7 +16372,7 @@
       "lat": -37.89111111111111,
       "lon": -58.664722222222224,
       "elevation": 146,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16394,7 +16394,7 @@
       "lat": -37.706944444444446,
       "lon": -61.42777777777778,
       "elevation": 245,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16416,7 +16416,7 @@
       "lat": -34.19194444444444,
       "lon": -62.04611111111111,
       "elevation": 108,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16438,7 +16438,7 @@
       "lat": -32.62555555555556,
       "lon": -59.5025,
       "elevation": 90,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16460,7 +16460,7 @@
       "lat": -30.533333333333335,
       "lon": -60.43333333333333,
       "elevation": 50,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16482,7 +16482,7 @@
       "lat": -34.20861111111111,
       "lon": -64.3125,
       "elevation": 221,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16504,7 +16504,7 @@
       "lat": -36.05444444444444,
       "lon": -63.20805555555556,
       "elevation": 111,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16526,7 +16526,7 @@
       "lat": -38.768055555555556,
       "lon": -60.43611111111111,
       "elevation": 41,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16548,7 +16548,7 @@
       "lat": -32.099722222222226,
       "lon": -62.33361111111111,
       "elevation": 104,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16570,7 +16570,7 @@
       "lat": -26.9575,
       "lon": -64.43222222222222,
       "elevation": 258,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16592,7 +16592,7 @@
       "lat": -38.80722222222222,
       "lon": -61.040277777777774,
       "elevation": 50,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16614,7 +16614,7 @@
       "lat": -37.16222222222222,
       "lon": -59.950833333333335,
       "elevation": 245,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16636,7 +16636,7 @@
       "lat": -36.495,
       "lon": -65.55499999999999,
       "elevation": 300,
-      "province": null,
+      "province": "La Pampa",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16658,7 +16658,7 @@
       "lat": -38.11666666666667,
       "lon": -59.1,
       "elevation": 108,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16680,7 +16680,7 @@
       "lat": -36.59027777777778,
       "lon": -63.62888888888889,
       "elevation": 136,
-      "province": null,
+      "province": "La Pampa",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16702,7 +16702,7 @@
       "lat": -34.78916666666667,
       "lon": -65.08111111111111,
       "elevation": 274,
-      "province": null,
+      "province": "San Luis",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16724,7 +16724,7 @@
       "lat": -33.05361111111111,
       "lon": -63.73916666666667,
       "elevation": 241,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16746,7 +16746,7 @@
       "lat": -32.56666666666667,
       "lon": -58.516666666666666,
       "elevation": 17,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16768,7 +16768,7 @@
       "lat": -38.125,
       "lon": -61.02361111111111,
       "elevation": 195,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16790,7 +16790,7 @@
       "lat": -35.81805555555556,
       "lon": -58.68861111111111,
       "elevation": 30,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16812,7 +16812,7 @@
       "lat": -30.583333333333332,
       "lon": -58.825,
       "elevation": 63,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16834,7 +16834,7 @@
       "lat": -34.03333333333333,
       "lon": -59.86388888888889,
       "elevation": 40,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16856,7 +16856,7 @@
       "lat": -34.965833333333336,
       "lon": -62.79361111111111,
       "elevation": 113,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16878,7 +16878,7 @@
       "lat": -35.41833333333333,
       "lon": -65.28222222222222,
       "elevation": 316,
-      "province": null,
+      "province": "San Luis",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16900,7 +16900,7 @@
       "lat": -24.783333333333335,
       "lon": -64.53333333333333,
       "elevation": 733,
-      "province": null,
+      "province": "Salta",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16922,7 +16922,7 @@
       "lat": -34.78138888888889,
       "lon": -63.475,
       "elevation": 128,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16944,7 +16944,7 @@
       "lat": -35.67361111111111,
       "lon": -64.16027777777778,
       "elevation": 181,
-      "province": null,
+      "province": "La Pampa",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16966,7 +16966,7 @@
       "lat": -47.936388888888885,
       "lon": -70.48555555555555,
       "elevation": 437,
-      "province": null,
+      "province": "Santa Cruz",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -16988,7 +16988,7 @@
       "lat": -28.416666666666668,
       "lon": -57.7,
       "elevation": 61,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17010,7 +17010,7 @@
       "lat": -34.117222222222225,
       "lon": -62.84027777777778,
       "elevation": 125,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17032,7 +17032,7 @@
       "lat": -35.08361111111111,
       "lon": -65.19111111111111,
       "elevation": 292,
-      "province": null,
+      "province": "San Luis",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17054,7 +17054,7 @@
       "lat": -37.791666666666664,
       "lon": -58.0375,
       "elevation": 130,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17076,7 +17076,7 @@
       "lat": -27.79361111111111,
       "lon": -62.99055555555556,
       "elevation": 134,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17098,7 +17098,7 @@
       "lat": -50.28722222222222,
       "lon": -70.90777777777778,
       "elevation": 293,
-      "province": null,
+      "province": "Santa Cruz",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17120,7 +17120,7 @@
       "lat": -36.983333333333334,
       "lon": -62.86666666666667,
       "elevation": 127,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17142,7 +17142,7 @@
       "lat": -34.48222222222223,
       "lon": -65.63222222222221,
       "elevation": 411,
-      "province": "SAN",
+      "province": "San Luis",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17164,7 +17164,7 @@
       "lat": -28,
       "lon": -57.3,
       "elevation": 64,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17186,7 +17186,7 @@
       "lat": -25.468888888888888,
       "lon": -58.70638888888889,
       "elevation": 103,
-      "province": null,
+      "province": "Chaco",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17208,7 +17208,7 @@
       "lat": -36.19833333333333,
       "lon": -63.70611111111111,
       "elevation": 127,
-      "province": null,
+      "province": "La Pampa",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17230,7 +17230,7 @@
       "lat": -34.78333333333333,
       "lon": -65.3,
       "elevation": 323,
-      "province": null,
+      "province": "San Luis",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17252,7 +17252,7 @@
       "lat": -28.553611111111113,
       "lon": -57.20055555555556,
       "elevation": 85,
-      "province": "ENTRE",
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17274,7 +17274,7 @@
       "lat": -29.289722222222224,
       "lon": -57.72666666666667,
       "elevation": 80,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17296,7 +17296,7 @@
       "lat": -29.42388888888889,
       "lon": -58.16166666666666,
       "elevation": 91,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17318,7 +17318,7 @@
       "lat": -36.88472222222222,
       "lon": -58.319722222222225,
       "elevation": 43,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17340,7 +17340,7 @@
       "lat": -33.461666666666666,
       "lon": -62.28583333333333,
       "elevation": 115,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17362,7 +17362,7 @@
       "lat": -45.15,
       "lon": -66.9,
       "elevation": 153,
-      "province": null,
+      "province": "Chubut",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17384,7 +17384,7 @@
       "lat": -36.00083333333333,
       "lon": -60.7825,
       "elevation": 77,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17406,7 +17406,7 @@
       "lat": -34.206944444444446,
       "lon": -62.399166666666666,
       "elevation": 110,
-      "province": "BUENOS",
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17428,7 +17428,7 @@
       "lat": -35.56472222222222,
       "lon": -60.45638888888889,
       "elevation": 63,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17450,7 +17450,7 @@
       "lat": -35.393055555555556,
       "lon": -59.45777777777778,
       "elevation": 32,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17472,7 +17472,7 @@
       "lat": -33.48833333333334,
       "lon": -62.638333333333335,
       "elevation": 118,
-      "province": "LA",
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17494,7 +17494,7 @@
       "lat": -37.13666666666666,
       "lon": -62.01138888888889,
       "elevation": 160,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17516,7 +17516,7 @@
       "lat": -34.25416666666667,
       "lon": -64.83611111111111,
       "elevation": 288,
-      "province": "BUENOS",
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17538,7 +17538,7 @@
       "lat": -51.05972222222222,
       "lon": -70.17194444444445,
       "elevation": 232,
-      "province": null,
+      "province": "Santa Cruz",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17560,7 +17560,7 @@
       "lat": -36.82694444444445,
       "lon": -62.30027777777777,
       "elevation": 114,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17582,7 +17582,7 @@
       "lat": -34.46555555555556,
       "lon": -62.17777777777778,
       "elevation": 70,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17604,7 +17604,7 @@
       "lat": -27.983333333333334,
       "lon": -57.416666666666664,
       "elevation": 72,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17626,7 +17626,7 @@
       "lat": -28.57138888888889,
       "lon": -61.88472222222222,
       "elevation": 79,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17648,7 +17648,7 @@
       "lat": -30.22694444444444,
       "lon": -58.785,
       "elevation": 55,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17670,7 +17670,7 @@
       "lat": -30.148611111111112,
       "lon": -60.32666666666667,
       "elevation": 54,
-      "province": "BUENOS",
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17692,7 +17692,7 @@
       "lat": -36.97805555555556,
       "lon": -62.7575,
       "elevation": 120,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17714,7 +17714,7 @@
       "lat": -30.614722222222223,
       "lon": -59.95472222222222,
       "elevation": 25,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17736,7 +17736,7 @@
       "lat": -34.083333333333336,
       "lon": -59.78333333333333,
       "elevation": 47,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17758,7 +17758,7 @@
       "lat": -42.540277777777774,
       "lon": -63.64972222222222,
       "elevation": 20,
-      "province": null,
+      "province": "Chubut",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17780,7 +17780,7 @@
       "lat": -36.13166666666667,
       "lon": -59.24916666666667,
       "elevation": 35,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17802,7 +17802,7 @@
       "lat": -33.90472222222222,
       "lon": -60.066944444444445,
       "elevation": 55,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17824,7 +17824,7 @@
       "lat": -27.7,
       "lon": -57.925,
       "elevation": 62,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17846,7 +17846,7 @@
       "lat": -36.61972222222222,
       "lon": -62.335,
       "elevation": 123,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17868,7 +17868,7 @@
       "lat": -28.380833333333335,
       "lon": -62.18611111111111,
       "elevation": 95,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17912,7 +17912,7 @@
       "lat": -35.1875,
       "lon": -62.164722222222224,
       "elevation": 97,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17934,7 +17934,7 @@
       "lat": -36.8,
       "lon": -58.266666666666666,
       "elevation": 35,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17956,7 +17956,7 @@
       "lat": -30.30138888888889,
       "lon": -63.526666666666664,
       "elevation": 195,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -17978,7 +17978,7 @@
       "lat": -34.09305555555556,
       "lon": -65.01555555555555,
       "elevation": 336,
-      "province": null,
+      "province": "San Luis",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18000,7 +18000,7 @@
       "lat": -32.93666666666666,
       "lon": -58.677499999999995,
       "elevation": 23,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18022,7 +18022,7 @@
       "lat": -32.5675,
       "lon": -61.2825,
       "elevation": 66,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18044,7 +18044,7 @@
       "lat": -36.921388888888885,
       "lon": -62.46277777777778,
       "elevation": 117,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18066,7 +18066,7 @@
       "lat": -37.94833333333333,
       "lon": -64.20611111111111,
       "elevation": 206,
-      "province": null,
+      "province": "La Pampa",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18088,7 +18088,7 @@
       "lat": -35.95138888888889,
       "lon": -59.841944444444444,
       "elevation": 115,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18110,7 +18110,7 @@
       "lat": -33.78055555555555,
       "lon": -66.06888888888888,
       "elevation": 689,
-      "province": null,
+      "province": "San Luis",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18132,7 +18132,7 @@
       "lat": -34.005,
       "lon": -59.46416666666667,
       "elevation": 26,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18154,7 +18154,7 @@
       "lat": -33.211111111111116,
       "lon": -63.20888888888889,
       "elevation": 160,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18176,7 +18176,7 @@
       "lat": -29.22111111111111,
       "lon": -58.02777777777778,
       "elevation": 107,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18198,7 +18198,7 @@
       "lat": -34.78638888888889,
       "lon": -63.3975,
       "elevation": 130,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18220,7 +18220,7 @@
       "lat": -35.441111111111105,
       "lon": -61.77444444444444,
       "elevation": 902,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18242,7 +18242,7 @@
       "lat": -26.971666666666664,
       "lon": -61.97694444444445,
       "elevation": 96,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18264,7 +18264,7 @@
       "lat": -30.65972222222222,
       "lon": -60.561388888888885,
       "elevation": 52,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18286,7 +18286,7 @@
       "lat": -32.071111111111115,
       "lon": -62.71194444444445,
       "elevation": 125,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18308,7 +18308,7 @@
       "lat": -28.883333333333333,
       "lon": -63.483333333333334,
       "elevation": 270,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18330,7 +18330,7 @@
       "lat": -34.835,
       "lon": -63.544999999999995,
       "elevation": 127,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18352,7 +18352,7 @@
       "lat": -38.08027777777778,
       "lon": -57.996944444444445,
       "elevation": 90,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18374,7 +18374,7 @@
       "lat": -35.81666666666667,
       "lon": -58.65,
       "elevation": 25,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18396,7 +18396,7 @@
       "lat": -48.405277777777776,
       "lon": -70.55611111111111,
       "elevation": 420,
-      "province": null,
+      "province": "Santa Cruz",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18418,7 +18418,7 @@
       "lat": -36.78805555555555,
       "lon": -58.3575,
       "elevation": 280,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18440,7 +18440,7 @@
       "lat": -34.36666666666667,
       "lon": -61.55555555555555,
       "elevation": 113,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18462,7 +18462,7 @@
       "lat": -32.92222222222222,
       "lon": -59.525555555555556,
       "elevation": 29,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18484,7 +18484,7 @@
       "lat": -31.020555555555553,
       "lon": -60.27194444444444,
       "elevation": 30,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18506,7 +18506,7 @@
       "lat": -34.03333333333333,
       "lon": -64.96666666666667,
       "elevation": 337,
-      "province": null,
+      "province": "San Luis",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18528,7 +18528,7 @@
       "lat": -25.54388888888889,
       "lon": -59.75416666666667,
       "elevation": 96,
-      "province": null,
+      "province": "Chaco",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18550,7 +18550,7 @@
       "lat": -28.565833333333334,
       "lon": -60.055,
       "elevation": 97,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18572,7 +18572,7 @@
       "lat": -34.495555555555555,
       "lon": -65.39361111111111,
       "elevation": 383,
-      "province": null,
+      "province": "San Luis",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18594,7 +18594,7 @@
       "lat": -34.249722222222225,
       "lon": -65.05777777777777,
       "elevation": 320,
-      "province": null,
+      "province": "San Luis",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18638,7 +18638,7 @@
       "lat": -34.19944444444444,
       "lon": -59.532777777777774,
       "elevation": 43,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18660,7 +18660,7 @@
       "lat": -32.57166666666667,
       "lon": -59.74166666666667,
       "elevation": 40,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18682,7 +18682,7 @@
       "lat": -37.11333333333334,
       "lon": -61.708333333333336,
       "elevation": 163,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18704,7 +18704,7 @@
       "lat": -29.855833333333333,
       "lon": -63.484722222222224,
       "elevation": 235,
-      "province": "BUENOS",
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18726,7 +18726,7 @@
       "lat": -34.02611111111111,
       "lon": -62.47222222222222,
       "elevation": 127,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18748,7 +18748,7 @@
       "lat": -36.05,
       "lon": -63.266666666666666,
       "elevation": 107,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18770,7 +18770,7 @@
       "lat": -27.716666666666665,
       "lon": -58.78333333333333,
       "elevation": 61,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18792,7 +18792,7 @@
       "lat": -29.627222222222223,
       "lon": -57.7975,
       "elevation": 64,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18814,7 +18814,7 @@
       "lat": -33.70138888888889,
       "lon": -62.25,
       "elevation": 116,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18836,7 +18836,7 @@
       "lat": -35.81194444444444,
       "lon": -61.54,
       "elevation": 120,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18880,7 +18880,7 @@
       "lat": -34.5,
       "lon": -62.8,
       "elevation": 380,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18902,7 +18902,7 @@
       "lat": -29.133333333333333,
       "lon": -60.68222222222222,
       "elevation": 59,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18924,7 +18924,7 @@
       "lat": -33.55,
       "lon": -65,
       "elevation": 472,
-      "province": null,
+      "province": "San Luis",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18946,7 +18946,7 @@
       "lat": -28.319444444444443,
       "lon": -61.60861111111111,
       "elevation": 85,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18968,7 +18968,7 @@
       "lat": -31.166666666666668,
       "lon": -60.71666666666667,
       "elevation": 38,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -18990,7 +18990,7 @@
       "lat": -35.93555555555555,
       "lon": -62.29194444444444,
       "elevation": 85,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19012,7 +19012,7 @@
       "lat": -32.401944444444446,
       "lon": -60.401944444444446,
       "elevation": 5,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19034,7 +19034,7 @@
       "lat": -31.199166666666667,
       "lon": -58.39555555555555,
       "elevation": 64,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19056,7 +19056,7 @@
       "lat": -34.59583333333334,
       "lon": -64.71888888888888,
       "elevation": 240,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19078,7 +19078,7 @@
       "lat": -24.719166666666666,
       "lon": -63.04944444444444,
       "elevation": 236,
-      "province": null,
+      "province": "Chaco",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19100,7 +19100,7 @@
       "lat": -27.858055555555556,
       "lon": -61.81666666666667,
       "elevation": 113,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19122,7 +19122,7 @@
       "lat": -36.13333333333333,
       "lon": -61.5,
       "elevation": 99,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19144,7 +19144,7 @@
       "lat": -37.40888888888889,
       "lon": -61.20444444444445,
       "elevation": 185,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19166,7 +19166,7 @@
       "lat": -34.16444444444444,
       "lon": -59.59277777777778,
       "elevation": 40,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19188,7 +19188,7 @@
       "lat": -32.266666666666666,
       "lon": -58.7,
       "elevation": 90,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19210,7 +19210,7 @@
       "lat": -36.7675,
       "lon": -56.735,
       "elevation": 4,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19232,7 +19232,7 @@
       "lat": -36.07416666666667,
       "lon": -61.71416666666667,
       "elevation": 95,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19254,7 +19254,7 @@
       "lat": -38.562777777777775,
       "lon": -59.030833333333334,
       "elevation": 27,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19276,7 +19276,7 @@
       "lat": -25.344444444444445,
       "lon": -64.67944444444444,
       "elevation": 584,
-      "province": null,
+      "province": "Salta",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19298,7 +19298,7 @@
       "lat": -34.91305555555555,
       "lon": -66.14444444444445,
       "elevation": 450,
-      "province": null,
+      "province": "San Luis",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19320,7 +19320,7 @@
       "lat": -37.19555555555555,
       "lon": -57.58083333333334,
       "elevation": 20,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19342,7 +19342,7 @@
       "lat": -27.947222222222223,
       "lon": -56.873333333333335,
       "elevation": 69,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19364,7 +19364,7 @@
       "lat": -43.64472222222222,
       "lon": -65.93444444444445,
       "elevation": 239,
-      "province": null,
+      "province": "Chubut",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19386,7 +19386,7 @@
       "lat": -34.442499999999995,
       "lon": -64.4775,
       "elevation": 238,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19408,7 +19408,7 @@
       "lat": -29.452777777777776,
       "lon": -58.596944444444446,
       "elevation": 59,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19430,7 +19430,7 @@
       "lat": -29.210833333333333,
       "lon": -58.52861111111111,
       "elevation": 52,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19452,7 +19452,7 @@
       "lat": -39.43944444444444,
       "lon": -63.17861111111111,
       "elevation": 30,
-      "province": null,
+      "province": "Río Negro",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19474,7 +19474,7 @@
       "lat": -35.88333333333333,
       "lon": -62.53333333333333,
       "elevation": 89,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19496,7 +19496,7 @@
       "lat": -38.28861111111111,
       "lon": -61.469722222222224,
       "elevation": 303,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19518,7 +19518,7 @@
       "lat": -29.55527777777778,
       "lon": -57.78861111111111,
       "elevation": 68,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19540,7 +19540,7 @@
       "lat": -35.108333333333334,
       "lon": -63.81444444444444,
       "elevation": 140,
-      "province": null,
+      "province": "La Pampa",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19562,7 +19562,7 @@
       "lat": -42.763888888888886,
       "lon": -63.731388888888894,
       "elevation": 55,
-      "province": null,
+      "province": "Chubut",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19584,7 +19584,7 @@
       "lat": -29.10638888888889,
       "lon": -57.69888888888889,
       "elevation": 67,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19606,7 +19606,7 @@
       "lat": -28.647222222222222,
       "lon": -57.45,
       "elevation": 70,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19628,7 +19628,7 @@
       "lat": -33.904444444444444,
       "lon": -61.812777777777775,
       "elevation": 96,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19650,7 +19650,7 @@
       "lat": -28.3,
       "lon": -57.45277777777778,
       "elevation": 60,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19672,7 +19672,7 @@
       "lat": -36.94166666666666,
       "lon": -61.32916666666667,
       "elevation": 141,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19694,7 +19694,7 @@
       "lat": -36.735,
       "lon": -59.25555555555555,
       "elevation": 96,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19716,7 +19716,7 @@
       "lat": -28.38861111111111,
       "lon": -57.87694444444445,
       "elevation": 65,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19738,7 +19738,7 @@
       "lat": -32.63361111111111,
       "lon": -59.835,
       "elevation": 45,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19760,7 +19760,7 @@
       "lat": -37.56638888888889,
       "lon": -59.140277777777776,
       "elevation": 270,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19782,7 +19782,7 @@
       "lat": -27.81888888888889,
       "lon": -56.841944444444444,
       "elevation": 70,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19804,7 +19804,7 @@
       "lat": -30.755277777777778,
       "lon": -59.9975,
       "elevation": 23,
-      "province": "LA",
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19826,7 +19826,7 @@
       "lat": -31.01527777777778,
       "lon": -58.401111111111106,
       "elevation": 65,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19848,7 +19848,7 @@
       "lat": -35.635,
       "lon": -61.669444444444444,
       "elevation": 83,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19870,7 +19870,7 @@
       "lat": -37.55416666666667,
       "lon": -58.16694444444444,
       "elevation": 64,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19892,7 +19892,7 @@
       "lat": -30.340277777777775,
       "lon": -64.49833333333333,
       "elevation": 505,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19914,7 +19914,7 @@
       "lat": -28.126944444444444,
       "lon": -57.43416666666666,
       "elevation": 64,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19936,7 +19936,7 @@
       "lat": -38.024166666666666,
       "lon": -61.68055555555555,
       "elevation": 350,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19958,7 +19958,7 @@
       "lat": -29.86416666666667,
       "lon": -58.54416666666666,
       "elevation": 70,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -19980,7 +19980,7 @@
       "lat": -36.99388888888889,
       "lon": -57.488055555555555,
       "elevation": 4,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20002,7 +20002,7 @@
       "lat": -51.67944444444444,
       "lon": -71.96027777777778,
       "elevation": 210,
-      "province": null,
+      "province": "Santa Cruz",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20024,7 +20024,7 @@
       "lat": -36.69333333333333,
       "lon": -60.68416666666666,
       "elevation": 178,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20046,7 +20046,7 @@
       "lat": -36.62888888888889,
       "lon": -60.43694444444444,
       "elevation": 136,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20068,7 +20068,7 @@
       "lat": -27.883888888888887,
       "lon": -58.737500000000004,
       "elevation": 60,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20090,7 +20090,7 @@
       "lat": -36.35666666666667,
       "lon": -62.08694444444445,
       "elevation": 105,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20134,7 +20134,7 @@
       "lat": -32.819722222222225,
       "lon": -59.183055555555555,
       "elevation": 26,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20156,7 +20156,7 @@
       "lat": -25.185555555555556,
       "lon": -62.744166666666665,
       "elevation": 222,
-      "province": null,
+      "province": "Chaco",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20178,7 +20178,7 @@
       "lat": -47.36416666666667,
       "lon": -71.97583333333334,
       "elevation": 159,
-      "province": "SAN",
+      "province": "Santa Cruz",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20200,7 +20200,7 @@
       "lat": -32.5625,
       "lon": -59.474722222222226,
       "elevation": 55,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20222,7 +20222,7 @@
       "lat": -27.55,
       "lon": -59.666666666666664,
       "elevation": 64,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20244,7 +20244,7 @@
       "lat": -28.65694444444444,
       "lon": -58.27027777777778,
       "elevation": 68,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20266,7 +20266,7 @@
       "lat": -35.63333333333333,
       "lon": -63.5,
       "elevation": 115,
-      "province": null,
+      "province": "La Pampa",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20288,7 +20288,7 @@
       "lat": -35.968611111111116,
       "lon": -63.125,
       "elevation": 99,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20310,7 +20310,7 @@
       "lat": -27.935555555555556,
       "lon": -57.01861111111111,
       "elevation": 67,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20332,7 +20332,7 @@
       "lat": -27.772499999999997,
       "lon": -59.61833333333333,
       "elevation": 65,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20354,7 +20354,7 @@
       "lat": -27.022777777777776,
       "lon": -62.05777777777777,
       "elevation": 150,
-      "province": "LA",
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20376,7 +20376,7 @@
       "lat": -28.574444444444445,
       "lon": -60.2625,
       "elevation": 60,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20398,7 +20398,7 @@
       "lat": -28.689166666666665,
       "lon": -61.82805555555556,
       "elevation": 85,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20420,7 +20420,7 @@
       "lat": -33.56777777777778,
       "lon": -62.672777777777775,
       "elevation": 127,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20442,7 +20442,7 @@
       "lat": -26.813333333333333,
       "lon": -59.53861111111111,
       "elevation": 78,
-      "province": null,
+      "province": "Chaco",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20464,7 +20464,7 @@
       "lat": -36.45138888888889,
       "lon": -62.268055555555556,
       "elevation": 112,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20486,7 +20486,7 @@
       "lat": -26.316666666666666,
       "lon": -59.333333333333336,
       "elevation": 76,
-      "province": null,
+      "province": "Chaco",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20530,7 +20530,7 @@
       "lat": -38.31472222222222,
       "lon": -59.05833333333333,
       "elevation": 90,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20552,7 +20552,7 @@
       "lat": -26.383333333333333,
       "lon": -62.36666666666667,
       "elevation": 150,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20574,7 +20574,7 @@
       "lat": -33.31305555555555,
       "lon": -66.70333333333333,
       "elevation": 507,
-      "province": null,
+      "province": "San Luis",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20596,7 +20596,7 @@
       "lat": -28.35,
       "lon": -57.7,
       "elevation": 60,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20618,7 +20618,7 @@
       "lat": -31.04388888888889,
       "lon": -61.983333333333334,
       "elevation": 100,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20640,7 +20640,7 @@
       "lat": -33.61888888888889,
       "lon": -65.57638888888889,
       "elevation": 565,
-      "province": null,
+      "province": "San Luis",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20684,7 +20684,7 @@
       "lat": -29.904166666666665,
       "lon": -60.835,
       "elevation": 62,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20706,7 +20706,7 @@
       "lat": -33.606944444444444,
       "lon": -69.36805555555554,
       "elevation": 1662,
-      "province": null,
+      "province": "Mendoza",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20728,7 +20728,7 @@
       "lat": -34.53333333333333,
       "lon": -59.583333333333336,
       "elevation": 50,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20750,7 +20750,7 @@
       "lat": -28.761944444444445,
       "lon": -58.016666666666666,
       "elevation": 57,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20772,7 +20772,7 @@
       "lat": -28.4625,
       "lon": -66.29916666666666,
       "elevation": 809,
-      "province": null,
+      "province": "La Rioja",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20794,7 +20794,7 @@
       "lat": -30.5575,
       "lon": -59.509166666666665,
       "elevation": 29,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20816,7 +20816,7 @@
       "lat": -31.869722222222222,
       "lon": -58.26111111111111,
       "elevation": 39,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20838,7 +20838,7 @@
       "lat": -28.942222222222224,
       "lon": -61.715,
       "elevation": 84,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20860,7 +20860,7 @@
       "lat": -28.473888888888887,
       "lon": -57.605555555555554,
       "elevation": 65,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20882,7 +20882,7 @@
       "lat": -32.20944444444445,
       "lon": -65.81,
       "elevation": 475,
-      "province": null,
+      "province": "San Luis",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20904,7 +20904,7 @@
       "lat": -36.909166666666664,
       "lon": -64.63527777777779,
       "elevation": 260,
-      "province": null,
+      "province": "La Pampa",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20926,7 +20926,7 @@
       "lat": -31.816666666666666,
       "lon": -59.03333333333333,
       "elevation": 61,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20948,7 +20948,7 @@
       "lat": -31.175555555555558,
       "lon": -59.92861111111111,
       "elevation": 10,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20970,7 +20970,7 @@
       "lat": -37.416666666666664,
       "lon": -58.166666666666664,
       "elevation": 55,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -20992,7 +20992,7 @@
       "lat": -35.31722222222223,
       "lon": -61.365833333333335,
       "elevation": 86,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21014,7 +21014,7 @@
       "lat": -32.85333333333333,
       "lon": -59.443888888888885,
       "elevation": 29,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21036,7 +21036,7 @@
       "lat": -34.721111111111114,
       "lon": -59.655833333333334,
       "elevation": 54,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21058,7 +21058,7 @@
       "lat": -38.21027777777778,
       "lon": -62.01166666666666,
       "elevation": 358,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21080,7 +21080,7 @@
       "lat": -37.81527777777777,
       "lon": -57.74305555555556,
       "elevation": 30,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21102,7 +21102,7 @@
       "lat": -29.703055555555554,
       "lon": -60.15472222222222,
       "elevation": 59,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21124,7 +21124,7 @@
       "lat": -26.4575,
       "lon": -61.81472222222222,
       "elevation": 183,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21146,7 +21146,7 @@
       "lat": -28.21944444444444,
       "lon": -59.958333333333336,
       "elevation": 56,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21168,7 +21168,7 @@
       "lat": -29.825833333333332,
       "lon": -58.411944444444444,
       "elevation": 72,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21190,7 +21190,7 @@
       "lat": -26.019166666666667,
       "lon": -61.25222222222222,
       "elevation": 138,
-      "province": null,
+      "province": "Chaco",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21212,7 +21212,7 @@
       "lat": -35.580000000000005,
       "lon": -62.48166666666667,
       "elevation": 73,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21234,7 +21234,7 @@
       "lat": -35.70194444444445,
       "lon": -67.26611111111112,
       "elevation": 364,
-      "province": "SAN",
+      "province": "San Luis",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21256,7 +21256,7 @@
       "lat": -28.355,
       "lon": -58.45805555555556,
       "elevation": 80,
-      "province": "SANTA",
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21278,7 +21278,7 @@
       "lat": -32.79111111111111,
       "lon": -61.488055555555555,
       "elevation": 80,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21300,7 +21300,7 @@
       "lat": -27.095,
       "lon": -64.4525,
       "elevation": 274,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21322,7 +21322,7 @@
       "lat": -38.1225,
       "lon": -61.45055555555556,
       "elevation": 301,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21344,7 +21344,7 @@
       "lat": -34.51111111111111,
       "lon": -62.33444444444444,
       "elevation": 107,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21366,7 +21366,7 @@
       "lat": -30.076666666666668,
       "lon": -58.69499999999999,
       "elevation": 64,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21388,7 +21388,7 @@
       "lat": -25.461111111111112,
       "lon": -59.471111111111114,
       "elevation": 99,
-      "province": null,
+      "province": "Chaco",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21410,7 +21410,7 @@
       "lat": -37.4475,
       "lon": -59.12111111111111,
       "elevation": 280,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21432,7 +21432,7 @@
       "lat": -34.066111111111105,
       "lon": -61.51277777777778,
       "elevation": 88,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21454,7 +21454,7 @@
       "lat": -28.644166666666667,
       "lon": -62.26916666666666,
       "elevation": 75,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21476,7 +21476,7 @@
       "lat": -33.15222222222222,
       "lon": -68.31611111111111,
       "elevation": 626,
-      "province": null,
+      "province": "Mendoza",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21498,7 +21498,7 @@
       "lat": -37.93333333333333,
       "lon": -59.18333333333333,
       "elevation": 143,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21520,7 +21520,7 @@
       "lat": -35.27833333333333,
       "lon": -63.06055555555555,
       "elevation": 112,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21542,7 +21542,7 @@
       "lat": -32.91694444444444,
       "lon": -62.43333333333333,
       "elevation": 108,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21564,7 +21564,7 @@
       "lat": -29.733055555555556,
       "lon": -59.21611111111111,
       "elevation": 40,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21586,7 +21586,7 @@
       "lat": -35.780833333333334,
       "lon": -65.07138888888889,
       "elevation": 293,
-      "province": null,
+      "province": "San Luis",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21608,7 +21608,7 @@
       "lat": -35.36638888888889,
       "lon": -65.91888888888889,
       "elevation": 300,
-      "province": null,
+      "province": "San Luis",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21630,7 +21630,7 @@
       "lat": -37.12694444444445,
       "lon": -64.75555555555556,
       "elevation": 287,
-      "province": null,
+      "province": "La Pampa",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21652,7 +21652,7 @@
       "lat": -36.978611111111114,
       "lon": -62.437777777777775,
       "elevation": 102,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21674,7 +21674,7 @@
       "lat": -34.904444444444444,
       "lon": -59.337500000000006,
       "elevation": 37,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21696,7 +21696,7 @@
       "lat": -28.21333333333333,
       "lon": -59.92666666666666,
       "elevation": 59,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21718,7 +21718,7 @@
       "lat": -39.658055555555556,
       "lon": -62.17944444444444,
       "elevation": 16,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21740,7 +21740,7 @@
       "lat": -38.04833333333333,
       "lon": -58.344166666666666,
       "elevation": 100,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21762,7 +21762,7 @@
       "lat": -34.61472222222223,
       "lon": -62.089444444444446,
       "elevation": 103,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21784,7 +21784,7 @@
       "lat": -39.84277777777778,
       "lon": -63.058611111111105,
       "elevation": 39,
-      "province": null,
+      "province": "Río Negro",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21806,7 +21806,7 @@
       "lat": -31.279166666666665,
       "lon": -60.01111111111111,
       "elevation": 65,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21828,7 +21828,7 @@
       "lat": -37.565555555555555,
       "lon": -64.09222222222222,
       "elevation": 164,
-      "province": null,
+      "province": "La Pampa",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21850,7 +21850,7 @@
       "lat": -35.11361111111111,
       "lon": -63.60055555555556,
       "elevation": 128,
-      "province": null,
+      "province": "La Pampa",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21872,7 +21872,7 @@
       "lat": -28.93277777777778,
       "lon": -62.79361111111111,
       "elevation": 80,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21894,7 +21894,7 @@
       "lat": -28.453333333333333,
       "lon": -59.98166666666667,
       "elevation": 58,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21916,7 +21916,7 @@
       "lat": -37.00611111111111,
       "lon": -64.45305555555557,
       "elevation": 165,
-      "province": null,
+      "province": "La Pampa",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21938,7 +21938,7 @@
       "lat": -36.916666666666664,
       "lon": -63.233333333333334,
       "elevation": 130,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -21982,7 +21982,7 @@
       "lat": -37.02777777777778,
       "lon": -62.36666666666667,
       "elevation": 121,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22004,7 +22004,7 @@
       "lat": -37.02777777777778,
       "lon": -62.374722222222225,
       "elevation": 118,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22026,7 +22026,7 @@
       "lat": -35.49527777777778,
       "lon": -57.731944444444444,
       "elevation": 8,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22048,7 +22048,7 @@
       "lat": -32.675,
       "lon": -65.06194444444444,
       "elevation": 855,
-      "province": null,
+      "province": "San Luis",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22070,7 +22070,7 @@
       "lat": -36.83972222222222,
       "lon": -65.54472222222222,
       "elevation": 403,
-      "province": null,
+      "province": "La Pampa",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22092,7 +22092,7 @@
       "lat": -34.33166666666667,
       "lon": -63.988055555555555,
       "elevation": 167,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22114,7 +22114,7 @@
       "lat": -37.62833333333333,
       "lon": -58.986111111111114,
       "elevation": 225,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22136,7 +22136,7 @@
       "lat": -26.47138888888889,
       "lon": -65.20055555555555,
       "elevation": 674,
-      "province": null,
+      "province": "Tucumán",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22158,7 +22158,7 @@
       "lat": -31.145,
       "lon": -58.24444444444445,
       "elevation": 60,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22180,7 +22180,7 @@
       "lat": -37.12916666666667,
       "lon": -59.68805555555555,
       "elevation": 217,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22202,7 +22202,7 @@
       "lat": -37.80694444444444,
       "lon": -60.384166666666665,
       "elevation": 217,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22224,7 +22224,7 @@
       "lat": -30.80527777777778,
       "lon": -61.831388888888895,
       "elevation": 100,
-      "province": "ENTRE",
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22246,7 +22246,7 @@
       "lat": -43.86027777777778,
       "lon": -68.30916666666667,
       "elevation": 243,
-      "province": null,
+      "province": "Chubut",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22268,7 +22268,7 @@
       "lat": -32.48416666666667,
       "lon": -59.437777777777775,
       "elevation": 81,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22290,7 +22290,7 @@
       "lat": -44.55972222222222,
       "lon": -70.86527777777778,
       "elevation": 772,
-      "province": null,
+      "province": "Chubut",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22312,7 +22312,7 @@
       "lat": -29.7575,
       "lon": -60.73111111111111,
       "elevation": 53,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22334,7 +22334,7 @@
       "lat": -33.97166666666667,
       "lon": -62.71416666666667,
       "elevation": 123,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22356,7 +22356,7 @@
       "lat": -32.36972222222222,
       "lon": -59.48083333333334,
       "elevation": 84,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22378,7 +22378,7 @@
       "lat": -36.33083333333334,
       "lon": -62.08027777777778,
       "elevation": 103,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22400,7 +22400,7 @@
       "lat": -33.1075,
       "lon": -63.198055555555555,
       "elevation": 114,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22422,7 +22422,7 @@
       "lat": -35.17388888888889,
       "lon": -64.12916666666666,
       "elevation": 156,
-      "province": null,
+      "province": "La Pampa",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22444,7 +22444,7 @@
       "lat": -28.351944444444445,
       "lon": -61.60611111111111,
       "elevation": 76,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22466,7 +22466,7 @@
       "lat": -27.63361111111111,
       "lon": -67.63277777777778,
       "elevation": 1680,
-      "province": null,
+      "province": "Catamarca",
       "municipality": null,
       "surface": "ASFALTO",
       "runways": [
@@ -22488,7 +22488,7 @@
       "lat": -25.09,
       "lon": -64.1763888888889,
       "elevation": 390,
-      "province": null,
+      "province": "Salta",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22510,7 +22510,7 @@
       "lat": -24.950555555555553,
       "lon": -64.86222222222221,
       "elevation": 910,
-      "province": null,
+      "province": "Salta",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22532,7 +22532,7 @@
       "lat": -24.594444444444445,
       "lon": -63.68277777777777,
       "elevation": 300,
-      "province": "ENTRE",
+      "province": "Salta",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22554,7 +22554,7 @@
       "lat": -24.91638888888889,
       "lon": -63.99055555555556,
       "elevation": 416,
-      "province": null,
+      "province": "Salta",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22576,7 +22576,7 @@
       "lat": -25.00027777777778,
       "lon": -64.3475,
       "elevation": 528,
-      "province": null,
+      "province": "Salta",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22598,7 +22598,7 @@
       "lat": -23.386666666666667,
       "lon": -64.17277777777778,
       "elevation": 303,
-      "province": null,
+      "province": "Jujuy",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22620,7 +22620,7 @@
       "lat": -24.274444444444445,
       "lon": -63.70194444444445,
       "elevation": 272,
-      "province": null,
+      "province": "Salta",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22642,7 +22642,7 @@
       "lat": -24.29277777777778,
       "lon": -64.69222222222223,
       "elevation": 533,
-      "province": null,
+      "province": "Jujuy",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22664,7 +22664,7 @@
       "lat": -25.086666666666666,
       "lon": -64.2275,
       "elevation": 428,
-      "province": null,
+      "province": "Salta",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22686,7 +22686,7 @@
       "lat": -34.39055555555556,
       "lon": -61.452222222222225,
       "elevation": 71,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22708,7 +22708,7 @@
       "lat": -33.38333333333333,
       "lon": -63.33166666666667,
       "elevation": 145,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22730,7 +22730,7 @@
       "lat": -31.22583333333333,
       "lon": -62.214444444444446,
       "elevation": 109,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22752,7 +22752,7 @@
       "lat": -30.983333333333334,
       "lon": -59.766666666666666,
       "elevation": 60,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22774,7 +22774,7 @@
       "lat": -33.58527777777778,
       "lon": -59.8325,
       "elevation": 35,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22796,7 +22796,7 @@
       "lat": -28.90833333333333,
       "lon": -60.17222222222222,
       "elevation": 64,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22818,7 +22818,7 @@
       "lat": -42.27638888888889,
       "lon": -69.22805555555556,
       "elevation": 1075,
-      "province": null,
+      "province": "Chubut",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22862,7 +22862,7 @@
       "lat": -31.894444444444446,
       "lon": -61.13944444444444,
       "elevation": 43,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22884,7 +22884,7 @@
       "lat": -26.74388888888889,
       "lon": -64.64916666666667,
       "elevation": 384,
-      "province": null,
+      "province": "Tucumán",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22906,7 +22906,7 @@
       "lat": -26.516666666666666,
       "lon": -59.35,
       "elevation": 74,
-      "province": null,
+      "province": "Chaco",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22928,7 +22928,7 @@
       "lat": -33.92166666666667,
       "lon": -59.873333333333335,
       "elevation": 41,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22950,7 +22950,7 @@
       "lat": -37.591944444444444,
       "lon": -60.15888888888889,
       "elevation": 205,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22972,7 +22972,7 @@
       "lat": -38.44138888888889,
       "lon": -61.9825,
       "elevation": 170,
-      "province": "LA",
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -22994,7 +22994,7 @@
       "lat": -27.611666666666668,
       "lon": -61.31888888888889,
       "elevation": 861,
-      "province": null,
+      "province": "Chaco",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23016,7 +23016,7 @@
       "lat": -23.266666666666666,
       "lon": -64.2,
       "elevation": 300,
-      "province": null,
+      "province": "Jujuy",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23038,7 +23038,7 @@
       "lat": -32.82555555555556,
       "lon": -61.55138888888889,
       "elevation": 121,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23060,7 +23060,7 @@
       "lat": -34.781666666666666,
       "lon": -63.794999999999995,
       "elevation": 138,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23082,7 +23082,7 @@
       "lat": -30.233333333333334,
       "lon": -68.73333333333333,
       "elevation": 1150,
-      "province": null,
+      "province": "San Juan",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23104,7 +23104,7 @@
       "lat": -34.43333333333333,
       "lon": -59.483333333333334,
       "elevation": 51,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23126,7 +23126,7 @@
       "lat": -38.90416666666667,
       "lon": -64.09194444444444,
       "elevation": 92,
-      "province": "LA",
+      "province": "La Pampa",
       "municipality": null,
       "surface": "ASF",
       "runways": [
@@ -23148,7 +23148,7 @@
       "lat": -38.20611111111111,
       "lon": -65.24777777777778,
       "elevation": 302,
-      "province": null,
+      "province": "La Pampa",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23170,7 +23170,7 @@
       "lat": -28.308611111111112,
       "lon": -59.85194444444445,
       "elevation": 60,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23192,7 +23192,7 @@
       "lat": -36.916666666666664,
       "lon": -58.61666666666667,
       "elevation": 66,
-      "province": "RIO",
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23214,7 +23214,7 @@
       "lat": -32.135555555555555,
       "lon": -61.894444444444446,
       "elevation": 109,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23236,7 +23236,7 @@
       "lat": -28.72861111111111,
       "lon": -61.57611111111112,
       "elevation": 74,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23258,7 +23258,7 @@
       "lat": -31.566666666666666,
       "lon": -59.35,
       "elevation": 66,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23280,7 +23280,7 @@
       "lat": -31.010277777777777,
       "lon": -59.33972222222222,
       "elevation": 57,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23302,7 +23302,7 @@
       "lat": -30.64361111111111,
       "lon": -64.21638888888889,
       "elevation": 708,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23324,7 +23324,7 @@
       "lat": -34.3325,
       "lon": -59.28777777777778,
       "elevation": 32,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23346,7 +23346,7 @@
       "lat": -24.497222222222224,
       "lon": -63.689722222222215,
       "elevation": 296,
-      "province": null,
+      "province": "Salta",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23368,7 +23368,7 @@
       "lat": -28.962777777777777,
       "lon": -60.74444444444445,
       "elevation": 64,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23390,7 +23390,7 @@
       "lat": -34.79888888888889,
       "lon": -62.34916666666667,
       "elevation": 107,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23412,7 +23412,7 @@
       "lat": -32.38305555555556,
       "lon": -60.25694444444444,
       "elevation": 69,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23434,7 +23434,7 @@
       "lat": -23.79388888888889,
       "lon": -64.11611111111111,
       "elevation": 394,
-      "province": null,
+      "province": "Salta",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23456,7 +23456,7 @@
       "lat": -33.50861111111111,
       "lon": -62.92583333333333,
       "elevation": 140,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23478,7 +23478,7 @@
       "lat": -33.605555555555554,
       "lon": -63.77027777777778,
       "elevation": 168,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23500,7 +23500,7 @@
       "lat": -36.34583333333334,
       "lon": -67.98388888888888,
       "elevation": 812,
-      "province": null,
+      "province": "La Pampa",
       "municipality": null,
       "surface": "ASF",
       "runways": [
@@ -23522,7 +23522,7 @@
       "lat": -36.05472222222222,
       "lon": -62.03444444444444,
       "elevation": 114,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23544,7 +23544,7 @@
       "lat": -33.61361111111111,
       "lon": -60.32638888888889,
       "elevation": 50,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23566,7 +23566,7 @@
       "lat": -34.79277777777778,
       "lon": -59.59777777777778,
       "elevation": 45,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23588,7 +23588,7 @@
       "lat": -29.34583333333333,
       "lon": -59.87,
       "elevation": 59,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23610,7 +23610,7 @@
       "lat": -32.112500000000004,
       "lon": -58.91277777777778,
       "elevation": 60,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23632,7 +23632,7 @@
       "lat": -28.73888888888889,
       "lon": -59.439722222222215,
       "elevation": 42,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23654,7 +23654,7 @@
       "lat": -30.870833333333334,
       "lon": -64.98861111111111,
       "elevation": 546,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23676,7 +23676,7 @@
       "lat": -27.648333333333333,
       "lon": -61.74888888888889,
       "elevation": 101,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23698,7 +23698,7 @@
       "lat": -31.93277777777778,
       "lon": -61.564166666666665,
       "elevation": 66,
-      "province": "ENTRE",
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23720,7 +23720,7 @@
       "lat": -32.705555555555556,
       "lon": -61.3,
       "elevation": 78,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23742,7 +23742,7 @@
       "lat": -29.32777777777778,
       "lon": -62.78611111111111,
       "elevation": 292,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23764,7 +23764,7 @@
       "lat": -30.96611111111111,
       "lon": -63.30583333333333,
       "elevation": 128,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23786,7 +23786,7 @@
       "lat": -33.376666666666665,
       "lon": -63.575,
       "elevation": 180,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23808,7 +23808,7 @@
       "lat": -33.98444444444444,
       "lon": -59.10944444444445,
       "elevation": 24,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23830,7 +23830,7 @@
       "lat": -34.45472222222222,
       "lon": -63.73027777777778,
       "elevation": 151,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23852,7 +23852,7 @@
       "lat": -42.46416666666667,
       "lon": -71.6,
       "elevation": 546,
-      "province": null,
+      "province": "Chubut",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23874,7 +23874,7 @@
       "lat": -37.46666666666667,
       "lon": -57.36666666666667,
       "elevation": 10,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23896,7 +23896,7 @@
       "lat": -28.586944444444445,
       "lon": -60.433055555555555,
       "elevation": 60,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23918,7 +23918,7 @@
       "lat": -35.16416666666667,
       "lon": -69.88805555555557,
       "elevation": 780,
-      "province": null,
+      "province": "Mendoza",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23940,7 +23940,7 @@
       "lat": -38.237500000000004,
       "lon": -61.52638888888889,
       "elevation": 327,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23962,7 +23962,7 @@
       "lat": -30.439166666666665,
       "lon": -63.58527777777778,
       "elevation": 182,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -23984,7 +23984,7 @@
       "lat": -37.03333333333333,
       "lon": -63.31666666666667,
       "elevation": 137,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24006,7 +24006,7 @@
       "lat": -30,
       "lon": -63.75,
       "elevation": 417,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24028,7 +24028,7 @@
       "lat": -25.146666666666665,
       "lon": -60.54833333333333,
       "elevation": 124,
-      "province": null,
+      "province": "Chaco",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24050,7 +24050,7 @@
       "lat": -29.431944444444447,
       "lon": -60.36055555555556,
       "elevation": 53,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24072,7 +24072,7 @@
       "lat": -33.5425,
       "lon": -60.39611111111111,
       "elevation": 46,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24094,7 +24094,7 @@
       "lat": -24.716666666666665,
       "lon": -60.53333333333333,
       "elevation": 130,
-      "province": null,
+      "province": "Chaco",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24116,7 +24116,7 @@
       "lat": -33.96611111111111,
       "lon": -63.38361111111111,
       "elevation": 138,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24138,7 +24138,7 @@
       "lat": -30.109722222222224,
       "lon": -62.84111111111111,
       "elevation": 104,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24160,7 +24160,7 @@
       "lat": -32.58027777777778,
       "lon": -64.12194444444444,
       "elevation": 455,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24182,7 +24182,7 @@
       "lat": -28.35527777777778,
       "lon": -65.06722222222221,
       "elevation": 440,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24204,7 +24204,7 @@
       "lat": -27.743055555555557,
       "lon": -58.775,
       "elevation": 59,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24226,7 +24226,7 @@
       "lat": -27.835555555555555,
       "lon": -59.80277777777778,
       "elevation": 59,
-      "province": null,
+      "province": "Chaco",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24248,7 +24248,7 @@
       "lat": -34.045833333333334,
       "lon": -63.919444444444444,
       "elevation": 172,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24270,7 +24270,7 @@
       "lat": -31.183333333333334,
       "lon": -60.715833333333336,
       "elevation": 15,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24292,7 +24292,7 @@
       "lat": -54.34027777777778,
       "lon": -67.95916666666668,
       "elevation": 209,
-      "province": null,
+      "province": "Región de Magallanes y de la Antártica Chilena",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24314,7 +24314,7 @@
       "lat": -24.654166666666665,
       "lon": -64.16250000000001,
       "elevation": 455,
-      "province": null,
+      "province": "Salta",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24336,7 +24336,7 @@
       "lat": -26.648888888888887,
       "lon": -59.230555555555554,
       "elevation": 90,
-      "province": null,
+      "province": "Chaco",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24358,7 +24358,7 @@
       "lat": -26.64388888888889,
       "lon": -61.45583333333334,
       "elevation": 129,
-      "province": null,
+      "province": "Chaco",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24380,7 +24380,7 @@
       "lat": -34.60055555555556,
       "lon": -64.6,
       "elevation": 150,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24402,7 +24402,7 @@
       "lat": -33.69166666666666,
       "lon": -62.45138888888889,
       "elevation": 128,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24424,7 +24424,7 @@
       "lat": -26.23222222222222,
       "lon": -62.02305555555555,
       "elevation": 190,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24446,7 +24446,7 @@
       "lat": -27.035833333333336,
       "lon": -65.15722222222223,
       "elevation": 430,
-      "province": null,
+      "province": "Tucumán",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24468,7 +24468,7 @@
       "lat": -34.515277777777776,
       "lon": -63.94638888888888,
       "elevation": 155,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24490,7 +24490,7 @@
       "lat": -26.31861111111111,
       "lon": -60.66888888888889,
       "elevation": 781,
-      "province": null,
+      "province": "Chaco",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24512,7 +24512,7 @@
       "lat": -31.745,
       "lon": -70.29444444444444,
       "elevation": 3143,
-      "province": null,
+      "province": "San Juan",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24534,7 +24534,7 @@
       "lat": -34.99583333333334,
       "lon": -61.73166666666667,
       "elevation": 96,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24556,7 +24556,7 @@
       "lat": -30.93111111111111,
       "lon": -62.66916666666666,
       "elevation": 80,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24578,7 +24578,7 @@
       "lat": -33.663333333333334,
       "lon": -62.425555555555555,
       "elevation": 124,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24600,7 +24600,7 @@
       "lat": -34.98166666666667,
       "lon": -61.82277777777778,
       "elevation": 98,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24622,7 +24622,7 @@
       "lat": -25.778888888888886,
       "lon": -62.8275,
       "elevation": 223,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "ASF",
       "runways": [
@@ -24644,7 +24644,7 @@
       "lat": -46.556666666666665,
       "lon": -71.61194444444443,
       "elevation": 284,
-      "province": null,
+      "province": "Santa Cruz",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24666,7 +24666,7 @@
       "lat": -39.26611111111111,
       "lon": -68.79916666666666,
       "elevation": 413,
-      "province": null,
+      "province": "Neuquén",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24688,7 +24688,7 @@
       "lat": -32.45277777777778,
       "lon": -64.38583333333334,
       "elevation": 632,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24710,7 +24710,7 @@
       "lat": -36.05,
       "lon": -63.03333333333333,
       "elevation": 98,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24732,7 +24732,7 @@
       "lat": -25.54416666666667,
       "lon": -59.19833333333333,
       "elevation": 94,
-      "province": null,
+      "province": "Chaco",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24754,7 +24754,7 @@
       "lat": -32.5375,
       "lon": -60.858333333333334,
       "elevation": 24,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24776,7 +24776,7 @@
       "lat": -34.88333333333333,
       "lon": -60.53333333333333,
       "elevation": 61,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24798,7 +24798,7 @@
       "lat": -31.12361111111111,
       "lon": -61.49611111111111,
       "elevation": 116,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24820,7 +24820,7 @@
       "lat": -25.978888888888886,
       "lon": -64.09305555555555,
       "elevation": 300,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24842,7 +24842,7 @@
       "lat": -42.9,
       "lon": -71.6,
       "elevation": 535,
-      "province": null,
+      "province": "Chubut",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24864,7 +24864,7 @@
       "lat": -31.700277777777778,
       "lon": -60.10166666666667,
       "elevation": 50,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24886,7 +24886,7 @@
       "lat": -23.338055555555556,
       "lon": -64.2388888888889,
       "elevation": 306,
-      "province": null,
+      "province": "Jujuy",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24908,7 +24908,7 @@
       "lat": -46.80416666666667,
       "lon": -67.95,
       "elevation": 285,
-      "province": null,
+      "province": "Santa Cruz",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24930,7 +24930,7 @@
       "lat": -26.456944444444442,
       "lon": -62.853611111111114,
       "elevation": 201,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24952,7 +24952,7 @@
       "lat": -28.736944444444447,
       "lon": -58.07638888888889,
       "elevation": 83,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24974,7 +24974,7 @@
       "lat": -27.843333333333334,
       "lon": -61.163888888888884,
       "elevation": 74,
-      "province": null,
+      "province": "Chaco",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -24996,7 +24996,7 @@
       "lat": -41.02638888888889,
       "lon": -71.125,
       "elevation": 771,
-      "province": null,
+      "province": "Río Negro",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25018,7 +25018,7 @@
       "lat": -31.790555555555557,
       "lon": -64.53861111111111,
       "elevation": 759,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25040,7 +25040,7 @@
       "lat": -31.56722222222222,
       "lon": -62.25833333333333,
       "elevation": 109,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25062,7 +25062,7 @@
       "lat": -27.6575,
       "lon": -62.404444444444444,
       "elevation": 110,
-      "province": "SAN",
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25084,7 +25084,7 @@
       "lat": -33.749722222222225,
       "lon": -63.10888888888889,
       "elevation": 124,
-      "province": "SAN",
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25106,7 +25106,7 @@
       "lat": -25.79277777777778,
       "lon": -64.30638888888889,
       "elevation": 450,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25128,7 +25128,7 @@
       "lat": -33.015277777777776,
       "lon": -58.48861111111111,
       "elevation": 2,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25150,7 +25150,7 @@
       "lat": -28.46722222222222,
       "lon": -58.248333333333335,
       "elevation": 55,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25172,7 +25172,7 @@
       "lat": -28.756944444444443,
       "lon": -58.03861111111111,
       "elevation": 104,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25194,7 +25194,7 @@
       "lat": -44.86416666666667,
       "lon": -71.665,
       "elevation": 697,
-      "province": null,
+      "province": "Chubut",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25216,7 +25216,7 @@
       "lat": -29.486944444444447,
       "lon": -59.76611111111111,
       "elevation": 43,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25238,7 +25238,7 @@
       "lat": -34.541666666666664,
       "lon": -63.94166666666666,
       "elevation": 153,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25260,7 +25260,7 @@
       "lat": -26.031388888888888,
       "lon": -61.07055555555556,
       "elevation": 130,
-      "province": null,
+      "province": "Chaco",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25282,7 +25282,7 @@
       "lat": -24.94361111111111,
       "lon": -63.86277777777778,
       "elevation": 357,
-      "province": null,
+      "province": "Salta",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25304,7 +25304,7 @@
       "lat": -27.608611111111113,
       "lon": -61.95138888888889,
       "elevation": 150,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25326,7 +25326,7 @@
       "lat": -33.38333333333333,
       "lon": -64.70194444444445,
       "elevation": 431,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25348,7 +25348,7 @@
       "lat": -32.03722222222222,
       "lon": -64.36166666666666,
       "elevation": 633,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25370,7 +25370,7 @@
       "lat": -34.59444444444445,
       "lon": -64.57083333333333,
       "elevation": 225,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25392,7 +25392,7 @@
       "lat": -27.71527777777778,
       "lon": -57.265,
       "elevation": 77,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25414,7 +25414,7 @@
       "lat": -34.18888888888888,
       "lon": -59.50361111111111,
       "elevation": 46,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25436,7 +25436,7 @@
       "lat": -24.891944444444444,
       "lon": -63.474722222222226,
       "elevation": 280,
-      "province": null,
+      "province": "Salta",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25458,7 +25458,7 @@
       "lat": -35.17666666666666,
       "lon": -62.99638888888889,
       "elevation": 108,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25480,7 +25480,7 @@
       "lat": -29.764444444444443,
       "lon": -63.94222222222222,
       "elevation": 711,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25502,7 +25502,7 @@
       "lat": -23.97833333333333,
       "lon": -64.0025,
       "elevation": 392,
-      "province": "LA",
+      "province": "Salta",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25524,7 +25524,7 @@
       "lat": -30.699722222222224,
       "lon": -60.100833333333334,
       "elevation": 21,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25546,7 +25546,7 @@
       "lat": -28.484444444444446,
       "lon": -57.93833333333333,
       "elevation": 88,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25568,7 +25568,7 @@
       "lat": -30.388333333333332,
       "lon": -58.78,
       "elevation": 67,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25590,7 +25590,7 @@
       "lat": -32.34666666666667,
       "lon": -63.47555555555556,
       "elevation": 138,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25612,7 +25612,7 @@
       "lat": -28.592222222222222,
       "lon": -58.37972222222222,
       "elevation": 59,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25634,7 +25634,7 @@
       "lat": -34.60194444444445,
       "lon": -59.257777777777775,
       "elevation": 24,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25656,7 +25656,7 @@
       "lat": -35.36138888888889,
       "lon": -60.46638888888889,
       "elevation": 57,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25678,7 +25678,7 @@
       "lat": -34.909166666666664,
       "lon": -63.63722222222222,
       "elevation": 130,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25700,7 +25700,7 @@
       "lat": -33.20027777777778,
       "lon": -62.50138888888889,
       "elevation": 100,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25722,7 +25722,7 @@
       "lat": -28.85638888888889,
       "lon": -58.58361111111111,
       "elevation": 54,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25744,7 +25744,7 @@
       "lat": -32.07694444444445,
       "lon": -64.58777777777777,
       "elevation": 650,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25766,7 +25766,7 @@
       "lat": -34.965,
       "lon": -65.455,
       "elevation": 338,
-      "province": null,
+      "province": "San Luis",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25788,7 +25788,7 @@
       "lat": -27.454722222222223,
       "lon": -61.49444444444445,
       "elevation": 112,
-      "province": null,
+      "province": "Chaco",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25810,7 +25810,7 @@
       "lat": -28.88361111111111,
       "lon": -62.25083333333333,
       "elevation": 32,
-      "province": "BUENOS",
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25832,7 +25832,7 @@
       "lat": -24.447777777777777,
       "lon": -61.69222222222222,
       "elevation": 176,
-      "province": null,
+      "province": "Chaco",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25854,7 +25854,7 @@
       "lat": -28.72583333333333,
       "lon": -61.88055555555555,
       "elevation": 85,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25876,7 +25876,7 @@
       "lat": -25.622222222222224,
       "lon": -63.23722222222222,
       "elevation": 258,
-      "province": null,
+      "province": "Chaco",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25898,7 +25898,7 @@
       "lat": -29.03888888888889,
       "lon": -64.93583333333333,
       "elevation": 260,
-      "province": null,
+      "province": "Santiago del Estero",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25920,7 +25920,7 @@
       "lat": -28.34611111111111,
       "lon": -66.90583333333333,
       "elevation": 922,
-      "province": null,
+      "province": "La Rioja",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25942,7 +25942,7 @@
       "lat": -42.43833333333333,
       "lon": -66.95833333333334,
       "elevation": 380,
-      "province": null,
+      "province": "Chubut",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25964,7 +25964,7 @@
       "lat": -32.330555555555556,
       "lon": -63.33416666666667,
       "elevation": 210,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -25986,7 +25986,7 @@
       "lat": -38.41166666666666,
       "lon": -68.62416666666665,
       "elevation": 394,
-      "province": "SANTA",
+      "province": "Neuquén",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26008,7 +26008,7 @@
       "lat": -28.704722222222223,
       "lon": -59.661944444444444,
       "elevation": 54,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26030,7 +26030,7 @@
       "lat": -33.52583333333333,
       "lon": -67.95111111111112,
       "elevation": 600,
-      "province": null,
+      "province": "Mendoza",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26052,7 +26052,7 @@
       "lat": -33.28638888888889,
       "lon": -60.67305555555555,
       "elevation": 61,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26074,7 +26074,7 @@
       "lat": -32.516666666666666,
       "lon": -69.35,
       "elevation": 2029,
-      "province": null,
+      "province": "San Juan",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26096,7 +26096,7 @@
       "lat": -38.948611111111106,
       "lon": -61.12138888888889,
       "elevation": 10,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26118,7 +26118,7 @@
       "lat": -38.10472222222222,
       "lon": -67.20611111111111,
       "elevation": 331,
-      "province": "LA",
+      "province": "La Pampa",
       "municipality": null,
       "surface": "ASF",
       "runways": [
@@ -26140,7 +26140,7 @@
       "lat": -31.985,
       "lon": -65.65305555555557,
       "elevation": 411,
-      "province": null,
+      "province": "San Luis",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26162,7 +26162,7 @@
       "lat": -29.44388888888889,
       "lon": -56.82361111111111,
       "elevation": 66,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26184,7 +26184,7 @@
       "lat": -27.934166666666666,
       "lon": -65.39083333333333,
       "elevation": 395,
-      "province": null,
+      "province": "Tucumán",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26206,7 +26206,7 @@
       "lat": -28.866666666666667,
       "lon": -58.083333333333336,
       "elevation": 77,
-      "province": null,
+      "province": "Corrientes",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26228,7 +26228,7 @@
       "lat": -25.57,
       "lon": -66.39250000000001,
       "elevation": 1300,
-      "province": null,
+      "province": "Catamarca",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26250,7 +26250,7 @@
       "lat": -34.61055555555556,
       "lon": -64.99916666666667,
       "elevation": 275,
-      "province": null,
+      "province": "San Luis",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26272,7 +26272,7 @@
       "lat": -34.37638888888889,
       "lon": -58.665277777777774,
       "elevation": 3,
-      "province": "LA",
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26294,7 +26294,7 @@
       "lat": -38.39194444444444,
       "lon": -69.09583333333333,
       "elevation": 421,
-      "province": null,
+      "province": "Neuquén",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26316,7 +26316,7 @@
       "lat": -31.797222222222224,
       "lon": -64.59277777777777,
       "elevation": 895,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26338,7 +26338,7 @@
       "lat": -41.60944444444445,
       "lon": -71.63972222222223,
       "elevation": 468,
-      "province": null,
+      "province": "Río Negro",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26360,7 +26360,7 @@
       "lat": -31.8075,
       "lon": -64.58527777777778,
       "elevation": 525,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26382,7 +26382,7 @@
       "lat": -46.90833333333333,
       "lon": -70.09583333333333,
       "elevation": 736,
-      "province": null,
+      "province": "Santa Cruz",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26404,7 +26404,7 @@
       "lat": -46.706944444444446,
       "lon": -70.30972222222222,
       "elevation": 620,
-      "province": null,
+      "province": "Santa Cruz",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26426,7 +26426,7 @@
       "lat": -35.54944444444444,
       "lon": -57.98694444444445,
       "elevation": 12,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26448,7 +26448,7 @@
       "lat": -31.598333333333333,
       "lon": -64.5925,
       "elevation": 960,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26470,7 +26470,7 @@
       "lat": -31.66861111111111,
       "lon": -60.72083333333334,
       "elevation": 95,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26492,7 +26492,7 @@
       "lat": -22.36888888888889,
       "lon": -63.9925,
       "elevation": 1050,
-      "province": null,
+      "province": "Salta",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26536,7 +26536,7 @@
       "lat": -34.68138888888889,
       "lon": -58.749722222222225,
       "elevation": 15,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26558,7 +26558,7 @@
       "lat": -31.816666666666666,
       "lon": -64.55,
       "elevation": 775,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26580,7 +26580,7 @@
       "lat": -31.422222222222224,
       "lon": -64.45861111111111,
       "elevation": 765,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26602,7 +26602,7 @@
       "lat": -32.75861111111111,
       "lon": -69.96694444444445,
       "elevation": 3410,
-      "province": null,
+      "province": "Mendoza",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26624,7 +26624,7 @@
       "lat": -31.866666666666667,
       "lon": -64.74083333333333,
       "elevation": 1319,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26646,7 +26646,7 @@
       "lat": -31.151666666666664,
       "lon": -64.29694444444445,
       "elevation": 653,
-      "province": "SAN",
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26668,7 +26668,7 @@
       "lat": -27.858611111111113,
       "lon": -55.703611111111115,
       "elevation": 160,
-      "province": null,
+      "province": "Misiones",
       "municipality": null,
       "surface": "27136",
       "runways": [
@@ -26690,7 +26690,7 @@
       "lat": -34.875277777777775,
       "lon": -61.76444444444444,
       "elevation": 107,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "HORMIGON",
       "runways": [
@@ -26712,7 +26712,7 @@
       "lat": -35.27972222222222,
       "lon": -58.45916666666667,
       "elevation": 18,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26734,7 +26734,7 @@
       "lat": -34.513888888888886,
       "lon": -59.111666666666665,
       "elevation": 26,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26756,7 +26756,7 @@
       "lat": -34.3,
       "lon": -60.06666666666667,
       "elevation": 57,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26778,7 +26778,7 @@
       "lat": -24.74388888888889,
       "lon": -65.04527777777777,
       "elevation": 741,
-      "province": null,
+      "province": "Salta",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26800,7 +26800,7 @@
       "lat": -31.565833333333334,
       "lon": -68.61999999999999,
       "elevation": 701,
-      "province": null,
+      "province": "San Juan",
       "municipality": null,
       "surface": "HORMIGON",
       "runways": [
@@ -26822,7 +26822,7 @@
       "lat": -32.04527777777778,
       "lon": -65.02111111111111,
       "elevation": 950,
-      "province": null,
+      "province": "San Luis",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26844,7 +26844,7 @@
       "lat": -31.91583333333333,
       "lon": -63.690555555555555,
       "elevation": 273,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26866,7 +26866,7 @@
       "lat": -31.296666666666667,
       "lon": -64.45527777777778,
       "elevation": 800,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26888,7 +26888,7 @@
       "lat": -26.40361111111111,
       "lon": -54.59666666666667,
       "elevation": 200,
-      "province": null,
+      "province": "Misiones",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26910,7 +26910,7 @@
       "lat": -27.491666666666667,
       "lon": -55.14416666666666,
       "elevation": 200,
-      "province": null,
+      "province": "Misiones",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26932,7 +26932,7 @@
       "lat": -30.745833333333334,
       "lon": -57.98305555555556,
       "elevation": 58,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26954,7 +26954,7 @@
       "lat": -30.95,
       "lon": -64.28333333333333,
       "elevation": 753,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26976,7 +26976,7 @@
       "lat": -38.007222222222225,
       "lon": -57.53916666666667,
       "elevation": 2,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -26998,7 +26998,7 @@
       "lat": -31.609166666666667,
       "lon": -64.8761111111111,
       "elevation": 2159,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27020,7 +27020,7 @@
       "lat": -31.993333333333336,
       "lon": -64.55722222222222,
       "elevation": 840,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27042,7 +27042,7 @@
       "lat": -31.05666666666667,
       "lon": -64.48138888888889,
       "elevation": 1108,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27064,7 +27064,7 @@
       "lat": -31.729999999999997,
       "lon": -60.49638888888889,
       "elevation": 44,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27086,7 +27086,7 @@
       "lat": -31.81138888888889,
       "lon": -64.93055555555556,
       "elevation": 1035,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27108,7 +27108,7 @@
       "lat": -25.156666666666666,
       "lon": -65.42500000000001,
       "elevation": 1029,
-      "province": null,
+      "province": "Salta",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27130,7 +27130,7 @@
       "lat": -25.336944444444445,
       "lon": -64.40527777777778,
       "elevation": 519,
-      "province": null,
+      "province": "Salta",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27152,7 +27152,7 @@
       "lat": -33.216944444444444,
       "lon": -64.74361111111111,
       "elevation": 650,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27174,7 +27174,7 @@
       "lat": -31.835833333333333,
       "lon": -64.9786111111111,
       "elevation": 861,
-      "province": null,
+      "province": "San Luis",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27196,7 +27196,7 @@
       "lat": -31.797777777777778,
       "lon": -64.52361111111111,
       "elevation": 800,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27218,7 +27218,7 @@
       "lat": -25.60611111111111,
       "lon": -54.6325,
       "elevation": 230,
-      "province": null,
+      "province": "Misiones",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27240,7 +27240,7 @@
       "lat": -32.81111111111111,
       "lon": -69.94250000000001,
       "elevation": 2950,
-      "province": null,
+      "province": "Mendoza",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27262,7 +27262,7 @@
       "lat": -31.384444444444444,
       "lon": -64.48722222222223,
       "elevation": 653,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27284,7 +27284,7 @@
       "lat": -31.37527777777778,
       "lon": -64.49222222222222,
       "elevation": 703,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27306,7 +27306,7 @@
       "lat": -32.63777777777778,
       "lon": -70.0213888888889,
       "elevation": 5560,
-      "province": null,
+      "province": "Mendoza",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27328,7 +27328,7 @@
       "lat": -32.75222222222222,
       "lon": -69.80722222222222,
       "elevation": 2800,
-      "province": null,
+      "province": "Mendoza",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27350,7 +27350,7 @@
       "lat": -32.04944444444444,
       "lon": -64.81138888888889,
       "elevation": 1182,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27372,7 +27372,7 @@
       "lat": -32.646388888888886,
       "lon": -69.94444444444444,
       "elevation": 4190,
-      "province": null,
+      "province": "Mendoza",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27394,7 +27394,7 @@
       "lat": -32.64972222222222,
       "lon": -70.05722222222222,
       "elevation": 4370,
-      "province": null,
+      "province": "Mendoza",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27416,7 +27416,7 @@
       "lat": -31.40222222222222,
       "lon": -64.46000000000001,
       "elevation": 687,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27438,7 +27438,7 @@
       "lat": -31.421666666666667,
       "lon": -64.50111111111111,
       "elevation": 651,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27460,7 +27460,7 @@
       "lat": -31.37666666666667,
       "lon": -64.51777777777778,
       "elevation": 761,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27482,7 +27482,7 @@
       "lat": -31.466666666666665,
       "lon": -64.51222222222222,
       "elevation": 707,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27504,7 +27504,7 @@
       "lat": -31.724999999999998,
       "lon": -65,
       "elevation": 980,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27526,7 +27526,7 @@
       "lat": -34.709722222222226,
       "lon": -58.29666666666667,
       "elevation": 10,
-      "province": null,
+      "province": "Buenos Aires",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27570,7 +27570,7 @@
       "lat": -22.56972222222222,
       "lon": -64.0825,
       "elevation": 945,
-      "province": null,
+      "province": "Salta",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27592,7 +27592,7 @@
       "lat": -41.132222222222225,
       "lon": -71.31305555555555,
       "elevation": 782,
-      "province": null,
+      "province": "Río Negro",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27614,7 +27614,7 @@
       "lat": -31.491111111111113,
       "lon": -64.55916666666667,
       "elevation": 750,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27636,7 +27636,7 @@
       "lat": -40.16777777777777,
       "lon": -71.4388888888889,
       "elevation": 640,
-      "province": null,
+      "province": "Neuquén",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27658,7 +27658,7 @@
       "lat": -38.97083333333334,
       "lon": -68.05194444444444,
       "elevation": 261,
-      "province": null,
+      "province": "Neuquén",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27680,7 +27680,7 @@
       "lat": -27.404722222222222,
       "lon": -55.92527777777777,
       "elevation": 100,
-      "province": null,
+      "province": "Misiones",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27702,7 +27702,7 @@
       "lat": -31.16111111111111,
       "lon": -64.325,
       "elevation": 690,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27724,7 +27724,7 @@
       "lat": -46.55083333333333,
       "lon": -68.93055555555556,
       "elevation": 333,
-      "province": null,
+      "province": "Santa Cruz",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27768,7 +27768,7 @@
       "lat": -40.666666666666664,
       "lon": -64.83333333333333,
       "elevation": 86,
-      "province": null,
+      "province": "Río Negro",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27790,7 +27790,7 @@
       "lat": -31.391388888888887,
       "lon": -64.49111111111111,
       "elevation": 680,
-      "province": null,
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27812,7 +27812,7 @@
       "lat": -38.04861111111111,
       "lon": -68.86027777777777,
       "elevation": 235,
-      "province": null,
+      "province": "Neuquén",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27834,7 +27834,7 @@
       "lat": -26.995833333333334,
       "lon": -54.48083333333334,
       "elevation": 600,
-      "province": null,
+      "province": "Misiones",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27856,7 +27856,7 @@
       "lat": -27.828888888888887,
       "lon": -61.126111111111115,
       "elevation": 74,
-      "province": null,
+      "province": "Chaco",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27900,7 +27900,7 @@
       "lat": -41.151666666666664,
       "lon": -71.2863888888889,
       "elevation": 1850,
-      "province": null,
+      "province": "Río Negro",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27922,7 +27922,7 @@
       "lat": -34.066111111111105,
       "lon": -59.03361111111111,
       "elevation": 30,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27944,7 +27944,7 @@
       "lat": -32.99333333333333,
       "lon": -60.67472222222222,
       "elevation": 40,
-      "province": null,
+      "province": "Entre Ríos",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27966,7 +27966,7 @@
       "lat": -31.360833333333336,
       "lon": -64.46861111111112,
       "elevation": 626,
-      "province": "BUENOS",
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -27988,7 +27988,7 @@
       "lat": -31.06388888888889,
       "lon": -64.5111111111111,
       "elevation": 930,
-      "province": "SAN",
+      "province": "Córdoba",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -28010,7 +28010,7 @@
       "lat": -41.12111111111111,
       "lon": -71.20444444444445,
       "elevation": 860,
-      "province": null,
+      "province": "Río Negro",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -28032,7 +28032,7 @@
       "lat": -34.126666666666665,
       "lon": -59.41444444444444,
       "elevation": 38,
-      "province": null,
+      "province": "Santa Fe",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [
@@ -28054,7 +28054,7 @@
       "lat": -22.53666666666667,
       "lon": -63.968611111111116,
       "elevation": 572,
-      "province": null,
+      "province": "Salta",
       "municipality": null,
       "surface": "TIERRA",
       "runways": [

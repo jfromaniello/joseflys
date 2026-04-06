@@ -274,6 +274,34 @@ function parseCSV(content: string): OurAirportsEntry[] {
 }
 
 // =============================================================================
+// DATA NORMALIZATION
+// =============================================================================
+
+// Provinces that are partial/truncated from PDF parsing - set to null
+const INVALID_PROVINCES = ["LA", "BUENOS", "SAN", "ENTRE", "SANTA", "RIO"];
+
+function normalizeProvince(province: string | null): string | null {
+  if (!province) return null;
+  if (INVALID_PROVINCES.includes(province)) return null;
+  return province;
+}
+
+// Surface normalization mapping
+const SURFACE_NORMALIZATION: Record<string, string | null> = {
+  ASF: "ASFALTO",
+  HORMIGON: "CONCRETO",
+  "27136": null, // Invalid data
+};
+
+function normalizeSurface(surface: string | null): string | null {
+  if (!surface) return null;
+  if (surface in SURFACE_NORMALIZATION) {
+    return SURFACE_NORMALIZATION[surface];
+  }
+  return surface;
+}
+
+// =============================================================================
 // MAIN BUILD FUNCTION
 // =============================================================================
 
@@ -396,9 +424,9 @@ async function buildDataset() {
       lat,
       lon,
       elevation,
-      province: REGION_TO_PROVINCE[entry.iso_region] || null,
+      province: normalizeProvince(REGION_TO_PROVINCE[entry.iso_region] || null),
       municipality: entry.municipality || null,
-      surface,
+      surface: normalizeSurface(surface),
       runways,
       region: null,
       source: "ourairports",
@@ -422,9 +450,9 @@ async function buildDataset() {
       lat: entry.lat,
       lon: entry.lon,
       elevation: entry.elevacion,
-      province: entry.provincia,
+      province: normalizeProvince(entry.provincia),
       municipality: null,
-      surface: entry.superficie,
+      surface: normalizeSurface(entry.superficie),
       runways: entry.runways,
       region: entry.region,
       source: "anac",

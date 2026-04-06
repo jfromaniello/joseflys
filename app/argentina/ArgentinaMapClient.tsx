@@ -267,12 +267,29 @@ const data = argentinaData as {
   data: Aerodrome[];
 };
 
+// Pre-compute available provinces and surfaces for facets
+const AVAILABLE_PROVINCES = [...new Set(data.data.map(a => a.province).filter(Boolean))].sort() as string[];
+const AVAILABLE_SURFACES = [...new Set(data.data.map(a => a.surface).filter(Boolean))].sort() as string[];
+const RUNWAY_LENGTH_OPTIONS = [
+  { value: null, label: "Cualquier longitud" },
+  { value: 500, label: "> 500m" },
+  { value: 800, label: "> 800m" },
+  { value: 1000, label: "> 1000m" },
+  { value: 1500, label: "> 1500m" },
+  { value: 2000, label: "> 2000m" },
+];
+
+type SearchMode = "filters" | "ai";
+
 export function ArgentinaMapClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlQuery = searchParams.get("q");
   const urlMapStyle = searchParams.get("map") as MapStyle | null;
   const urlLoc = searchParams.get("loc"); // Format: "lat,lon" for focusing on aerodrome
+  const urlProvince = searchParams.get("prov");
+  const urlSurface = searchParams.get("surf");
+  const urlMinLen = searchParams.get("minlen");
 
   // Parse URL filters (e.g., "AD,LAD" or empty for all)
   const urlFilters = searchParams.get("types");
@@ -287,6 +304,16 @@ export function ArgentinaMapClient() {
   );
   const [focusedAerodrome, setFocusedAerodrome] = useState<{ lat: number; lon: number } | null>(
     urlLoc ? { lat: parseFloat(urlLoc.split(",")[0]), lon: parseFloat(urlLoc.split(",")[1]) } : null
+  );
+
+  // Search mode: "filters" for deterministic facets, "ai" for LLM search
+  const [searchMode, setSearchMode] = useState<SearchMode>(urlQuery ? "ai" : "filters");
+
+  // Facet filters
+  const [selectedProvince, setSelectedProvince] = useState<string | null>(urlProvince);
+  const [selectedSurface, setSelectedSurface] = useState<string | null>(urlSurface);
+  const [minRunwayLength, setMinRunwayLength] = useState<number | null>(
+    urlMinLen ? parseInt(urlMinLen, 10) : null
   );
 
   // Toggle a type in the filter
@@ -328,6 +355,47 @@ export function ArgentinaMapClient() {
     const newUrl = params.toString() ? `/argentina?${params.toString()}` : "/argentina";
     router.push(newUrl, { scroll: false });
   }, [router, searchParams]);
+
+  // Update URL helper
+  const updateUrl = useCallback((updates: Record<string, string | null>) => {
+    const params = new URLSearchParams(searchParams.toString());
+    for (const [key, value] of Object.entries(updates)) {
+      if (value === null) {
+        params.delete(key);
+      } else {
+        params.set(key, value);
+      }
+    }
+    const newUrl = params.toString() ? `/argentina?${params.toString()}` : "/argentina";
+    router.push(newUrl, { scroll: false });
+  }, [router, searchParams]);
+
+  // Facet change handlers
+  const handleProvinceChange = useCallback((province: string | null) => {
+    setSelectedProvince(province);
+    updateUrl({ prov: province });
+  }, [updateUrl]);
+
+  const handleSurfaceChange = useCallback((surface: string | null) => {
+    setSelectedSurface(surface);
+    updateUrl({ surf: surface });
+  }, [updateUrl]);
+
+  const handleMinLengthChange = useCallback((length: number | null) => {
+    setMinRunwayLength(length);
+    updateUrl({ minlen: length ? String(length) : null });
+  }, [updateUrl]);
+
+  // Search mode change handler
+  const handleSearchModeChange = useCallback((mode: SearchMode) => {
+    setSearchMode(mode);
+    // Clear AI results when switching to filters mode
+    if (mode === "filters") {
+      setLlmResult(null);
+      setActiveQuery(null);
+      updateUrl({ q: null });
+    }
+  }, [updateUrl]);
 
   // LLM search state
   const [llmSearching, setLlmSearching] = useState(false);
@@ -400,8 +468,8 @@ export function ArgentinaMapClient() {
 
   // Filter data based on type and search (or use LLM results)
   const filteredData = useMemo(() => {
-    // If LLM search has results, use those
-    if (llmResult && llmResult.results.length > 0) {
+    // If in AI mode and have LLM results, use those
+    if (searchMode === "ai" && llmResult && llmResult.results.length > 0) {
       let result = llmResult.results;
 
       // Still apply type filter on top of LLM results
@@ -412,7 +480,7 @@ export function ArgentinaMapClient() {
       return result;
     }
 
-    // Otherwise use normal filtering
+    // Filters mode: use deterministic facet filtering
     let result = data.data;
 
     // Filter by selected types
@@ -420,7 +488,7 @@ export function ArgentinaMapClient() {
       result = result.filter((a) => selectedTypes.has(a.type));
     }
 
-    // Filter by search query
+    // Filter by search query (name/code)
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
       result = result.filter(
@@ -430,8 +498,25 @@ export function ArgentinaMapClient() {
       );
     }
 
+    // Filter by province
+    if (selectedProvince) {
+      result = result.filter((a) => a.province === selectedProvince);
+    }
+
+    // Filter by surface
+    if (selectedSurface) {
+      result = result.filter((a) => a.surface === selectedSurface);
+    }
+
+    // Filter by minimum runway length
+    if (minRunwayLength) {
+      result = result.filter((a) =>
+        a.runways && a.runways.some((r) => r.length >= minRunwayLength)
+      );
+    }
+
     return result;
-  }, [selectedTypes, searchQuery, llmResult]);
+  }, [searchMode, selectedTypes, searchQuery, selectedProvince, selectedSurface, minRunwayLength, llmResult]);
 
   // Count by type
   const counts = useMemo(() => {
@@ -468,48 +553,120 @@ export function ArgentinaMapClient() {
             </p>
           </div>
 
-          {/* Smart Search */}
+          {/* Search Tabs */}
           <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-4 mb-4">
-            <LLMSearchInput
-              onSearch={handleLLMSearch}
-              onClear={handleLLMClear}
-              isSearching={llmSearching}
-              activeQuery={activeQuery}
-              initialQuery={urlQuery || undefined}
-            />
+            {/* Tab buttons */}
+            <div className="flex gap-2 mb-4">
+              <button
+                onClick={() => handleSearchModeChange("filters")}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors cursor-pointer ${
+                  searchMode === "filters"
+                    ? "bg-blue-600 text-white"
+                    : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                }`}
+              >
+                Filtros
+              </button>
+              <button
+                onClick={() => handleSearchModeChange("ai")}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors cursor-pointer ${
+                  searchMode === "ai"
+                    ? "bg-amber-600 text-white"
+                    : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                }`}
+              >
+                Busqueda AI
+              </button>
+            </div>
 
-            {/* LLM Result info */}
-            {llmResult && (
-              <div className="mt-3 p-3 rounded-lg bg-amber-900/30 border border-amber-700/50">
-                <p className="text-sm text-amber-200">
-                  <span className="font-medium">{llmResult.count} resultados</span>
-                  {" - "}{llmResult.explanation}
+            {/* Tab content */}
+            {searchMode === "filters" ? (
+              /* Filters mode: Facet dropdowns */
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  {/* Province dropdown */}
+                  <select
+                    value={selectedProvince || ""}
+                    onChange={(e) => handleProvinceChange(e.target.value || null)}
+                    className="px-3 py-2 rounded-lg bg-slate-900/50 border border-slate-600 text-white focus:outline-none focus:border-blue-500 cursor-pointer"
+                  >
+                    <option value="">Todas las provincias</option>
+                    {AVAILABLE_PROVINCES.map((p) => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                  </select>
+
+                  {/* Surface dropdown */}
+                  <select
+                    value={selectedSurface || ""}
+                    onChange={(e) => handleSurfaceChange(e.target.value || null)}
+                    className="px-3 py-2 rounded-lg bg-slate-900/50 border border-slate-600 text-white focus:outline-none focus:border-blue-500 cursor-pointer"
+                  >
+                    <option value="">Cualquier superficie</option>
+                    {AVAILABLE_SURFACES.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+
+                  {/* Runway length dropdown */}
+                  <select
+                    value={minRunwayLength || ""}
+                    onChange={(e) => handleMinLengthChange(e.target.value ? parseInt(e.target.value, 10) : null)}
+                    className="px-3 py-2 rounded-lg bg-slate-900/50 border border-slate-600 text-white focus:outline-none focus:border-blue-500 cursor-pointer"
+                  >
+                    {RUNWAY_LENGTH_OPTIONS.map((opt) => (
+                      <option key={opt.label} value={opt.value || ""}>{opt.label}</option>
+                    ))}
+                  </select>
+
+                  {/* Name/code search */}
+                  <input
+                    type="text"
+                    placeholder="Nombre o codigo..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="px-3 py-2 rounded-lg bg-slate-900/50 border border-slate-600 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                {/* Results count */}
+                <p className="text-sm text-slate-400">
+                  Mostrando {filteredData.length} de {data.count.total} ubicaciones
                 </p>
               </div>
-            )}
+            ) : (
+              /* AI mode: LLM search */
+              <div>
+                <LLMSearchInput
+                  onSearch={handleLLMSearch}
+                  onClear={handleLLMClear}
+                  isSearching={llmSearching}
+                  activeQuery={activeQuery}
+                  initialQuery={urlQuery || undefined}
+                />
 
-            {llmError && (
-              <div className="mt-3 p-3 rounded-lg bg-red-900/30 border border-red-700/50">
-                <p className="text-sm text-red-300">{llmError}</p>
+                {/* LLM Result info */}
+                {llmResult && (
+                  <div className="mt-3 p-3 rounded-lg bg-amber-900/30 border border-amber-700/50">
+                    <p className="text-sm text-amber-200">
+                      <span className="font-medium">{llmResult.count} resultados</span>
+                      {" - "}{llmResult.explanation}
+                    </p>
+                  </div>
+                )}
+
+                {llmError && (
+                  <div className="mt-3 p-3 rounded-lg bg-red-900/30 border border-red-700/50">
+                    <p className="text-sm text-red-300">{llmError}</p>
+                  </div>
+                )}
               </div>
             )}
           </div>
 
-          {/* Controls */}
+          {/* Type filters and Map style */}
           <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-4 mb-6">
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-              {/* Search by name */}
-              <div className="w-full sm:w-64">
-                <input
-                  type="text"
-                  placeholder="Filtrar por nombre o codigo..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  disabled={!!llmResult}
-                  className="w-full px-4 py-2 rounded-lg bg-slate-900/50 border border-slate-600 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-              </div>
-
               {/* Filter buttons - multi-select */}
               <div className="flex flex-wrap gap-2">
                 <button
