@@ -768,6 +768,9 @@ export function ArgentinaMapClient() {
                 zoom={5}
                 style={{ height: "100%", width: "100%" }}
                 scrollWheelZoom={true}
+                zoomAnimation={false}
+                fadeAnimation={false}
+                markerZoomAnimation={false}
               >
                 <TileLayer
                   key={`base-${mapStyle}`}
@@ -792,6 +795,8 @@ export function ArgentinaMapClient() {
                   disableClusteringAtZoom={4}
                   spiderfyOnMaxZoom={true}
                   showCoverageOnHover={false}
+                  animate={false}
+                  animateAddingMarkers={false}
                 >
                   {filteredData.map((aerodrome, index) => {
                     // Select icon based on type

@@ -78,6 +78,32 @@ input[type="number"] {
   appearance: textfield;
 }
 
+/* Fix for Leaflet map zoom behavior - prevents layout shift and marker issues */
+.leaflet-container {
+  position: relative !important;
+}
+
+/* Ensure map tiles render correctly during zoom operations */
+.leaflet-map-pane {
+  will-change: transform;
+}
+
+/* Prevent overflow issues with zoom controls */
+.leaflet-control-container {
+  position: absolute !important;
+  z-index: 1000;
+}
+
+/* Fix for markers disappearing during zoom */
+.leaflet-overlay-pane {
+  position: absolute !important;
+}
+
+/* Ensure marker cluster group behaves correctly during zoom */
+.marker-cluster {
+  will-change: transform, opacity;
+}
+
 html {
   background: #0f172a;
 }
