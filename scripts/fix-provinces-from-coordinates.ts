@@ -1,7 +1,7 @@
 #!/usr/bin/env npx tsx
 /**
- * Fix missing/invalid provinces in argentina.json using OSM province boundaries
- * Uses point-in-polygon with actual province polygons for accurate assignment
+ * Fix missing/invalid provinces in argentina.json using real province geometries
+ * Uses GADM GeoJSON with actual province polygons for accurate point-in-polygon
  */
 
 import * as fs from "fs";
@@ -11,14 +11,14 @@ import * as path from "path";
 function pointInPolygon(
   lat: number,
   lon: number,
-  polygon: { lat: number; lon: number }[]
+  ring: number[][] // Array of [lon, lat] pairs
 ): boolean {
   let inside = false;
-  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const yi = polygon[i].lat;
-    const xi = polygon[i].lon;
-    const yj = polygon[j].lat;
-    const xj = polygon[j].lon;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0]; // lon
+    const yi = ring[i][1]; // lat
+    const xj = ring[j][0];
+    const yj = ring[j][1];
 
     if (yi > lat !== yj > lat && lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) {
       inside = !inside;
@@ -27,64 +27,103 @@ function pointInPolygon(
   return inside;
 }
 
-interface OsmElement {
-  type: string;
-  id: number;
-  bounds: {
-    minlat: number;
-    maxlat: number;
-    minlon: number;
-    maxlon: number;
-  };
-  tags?: {
-    name?: string;
-    [key: string]: string | undefined;
-  };
-  members?: {
-    type: string;
-    role: string;
-    geometry?: { lat: number; lon: number }[];
-  }[];
+// Check if point is inside a MultiPolygon or Polygon geometry
+function pointInGeometry(
+  lat: number,
+  lon: number,
+  geometry: { type: string; coordinates: number[][][][] | number[][][] }
+): boolean {
+  if (geometry.type === "MultiPolygon") {
+    const coords = geometry.coordinates as number[][][][];
+    for (const polygon of coords) {
+      // First ring is the outer boundary
+      if (polygon.length > 0 && pointInPolygon(lat, lon, polygon[0])) {
+        // Check if inside any holes
+        let inHole = false;
+        for (let i = 1; i < polygon.length; i++) {
+          if (pointInPolygon(lat, lon, polygon[i])) {
+            inHole = true;
+            break;
+          }
+        }
+        if (!inHole) return true;
+      }
+    }
+  } else if (geometry.type === "Polygon") {
+    const coords = geometry.coordinates as number[][][];
+    if (coords.length > 0 && pointInPolygon(lat, lon, coords[0])) {
+      let inHole = false;
+      for (let i = 1; i < coords.length; i++) {
+        if (pointInPolygon(lat, lon, coords[i])) {
+          inHole = true;
+          break;
+        }
+      }
+      if (!inHole) return true;
+    }
+  }
+  return false;
 }
 
-interface Province {
-  name: string;
-  bounds: OsmElement["bounds"];
-  polygons: { lat: number; lon: number }[][]; // Array of polygon rings
+interface GeoJSONFeature {
+  type: "Feature";
+  properties: {
+    NAME_1: string;
+    [key: string]: string;
+  };
+  geometry: {
+    type: "Polygon" | "MultiPolygon";
+    coordinates: number[][][][] | number[][][];
+  };
 }
+
+interface GeoJSON {
+  type: "FeatureCollection";
+  features: GeoJSONFeature[];
+}
+
+// Map GADM names to our standard names
+const NAME_MAPPING: Record<string, string> = {
+  "BuenosAires": "Buenos Aires",
+  "CiudaddeBuenosAires": "CABA",
+  "EntreRíos": "Entre Ríos",
+  "RíoNegro": "Río Negro",
+  "SantaCruz": "Santa Cruz",
+  "SantaFe": "Santa Fe",
+  "SantiagodeEstero": "Santiago del Estero",
+  "SantiagodelEstero": "Santiago del Estero",
+  "TierradelFuego": "Tierra del Fuego",
+  "SanJuan": "San Juan",
+  "SanLuis": "San Luis",
+  "LaPampa": "La Pampa",
+  "LaRioja": "La Rioja",
+};
 
 async function main() {
   const scriptsDir = path.dirname(__filename);
   const dataDir = path.join(scriptsDir, "..", "data");
 
-  console.log("Loading OSM province boundaries...");
-  const osmPath = path.join(dataDir, "osm-cache", "argentina-provinces-raw.json");
-  const osmData = JSON.parse(fs.readFileSync(osmPath, "utf-8")) as { elements: OsmElement[] };
+  console.log("Loading GADM province geometries...");
+  const geojsonPath = path.join(dataDir, "osm-cache", "argentina-provinces.geojson");
 
-  // Build province list with polygons
-  const provinces: Province[] = [];
-
-  for (const element of osmData.elements) {
-    if (!element.tags?.name || !element.bounds || !element.members) continue;
-
-    // Extract all outer polygon rings from members
-    const polygons: { lat: number; lon: number }[][] = [];
-    for (const member of element.members) {
-      if (member.role === "outer" && member.geometry && member.geometry.length > 3) {
-        polygons.push(member.geometry);
-      }
-    }
-
-    if (polygons.length > 0) {
-      provinces.push({
-        name: element.tags.name,
-        bounds: element.bounds,
-        polygons,
-      });
-    }
+  if (!fs.existsSync(geojsonPath)) {
+    console.error("ERROR: Province GeoJSON not found. Download from GADM:");
+    console.error("  curl -sL 'https://geodata.ucdavis.edu/gadm/gadm4.1/json/gadm41_ARG_1.json.zip' -o /tmp/argentina.zip");
+    console.error("  unzip /tmp/argentina.zip -d data/osm-cache/");
+    console.error("  mv data/osm-cache/gadm41_ARG_1.json data/osm-cache/argentina-provinces.geojson");
+    process.exit(1);
   }
 
-  console.log(`Loaded ${provinces.length} provinces with ${provinces.reduce((sum, p) => sum + p.polygons.length, 0)} polygon rings`);
+  const geojson = JSON.parse(fs.readFileSync(geojsonPath, "utf-8")) as GeoJSON;
+  console.log(`Loaded ${geojson.features.length} provinces`);
+
+  // Build province lookup
+  const provinces = geojson.features.map((f) => ({
+    name: NAME_MAPPING[f.properties.NAME_1] || f.properties.NAME_1,
+    geometry: f.geometry,
+  }));
+
+  console.log("Provinces:", provinces.map((p) => p.name).join(", "));
 
   // Load argentina.json
   console.log("\nLoading argentina.json...");
@@ -97,6 +136,7 @@ async function main() {
   let fixed = 0;
   let fixedFromNull = 0;
   let notFound = 0;
+  const notFoundList: string[] = [];
 
   for (const aerodrome of argentinaData.data) {
     const isInvalid = INVALID_PROVINCES.includes(aerodrome.province);
@@ -105,41 +145,12 @@ async function main() {
     // Skip if province is already valid
     if (!isInvalid && !isNull) continue;
 
-    // First filter by bounding box for performance
-    const candidates = provinces.filter(
-      (p) =>
-        aerodrome.lat >= p.bounds.minlat &&
-        aerodrome.lat <= p.bounds.maxlat &&
-        aerodrome.lon >= p.bounds.minlon &&
-        aerodrome.lon <= p.bounds.maxlon
-    );
-
-    // Try point-in-polygon first
+    // Find province using point-in-polygon
     let foundProvince: string | null = null;
-    for (const province of candidates) {
-      for (const polygon of province.polygons) {
-        if (pointInPolygon(aerodrome.lat, aerodrome.lon, polygon)) {
-          foundProvince = province.name;
-          break;
-        }
-      }
-      if (foundProvince) break;
-    }
-
-    // Fallback: if no polygon match but we have bbox candidates,
-    // pick the one where the point is closest to the center
-    if (!foundProvince && candidates.length > 0) {
-      let bestDist = Infinity;
-      for (const province of candidates) {
-        const centerLat = (province.bounds.minlat + province.bounds.maxlat) / 2;
-        const centerLon = (province.bounds.minlon + province.bounds.maxlon) / 2;
-        const dist = Math.sqrt(
-          Math.pow(aerodrome.lat - centerLat, 2) + Math.pow(aerodrome.lon - centerLon, 2)
-        );
-        if (dist < bestDist) {
-          bestDist = dist;
-          foundProvince = province.name;
-        }
+    for (const province of provinces) {
+      if (pointInGeometry(aerodrome.lat, aerodrome.lon, province.geometry)) {
+        foundProvince = province.name;
+        break;
       }
     }
 
@@ -155,12 +166,17 @@ async function main() {
       }
     } else {
       notFound++;
+      notFoundList.push(`${aerodrome.name} (${aerodrome.lat.toFixed(2)}, ${aerodrome.lon.toFixed(2)})`);
     }
   }
 
   console.log(`\nFixed ${fixed} invalid provinces`);
   console.log(`Filled ${fixedFromNull} null provinces`);
-  console.log(`Could not determine province for ${notFound} aerodromes (outside Argentina bounds)`);
+  console.log(`Could not determine province for ${notFound} aerodromes`);
+
+  if (notFoundList.length > 0 && notFoundList.length <= 10) {
+    console.log("Not found:", notFoundList.join(", "));
+  }
 
   // Save updated data
   fs.writeFileSync(argentinaPath, JSON.stringify(argentinaData, null, 2));
@@ -181,7 +197,7 @@ async function main() {
 
   const unknownCount = byProvince["Unknown"] || 0;
   if (unknownCount > 0) {
-    console.log(`\nNote: ${unknownCount} aerodromes still without province (likely outside Argentina)`);
+    console.log(`\nNote: ${unknownCount} aerodromes still without province`);
   }
 }
 
