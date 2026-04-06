@@ -66,15 +66,15 @@ const LLMSearchInput = memo(function LLMSearchInput({
   if (activeQuery && !isEditing && !isSearching) {
     return (
       <div className="flex items-center gap-3">
-        <div className="flex-1 px-4 py-3 rounded-lg bg-amber-900/30 border border-amber-600/50 text-amber-100 flex items-center justify-between">
-          <span className="truncate">
+        <div className="px-4 py-3 rounded-lg bg-amber-900/30 border border-amber-600/50 text-amber-100 flex items-center gap-3">
+          <span className="break-words">
             <span className="text-amber-400 font-medium">Busqueda:</span>{" "}
             {activeQuery}
           </span>
           <button
             type="button"
             onClick={handleClear}
-            className="ml-3 text-amber-300 hover:text-white cursor-pointer flex-shrink-0"
+            className="text-amber-300 hover:text-white cursor-pointer flex-shrink-0"
             title="Limpiar busqueda"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -290,6 +290,7 @@ export function ArgentinaMapClient() {
   const urlProvince = searchParams.get("prov");
   const urlSurface = searchParams.get("surf");
   const urlMinLen = searchParams.get("minlen");
+  const urlMode = searchParams.get("mode") as SearchMode | null;
 
   // Parse URL filters (e.g., "AD,LAD" or empty for all)
   const urlFilters = searchParams.get("types");
@@ -307,7 +308,10 @@ export function ArgentinaMapClient() {
   );
 
   // Search mode: "filters" for deterministic facets, "ai" for LLM search
-  const [searchMode, setSearchMode] = useState<SearchMode>(urlQuery ? "ai" : "filters");
+  // Initialize from URL: explicit mode param, or infer from presence of q param
+  const [searchMode, setSearchMode] = useState<SearchMode>(
+    urlMode === "ai" || urlMode === "filters" ? urlMode : (urlQuery ? "ai" : "filters")
+  );
 
   // Facet filters
   const [selectedProvince, setSelectedProvince] = useState<string | null>(urlProvince);
@@ -395,11 +399,19 @@ export function ArgentinaMapClient() {
   // Search mode change handler (defined after LLM state)
   const handleSearchModeChange = useCallback((mode: SearchMode) => {
     setSearchMode(mode);
-    // Clear AI results when switching to filters mode
+
     if (mode === "filters") {
+      // Clear AI results when switching to filters mode
       setLlmResult(null);
       setActiveQuery(null);
-      updateUrl({ q: null });
+      updateUrl({ mode: null, q: null }); // mode=filters is default, no need to store
+    } else {
+      // Clear facet filters when switching to AI mode
+      setSelectedProvince(null);
+      setSelectedSurface(null);
+      setMinRunwayLength(null);
+      setSearchQuery("");
+      updateUrl({ mode: "ai", prov: null, surf: null, minlen: null });
     }
   }, [updateUrl]);
 
@@ -423,8 +435,9 @@ export function ArgentinaMapClient() {
       setLlmResult(result);
       setActiveQuery(query);
 
-      // Update URL
+      // Update URL with mode and query
       const params = new URLSearchParams(searchParams.toString());
+      params.set("mode", "ai");
       params.set("q", query);
       router.push(`/argentina?${params.toString()}`, { scroll: false });
     } catch (error) {
