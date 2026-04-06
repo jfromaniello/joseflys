@@ -386,7 +386,13 @@ export function ArgentinaMapClient() {
     updateUrl({ minlen: length ? String(length) : null });
   }, [updateUrl]);
 
-  // Search mode change handler
+  // LLM search state
+  const [llmSearching, setLlmSearching] = useState(false);
+  const [llmResult, setLlmResult] = useState<LLMSearchResult | null>(null);
+  const [llmError, setLlmError] = useState<string | null>(null);
+  const [activeQuery, setActiveQuery] = useState<string | null>(null);
+
+  // Search mode change handler (defined after LLM state)
   const handleSearchModeChange = useCallback((mode: SearchMode) => {
     setSearchMode(mode);
     // Clear AI results when switching to filters mode
@@ -396,12 +402,6 @@ export function ArgentinaMapClient() {
       updateUrl({ q: null });
     }
   }, [updateUrl]);
-
-  // LLM search state
-  const [llmSearching, setLlmSearching] = useState(false);
-  const [llmResult, setLlmResult] = useState<LLMSearchResult | null>(null);
-  const [llmError, setLlmError] = useState<string | null>(null);
-  const [activeQuery, setActiveQuery] = useState<string | null>(null);
 
   // LLM search function
   const handleLLMSearch = useCallback(async (query: string) => {
