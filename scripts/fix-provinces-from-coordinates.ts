@@ -1,11 +1,31 @@
 #!/usr/bin/env npx tsx
 /**
  * Fix missing/invalid provinces in argentina.json using OSM province boundaries
- * Uses bounding boxes with smallest-area selection for overlapping regions
+ * Uses point-in-polygon with actual province polygons for accurate assignment
  */
 
 import * as fs from "fs";
 import * as path from "path";
+
+// Ray casting algorithm for point-in-polygon
+function pointInPolygon(
+  lat: number,
+  lon: number,
+  polygon: { lat: number; lon: number }[]
+): boolean {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const yi = polygon[i].lat;
+    const xi = polygon[i].lon;
+    const yj = polygon[j].lat;
+    const xj = polygon[j].lon;
+
+    if (yi > lat !== yj > lat && lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
 
 interface OsmElement {
   type: string;
@@ -20,12 +40,17 @@ interface OsmElement {
     name?: string;
     [key: string]: string | undefined;
   };
+  members?: {
+    type: string;
+    role: string;
+    geometry?: { lat: number; lon: number }[];
+  }[];
 }
 
 interface Province {
   name: string;
   bounds: OsmElement["bounds"];
-  area: number; // Bounding box area for tie-breaking
+  polygons: { lat: number; lon: number }[][]; // Array of polygon rings
 }
 
 async function main() {
@@ -36,23 +61,30 @@ async function main() {
   const osmPath = path.join(dataDir, "osm-cache", "argentina-provinces-raw.json");
   const osmData = JSON.parse(fs.readFileSync(osmPath, "utf-8")) as { elements: OsmElement[] };
 
-  // Build province list with bounding boxes
+  // Build province list with polygons
   const provinces: Province[] = [];
 
   for (const element of osmData.elements) {
-    if (!element.tags?.name || !element.bounds) continue;
+    if (!element.tags?.name || !element.bounds || !element.members) continue;
 
-    const bounds = element.bounds;
-    const area = (bounds.maxlat - bounds.minlat) * (bounds.maxlon - bounds.minlon);
+    // Extract all outer polygon rings from members
+    const polygons: { lat: number; lon: number }[][] = [];
+    for (const member of element.members) {
+      if (member.role === "outer" && member.geometry && member.geometry.length > 3) {
+        polygons.push(member.geometry);
+      }
+    }
 
-    provinces.push({
-      name: element.tags.name,
-      bounds,
-      area,
-    });
+    if (polygons.length > 0) {
+      provinces.push({
+        name: element.tags.name,
+        bounds: element.bounds,
+        polygons,
+      });
+    }
   }
 
-  console.log(`Loaded ${provinces.length} provinces`);
+  console.log(`Loaded ${provinces.length} provinces with ${provinces.reduce((sum, p) => sum + p.polygons.length, 0)} polygon rings`);
 
   // Load argentina.json
   console.log("\nLoading argentina.json...");
@@ -73,7 +105,7 @@ async function main() {
     // Skip if province is already valid
     if (!isInvalid && !isNull) continue;
 
-    // Find all provinces whose bounding box contains this point
+    // First filter by bounding box for performance
     const candidates = provinces.filter(
       (p) =>
         aerodrome.lat >= p.bounds.minlat &&
@@ -82,17 +114,41 @@ async function main() {
         aerodrome.lon <= p.bounds.maxlon
     );
 
-    if (candidates.length > 0) {
-      // If multiple matches, pick the one with smallest bounding box area
-      // (more specific region)
-      candidates.sort((a, b) => a.area - b.area);
-      const bestMatch = candidates[0];
+    // Try point-in-polygon first
+    let foundProvince: string | null = null;
+    for (const province of candidates) {
+      for (const polygon of province.polygons) {
+        if (pointInPolygon(aerodrome.lat, aerodrome.lon, polygon)) {
+          foundProvince = province.name;
+          break;
+        }
+      }
+      if (foundProvince) break;
+    }
 
+    // Fallback: if no polygon match but we have bbox candidates,
+    // pick the one where the point is closest to the center
+    if (!foundProvince && candidates.length > 0) {
+      let bestDist = Infinity;
+      for (const province of candidates) {
+        const centerLat = (province.bounds.minlat + province.bounds.maxlat) / 2;
+        const centerLon = (province.bounds.minlon + province.bounds.maxlon) / 2;
+        const dist = Math.sqrt(
+          Math.pow(aerodrome.lat - centerLat, 2) + Math.pow(aerodrome.lon - centerLon, 2)
+        );
+        if (dist < bestDist) {
+          bestDist = dist;
+          foundProvince = province.name;
+        }
+      }
+    }
+
+    if (foundProvince) {
       const oldProvince = aerodrome.province;
-      aerodrome.province = bestMatch.name;
+      aerodrome.province = foundProvince;
 
       if (isInvalid) {
-        console.log(`  Fixed: ${aerodrome.name} - "${oldProvince}" → "${bestMatch.name}"`);
+        console.log(`  Fixed: ${aerodrome.name} - "${oldProvince}" → "${foundProvince}"`);
         fixed++;
       } else {
         fixedFromNull++;
