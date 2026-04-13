@@ -42,6 +42,7 @@ import { compressForUrl } from "@/lib/urlCompression";
 import { formatCourse, formatWind, formatDistance } from "@/lib/formatters";
 import { LegAlternates } from "@/app/components/LegAlternates";
 import { TripSummaryCard } from "@/app/components/TripSummaryCard";
+import { loadAircraftFromUrl } from "@/lib/aircraftStorage";
 
 interface FlightPlanDetailClientProps {
   flightPlanId: string;
@@ -106,6 +107,21 @@ export function FlightPlanDetailClient({
 
   // Check if there are any alternative legs
   const hasAlternatives = alternativeLegs.size > 0;
+
+  // Extract aircraft info if available
+  const aircraft = useMemo(() => {
+    if (!flightPlan) return undefined;
+    const planeStr = flightPlan.plane || flightPlan.legs[0]?.plane;
+    if (!planeStr) return undefined;
+
+    const ac = loadAircraftFromUrl(planeStr);
+    if (!ac) return undefined;
+
+    return {
+      name: ac.name,
+      model: ac.model,
+    };
+  }, [flightPlan]);
 
   const handleDeleteLeg = (leg: FlightPlanLeg) => {
     if (!flightPlan) return;
@@ -380,6 +396,35 @@ export function FlightPlanDetailClient({
                   <span>
                     Departure Time: {flightPlan.legs[0].depTime.substring(0, 2)}:
                     {flightPlan.legs[0].depTime.substring(2, 4)}
+                  </span>
+                </div>
+              )}
+              {aircraft && (
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                  <span>
+                    Aircraft:{" "}
+                    <Link
+                      href={`/aircraft/${encodeURIComponent(aircraft.model)}/view`}
+                      className="text-blue-400 hover:text-blue-300 hover:underline"
+                    >
+                      {aircraft.name}
+                    </Link>
+                  </span>
+                </div>
+              )}
+              {(flightPlan.cruisePower || flightPlan.cruiseAltitude) && (
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  <span>
+                    Cruise:{" "}
+                    {flightPlan.cruisePower && `${flightPlan.cruisePower}% power`}
+                    {flightPlan.cruisePower && flightPlan.cruiseAltitude && " @ "}
+                    {flightPlan.cruiseAltitude && `${flightPlan.cruiseAltitude.toLocaleString()} ft`}
                   </span>
                 </div>
               )}
