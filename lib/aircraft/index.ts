@@ -3,6 +3,7 @@ export { CESSNA_150 } from "./CESSNA_150";
 export { CESSNA_152 } from "./CESSNA_152";
 export { CESSNA_170 } from "./CESSNA_170";
 export { CESSNA_172N } from "./CESSNA_172N";
+export { CESSNA_172RG } from "./CESSNA_172RG";
 export { CESSNA_182 } from "./CESSNA_182";
 export { CESSNA_210 } from "./CESSNA_210";
 export { PIPER_PA11 } from "./PIPER_PA11";

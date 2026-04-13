@@ -3,6 +3,7 @@ import { CESSNA_150 } from "./CESSNA_150";
 import { CESSNA_152 } from "./CESSNA_152";
 import { CESSNA_170 } from "./CESSNA_170";
 import { CESSNA_172N } from "./CESSNA_172N";
+import { CESSNA_172RG } from "./CESSNA_172RG";
 import { CESSNA_182 } from "./CESSNA_182";
 import { CESSNA_210 } from "./CESSNA_210";
 import { PIPER_PA11 } from "./PIPER_PA11";
@@ -22,6 +23,7 @@ export const PRESET_AIRCRAFT: AircraftPerformance[] = [
   CESSNA_152,
   CESSNA_170,
   CESSNA_172N,
+  CESSNA_172RG,
   CESSNA_182,
   CESSNA_210,
   PIPER_PA11,
