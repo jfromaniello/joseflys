@@ -22,4 +22,5 @@ Allow: /planning
 Allow: /isa
 Allow: /climb
 Allow: /segments
+Allow: /mach
 Allow: /local-chart

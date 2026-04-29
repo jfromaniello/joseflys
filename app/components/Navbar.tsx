@@ -4,7 +4,7 @@ import { useState, Fragment } from "react";
 import Link from "next/link";
 import { Dialog, Transition, TransitionChild, DialogPanel, Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/react";
 
-type Page = "home" | "tas" | "course" | "leg" | "conversions" | "planning" | "route" | "local-chart" | "segments" | "isa" | "climb" | "vstall" | "takeoff" | "my-planes" | "flight-plans" | "conditions" | "sky-art" | "argentina";
+type Page = "home" | "tas" | "course" | "leg" | "conversions" | "planning" | "route" | "local-chart" | "segments" | "isa" | "climb" | "vstall" | "takeoff" | "my-planes" | "flight-plans" | "conditions" | "sky-art" | "argentina" | "mach";
 
 interface NavbarProps {
   currentPage: Page;
@@ -158,6 +158,16 @@ const utilities = [
 
 // ========== EDUCATIONAL ==========
 const educational = [
+  {
+    id: "mach" as const,
+    name: "Mach Explorer",
+    href: "/mach",
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h3l3-9 6 18 3-9h3" />
+      </svg>
+    ),
+  },
   {
     id: "segments" as const,
     name: "LNAV Segments",
