@@ -1,5 +1,6 @@
 import argentinaData from "@/data/ad-lads/argentina.json";
 import airportsData from "@/data/airports.json";
+import { getLocalCodeFromIcao } from "./anac";
 
 export type AerodromeType = "AD" | "LAD" | "HELIPORT" | "LADH";
 
@@ -146,6 +147,15 @@ export function getAerodromeByCode(code: string): Aerodrome | null {
       lon,
       elevation: elevation ?? null,
     };
+  }
+
+  // Try ANAC ICAO → local mapping for Argentine aerodromes
+  const localCode = getLocalCodeFromIcao(normalizedCode);
+  if (localCode) {
+    const argMatchByLocal = argData.data.find(
+      (a) => a.code?.toUpperCase() === localCode.toUpperCase()
+    );
+    if (argMatchByLocal) return argMatchByLocal;
   }
 
   return null;

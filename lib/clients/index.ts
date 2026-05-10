@@ -5,3 +5,10 @@ export { fetchTomorrow, type TomorrowValues, type TomorrowTimelineItem, type Tom
 export { searchAerodromes, getAerodromeByCode, getAerodromesByBbox, type Aerodrome } from "./aerodromes";
 export { fetchOpenMeteo, type OpenMeteoData, type OpenMeteoCurrent, type OpenMeteoHourly } from "./open-meteo";
 export { fetchNotams, resetCookieJar, type Notam, type NotamResult } from "./notams";
+export {
+  getLocalCodeFromIcao,
+  getAnacDetails,
+  resolveAnacAerodrome,
+  searchAnacAerodromes,
+  type AnacAerodromeDetail,
+} from "./anac";

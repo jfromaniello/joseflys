@@ -7,6 +7,7 @@ import {
   fetchOpenMeteo,
   getAerodromeByCode,
   fetchNotams,
+  resolveAnacAerodrome,
 } from "@/lib/clients";
 import { ConditionsView } from "./ConditionsView";
 
@@ -53,6 +54,9 @@ export default async function ConditionsDetailPage({ params }: ConditionsPagePro
   const lat = aerodromeInfo?.lat;
   const lon = aerodromeInfo?.lon;
 
+  // Resolve ANAC data (ICAO → local)
+  const anacData = resolveAnacAerodrome(aerodromeCode);
+
   // Fetch all data in parallel
   const [metarResult, tafResult, runwaysResult, tomorrowResult, openMeteoResult, notamsResult] = await Promise.all([
     fetchMetar(aerodromeCode, lat, lon),
@@ -86,6 +90,7 @@ export default async function ConditionsDetailPage({ params }: ConditionsPagePro
       tomorrow={tomorrowResult.current ? { current: tomorrowResult.current, hourly: tomorrowResult.hourly } : null}
       openMeteo={openMeteoResult}
       notams={notamsResult}
+      anacData={anacData?.details ?? null}
       fetchedAt={new Date().toISOString()}
     />
   );

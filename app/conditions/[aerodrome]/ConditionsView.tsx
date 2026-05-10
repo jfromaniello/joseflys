@@ -9,6 +9,7 @@ import { MetarData, TafData, Runway, OpenMeteoData, TomorrowData, Aerodrome, Not
 import { MetarCard } from "./MetarCard";
 import { TafCard } from "./TafCard";
 import { AerodromeInfoCard } from "./AerodromeInfoCard";
+import { AnacInfoCard } from "./AnacInfoCard";
 import { OverviewCard } from "./OverviewCard";
 import { WeatherCard } from "./WeatherCard";
 import { LocationMap } from "./LocationMap";
@@ -18,6 +19,7 @@ import { AISummaryCard } from "./AISummaryCard";
 import { SunTimesCard } from "./SunTimesCard";
 import { selectBestRunway } from "@/lib/runwayUtils";
 import { getSunPosition } from "@/lib/sun";
+import { AnacAerodromeDetail } from "@/lib/clients/anac";
 
 interface ConditionsViewProps {
   aerodromeCode: string;
@@ -32,6 +34,7 @@ interface ConditionsViewProps {
   tomorrow: TomorrowData | null;
   openMeteo: OpenMeteoData | null;
   notams: Notam[] | null;
+  anacData: AnacAerodromeDetail | null;
   fetchedAt: string;
 }
 
@@ -48,6 +51,7 @@ export function ConditionsView({
   tomorrow,
   openMeteo,
   notams,
+  anacData,
   fetchedAt,
 }: ConditionsViewProps) {
   const router = useRouter();
@@ -226,6 +230,13 @@ export function ConditionsView({
                 notams={notams}
                 loadingRunways={false}
               />
+            </div>
+          )}
+
+          {/* ANAC Data Card */}
+          {anacData && (
+            <div id="anac" className="scroll-mt-20">
+              <AnacInfoCard detail={anacData} />
             </div>
           )}
 
