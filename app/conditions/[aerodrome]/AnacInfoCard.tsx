@@ -16,7 +16,14 @@ export function AnacInfoCard({ detail }: AnacInfoCardProps) {
     detail.atz ||
     detail.service_schedule ||
     detail.norms_general ||
-    detail.norms_particular;
+    detail.norms_particular ||
+    detail.city ||
+    detail.province ||
+    detail.region ||
+    detail.fir ||
+    detail.control ||
+    detail.condition ||
+    detail.traffic;
 
   if (!hasData) {
     return null;
