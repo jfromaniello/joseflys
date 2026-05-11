@@ -10,5 +10,6 @@ export {
   getAnacDetails,
   resolveAnacAerodrome,
   searchAnacAerodromes,
+  parseAnacRunways,
   type AnacAerodromeDetail,
 } from "./anac";

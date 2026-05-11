@@ -8,6 +8,7 @@ import {
   getAerodromeByCode,
   fetchNotams,
   resolveAnacAerodrome,
+  parseAnacRunways,
 } from "@/lib/clients";
 import { ConditionsView } from "./ConditionsView";
 
@@ -76,6 +77,12 @@ export default async function ConditionsDetailPage({ params }: ConditionsPagePro
       : Promise.resolve(null),
   ]);
 
+  // Fallback to ANAC runways if no runways from primary source
+  let combinedRunways = runwaysResult.runways;
+  if (combinedRunways.length === 0 && anacData?.details.runways.length) {
+    combinedRunways = parseAnacRunways(anacData.details);
+  }
+
   return (
     <ConditionsView
       aerodromeCode={aerodromeCode}
@@ -86,7 +93,7 @@ export default async function ConditionsDetailPage({ params }: ConditionsPagePro
       taf={tafResult.taf}
       tafSource={tafResult.source}
       tafDistance={tafResult.distance ?? null}
-      runways={runwaysResult.runways}
+      runways={combinedRunways}
       tomorrow={tomorrowResult.current ? { current: tomorrowResult.current, hourly: tomorrowResult.hourly } : null}
       openMeteo={openMeteoResult}
       notams={notamsResult}

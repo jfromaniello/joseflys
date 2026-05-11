@@ -1,5 +1,6 @@
 import anacMapping from "@/data/anac-mapping.json";
 import anacDetails from "@/data/anac-details.json";
+import type { RunwayResponse } from "./runways";
 
 export interface AnacAerodromeDetail {
   local: string;
@@ -93,4 +94,91 @@ export function searchAnacAerodromes(query: string): AnacAerodromeDetail[] {
   }
 
   return results.slice(0, 10);
+}
+
+/**
+ * Parse ANAC runway strings into RunwayResponse format
+ *
+ * ANAC format: "15/33 1076x29 M - Tierra."
+ *  - Runway numbers: 15/33
+ *  - Length: 1076 meters
+ *  - Width: 29 meters
+ *  - Surface: Tierra (Dirt)
+ */
+export function parseAnacRunways(detail: AnacAerodromeDetail): RunwayResponse[] {
+  const runways: RunwayResponse[] = [];
+
+  const SURFACE_MAP: Record<string, string> = {
+    "Tierra": "DT",
+    "ASPH": "PG",
+    "CONC": "PG",
+  };
+
+  for (const rwyString of detail.runways) {
+    // Match standard format: NN/NN LLLxWWW M - Surface
+    let match = rwyString.match(
+      /^(\d{2})\/(\d{2})\s+(\d+)x(\d+)\s+M\s+-\s+(.+?)$/i
+    );
+
+    if (!match) {
+      // Try alternate format without M: NN/NN LLLxWWW - Surface
+      match = rwyString.match(
+        /^(\d{2})\/(\d{2})\s+(\d+)x(\d+)\s+-\s+(.+?)$/i
+      );
+      if (!match) continue;
+    }
+
+    const [, end1, end2, lengthM, widthM, surfaceRaw] = match;
+
+    // Check if closed
+    const closed = /\(CLSD\)|Cerrada|Cerrado/i.test(rwyString);
+
+    // Clean surface name
+    const surfaceClean = surfaceRaw
+      .replace(/\(CLSD\)/gi, "")
+      .replace(/Cerrada/gi, "")
+      .replace(/Cerrado/gi, "")
+      .replace(/\s*-\s*.*$/, "") // Remove AUW/PCN info
+      .trim();
+
+    const surfaceCode = SURFACE_MAP[surfaceClean] || "UNK";
+
+    // Convert meters to feet
+    const length = Math.round(parseInt(lengthM, 10) * 3.28084);
+    const width = Math.round(parseInt(widthM, 10) * 3.28084);
+
+    // Calculate headings from runway numbers
+    const heading1 = parseInt(end1, 10) * 10;
+    const heading2 = parseInt(end2, 10) * 10;
+
+    runways.push({
+      id: `${end1}/${end2}`,
+      length,
+      width,
+      surface: surfaceCode,
+      surfaceName: surfaceClean,
+      lighted: false,
+      closed,
+      ends: [
+        {
+          id: end1,
+          heading: heading1,
+          elevation: detail.elevation,
+          displacedThreshold: 0,
+          lat: detail.lat,
+          lon: detail.lon,
+        },
+        {
+          id: end2,
+          heading: heading2,
+          elevation: detail.elevation,
+          displacedThreshold: 0,
+          lat: detail.lat,
+          lon: detail.lon,
+        },
+      ],
+    });
+  }
+
+  return runways;
 }
