@@ -47,6 +47,14 @@ export function GpxReplayGlobe({ points, currentIndex, currentTimeMs }: GpxRepla
         fullscreenButton: false,
       });
 
+      // Use OSM tiles so the globe renders without depending on Cesium Ion/Bing configuration.
+      viewer.imageryLayers.removeAll();
+      viewer.imageryLayers.addImageryProvider(
+        new Cesium.OpenStreetMapImageryProvider({
+          url: "https://tile.openstreetmap.org/",
+        })
+      );
+
       viewerRef.current = viewer;
       (viewer.cesiumWidget.creditContainer as HTMLElement).style.display = "none";
 
