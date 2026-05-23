@@ -373,7 +373,7 @@ export function GpxReplayClient() {
         </div>
       </main>
 
-      <Footer />
+      <Footer description="Replay GPX tracks in a 3D globe with smooth time-based line animation." />
     </PageLayout>
   );
 }
