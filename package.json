@@ -21,6 +21,7 @@
     "@turf/turf": "^7.3.4",
     "@types/proj4leaflet": "^1.0.12",
     "@upstash/redis": "^1.35.6",
+    "@vercel/blob": "^2.4.0",
     "better-sqlite3": "^12.8.0",
     "cbor-x": "^1.6.0",
     "cesium": "^1.135.0",

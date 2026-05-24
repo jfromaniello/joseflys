@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { PageLayout } from "../components/PageLayout";
 import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
@@ -16,6 +17,11 @@ interface ReplayPoint {
   timeMs: number;
 }
 
+interface GpxReplayClientProps {
+  initialGpx?: string;
+  initialGpxName?: string;
+}
+
 const GpxReplayGlobe = dynamic(
   () => import("./GpxReplayGlobe").then((mod) => ({ default: mod.GpxReplayGlobe })),
   {
@@ -29,6 +35,11 @@ const GpxReplayGlobe = dynamic(
 );
 
 const SPEED_OPTIONS = [10, 50, 100] as const;
+type SpeedOption = (typeof SPEED_OPTIONS)[number];
+
+function isSpeedOption(value: number): value is SpeedOption {
+  return (SPEED_OPTIONS as readonly number[]).includes(value);
+}
 
 function findPointIndexByTime(points: ReplayPoint[], targetTimeMs: number): number {
   if (points.length <= 1) return 0;
@@ -95,36 +106,61 @@ function parseGpxText(content: string): ReplayPoint[] {
   return parsed;
 }
 
-export function GpxReplayClient() {
+type ShareStatus = "idle" | "loading" | "copied" | "error";
+
+export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientProps = {}) {
+  const searchParams = useSearchParams();
+  const initialTParam = searchParams.get("t");
+  const initialSpeedParam = searchParams.get("speed");
+
+  const initialElapsedMs = useMemo(() => {
+    const parsed = initialTParam ? Number.parseInt(initialTParam, 10) : 0;
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+  }, [initialTParam]);
+
+  const initialSpeed = useMemo<SpeedOption>(() => {
+    const parsed = initialSpeedParam ? Number.parseInt(initialSpeedParam, 10) : 10;
+    return isSpeedOption(parsed) ? parsed : 10;
+  }, [initialSpeedParam]);
+
   const [points, setPoints] = useState<ReplayPoint[]>([]);
+  const [rawGpx, setRawGpx] = useState<string>("");
   const [isDragOver, setIsDragOver] = useState(false);
   const [error, setError] = useState<string>("");
   const [isPlaying, setIsPlaying] = useState(false);
-  const [speed, setSpeed] = useState<(typeof SPEED_OPTIONS)[number]>(10);
-  const [elapsedMs, setElapsedMs] = useState(0);
+  const [speed, setSpeed] = useState<SpeedOption>(initialSpeed);
+  const [elapsedMs, setElapsedMs] = useState(initialElapsedMs);
+  const [shareStatus, setShareStatus] = useState<ShareStatus>("idle");
+  const [shareUrl, setShareUrl] = useState<string>("");
   const inputRef = useRef<HTMLInputElement>(null);
   const lastTickRef = useRef<number | null>(null);
+  const initialGpxAppliedRef = useRef(false);
+
+  useEffect(() => {
+    if (!initialGpx || initialGpxAppliedRef.current) return;
+    initialGpxAppliedRef.current = true;
+    try {
+      const parsed = parseGpxText(initialGpx);
+      setPoints(parsed);
+      setRawGpx(initialGpx);
+      setError("");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to parse shared GPX.";
+      setError(message);
+    }
+  }, [initialGpx]);
 
   const timeline = useMemo(() => {
     if (points.length === 0) {
-      return {
-        startMs: 0,
-        endMs: 0,
-        durationMs: 0,
-      };
+      return { startMs: 0, endMs: 0, durationMs: 0 };
     }
-
     const startMs = points[0].timeMs;
     const endMs = points[points.length - 1].timeMs;
-
-    return {
-      startMs,
-      endMs,
-      durationMs: Math.max(0, endMs - startMs),
-    };
+    return { startMs, endMs, durationMs: Math.max(0, endMs - startMs) };
   }, [points]);
 
-  const currentTimeMs = timeline.startMs + elapsedMs;
+  const clampedElapsedMs = Math.min(elapsedMs, timeline.durationMs);
+  const currentTimeMs = timeline.startMs + clampedElapsedMs;
 
   const currentIndex = useMemo(() => {
     if (points.length === 0) return 0;
@@ -144,6 +180,45 @@ export function GpxReplayClient() {
     }
     return total;
   }, [points]);
+
+  const currentSpeed = useMemo(() => {
+    if (points.length < 2) return { knots: null as number | null, mph: null as number | null };
+
+    const i = Math.max(0, Math.min(currentIndex, points.length - 2));
+    const from = points[i];
+    const to = points[i + 1];
+
+    const dtMs = to.timeMs - from.timeMs;
+    if (dtMs <= 0) return { knots: null, mph: null };
+
+    const groundNm = calculateHaversineDistance(from.lat, from.lon, to.lat, to.lon);
+    const verticalNm = Math.abs(to.ele - from.ele) / 1852;
+    const segmentDistanceNm = Math.sqrt(groundNm * groundNm + verticalNm * verticalNm);
+
+    const hours = dtMs / 3_600_000;
+    if (hours <= 0) return { knots: null, mph: null };
+
+    const knots = segmentDistanceNm / hours;
+    const mph = knots * 1.15078;
+    return { knots, mph };
+  }, [points, currentIndex]);
+
+  const currentAltitudeFt = useMemo(() => {
+    if (points.length === 0) return null as number | null;
+    if (points.length === 1) return points[0].ele * 3.28084;
+
+    const i = Math.max(0, Math.min(currentIndex, points.length - 2));
+    const from = points[i];
+    const to = points[i + 1];
+    const segmentDuration = to.timeMs - from.timeMs;
+
+    if (segmentDuration <= 0) return from.ele * 3.28084;
+
+    const tRaw = (currentTimeMs - from.timeMs) / segmentDuration;
+    const t = Math.max(0, Math.min(1, tRaw));
+    const eleM = from.ele + (to.ele - from.ele) * t;
+    return eleM * 3.28084;
+  }, [points, currentIndex, currentTimeMs]);
 
   useEffect(() => {
     if (!isPlaying || timeline.durationMs <= 0) {
@@ -180,6 +255,17 @@ export function GpxReplayClient() {
     };
   }, [isPlaying, speed, timeline.durationMs]);
 
+  useEffect(() => {
+    setShareStatus("idle");
+    setShareUrl("");
+  }, [rawGpx]);
+
+  useEffect(() => {
+    if (shareStatus !== "copied" && shareStatus !== "error") return;
+    const id = setTimeout(() => setShareStatus("idle"), 2500);
+    return () => clearTimeout(id);
+  }, [shareStatus]);
+
   const handleFile = async (file: File) => {
     if (!file.name.toLowerCase().endsWith(".gpx")) {
       setError("Please select a .gpx file.");
@@ -190,6 +276,7 @@ export function GpxReplayClient() {
       const text = await file.text();
       const parsed = parseGpxText(text);
       setPoints(parsed);
+      setRawGpx(text);
       setElapsedMs(0);
       setIsPlaying(false);
       setError("");
@@ -197,6 +284,7 @@ export function GpxReplayClient() {
       const message = err instanceof Error ? err.message : "Failed to parse GPX file.";
       setError(message);
       setPoints([]);
+      setRawGpx("");
       setElapsedMs(0);
       setIsPlaying(false);
     }
@@ -216,10 +304,60 @@ export function GpxReplayClient() {
     setIsPlaying(false);
   };
 
+  const handleShare = useCallback(async () => {
+    if (!rawGpx || shareStatus === "loading") return;
+    setShareStatus("loading");
+
+    try {
+      const response = await fetch("/api/replay/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/gpx+xml" },
+        body: rawGpx,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Share failed: ${response.status}`);
+      }
+
+      const data = (await response.json()) as { shortUrl: string };
+      const url = new URL(data.shortUrl);
+      url.searchParams.set("t", String(Math.round(clampedElapsedMs)));
+      url.searchParams.set("speed", String(speed));
+      const finalUrl = url.toString();
+
+      setShareUrl(finalUrl);
+      await navigator.clipboard.writeText(finalUrl);
+      setShareStatus("copied");
+    } catch (err) {
+      console.error(err);
+      setShareStatus("error");
+    }
+  }, [rawGpx, clampedElapsedMs, speed, shareStatus]);
+
   const formatUtc = (valueMs: number): string => {
     if (!Number.isFinite(valueMs) || valueMs <= 0) return "--:--:--";
     return new Date(valueMs).toISOString().slice(11, 19);
   };
+
+  const formatUtcShort = (valueMs: number): string => {
+    if (!Number.isFinite(valueMs) || valueMs <= 0) return "--:--";
+    return new Date(valueMs).toISOString().slice(11, 16);
+  };
+
+  const canShare = points.length >= 2 && rawGpx.length > 0;
+
+  const shareLabel = (() => {
+    switch (shareStatus) {
+      case "loading":
+        return "Creating link…";
+      case "copied":
+        return "Link copied!";
+      case "error":
+        return "Share failed";
+      default:
+        return "Share";
+    }
+  })();
 
   return (
     <PageLayout currentPage="replay">
@@ -230,56 +368,96 @@ export function GpxReplayClient() {
 
       <main className="w-full max-w-6xl">
         <div className="rounded-2xl p-6 sm:p-8 shadow-2xl bg-slate-800/50 backdrop-blur-sm border border-gray-700">
-          <div className="mb-6 pb-6 border-b border-gray-700">
-            <h2 className="text-xl sm:text-2xl font-bold mb-2 text-white">
-              Flight Track Replay
-            </h2>
-            <p className="text-sm" style={{ color: "oklch(0.7 0.02 240)" }}>
-              Upload a GPX file with timestamps to animate position in 3D. Controls support
-              10x, 50x, and 100x playback speeds.
-            </p>
-          </div>
-
-          <div
-            onDragOver={(e) => {
-              e.preventDefault();
-              setIsDragOver(true);
-            }}
-            onDragLeave={() => setIsDragOver(false)}
-            onDrop={handleDrop}
-            className={`mb-6 rounded-xl border-2 border-dashed p-6 text-center transition-colors ${
-              isDragOver ? "border-sky-400 bg-sky-500/10" : "border-gray-600 bg-slate-900/40"
-            }`}
-          >
-            <p className="text-white font-medium mb-2">Drag and drop your GPX file here</p>
-            <p className="text-sm mb-4" style={{ color: "oklch(0.65 0.02 240)" }}>
-              File must include track point timestamps (`time` in `trkpt`).
-            </p>
+          <div className="mb-6 pb-6 border-b border-gray-700 flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold mb-2 text-white">
+                Flight Track Replay
+              </h2>
+              <p className="text-sm" style={{ color: "oklch(0.7 0.02 240)" }}>
+                {initialGpxName
+                  ? "Shared replay. Use the slider and play controls below."
+                  : "Upload a GPX file with timestamps to animate position in 3D. Controls support 10x, 50x, and 100x playback speeds."}
+              </p>
+            </div>
             <button
               type="button"
-              onClick={() => inputRef.current?.click()}
-              className="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-medium cursor-pointer transition-colors"
+              onClick={handleShare}
+              disabled={!canShare || shareStatus === "loading"}
+              title={canShare ? "Copy a shareable link to current position" : "Load a GPX first"}
+              className={`shrink-0 inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium cursor-pointer transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                shareStatus === "copied"
+                  ? "bg-emerald-600 text-white"
+                  : shareStatus === "error"
+                    ? "bg-red-600 text-white"
+                    : "bg-slate-700 hover:bg-slate-600 text-white"
+              }`}
             >
-              Choose GPX File
+              {shareStatus === "copied" ? (
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M5 12l5 5 9-11" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              ) : shareStatus === "loading" ? (
+                <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+              ) : (
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="18" cy="5" r="3" />
+                  <circle cx="6" cy="12" r="3" />
+                  <circle cx="18" cy="19" r="3" />
+                  <path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" />
+                </svg>
+              )}
+              <span className="hidden sm:inline">{shareLabel}</span>
             </button>
-            <input
-              ref={inputRef}
-              type="file"
-              accept=".gpx,application/gpx+xml"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  void handleFile(file);
-                }
-                e.currentTarget.value = "";
-              }}
-            />
           </div>
+
+          {!initialGpx ? (
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDragOver(true);
+              }}
+              onDragLeave={() => setIsDragOver(false)}
+              onDrop={handleDrop}
+              className={`mb-6 rounded-xl border-2 border-dashed p-6 text-center transition-colors ${
+                isDragOver ? "border-sky-400 bg-sky-500/10" : "border-gray-600 bg-slate-900/40"
+              }`}
+            >
+              <p className="text-white font-medium mb-2">Drag and drop your GPX file here</p>
+              <p className="text-sm mb-4" style={{ color: "oklch(0.65 0.02 240)" }}>
+                File must include track point timestamps (`time` in `trkpt`).
+              </p>
+              <button
+                type="button"
+                onClick={() => inputRef.current?.click()}
+                className="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-medium cursor-pointer transition-colors"
+              >
+                Choose GPX File
+              </button>
+              <input
+                ref={inputRef}
+                type="file"
+                accept=".gpx,application/gpx+xml"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    void handleFile(file);
+                  }
+                  e.currentTarget.value = "";
+                }}
+              />
+            </div>
+          ) : null}
 
           {error ? (
             <div className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200">
               {error}
+            </div>
+          ) : null}
+
+          {shareUrl && shareStatus === "copied" ? (
+            <div className="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200 break-all">
+              {shareUrl}
             </div>
           ) : null}
 
@@ -289,71 +467,78 @@ export function GpxReplayClient() {
             currentTimeMs={currentTimeMs}
           />
 
-          <div className="mt-6 grid grid-cols-1 lg:grid-cols-[8rem_1fr_auto] gap-4 items-center">
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setIsPlaying((prev) => !prev)}
-                disabled={points.length < 2 || timeline.durationMs <= 0}
-                className="px-3 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-700 disabled:cursor-not-allowed text-white cursor-pointer transition-colors"
-              >
-                {isPlaying ? "Pause" : "Play"}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setElapsedMs(0);
-                  setIsPlaying(false);
-                }}
-                disabled={points.length < 2}
-                className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white cursor-pointer transition-colors"
-              >
-                Reset
-              </button>
-            </div>
+          <div className="mt-4 flex items-center gap-3 rounded-lg bg-slate-900/60 border border-gray-700 px-3 py-2">
+            <button
+              type="button"
+              onClick={() => setIsPlaying((prev) => !prev)}
+              disabled={points.length < 2 || timeline.durationMs <= 0}
+              aria-label={isPlaying ? "Pause" : "Play"}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-700 disabled:cursor-not-allowed text-white cursor-pointer transition-colors"
+            >
+              {isPlaying ? (
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
+                  <rect x="6" y="5" width="4" height="14" rx="1" />
+                  <rect x="14" y="5" width="4" height="14" rx="1" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              )}
+            </button>
 
-            <div>
-              <input
-                type="range"
-                min={0}
-                max={Math.max(0, timeline.durationMs)}
-                step={100}
-                value={Math.min(elapsedMs, timeline.durationMs)}
-                onChange={(e) => handleSliderChange(Number.parseInt(e.target.value, 10))}
-                disabled={points.length < 2 || timeline.durationMs <= 0}
-                className="w-full accent-cyan-500 cursor-pointer disabled:cursor-not-allowed"
-              />
-              <div className="mt-1 flex justify-between text-xs" style={{ color: "oklch(0.6 0.02 240)" }}>
-                <span>{formatUtc(timeline.startMs)}</span>
-                <span>{formatUtc(currentTimeMs)}</span>
-                <span>{formatUtc(timeline.endMs)}</span>
-              </div>
-            </div>
+            <span className="text-xs tabular-nums shrink-0" style={{ color: "oklch(0.7 0.02 240)" }}>
+              <span className="sm:hidden">{formatUtcShort(currentTimeMs)}</span>
+              <span className="hidden sm:inline">{formatUtc(currentTimeMs)}</span>
+            </span>
 
-            <div className="flex items-center gap-2">
-              <span className="text-sm" style={{ color: "oklch(0.7 0.02 240)" }}>
-                Speed
-              </span>
+            <input
+              type="range"
+              min={0}
+              max={Math.max(0, timeline.durationMs)}
+              step={100}
+              value={clampedElapsedMs}
+              onChange={(e) => handleSliderChange(Number.parseInt(e.target.value, 10))}
+              disabled={points.length < 2 || timeline.durationMs <= 0}
+              className="flex-1 min-w-0 accent-cyan-500 cursor-pointer disabled:cursor-not-allowed"
+            />
+
+            <span className="text-xs tabular-nums shrink-0" style={{ color: "oklch(0.6 0.02 240)" }}>
+              <span className="sm:hidden">{formatUtcShort(timeline.endMs)}</span>
+              <span className="hidden sm:inline">{formatUtc(timeline.endMs)}</span>
+            </span>
+
+            <select
+              value={speed}
+              onChange={(e) => {
+                const parsed = Number.parseInt(e.target.value, 10);
+                if (isSpeedOption(parsed)) setSpeed(parsed);
+              }}
+              aria-label="Playback speed"
+              className="shrink-0 rounded-md bg-slate-800 border border-slate-700 text-gray-200 text-xs font-medium px-2 py-1.5 cursor-pointer hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            >
               {SPEED_OPTIONS.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setSpeed(option)}
-                  className={`px-2.5 py-1.5 rounded-md text-sm font-medium cursor-pointer transition-colors ${
-                    speed === option
-                      ? "bg-cyan-500 text-slate-950"
-                      : "bg-slate-700 text-gray-200 hover:bg-slate-600"
-                  }`}
-                >
+                <option key={option} value={option}>
                   {option}x
-                </button>
+                </option>
               ))}
-            </div>
+            </select>
           </div>
 
-          <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
-            <StatCard label="Track Points" value={points.length.toString()} />
-            <StatCard label="Current Point" value={points.length > 0 ? (currentIndex + 1).toString() : "0"} />
+          <div className="mt-6 grid grid-cols-2 gap-3 items-stretch">
+            <StatCard
+              label="Current Segment Speed (3D)"
+              tooltip="Computed from 3D distance between adjacent GPX points divided by their timestamp delta."
+              value={currentSpeed.knots !== null ? `${currentSpeed.knots.toFixed(1)} KT` : "--"}
+            />
+            <StatCard
+              label="Current Altitude"
+              tooltip="GPX altitude is sampled at points. During playback, altitude is linearly interpolated between the current point and the next point by time."
+              value={currentAltitudeFt !== null ? `${Math.round(currentAltitudeFt).toLocaleString()} ft` : "--"}
+            />
+          </div>
+
+          <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3 items-stretch">
             <StatCard
               label="Track Distance"
               value={points.length > 1 ? `${formatDistance(totalDistanceNm, 1)} NM` : "0 NM"}
@@ -362,6 +547,8 @@ export function GpxReplayClient() {
               label="Replay Duration"
               value={timeline.durationMs > 0 ? `${Math.round(timeline.durationMs / 60000)} min` : "0 min"}
             />
+            <StatCard label="Track Points" value={points.length.toString()} />
+            <StatCard label="Current Point" value={points.length > 0 ? (currentIndex + 1).toString() : "0"} />
           </div>
 
           <div className="mt-6 text-xs" style={{ color: "oklch(0.62 0.02 240)" }}>
@@ -378,13 +565,14 @@ export function GpxReplayClient() {
   );
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
+function StatCard({ label, value, tooltip }: { label: string; value: string; tooltip?: string }) {
   return (
-    <div className="rounded-lg border border-gray-700 bg-slate-900/40 p-3">
-      <div className="text-xs uppercase tracking-wide" style={{ color: "oklch(0.6 0.02 240)" }}>
-        {label}
+    <div className="flex flex-col h-full rounded-lg border border-gray-700 bg-slate-900/40 p-3">
+      <div className="text-xs uppercase tracking-wide flex items-center gap-2" style={{ color: "oklch(0.6 0.02 240)" }}>
+        <span>{label}</span>
+        {tooltip ? <Tooltip content={tooltip} /> : null}
       </div>
-      <div className="mt-1 text-white text-lg font-semibold tabular-nums">{value}</div>
+      <div className="mt-auto pt-2 text-white text-lg font-semibold tabular-nums">{value}</div>
     </div>
   );
 }
