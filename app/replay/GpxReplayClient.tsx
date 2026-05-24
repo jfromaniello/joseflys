@@ -132,9 +132,38 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
   const [elapsedMs, setElapsedMs] = useState(initialElapsedMs);
   const [shareStatus, setShareStatus] = useState<ShareStatus>("idle");
   const [shareUrl, setShareUrl] = useState<string>("");
+  const [autoCamera, setAutoCamera] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastTickRef = useRef<number | null>(null);
   const initialGpxAppliedRef = useRef(false);
+  const settingsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!settingsOpen) return;
+    const handler = (event: MouseEvent) => {
+      if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) {
+        setSettingsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [settingsOpen]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = window.localStorage.getItem("gpxReplay.autoCamera");
+    if (stored === "true") setAutoCamera(true);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("gpxReplay.autoCamera", autoCamera ? "true" : "false");
+  }, [autoCamera]);
+
+  const handleAutoCameraInterrupt = useCallback(() => {
+    setAutoCamera(false);
+  }, []);
 
   useEffect(() => {
     if (!initialGpx || initialGpxAppliedRef.current) return;
@@ -465,6 +494,8 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
             points={points}
             currentIndex={currentIndex}
             currentTimeMs={currentTimeMs}
+            autoCamera={autoCamera}
+            onAutoCameraInterrupt={handleAutoCameraInterrupt}
           />
 
           <div className="mt-4 flex items-center gap-3 rounded-lg bg-slate-900/60 border border-gray-700 px-3 py-2">
@@ -508,21 +539,84 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
               <span className="hidden sm:inline">{formatUtc(timeline.endMs)}</span>
             </span>
 
-            <select
-              value={speed}
-              onChange={(e) => {
-                const parsed = Number.parseInt(e.target.value, 10);
-                if (isSpeedOption(parsed)) setSpeed(parsed);
-              }}
-              aria-label="Playback speed"
-              className="shrink-0 rounded-md bg-slate-800 border border-slate-700 text-gray-200 text-xs font-medium px-2 py-1.5 cursor-pointer hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500"
-            >
-              {SPEED_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}x
-                </option>
-              ))}
-            </select>
+            <div className="relative shrink-0" ref={settingsRef}>
+              <button
+                type="button"
+                onClick={() => setSettingsOpen((prev) => !prev)}
+                aria-label="Playback settings"
+                aria-expanded={settingsOpen}
+                title="Playback settings"
+                className={`flex h-8 w-8 items-center justify-center rounded-md border text-xs cursor-pointer transition-colors ${
+                  settingsOpen || autoCamera
+                    ? "bg-cyan-500/20 border-cyan-400 text-cyan-200"
+                    : "bg-slate-800 border-slate-700 text-gray-300 hover:bg-slate-700"
+                }`}
+              >
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="3" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"
+                  />
+                </svg>
+              </button>
+
+              {settingsOpen && (
+                <div className="absolute right-0 bottom-full mb-2 w-56 rounded-lg bg-slate-900 border border-slate-600 shadow-xl z-50 p-3 space-y-3">
+                  <div>
+                    <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                      Playback Speed
+                    </div>
+                    <div className="grid grid-cols-3 gap-1 rounded-md bg-slate-800/60 p-0.5">
+                      {SPEED_OPTIONS.map((option) => (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() => setSpeed(option)}
+                          className={`px-2 py-1.5 rounded text-xs font-medium cursor-pointer transition-colors ${
+                            speed === option
+                              ? "bg-cyan-500 text-slate-950"
+                              : "text-gray-300 hover:bg-slate-700"
+                          }`}
+                        >
+                          {option}x
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="border-t border-slate-700 pt-3">
+                    <button
+                      type="button"
+                      onClick={() => setAutoCamera((prev) => !prev)}
+                      disabled={points.length < 2}
+                      role="switch"
+                      aria-checked={autoCamera}
+                      className="w-full flex items-center justify-between gap-3 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 group"
+                    >
+                      <div className="text-left">
+                        <div className="text-xs font-medium text-white">Auto camera</div>
+                        <div className="text-[10px] text-slate-400 leading-tight">
+                          Cinematic follow of the trajectory
+                        </div>
+                      </div>
+                      <span
+                        className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
+                          autoCamera ? "bg-cyan-500" : "bg-slate-600"
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                            autoCamera ? "translate-x-5" : "translate-x-1"
+                          }`}
+                        />
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="mt-6 grid grid-cols-2 gap-3 items-stretch">
