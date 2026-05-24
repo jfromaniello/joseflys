@@ -65,8 +65,10 @@ export function SegmentsGlobe({
       // Use satellite imagery tiles for a photographic 3D view.
       viewer.imageryLayers.removeAll();
       viewer.imageryLayers.addImageryProvider(
-        new Cesium.ArcGisMapServerImageryProvider({
-          url: "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer",
+        new Cesium.UrlTemplateImageryProvider({
+          url: "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+          credit: "Esri World Imagery",
+          maximumLevel: 19,
         })
       );
 
