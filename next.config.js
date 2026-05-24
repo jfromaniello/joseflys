@@ -13,6 +13,7 @@ const withSerwist = withSerwistInit({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: false, // Disabled for Cesium 3D compatibility
+  allowedDevOrigins: ["josmini.local", "*.local", "0.0.0.0"],
   async redirects() {
     return [
       {

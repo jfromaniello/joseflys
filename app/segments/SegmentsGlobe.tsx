@@ -62,6 +62,14 @@ export function SegmentsGlobe({
         fullscreenButton: false,
       });
 
+      // Use satellite imagery tiles for a photographic 3D view.
+      viewer.imageryLayers.removeAll();
+      viewer.imageryLayers.addImageryProvider(
+        new Cesium.ArcGisMapServerImageryProvider({
+          url: "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer",
+        })
+      );
+
       viewerRef.current = viewer;
 
       // Remove default attribution
