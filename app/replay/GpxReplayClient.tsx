@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
+import type { CameraPose } from "./GpxReplayGlobe";
 import { PageLayout } from "../components/PageLayout";
 import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
 import { Footer } from "../components/Footer";
@@ -34,7 +35,7 @@ const GpxReplayGlobe = dynamic(
   }
 );
 
-const SPEED_OPTIONS = [10, 50, 100] as const;
+const SPEED_OPTIONS = [1, 10, 50, 100] as const;
 type SpeedOption = (typeof SPEED_OPTIONS)[number];
 
 function isSpeedOption(value: number): value is SpeedOption {
@@ -108,10 +109,49 @@ function parseGpxText(content: string): ReplayPoint[] {
 
 type ShareStatus = "idle" | "loading" | "copied" | "error";
 
+type ViewMode = "free" | "cinematic" | "cockpit";
+
+const VIEW_MODES: ViewMode[] = ["free", "cinematic", "cockpit"];
+
+function isViewMode(value: string): value is ViewMode {
+  return (VIEW_MODES as string[]).includes(value);
+}
+
+type MapStyle = "standard" | "photorealistic";
+
+const MAP_STYLES: MapStyle[] = ["standard", "photorealistic"];
+
+function isMapStyle(value: string): value is MapStyle {
+  return (MAP_STYLES as string[]).includes(value);
+}
+
+const HAS_GOOGLE_MAPS_KEY = Boolean(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY);
+
+function parseCameraParam(value: string | null): CameraPose | null {
+  if (!value) return null;
+  const parts = value.split(",").map((p) => Number.parseFloat(p));
+  if (parts.length !== 5 || parts.some((n) => !Number.isFinite(n))) return null;
+  const [lon, lat, alt, hdg, pit] = parts;
+  if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
+  return { lon, lat, alt, hdg, pit };
+}
+
+function serializeCamera(pose: CameraPose): string {
+  return [
+    pose.lon.toFixed(5),
+    pose.lat.toFixed(5),
+    Math.round(pose.alt).toString(),
+    pose.hdg.toFixed(1),
+    pose.pit.toFixed(1),
+  ].join(",");
+}
+
 export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientProps = {}) {
   const searchParams = useSearchParams();
   const initialTParam = searchParams.get("t");
   const initialSpeedParam = searchParams.get("speed");
+  const initialViewParam = searchParams.get("view");
+  const initialCamParam = searchParams.get("cam");
 
   const initialElapsedMs = useMemo(() => {
     const parsed = initialTParam ? Number.parseInt(initialTParam, 10) : 0;
@@ -123,6 +163,18 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
     return isSpeedOption(parsed) ? parsed : 10;
   }, [initialSpeedParam]);
 
+  const initialViewMode = useMemo<ViewMode>(() => {
+    if (initialViewParam && isViewMode(initialViewParam)) return initialViewParam;
+    return "free";
+  }, [initialViewParam]);
+
+  const initialCamera = useMemo<CameraPose | null>(
+    () => parseCameraParam(initialCamParam),
+    [initialCamParam]
+  );
+
+  const cameraStateRef = useRef<CameraPose | null>(initialCamera);
+
   const [points, setPoints] = useState<ReplayPoint[]>([]);
   const [rawGpx, setRawGpx] = useState<string>("");
   const [isDragOver, setIsDragOver] = useState(false);
@@ -132,12 +184,91 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
   const [elapsedMs, setElapsedMs] = useState(initialElapsedMs);
   const [shareStatus, setShareStatus] = useState<ShareStatus>("idle");
   const [shareUrl, setShareUrl] = useState<string>("");
-  const [autoCamera, setAutoCamera] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [shareLinkCopied, setShareLinkCopied] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode);
+  const [mapStyle, setMapStyle] = useState<MapStyle>("standard");
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastTickRef = useRef<number | null>(null);
   const initialGpxAppliedRef = useRef(false);
   const settingsRef = useRef<HTMLDivElement>(null);
+  const fullscreenWrapperRef = useRef<HTMLDivElement>(null);
+
+  const usedNativeFullscreenRef = useRef(false);
+
+  useEffect(() => {
+    const onChange = () => {
+      if (!usedNativeFullscreenRef.current) return;
+      const doc = document as Document & { webkitFullscreenElement?: Element | null };
+      const el = fullscreenWrapperRef.current;
+      const active = doc.fullscreenElement === el || doc.webkitFullscreenElement === el;
+      setIsFullscreen(active);
+      if (!active) usedNativeFullscreenRef.current = false;
+    };
+    document.addEventListener("fullscreenchange", onChange);
+    document.addEventListener("webkitfullscreenchange", onChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", onChange);
+      document.removeEventListener("webkitfullscreenchange", onChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isFullscreen || usedNativeFullscreenRef.current) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsFullscreen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isFullscreen]);
+
+  const handleFullscreenToggle = useCallback(async () => {
+    const el = fullscreenWrapperRef.current as
+      | (HTMLDivElement & { webkitRequestFullscreen?: () => Promise<void> | void })
+      | null;
+    if (!el) return;
+    const doc = document as Document & {
+      webkitExitFullscreen?: () => Promise<void> | void;
+      webkitFullscreenElement?: Element | null;
+    };
+
+    if (isFullscreen) {
+      if (usedNativeFullscreenRef.current) {
+        try {
+          if (typeof doc.exitFullscreen === "function") await doc.exitFullscreen();
+          else if (typeof doc.webkitExitFullscreen === "function") await doc.webkitExitFullscreen();
+        } catch (err) {
+          console.error("Exit fullscreen failed", err);
+        }
+      } else {
+        setIsFullscreen(false);
+      }
+      return;
+    }
+
+    const request =
+      typeof el.requestFullscreen === "function"
+        ? el.requestFullscreen.bind(el)
+        : typeof el.webkitRequestFullscreen === "function"
+          ? el.webkitRequestFullscreen.bind(el)
+          : null;
+
+    if (!request) {
+      setIsFullscreen(true);
+      return;
+    }
+
+    try {
+      usedNativeFullscreenRef.current = true;
+      await request();
+    } catch (err) {
+      console.error("Request fullscreen failed", err);
+      usedNativeFullscreenRef.current = false;
+      setIsFullscreen(true);
+    }
+  }, [isFullscreen]);
 
   useEffect(() => {
     if (!settingsOpen) return;
@@ -152,18 +283,63 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const stored = window.localStorage.getItem("gpxReplay.autoCamera");
-    if (stored === "true") setAutoCamera(true);
+    if (initialViewParam && isViewMode(initialViewParam)) return;
+    const stored = window.localStorage.getItem("gpxReplay.viewMode");
+    if (stored && isViewMode(stored)) {
+      setViewMode(stored);
+      return;
+    }
+    const legacy = window.localStorage.getItem("gpxReplay.autoCamera");
+    if (legacy === "true") setViewMode("cinematic");
+  }, [initialViewParam]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("gpxReplay.viewMode", viewMode);
+  }, [viewMode]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = window.localStorage.getItem("gpxReplay.mapStyle");
+    if (stored && isMapStyle(stored)) {
+      if (stored === "photorealistic" && !HAS_GOOGLE_MAPS_KEY) return;
+      setMapStyle(stored);
+    }
   }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    window.localStorage.setItem("gpxReplay.autoCamera", autoCamera ? "true" : "false");
-  }, [autoCamera]);
+    window.localStorage.setItem("gpxReplay.mapStyle", mapStyle);
+  }, [mapStyle]);
 
-  const handleAutoCameraInterrupt = useCallback(() => {
-    setAutoCamera(false);
+  const handleViewModeInterrupt = useCallback(() => {
+    setViewMode("free");
   }, []);
+
+  useEffect(() => {
+    if (!shareModalOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShareModalOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [shareModalOpen]);
+
+  useEffect(() => {
+    if (!shareLinkCopied) return;
+    const id = window.setTimeout(() => setShareLinkCopied(false), 2000);
+    return () => window.clearTimeout(id);
+  }, [shareLinkCopied]);
+
+  const handleCopyShareLink = useCallback(async () => {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareLinkCopied(true);
+    } catch {
+      // ignore — input is still selectable
+    }
+  }, [shareUrl]);
 
   useEffect(() => {
     if (!initialGpx || initialGpxAppliedRef.current) return;
@@ -352,16 +528,26 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
       const url = new URL(data.shortUrl);
       url.searchParams.set("t", String(Math.round(clampedElapsedMs)));
       url.searchParams.set("speed", String(speed));
+      url.searchParams.set("view", viewMode);
+      const camPose = cameraStateRef.current;
+      if (camPose) {
+        url.searchParams.set("cam", serializeCamera(camPose));
+      }
       const finalUrl = url.toString();
 
       setShareUrl(finalUrl);
-      await navigator.clipboard.writeText(finalUrl);
+      try {
+        await navigator.clipboard.writeText(finalUrl);
+      } catch {
+        // clipboard may fail (permissions, insecure context) — modal lets user copy manually
+      }
       setShareStatus("copied");
+      setShareModalOpen(true);
     } catch (err) {
       console.error(err);
       setShareStatus("error");
     }
-  }, [rawGpx, clampedElapsedMs, speed, shareStatus]);
+  }, [rawGpx, clampedElapsedMs, speed, shareStatus, viewMode]);
 
   const formatUtc = (valueMs: number): string => {
     if (!Number.isFinite(valueMs) || valueMs <= 0) return "--:--:--";
@@ -397,49 +583,75 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
 
       <main className="w-full max-w-6xl">
         <div className="rounded-2xl p-6 sm:p-8 shadow-2xl bg-slate-800/50 backdrop-blur-sm border border-gray-700">
+          <input
+            ref={inputRef}
+            type="file"
+            accept=".gpx,application/gpx+xml"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                void handleFile(file);
+              }
+              e.currentTarget.value = "";
+            }}
+          />
+
           <div className="mb-6 pb-6 border-b border-gray-700 flex items-start justify-between gap-3">
             <div>
               <h2 className="text-xl sm:text-2xl font-bold mb-2 text-white">
                 Flight Track Replay
               </h2>
               <p className="text-sm" style={{ color: "oklch(0.7 0.02 240)" }}>
-                {initialGpxName
-                  ? "Shared replay. Use the slider and play controls below."
-                  : "Upload a GPX file with timestamps to animate position in 3D. Controls support 10x, 50x, and 100x playback speeds."}
+                {points.length === 0
+                  ? "Upload a GPX file with timestamps to animate position in 3D. Controls support 10x, 50x, and 100x playback speeds."
+                  : initialGpxName
+                    ? "Shared replay. Use the slider and play controls below."
+                    : "Use the slider and play controls below. Load a different file anytime."}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={handleShare}
-              disabled={!canShare || shareStatus === "loading"}
-              title={canShare ? "Copy a shareable link to current position" : "Load a GPX first"}
-              className={`shrink-0 inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium cursor-pointer transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-                shareStatus === "copied"
-                  ? "bg-emerald-600 text-white"
-                  : shareStatus === "error"
-                    ? "bg-red-600 text-white"
-                    : "bg-slate-700 hover:bg-slate-600 text-white"
-              }`}
-            >
-              {shareStatus === "copied" ? (
-                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M5 12l5 5 9-11" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              ) : shareStatus === "loading" ? (
-                <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-              ) : (
-                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="18" cy="5" r="3" />
-                  <circle cx="6" cy="12" r="3" />
-                  <circle cx="18" cy="19" r="3" />
-                  <path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" />
-                </svg>
-              )}
-              <span className="hidden sm:inline">{shareLabel}</span>
-            </button>
+            {points.length > 0 ? (
+              <div className="shrink-0 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => inputRef.current?.click()}
+                  title="Load a different GPX file"
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium cursor-pointer transition-colors bg-slate-700 hover:bg-slate-600 text-white"
+                >
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M4 4h7l2 2h7v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2z" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M12 11v6M9 14h6" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <span className="hidden sm:inline">New GPX</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleShare}
+                  disabled={!canShare || shareStatus === "loading"}
+                  title="Copy a shareable link to current position"
+                  className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium cursor-pointer transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                    shareStatus === "error"
+                      ? "bg-red-600 text-white"
+                      : "bg-cyan-600 hover:bg-cyan-500 text-white"
+                  }`}
+                >
+                  {shareStatus === "loading" ? (
+                    <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  ) : (
+                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="18" cy="5" r="3" />
+                      <circle cx="6" cy="12" r="3" />
+                      <circle cx="18" cy="19" r="3" />
+                      <path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" />
+                    </svg>
+                  )}
+                  <span className="hidden sm:inline">{shareLabel}</span>
+                </button>
+              </div>
+            ) : null}
           </div>
 
-          {!initialGpx ? (
+          {points.length === 0 ? (
             <div
               onDragOver={(e) => {
                 e.preventDefault();
@@ -447,7 +659,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
               }}
               onDragLeave={() => setIsDragOver(false)}
               onDrop={handleDrop}
-              className={`mb-6 rounded-xl border-2 border-dashed p-6 text-center transition-colors ${
+              className={`mb-6 rounded-xl border-2 border-dashed p-10 text-center transition-colors ${
                 isDragOver ? "border-sky-400 bg-sky-500/10" : "border-gray-600 bg-slate-900/40"
               }`}
             >
@@ -462,19 +674,6 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
               >
                 Choose GPX File
               </button>
-              <input
-                ref={inputRef}
-                type="file"
-                accept=".gpx,application/gpx+xml"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    void handleFile(file);
-                  }
-                  e.currentTarget.value = "";
-                }}
-              />
             </div>
           ) : null}
 
@@ -484,21 +683,78 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
             </div>
           ) : null}
 
-          {shareUrl && shareStatus === "copied" ? (
-            <div className="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200 break-all">
-              {shareUrl}
+          {points.length > 0 ? (
+          <>
+          <div
+            ref={fullscreenWrapperRef}
+            className={
+              isFullscreen
+                ? "fixed inset-0 z-[9999] bg-slate-950 flex flex-col"
+                : "relative"
+            }
+          >
+            <div className={isFullscreen ? "flex-1 relative" : ""}>
+              <GpxReplayGlobe
+                points={points}
+                currentIndex={currentIndex}
+                currentTimeMs={currentTimeMs}
+                viewMode={viewMode}
+                mapStyle={mapStyle}
+                onViewModeInterrupt={handleViewModeInterrupt}
+                isFullscreen={isFullscreen}
+                initialCamera={initialCamera}
+                cameraStateRef={cameraStateRef}
+              />
             </div>
-          ) : null}
 
-          <GpxReplayGlobe
-            points={points}
-            currentIndex={currentIndex}
-            currentTimeMs={currentTimeMs}
-            autoCamera={autoCamera}
-            onAutoCameraInterrupt={handleAutoCameraInterrupt}
-          />
+            <button
+              type="button"
+              onClick={handleFullscreenToggle}
+              aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+              title={isFullscreen ? "Exit fullscreen (Esc)" : "Enter fullscreen"}
+              className="absolute top-3 right-3 z-[600] flex h-9 w-9 items-center justify-center rounded-md bg-slate-900/80 text-white border border-slate-600 cursor-pointer hover:bg-slate-800 transition-colors"
+            >
+              {isFullscreen ? (
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </button>
 
-          <div className="mt-4 flex items-center gap-3 rounded-lg bg-slate-900/60 border border-gray-700 px-3 py-2">
+            {points.length > 0 ? (
+              <div className="absolute top-16 right-3 z-[600] flex flex-col gap-2 rounded-lg bg-slate-900/80 border border-slate-600 px-3 py-2 backdrop-blur min-w-[7rem]">
+                <div>
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 leading-none">
+                    Speed
+                  </div>
+                  <div className="mt-1 text-base font-semibold tabular-nums text-white leading-none">
+                    {currentSpeed.knots !== null ? `${currentSpeed.knots.toFixed(0)} KT` : "--"}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 leading-none">
+                    Altitude
+                  </div>
+                  <div className="mt-1 text-base font-semibold tabular-nums text-white leading-none">
+                    {currentAltitudeFt !== null
+                      ? `${Math.round(currentAltitudeFt).toLocaleString()} ft`
+                      : "--"}
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            <div
+              className={
+                isFullscreen
+                  ? "absolute bottom-4 left-4 right-4 z-[600] flex items-center gap-3 rounded-lg bg-slate-900/85 border border-gray-700 px-3 py-2 backdrop-blur"
+                  : "mt-4 flex items-center gap-3 rounded-lg bg-slate-900/60 border border-gray-700 px-3 py-2"
+              }
+            >
             <button
               type="button"
               onClick={() => setIsPlaying((prev) => !prev)}
@@ -547,7 +803,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
                 aria-expanded={settingsOpen}
                 title="Playback settings"
                 className={`flex h-8 w-8 items-center justify-center rounded-md border text-xs cursor-pointer transition-colors ${
-                  settingsOpen || autoCamera
+                  settingsOpen || viewMode !== "free"
                     ? "bg-cyan-500/20 border-cyan-400 text-cyan-200"
                     : "bg-slate-800 border-slate-700 text-gray-300 hover:bg-slate-700"
                 }`}
@@ -568,7 +824,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
                     <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
                       Playback Speed
                     </div>
-                    <div className="grid grid-cols-3 gap-1 rounded-md bg-slate-800/60 p-0.5">
+                    <div className="grid grid-cols-4 gap-1 rounded-md bg-slate-800/60 p-0.5">
                       {SPEED_OPTIONS.map((option) => (
                         <button
                           key={option}
@@ -587,42 +843,83 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
                   </div>
 
                   <div className="border-t border-slate-700 pt-3">
-                    <button
-                      type="button"
-                      onClick={() => setAutoCamera((prev) => !prev)}
-                      disabled={points.length < 2}
-                      role="switch"
-                      aria-checked={autoCamera}
-                      className="w-full flex items-center justify-between gap-3 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 group"
-                    >
-                      <div className="text-left">
-                        <div className="text-xs font-medium text-white">Auto camera</div>
-                        <div className="text-[10px] text-slate-400 leading-tight">
-                          Cinematic follow of the trajectory
-                        </div>
-                      </div>
-                      <span
-                        className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
-                          autoCamera ? "bg-cyan-500" : "bg-slate-600"
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                            autoCamera ? "translate-x-5" : "translate-x-1"
+                    <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                      Camera
+                    </div>
+                    <div className="grid grid-cols-3 gap-1 rounded-md bg-slate-800/60 p-0.5">
+                      {(
+                        [
+                          { value: "free" as const, label: "Free" },
+                          { value: "cinematic" as const, label: "Cinematic" },
+                          { value: "cockpit" as const, label: "Cockpit" },
+                        ]
+                      ).map((opt) => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setViewMode(opt.value)}
+                          disabled={points.length < 2 && opt.value !== "free"}
+                          className={`px-2 py-1.5 rounded text-xs font-medium cursor-pointer transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                            viewMode === opt.value
+                              ? "bg-cyan-500 text-slate-950"
+                              : "text-gray-300 hover:bg-slate-700"
                           }`}
-                        />
-                      </span>
-                    </button>
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="mt-1.5 text-[10px] text-slate-400 leading-tight">
+                      {viewMode === "free"
+                        ? "Manual camera. Drag to look around."
+                        : viewMode === "cinematic"
+                          ? "Cinematic chase + side angles on turns."
+                          : "First-person view from the aircraft."}
+                    </div>
+                  </div>
+
+                  <div className="border-t border-slate-700 pt-3">
+                    <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                      Map Style
+                    </div>
+                    <div className="grid grid-cols-2 gap-1 rounded-md bg-slate-800/60 p-0.5">
+                      {(
+                        [
+                          { value: "standard" as const, label: "Standard" },
+                          { value: "photorealistic" as const, label: "Photoreal 3D" },
+                        ]
+                      ).map((opt) => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setMapStyle(opt.value)}
+                          disabled={opt.value === "photorealistic" && !HAS_GOOGLE_MAPS_KEY}
+                          className={`px-2 py-1.5 rounded text-xs font-medium cursor-pointer transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                            mapStyle === opt.value
+                              ? "bg-cyan-500 text-slate-950"
+                              : "text-gray-300 hover:bg-slate-700"
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="mt-1.5 text-[10px] text-slate-400 leading-tight">
+                      {mapStyle === "standard"
+                        ? "Satellite imagery + DEM terrain."
+                        : "Google photorealistic 3D mesh (like Google Earth)."}
+                    </div>
                   </div>
                 </div>
               )}
             </div>
           </div>
+          </div>
 
           <div className="mt-6 grid grid-cols-2 gap-3 items-stretch">
             <StatCard
-              label="Current Segment Speed (3D)"
-              tooltip="Computed from 3D distance between adjacent GPX points divided by their timestamp delta."
+              label="Speed"
+              tooltip="Computed from 3D distance between adjacent GPX points divided by their timestamp delta. Close to ground speed — without wind or aircraft anemometer data it is impossible to derive TAS or other speeds that would be more useful."
               value={currentSpeed.knots !== null ? `${currentSpeed.knots.toFixed(1)} KT` : "--"}
             />
             <StatCard
@@ -644,6 +941,8 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
             <StatCard label="Track Points" value={points.length.toString()} />
             <StatCard label="Current Point" value={points.length > 0 ? (currentIndex + 1).toString() : "0"} />
           </div>
+          </>
+          ) : null}
 
           <div className="mt-6 text-xs" style={{ color: "oklch(0.62 0.02 240)" }}>
             <div className="flex items-center gap-2">
@@ -655,6 +954,60 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
       </main>
 
       <Footer description="Replay GPX tracks in a 3D globe with smooth time-based line animation." />
+
+      {shareModalOpen && shareUrl ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Share replay"
+          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShareModalOpen(false);
+          }}
+        >
+          <div className="w-full max-w-lg rounded-xl bg-slate-900 border border-slate-700 shadow-2xl p-5 sm:p-6">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div>
+                <h3 className="text-lg font-semibold text-white">Share this replay</h3>
+                <p className="text-xs mt-1" style={{ color: "oklch(0.7 0.02 240)" }}>
+                  Anyone with the link can view the track at the current position, view mode, and camera angle.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShareModalOpen(false)}
+                aria-label="Close"
+                className="shrink-0 h-8 w-8 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer flex items-center justify-center"
+              >
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                type="text"
+                readOnly
+                value={shareUrl}
+                onFocus={(e) => e.currentTarget.select()}
+                className="flex-1 min-w-0 rounded-md bg-slate-800 border border-slate-600 px-3 py-2 text-sm text-slate-100 font-mono outline-none focus:border-cyan-500"
+              />
+              <button
+                type="button"
+                onClick={handleCopyShareLink}
+                className={`shrink-0 rounded-md px-4 py-2 text-sm font-medium cursor-pointer transition-colors ${
+                  shareLinkCopied
+                    ? "bg-emerald-600 text-white"
+                    : "bg-cyan-600 hover:bg-cyan-500 text-white"
+                }`}
+              >
+                {shareLinkCopied ? "Copied!" : "Copy"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </PageLayout>
   );
 }

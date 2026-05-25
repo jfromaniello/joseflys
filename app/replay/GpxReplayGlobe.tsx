@@ -1,6 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { MutableRefObject } from "react";
+
+export interface CameraPose {
+  lon: number;
+  lat: number;
+  alt: number;
+  hdg: number;
+  pit: number;
+}
+
+type DeviceOrientationEventWithPermission = typeof DeviceOrientationEvent & {
+  requestPermission?: () => Promise<"granted" | "denied" | "prompt">;
+};
 
 interface ReplayPoint {
   lat: number;
@@ -9,15 +22,22 @@ interface ReplayPoint {
   timeMs: number;
 }
 
+type ViewMode = "free" | "cinematic" | "cockpit";
+type MapStyle = "standard" | "photorealistic";
+
 interface GpxReplayGlobeProps {
   points: ReplayPoint[];
   currentIndex: number;
   currentTimeMs: number;
-  autoCamera: boolean;
-  onAutoCameraInterrupt?: () => void;
+  viewMode: ViewMode;
+  mapStyle?: MapStyle;
+  onViewModeInterrupt?: () => void;
+  isFullscreen?: boolean;
+  initialCamera?: CameraPose | null;
+  cameraStateRef?: MutableRefObject<CameraPose | null>;
 }
 
-type CamMode = "chase" | "side-left" | "side-right" | "panorama-start" | "panorama-end";
+type CamMode = "chase" | "side-left" | "side-right" | "panorama-start" | "panorama-end" | "cockpit";
 
 interface CamEvent {
   startMs: number;
@@ -26,6 +46,7 @@ interface CamEvent {
 }
 
 const CESIUM_ION_TOKEN = process.env.NEXT_PUBLIC_CESIUM_ION_TOKEN;
+const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
 function toRad(d: number): number {
   return (d * Math.PI) / 180;
@@ -217,12 +238,32 @@ function computePoseFromAircraft(
   return { destination: camPos, heading: cameraHeadingRad, pitch: pitchRad };
 }
 
+function computeCockpitPose(
+  Cesium: typeof import("cesium"),
+  aircraftPos: import("cesium").Cartesian3,
+  motionHeadingRad: number,
+  headingOffsetRad: number,
+  pitchOffsetRad: number
+): CamPose {
+  const enu = Cesium.Transforms.eastNorthUpToFixedFrame(aircraftPos);
+  const offsetENU = new Cesium.Cartesian3(0, 0, 4);
+  const offsetECEF = Cesium.Matrix4.multiplyByPointAsVector(enu, offsetENU, new Cesium.Cartesian3());
+  const camPos = Cesium.Cartesian3.add(aircraftPos, offsetECEF, new Cesium.Cartesian3());
+  return {
+    destination: camPos,
+    heading: motionHeadingRad + headingOffsetRad,
+    pitch: toRad(-2) + pitchOffsetRad,
+  };
+}
+
 function computeCameraPose(
   Cesium: typeof import("cesium"),
   mode: CamMode,
   aircraftPos: import("cesium").Cartesian3,
   motionHeadingRad: number,
-  sphere: import("cesium").BoundingSphere | null
+  sphere: import("cesium").BoundingSphere | null,
+  cockpitHeadingOffsetRad = 0,
+  cockpitPitchOffsetRad = 0
 ): CamPose {
   switch (mode) {
     case "chase":
@@ -237,6 +278,8 @@ function computeCameraPose(
       const height = sphere ? Math.max(sphere.radius * 1.1, 2800) : 3500;
       return computePoseFromAircraft(Cesium, aircraftPos, motionHeadingRad, range, height, toRad(-38));
     }
+    case "cockpit":
+      return computeCockpitPose(Cesium, aircraftPos, motionHeadingRad, cockpitHeadingOffsetRad, cockpitPitchOffsetRad);
     default:
       return computePoseFromAircraft(Cesium, aircraftPos, motionHeadingRad, 2500, 900, toRad(-18));
   }
@@ -246,8 +289,12 @@ export function GpxReplayGlobe({
   points,
   currentIndex,
   currentTimeMs,
-  autoCamera,
-  onAutoCameraInterrupt,
+  viewMode,
+  mapStyle = "standard",
+  onViewModeInterrupt,
+  isFullscreen = false,
+  initialCamera = null,
+  cameraStateRef,
 }: GpxReplayGlobeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<import("cesium").Viewer | null>(null);
@@ -265,13 +312,31 @@ export function GpxReplayGlobe({
   const camEventsRef = useRef<CamEvent[]>([]);
   const camCurrentModeRef = useRef<CamMode | null>(null);
   const camIsFlyingRef = useRef<boolean>(false);
-  const autoCameraRef = useRef<boolean>(autoCamera);
-  const onInterruptRef = useRef<(() => void) | undefined>(onAutoCameraInterrupt);
+  const viewModeRef = useRef<ViewMode>(viewMode);
+  const onInterruptRef = useRef<(() => void) | undefined>(onViewModeInterrupt);
   const altitudeOffsetRef = useRef<number>(0);
   const lastValidHeadingRef = useRef<number | null>(null);
+  const cockpitHeadingOffsetRef = useRef<number>(0);
+  const cockpitPitchOffsetRef = useRef<number>(0);
+  const googleTilesetRef = useRef<import("cesium").Cesium3DTileset | null>(null);
 
   const [viewerReady, setViewerReady] = useState(false);
+  const [providerEpoch, setProviderEpoch] = useState(0);
   const [loadError, setLoadError] = useState("");
+  const [orientationStatus, setOrientationStatus] = useState<
+    "unknown" | "unavailable" | "needs-permission" | "granted" | "denied"
+  >("unknown");
+  const [showCameraBanner, setShowCameraBanner] = useState(false);
+
+  useEffect(() => {
+    if (viewMode === "free") {
+      setShowCameraBanner(false);
+      return;
+    }
+    setShowCameraBanner(true);
+    const id = window.setTimeout(() => setShowCameraBanner(false), 4000);
+    return () => window.clearTimeout(id);
+  }, [viewMode]);
 
   const getAdjustedAltitude = (eleMeters: number): number => {
     const adjusted = (eleMeters || 0) + altitudeOffsetRef.current;
@@ -299,12 +364,88 @@ export function GpxReplayGlobe({
   }, [currentIndex, safePoints.length]);
 
   useEffect(() => {
-    autoCameraRef.current = autoCamera;
-  }, [autoCamera]);
+    viewModeRef.current = viewMode;
+  }, [viewMode]);
 
   useEffect(() => {
-    onInterruptRef.current = onAutoCameraInterrupt;
-  }, [onAutoCameraInterrupt]);
+    const viewer = viewerRef.current;
+    if (!viewer) return;
+    const id = window.setTimeout(() => {
+      try {
+        viewer.resize();
+      } catch {
+        // viewer may have been destroyed
+      }
+    }, 80);
+    return () => window.clearTimeout(id);
+  }, [isFullscreen]);
+
+  useEffect(() => {
+    onInterruptRef.current = onViewModeInterrupt;
+  }, [onViewModeInterrupt]);
+
+  useEffect(() => {
+    if (viewMode !== "cockpit") {
+      setOrientationStatus("unknown");
+      return;
+    }
+    if (typeof window === "undefined" || !("DeviceOrientationEvent" in window)) {
+      setOrientationStatus("unavailable");
+      return;
+    }
+    const DOE = window.DeviceOrientationEvent as DeviceOrientationEventWithPermission;
+    if (typeof DOE.requestPermission === "function") {
+      setOrientationStatus("needs-permission");
+    } else {
+      setOrientationStatus("granted");
+    }
+  }, [viewMode]);
+
+  useEffect(() => {
+    if (viewMode !== "cockpit" || orientationStatus !== "granted") return;
+    if (typeof window === "undefined") return;
+
+    let baselineAlpha: number | null = null;
+    let baselineBeta: number | null = null;
+
+    const onOrientation = (event: DeviceOrientationEvent) => {
+      if (event.alpha === null || event.beta === null) return;
+      if (baselineAlpha === null) {
+        baselineAlpha = event.alpha;
+        baselineBeta = event.beta;
+        return;
+      }
+      let dAlpha = event.alpha - baselineAlpha;
+      if (dAlpha > 180) dAlpha -= 360;
+      if (dAlpha < -180) dAlpha += 360;
+      const dBeta = event.beta - (baselineBeta ?? 0);
+
+      cockpitHeadingOffsetRef.current = -dAlpha * (Math.PI / 180);
+      let pitchOffset = -dBeta * (Math.PI / 180);
+      pitchOffset = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, pitchOffset));
+      cockpitPitchOffsetRef.current = pitchOffset;
+    };
+
+    window.addEventListener("deviceorientation", onOrientation);
+    return () => {
+      window.removeEventListener("deviceorientation", onOrientation);
+      cockpitHeadingOffsetRef.current = 0;
+      cockpitPitchOffsetRef.current = 0;
+    };
+  }, [viewMode, orientationStatus]);
+
+  const requestOrientationPermission = useCallback(async () => {
+    if (typeof window === "undefined") return;
+    const DOE = window.DeviceOrientationEvent as DeviceOrientationEventWithPermission;
+    if (typeof DOE.requestPermission !== "function") return;
+    try {
+      const state = await DOE.requestPermission();
+      setOrientationStatus(state === "granted" ? "granted" : "denied");
+    } catch (err) {
+      console.error("Orientation permission failed", err);
+      setOrientationStatus("denied");
+    }
+  }, []);
 
   useEffect(() => {
     currentTimeMsRef.current = currentTimeMs;
@@ -378,7 +519,7 @@ export function GpxReplayGlobe({
     return () => {
       cancelled = true;
     };
-  }, [safePoints, viewerReady]);
+  }, [safePoints, viewerReady, providerEpoch]);
 
   useEffect(() => {
     const originalError = console.error;
@@ -420,6 +561,10 @@ export function GpxReplayGlobe({
         cesiumRef.current = Cesium;
         (window as { CESIUM_BASE_URL?: string }).CESIUM_BASE_URL = "/cesium";
 
+        if (CESIUM_ION_TOKEN) {
+          Cesium.Ion.defaultAccessToken = CESIUM_ION_TOKEN;
+        }
+
         const viewer = new Cesium.Viewer(containerRef.current, {
           baseLayerPicker: false,
           geocoder: false,
@@ -432,60 +577,8 @@ export function GpxReplayGlobe({
           fullscreenButton: false,
           infoBox: false,
           shouldAnimate: false,
+          baseLayer: false,
         });
-
-        viewer.imageryLayers.removeAll();
-        let imageryLoaded = false;
-
-        if (!imageryLoaded) {
-          try {
-            const arcGisTiles = new Cesium.UrlTemplateImageryProvider({
-              url: "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-              credit: "Esri World Imagery",
-              maximumLevel: 19,
-            });
-            viewer.imageryLayers.addImageryProvider(arcGisTiles);
-            imageryLoaded = true;
-          } catch (err) {
-            const message = err instanceof Error ? err.message : "";
-            if (message) {
-              console.error("ArcGIS imagery failed", err);
-            }
-            imageryLoaded = false;
-          }
-        }
-
-        if (!imageryLoaded) {
-          try {
-            const osm = new Cesium.OpenStreetMapImageryProvider({
-              url: "https://tile.openstreetmap.org/",
-            });
-            viewer.imageryLayers.addImageryProvider(osm);
-            imageryLoaded = true;
-            setLoadError("Satellite provider unavailable. Using OSM fallback.");
-          } catch (err) {
-            const message = err instanceof Error ? err.message : "";
-            if (message) {
-              console.error("OSM imagery failed", err);
-            }
-            setLoadError("Could not load imagery providers (ion, ArcGIS, OSM).");
-          }
-        }
-
-        if (CESIUM_ION_TOKEN) {
-          try {
-            Cesium.Ion.defaultAccessToken = CESIUM_ION_TOKEN;
-            viewer.terrainProvider = await Cesium.createWorldTerrainAsync({
-              requestVertexNormals: true,
-              requestWaterMask: true,
-            });
-          } catch (err) {
-            const message = err instanceof Error ? err.message : "";
-            if (message) {
-              console.error("Cesium terrain failed", err);
-            }
-          }
-        }
 
         viewer.scene.globe.enableLighting = false;
         viewer.scene.globe.depthTestAgainstTerrain = false;
@@ -579,10 +672,176 @@ export function GpxReplayGlobe({
       }
       replayLineRef.current = null;
       currentMarkerRef.current = null;
+      googleTilesetRef.current = null;
       setViewerReady(false);
       setLoadError("");
     };
   }, []);
+
+  const initialCameraAppliedRef = useRef(false);
+
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    const Cesium = cesiumRef.current;
+    if (!viewer || !Cesium || !viewerReady) return;
+
+    if (initialCamera && !initialCameraAppliedRef.current) {
+      try {
+        viewer.camera.setView({
+          destination: Cesium.Cartesian3.fromDegrees(
+            initialCamera.lon,
+            initialCamera.lat,
+            initialCamera.alt
+          ),
+          orientation: {
+            heading: Cesium.Math.toRadians(initialCamera.hdg),
+            pitch: Cesium.Math.toRadians(initialCamera.pit),
+            roll: 0,
+          },
+        });
+        initialCameraAppliedRef.current = true;
+        fittedRef.current = true;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "";
+        if (message) console.error("setView failed", err);
+      }
+    }
+
+    if (!cameraStateRef) return;
+    const onMoveEnd = () => {
+      try {
+        const cam = viewer.scene.camera;
+        const carto = Cesium.Cartographic.fromCartesian(cam.positionWC);
+        cameraStateRef.current = {
+          lon: Cesium.Math.toDegrees(carto.longitude),
+          lat: Cesium.Math.toDegrees(carto.latitude),
+          alt: carto.height,
+          hdg: Cesium.Math.toDegrees(cam.heading),
+          pit: Cesium.Math.toDegrees(cam.pitch),
+        };
+      } catch {
+        // no-op
+      }
+    };
+    viewer.camera.moveEnd.addEventListener(onMoveEnd);
+    onMoveEnd();
+    return () => {
+      viewer.camera.moveEnd.removeEventListener(onMoveEnd);
+    };
+  }, [viewerReady, initialCamera, cameraStateRef]);
+
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    const Cesium = cesiumRef.current;
+    if (!viewer || !Cesium || !viewerReady) return;
+
+    let cancelled = false;
+
+    void (async () => {
+      if (googleTilesetRef.current) {
+        try {
+          viewer.scene.primitives.remove(googleTilesetRef.current);
+        } catch {
+          // no-op
+        }
+        googleTilesetRef.current = null;
+      }
+      viewer.imageryLayers.removeAll();
+
+      if (mapStyle === "photorealistic") {
+        if (!GOOGLE_MAPS_API_KEY) {
+          setLoadError("Google Maps API key not configured.");
+          return;
+        }
+        viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider();
+        altitudeOffsetRef.current = 0;
+        renderedPathRef.current = [];
+        lastRenderedIndexRef.current = -1;
+
+        try {
+          const tileset = await Cesium.createGooglePhotorealistic3DTileset({
+            key: GOOGLE_MAPS_API_KEY,
+          });
+          if (cancelled) {
+            try {
+              tileset.destroy();
+            } catch {
+              // no-op
+            }
+            return;
+          }
+          viewer.scene.primitives.add(tileset);
+          googleTilesetRef.current = tileset;
+          (viewer.cesiumWidget.creditContainer as HTMLElement).style.display = "";
+          setLoadError("");
+          setProviderEpoch((n) => n + 1);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "";
+          if (message) console.error("Google 3D Tiles failed", err);
+          setLoadError("Could not load photorealistic 3D tiles.");
+        }
+        return;
+      }
+
+      let imageryLoaded = false;
+      try {
+        const arcGisTiles = new Cesium.UrlTemplateImageryProvider({
+          url: "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+          credit: "Esri World Imagery",
+          maximumLevel: 19,
+        });
+        viewer.imageryLayers.addImageryProvider(arcGisTiles);
+        imageryLoaded = true;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "";
+        if (message) console.error("ArcGIS imagery failed", err);
+      }
+
+      if (!imageryLoaded) {
+        try {
+          const osm = new Cesium.OpenStreetMapImageryProvider({
+            url: "https://tile.openstreetmap.org/",
+          });
+          viewer.imageryLayers.addImageryProvider(osm);
+          imageryLoaded = true;
+          setLoadError("Satellite provider unavailable. Using OSM fallback.");
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "";
+          if (message) console.error("OSM imagery failed", err);
+          setLoadError("Could not load imagery providers.");
+        }
+      }
+
+      if (CESIUM_ION_TOKEN) {
+        try {
+          const terrain = await Cesium.createWorldTerrainAsync({
+            requestVertexNormals: true,
+            requestWaterMask: true,
+          });
+          if (cancelled) return;
+          viewer.terrainProvider = terrain;
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "";
+          if (message) console.error("Cesium terrain failed", err);
+          viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider();
+        }
+      } else {
+        viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider();
+      }
+
+      if (cancelled) return;
+      altitudeOffsetRef.current = 0;
+      renderedPathRef.current = [];
+      lastRenderedIndexRef.current = -1;
+      (viewer.cesiumWidget.creditContainer as HTMLElement).style.display = "none";
+      if (imageryLoaded) setLoadError("");
+      setProviderEpoch((n) => n + 1);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mapStyle, viewerReady]);
 
   useEffect(() => {
     const viewer = viewerRef.current;
@@ -626,7 +885,7 @@ export function GpxReplayGlobe({
       markerAltitude
     );
 
-    if (!fittedRef.current && !autoCameraRef.current) {
+    if (!fittedRef.current && viewModeRef.current === "free") {
       const allPositions = safePoints.map((p) =>
         Cesium.Cartesian3.fromDegrees(p.lon, p.lat, getAdjustedAltitude(p.ele))
       );
@@ -642,15 +901,22 @@ export function GpxReplayGlobe({
   useEffect(() => {
     const viewer = viewerRef.current;
     const Cesium = cesiumRef.current;
-    if (!viewer || !Cesium || !viewerReady || !autoCamera) return;
+    if (!viewer || !Cesium || !viewerReady || viewMode === "free") return;
 
     fittedRef.current = true;
     camCurrentModeRef.current = null;
     camIsFlyingRef.current = false;
     lastValidHeadingRef.current = null;
 
+    const isCockpit = viewMode === "cockpit";
+
+    if (currentMarkerRef.current) {
+      currentMarkerRef.current.show = !isCockpit;
+    }
+
     const onPreRender = () => {
-      if (!autoCameraRef.current) return;
+      const currentViewMode = viewModeRef.current;
+      if (currentViewMode === "free") return;
       if (camIsFlyingRef.current) return;
 
       const aircraft = markerPositionRef.current;
@@ -662,12 +928,23 @@ export function GpxReplayGlobe({
       if (adaptiveHeading !== null) {
         lastValidHeadingRef.current = adaptiveHeading;
       }
-      const motionHeading =
-        lastValidHeadingRef.current ?? viewer.camera.heading;
+      const motionHeading = lastValidHeadingRef.current ?? viewer.camera.heading;
 
-      const mode = findActiveCamMode(camEventsRef.current, currentMs);
+      const mode: CamMode =
+        currentViewMode === "cockpit"
+          ? "cockpit"
+          : findActiveCamMode(camEventsRef.current, currentMs);
+
       const sphere = boundingSphereRef.current;
-      const pose = computeCameraPose(Cesium, mode, aircraft, motionHeading, sphere);
+      const pose = computeCameraPose(
+        Cesium,
+        mode,
+        aircraft,
+        motionHeading,
+        sphere,
+        cockpitHeadingOffsetRef.current,
+        cockpitPitchOffsetRef.current
+      );
 
       if (mode !== camCurrentModeRef.current) {
         camCurrentModeRef.current = mode;
@@ -675,7 +952,7 @@ export function GpxReplayGlobe({
         viewer.camera.flyTo({
           destination: pose.destination,
           orientation: { heading: pose.heading, pitch: pose.pitch, roll: 0 },
-          duration: 2.5,
+          duration: mode === "cockpit" ? 1.2 : 2.5,
           complete: () => {
             camIsFlyingRef.current = false;
           },
@@ -686,9 +963,9 @@ export function GpxReplayGlobe({
         return;
       }
 
-      const posDamping = 0.05;
-      const headingDamping = 0.03;
-      const pitchDamping = 0.05;
+      const posDamping = mode === "cockpit" ? 0.35 : 0.05;
+      const headingDamping = mode === "cockpit" ? 0.2 : 0.03;
+      const pitchDamping = mode === "cockpit" ? 0.2 : 0.05;
       const currentPos = viewer.camera.positionWC;
       const newPos = Cesium.Cartesian3.lerp(currentPos, pose.destination, posDamping, new Cesium.Cartesian3());
       const newHeading = lerpAngle(viewer.camera.heading, pose.heading, headingDamping);
@@ -716,14 +993,19 @@ export function GpxReplayGlobe({
       canvas.removeEventListener("touchstart", onUserInteract);
       camCurrentModeRef.current = null;
       camIsFlyingRef.current = false;
+      if (currentMarkerRef.current) {
+        currentMarkerRef.current.show = true;
+      }
     };
-  }, [autoCamera, viewerReady]);
+  }, [viewMode, viewerReady]);
 
   return (
-    <div className="relative">
+    <div className={isFullscreen ? "relative h-full" : "relative"}>
       <div
         ref={containerRef}
-        className="w-full h-[580px] rounded-xl overflow-hidden border-2 border-gray-700"
+        className={`w-full overflow-hidden ${
+          isFullscreen ? "h-full" : "h-[580px] rounded-xl border-2 border-gray-700"
+        }`}
         style={{
           position: "relative",
           userSelect: "none",
@@ -733,14 +1015,6 @@ export function GpxReplayGlobe({
           WebkitOverflowScrolling: "auto",
         }}
       />
-
-      {viewerReady && (
-        <div className="absolute top-3 right-3 z-[500] rounded-md bg-slate-900/80 text-xs text-slate-100 border border-slate-600 px-3 py-2">
-          <div>Right click + drag: tilt / horizon</div>
-          <div>Shift + drag: free look</div>
-          <div>Wheel: zoom</div>
-        </div>
-      )}
 
       {viewerReady && (
         <button
@@ -764,11 +1038,21 @@ export function GpxReplayGlobe({
         </button>
       )}
 
-      {autoCamera && viewerReady && (
-        <div className="absolute bottom-3 left-3 z-[500] rounded-md bg-cyan-900/60 border border-cyan-500/50 px-3 py-1.5 text-xs text-cyan-100 flex items-center gap-2">
+      {viewMode !== "free" && viewerReady && showCameraBanner && (
+        <div className="absolute bottom-3 left-3 z-[500] rounded-md bg-cyan-900/60 border border-cyan-500/50 px-3 py-1.5 text-xs text-cyan-100 flex items-center gap-2 transition-opacity duration-500">
           <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
-          Auto camera on — drag to take over
+          {viewMode === "cinematic" ? "Cinematic camera" : "Cockpit view"} — drag to take over
         </div>
+      )}
+
+      {viewMode === "cockpit" && orientationStatus === "needs-permission" && viewerReady && (
+        <button
+          type="button"
+          onClick={requestOrientationPermission}
+          className="absolute bottom-12 left-3 z-[500] rounded-md bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-semibold px-3 py-1.5 cursor-pointer transition-colors"
+        >
+          Enable head tracking
+        </button>
       )}
 
       {loadError && (
