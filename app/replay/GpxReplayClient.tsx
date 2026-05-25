@@ -174,8 +174,9 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
   );
 
   const cameraStateRef = useRef<CameraPose | null>(initialCamera);
-  const requestOrientationRef = useRef<(() => Promise<void>) | null>(null);
+  const requestOrientationRef = useRef<(() => Promise<OrientationStatus>) | null>(null);
   const [orientationStatus, setOrientationStatus] = useState<OrientationStatus>("unknown");
+  const [headTrackingEnabled, setHeadTrackingEnabled] = useState(false);
 
   const [points, setPoints] = useState<ReplayPoint[]>([]);
   const [rawGpx, setRawGpx] = useState<string>("");
@@ -329,6 +330,22 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
   const handleViewModeInterrupt = useCallback(() => {
     setViewMode("free");
   }, []);
+
+  useEffect(() => {
+    if (viewMode !== "cockpit") setHeadTrackingEnabled(false);
+  }, [viewMode]);
+
+  const handleHeadTrackingToggle = useCallback(async () => {
+    if (headTrackingEnabled) {
+      setHeadTrackingEnabled(false);
+      return;
+    }
+    let status = orientationStatus;
+    if (status === "needs-permission" && requestOrientationRef.current) {
+      status = await requestOrientationRef.current();
+    }
+    if (status === "granted") setHeadTrackingEnabled(true);
+  }, [headTrackingEnabled, orientationStatus]);
 
   useEffect(() => {
     if (!shareModalOpen) return;
@@ -724,6 +741,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
                 cameraStateRef={cameraStateRef}
                 onOrientationStatusChange={setOrientationStatus}
                 requestOrientationRef={requestOrientationRef}
+                headTrackingEnabled={headTrackingEnabled}
               />
             </div>
 
@@ -902,17 +920,26 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
                           ? "Cinematic chase + side angles on turns."
                           : "First-person view from the aircraft."}
                     </div>
-                    {viewMode === "cockpit" && orientationStatus === "needs-permission" ? (
+                    {viewMode === "cockpit" && orientationStatus !== "unavailable" ? (
                       <button
                         type="button"
                         onClick={() => {
                           setSettingsOpen(false);
-                          void requestOrientationRef.current?.();
+                          void handleHeadTrackingToggle();
                         }}
-                        className="mt-2 w-full rounded-md bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-semibold px-3 py-1.5 cursor-pointer transition-colors"
+                        className={`mt-2 w-full rounded-md text-xs font-semibold px-3 py-1.5 cursor-pointer transition-colors ${
+                          headTrackingEnabled
+                            ? "bg-slate-700 hover:bg-slate-600 text-white"
+                            : "bg-amber-500 hover:bg-amber-400 text-slate-950"
+                        }`}
                       >
-                        Enable head tracking
+                        {headTrackingEnabled ? "Disable head tracking" : "Enable head tracking"}
                       </button>
+                    ) : null}
+                    {viewMode === "cockpit" && orientationStatus === "denied" ? (
+                      <div className="mt-1.5 text-[10px] text-amber-400 leading-tight">
+                        Motion permission was denied. Reload to re-prompt.
+                      </div>
                     ) : null}
                   </div>
 

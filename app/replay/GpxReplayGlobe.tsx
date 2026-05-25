@@ -43,7 +43,8 @@ interface GpxReplayGlobeProps {
   initialCamera?: CameraPose | null;
   cameraStateRef?: MutableRefObject<CameraPose | null>;
   onOrientationStatusChange?: (status: OrientationStatus) => void;
-  requestOrientationRef?: MutableRefObject<(() => Promise<void>) | null>;
+  requestOrientationRef?: MutableRefObject<(() => Promise<OrientationStatus>) | null>;
+  headTrackingEnabled?: boolean;
 }
 
 type CamMode = "chase" | "side-left" | "side-right" | "panorama-start" | "panorama-end" | "cockpit";
@@ -306,6 +307,7 @@ export function GpxReplayGlobe({
   cameraStateRef,
   onOrientationStatusChange,
   requestOrientationRef,
+  headTrackingEnabled = false,
 }: GpxReplayGlobeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<import("cesium").Viewer | null>(null);
@@ -329,6 +331,8 @@ export function GpxReplayGlobe({
   const lastValidHeadingRef = useRef<number | null>(null);
   const cockpitHeadingOffsetRef = useRef<number>(0);
   const cockpitPitchOffsetRef = useRef<number>(0);
+  const cockpitBaselineAlphaRef = useRef<number | null>(null);
+  const cockpitBaselineBetaRef = useRef<number | null>(null);
   const googleTilesetRef = useRef<import("cesium").Cesium3DTileset | null>(null);
 
   const [viewerReady, setViewerReady] = useState(false);
@@ -411,26 +415,26 @@ export function GpxReplayGlobe({
   }, [viewMode]);
 
   useEffect(() => {
-    if (viewMode !== "cockpit" || orientationStatus !== "granted") return;
+    if (viewMode !== "cockpit" || orientationStatus !== "granted" || !headTrackingEnabled) return;
     if (typeof window === "undefined") return;
 
-    let baselineAlpha: number | null = null;
-    let baselineBeta: number | null = null;
+    cockpitBaselineAlphaRef.current = null;
+    cockpitBaselineBetaRef.current = null;
 
     const onOrientation = (event: DeviceOrientationEvent) => {
       if (event.alpha === null || event.beta === null) return;
-      if (baselineAlpha === null) {
-        baselineAlpha = event.alpha;
-        baselineBeta = event.beta;
+      if (cockpitBaselineAlphaRef.current === null) {
+        cockpitBaselineAlphaRef.current = event.alpha;
+        cockpitBaselineBetaRef.current = event.beta;
         return;
       }
-      let dAlpha = event.alpha - baselineAlpha;
+      let dAlpha = event.alpha - cockpitBaselineAlphaRef.current;
       if (dAlpha > 180) dAlpha -= 360;
       if (dAlpha < -180) dAlpha += 360;
-      const dBeta = event.beta - (baselineBeta ?? 0);
+      const dBeta = event.beta - (cockpitBaselineBetaRef.current ?? 0);
 
       cockpitHeadingOffsetRef.current = -dAlpha * (Math.PI / 180);
-      let pitchOffset = -dBeta * (Math.PI / 180);
+      let pitchOffset = dBeta * (Math.PI / 180);
       pitchOffset = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, pitchOffset));
       cockpitPitchOffsetRef.current = pitchOffset;
     };
@@ -440,19 +444,27 @@ export function GpxReplayGlobe({
       window.removeEventListener("deviceorientation", onOrientation);
       cockpitHeadingOffsetRef.current = 0;
       cockpitPitchOffsetRef.current = 0;
+      cockpitBaselineAlphaRef.current = null;
+      cockpitBaselineBetaRef.current = null;
     };
-  }, [viewMode, orientationStatus]);
+  }, [viewMode, orientationStatus, headTrackingEnabled]);
 
-  const requestOrientationPermission = useCallback(async () => {
-    if (typeof window === "undefined") return;
+  const requestOrientationPermission = useCallback(async (): Promise<OrientationStatus> => {
+    if (typeof window === "undefined") return "unavailable";
     const DOE = window.DeviceOrientationEvent as DeviceOrientationEventWithPermission;
-    if (typeof DOE.requestPermission !== "function") return;
+    if (typeof DOE.requestPermission !== "function") {
+      setOrientationStatus("granted");
+      return "granted";
+    }
     try {
       const state = await DOE.requestPermission();
-      setOrientationStatus(state === "granted" ? "granted" : "denied");
+      const next: OrientationStatus = state === "granted" ? "granted" : "denied";
+      setOrientationStatus(next);
+      return next;
     } catch (err) {
       console.error("Orientation permission failed", err);
       setOrientationStatus("denied");
+      return "denied";
     }
   }, []);
 
@@ -1044,6 +1056,13 @@ export function GpxReplayGlobe({
           type="button"
           className="absolute top-3 left-3 z-[500] rounded-md bg-slate-900/80 text-xs text-white border border-slate-600 px-3 py-2 cursor-pointer hover:bg-slate-800"
           onClick={() => {
+            if (viewMode === "cockpit") {
+              cockpitHeadingOffsetRef.current = 0;
+              cockpitPitchOffsetRef.current = 0;
+              cockpitBaselineAlphaRef.current = null;
+              cockpitBaselineBetaRef.current = null;
+              return;
+            }
             const viewer = viewerRef.current;
             const Cesium = cesiumRef.current;
             if (!viewer || !Cesium || safePoints.length < 2) return;
@@ -1057,7 +1076,7 @@ export function GpxReplayGlobe({
             });
           }}
         >
-          Recenter
+          {viewMode === "cockpit" ? "Recenter view" : "Recenter"}
         </button>
       )}
 
