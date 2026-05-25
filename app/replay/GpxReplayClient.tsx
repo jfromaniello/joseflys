@@ -224,6 +224,18 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
     return () => window.removeEventListener("keydown", onKey);
   }, [isFullscreen]);
 
+  useEffect(() => {
+    if (!isFullscreen || usedNativeFullscreenRef.current) return;
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevHtmlOverflow;
+    };
+  }, [isFullscreen]);
+
   const handleFullscreenToggle = useCallback(async () => {
     const el = fullscreenWrapperRef.current as
       | (HTMLDivElement & { webkitRequestFullscreen?: () => Promise<void> | void })
@@ -582,7 +594,11 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
       />
 
       <main className="w-full max-w-6xl">
-        <div className="rounded-2xl p-6 sm:p-8 shadow-2xl bg-slate-800/50 backdrop-blur-sm border border-gray-700">
+        <div
+          className={`rounded-2xl p-6 sm:p-8 shadow-2xl bg-slate-800/50 border border-gray-700 ${
+            isFullscreen ? "" : "backdrop-blur-sm"
+          }`}
+        >
           <input
             ref={inputRef}
             type="file"
@@ -689,7 +705,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
             ref={fullscreenWrapperRef}
             className={
               isFullscreen
-                ? "fixed inset-0 z-[9999] bg-slate-950 flex flex-col"
+                ? "fixed inset-0 z-[9999] bg-slate-950 flex flex-col w-screen h-dvh"
                 : "relative"
             }
           >
