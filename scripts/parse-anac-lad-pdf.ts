@@ -1,8 +1,20 @@
 /**
- * Parse ANAC LAD PDF extracted text (layout-preserved version)
- * Extracts all available fields: runway dimensions, surface, elevation, region, etc.
+ * Parse ANAC LAD PDF extracted text (layout-preserved version).
+ *
+ * Input format (Feb-2026 PDF):
+ *   #  TIPO  N°REG  DENOMINACIÓN  RUMBO  DIMENSIONES  SUPERFICIE  ELEVACIÓN  LATITUD  LONGITUD  UBICACIÓN  REGIONAL
+ *
+ * Notes vs. previous (Jan-2021) layout:
+ *   - TIPO column now precedes the registration number.
+ *   - Runway headings joined as "10/28" (or "-" for heliports).
+ *   - Dimensions written "1000m. x 30m.".
+ *   - Elevations can be decimal: "54,5 mts.".
+ *   - Region codes are now "DRCE / DRNE / DRNO / DRSU".
+ *   - UBICACIÓN frequently wraps onto one or two adjacent lines, visually
+ *     centered around the anchor row. DENOMINACIÓN can wrap too (rare).
+ *   - Secondary-runway rows reuse a previous registro and use "-" as #;
+ *     they carry placeholder coords ("000,00S" / "0000,00W") and are skipped.
  */
-
 import * as fs from "fs";
 import * as path from "path";
 
@@ -14,214 +26,275 @@ interface LADEntry {
   runways: {
     heading1: number;
     heading2: number;
-    dimensions: string; // e.g., "700x30"
-    length: number; // meters
-    width: number; // meters
+    dimensions: string;
+    length: number;
+    width: number;
   }[];
-  superficie: string; // TIERRA, ASFALTO, CESPED, etc.
-  elevacion: number; // meters
+  superficie: string;
+  elevacion: number;
   lat: number;
   lon: number;
   ubicacion: string;
   provincia: string | null;
-  region: string | null; // RANE, RACE, RANO, RASU, etc.
+  region: string | null;
 }
 
-// Convert DMS format like "283428,00S" to decimal degrees
 function parseDMS(dms: string): number {
-  // Format: DDMMSS,xxH where H is N/S/E/W
-  // Handle both 6-digit (lat) and 7-digit (lon with leading 0) formats
-  const match = dms.match(/^0?(\d{2,3})(\d{2})(\d{2}),?\d*([NSEW])$/);
-  if (!match) {
-    return 0;
-  }
-
+  const match = dms.match(/^0?(\d{2,3})(\d{2})(\d{2})(?:,\d+)?([NSEW])$/);
+  if (!match) return 0;
   const degrees = parseInt(match[1], 10);
   const minutes = parseInt(match[2], 10);
   const seconds = parseInt(match[3], 10);
-  const direction = match[4];
-
+  const dir = match[4];
   let decimal = degrees + minutes / 60 + seconds / 3600;
-
-  if (direction === "S" || direction === "W") {
-    decimal = -decimal;
-  }
-
+  if (dir === "S" || dir === "W") decimal = -decimal;
   return decimal;
 }
 
-// Parse dimensions like "700x30" into length and width
 function parseDimensions(dim: string): { length: number; width: number } {
-  const match = dim.match(/(\d+)x(\d+)/);
+  const match = dim.match(/(\d+)\s*m?\.?\s*x\s*(\d+)\s*m?\.?/i);
   if (match) {
-    return {
-      length: parseInt(match[1], 10),
-      width: parseInt(match[2], 10),
-    };
+    return { length: parseInt(match[1], 10), width: parseInt(match[2], 10) };
   }
   return { length: 0, width: 0 };
 }
 
-// Extract province from location string
+const PROVINCE_MAP: Record<string, string> = {
+  "BUENOS AIRES": "Buenos Aires",
+  CORDOBA: "Córdoba",
+  "CÓRDOBA": "Córdoba",
+  "SANTA FE": "Santa Fe",
+  MENDOZA: "Mendoza",
+  TUCUMAN: "Tucumán",
+  "TUCUMÁN": "Tucumán",
+  "ENTRE RIOS": "Entre Ríos",
+  "ENTRE RÍOS": "Entre Ríos",
+  SALTA: "Salta",
+  MISIONES: "Misiones",
+  CHACO: "Chaco",
+  CORRIENTES: "Corrientes",
+  "SANTIAGO DEL ESTERO": "Santiago del Estero",
+  "SAN JUAN": "San Juan",
+  JUJUY: "Jujuy",
+  "RIO NEGRO": "Río Negro",
+  "RÍO NEGRO": "Río Negro",
+  NEUQUEN: "Neuquén",
+  "NEUQUÉN": "Neuquén",
+  FORMOSA: "Formosa",
+  CHUBUT: "Chubut",
+  "SAN LUIS": "San Luis",
+  CATAMARCA: "Catamarca",
+  "LA RIOJA": "La Rioja",
+  "LA PAMPA": "La Pampa",
+  "SANTA CRUZ": "Santa Cruz",
+  "TIERRA DEL FUEGO": "Tierra del Fuego",
+};
+
+function normalizeProvince(p: string): string {
+  return PROVINCE_MAP[p.toUpperCase().trim()] || p;
+}
+
 function extractProvincia(ubicacion: string): string | null {
-  // Try different patterns
-  let match = ubicacion.match(/Provincia\s+de\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]+?)(?:\s+RA|$)/i);
+  let match = ubicacion.match(/Provincia\s+de\s+([A-ZÁÉÍÓÚÑa-záéíóúñ\s\.]+?)\s*\.?\s*$/);
   if (match) {
-    return normalizeProvince(match[1].trim());
+    const candidate = match[1].trim().replace(/\s+/g, " ").replace(/\.$/, "").trim();
+    return normalizeProvince(candidate);
   }
-
-  match = ubicacion.match(/Pcia\.\s+de\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]+?)(?:\s+RA|$)/i);
+  match = ubicacion.match(/Pcia\.\s+de\s+([A-ZÁÉÍÓÚÑa-záéíóúñ\s\.]+?)\s*\.?\s*$/);
   if (match) {
-    return normalizeProvince(match[1].trim());
+    const candidate = match[1].trim().replace(/\s+/g, " ").replace(/\.$/, "").trim();
+    return normalizeProvince(candidate);
   }
-
-  // Try to find province at end of string
-  match = ubicacion.match(/de\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]+)$/i);
-  if (match) {
-    const candidate = match[1].trim();
-    if (isValidProvince(candidate)) {
-      return normalizeProvince(candidate);
-    }
-  }
-
   return null;
 }
 
-function normalizeProvince(p: string): string {
-  const mapping: Record<string, string> = {
-    "BUENOS AIRES": "Buenos Aires",
-    CORDOBA: "Córdoba",
-    "SANTA FE": "Santa Fe",
-    MENDOZA: "Mendoza",
-    TUCUMAN: "Tucumán",
-    "ENTRE RIOS": "Entre Ríos",
-    SALTA: "Salta",
-    MISIONES: "Misiones",
-    CHACO: "Chaco",
-    CORRIENTES: "Corrientes",
-    "SANTIAGO DEL ESTERO": "Santiago del Estero",
-    "SAN JUAN": "San Juan",
-    JUJUY: "Jujuy",
-    "RIO NEGRO": "Río Negro",
-    NEUQUEN: "Neuquén",
-    FORMOSA: "Formosa",
-    CHUBUT: "Chubut",
-    "SAN LUIS": "San Luis",
-    CATAMARCA: "Catamarca",
-    "LA RIOJA": "La Rioja",
-    "LA PAMPA": "La Pampa",
-    "SANTA CRUZ": "Santa Cruz",
-    "TIERRA DEL FUEGO": "Tierra del Fuego",
-  };
+// Anchor = the row that carries all structured columns.
+const ANCHOR_REGEX =
+  /^\s*(?<num>\d+|-)\s+(?<tipo>LADH|LADA|LADS|LAD)\s+(?<codigo>\d+)\s+(?<name>.+?)\s{2,}(?<rumbo>\d{1,2}\/\d{1,2}|-)\s+(?<dim>\d+\s*m?\.?\s*x\s*\d+\s*m?\.?)\s+(?<surface>[A-ZÁÉÍÓÚÑ]+)\s+(?<elev>[\d,]+)\s*mts?\.\s+(?<lat>\d{3,6}(?:,\d+)?[NS])\s+(?<lon>\d{3,7}(?:,\d+)?[EW])(?<rest>.*)$/;
 
-  const upper = p.toUpperCase();
-  return mapping[upper] || p;
+const REGION_REGEX = /(?:^|\s+)(DR(?:CE|NE|NO|SU))\s*$/;
+
+const SKIP_WRAP_LINE_REGEX = /LISTADO|Fecha|DENOMINACI|UBICACI|REGIONAL/;
+
+interface Anchor {
+  index: number;
+  match: RegExpExecArray;
+  groups: Record<string, string>;
+  rumboCol: number; // column where rumbo starts on the anchor line
+  ubicacionCol: number; // column right after lon ends
 }
 
-function isValidProvince(p: string): boolean {
-  const provinces = [
-    "BUENOS AIRES",
-    "CORDOBA",
-    "SANTA FE",
-    "MENDOZA",
-    "TUCUMAN",
-    "ENTRE RIOS",
-    "SALTA",
-    "MISIONES",
-    "CHACO",
-    "CORRIENTES",
-    "SANTIAGO DEL ESTERO",
-    "SAN JUAN",
-    "JUJUY",
-    "RIO NEGRO",
-    "NEUQUEN",
-    "FORMOSA",
-    "CHUBUT",
-    "SAN LUIS",
-    "CATAMARCA",
-    "LA RIOJA",
-    "LA PAMPA",
-    "SANTA CRUZ",
-    "TIERRA DEL FUEGO",
-  ];
-  return provinces.includes(p.toUpperCase());
-}
-
-async function parseLADText() {
+function parseLADText() {
   const scriptsDir = path.dirname(__filename);
-  const textPath = path.join(scriptsDir, "data-sources", "lad-anac-ene21-layout.txt");
+  const textPath = path.join(scriptsDir, "data-sources", "lad-anac-feb26-layout.txt");
   const content = fs.readFileSync(textPath, "utf-8");
 
-  const lines = content.split("\n");
-  const entries: LADEntry[] = [];
+  // The PDF contains occasional typos like "1000X30m. x 30m." (entry 637,
+  // codigo 2889). Normalize the obvious pattern so the anchor regex matches.
+  const cleaned = content.replace(/(\d+)X\d+m\.\s+x\s+(\d+)m\./g, "$1m. x $2m.");
+  const lines = cleaned.split("\n");
 
-  // Main regex for standard LAD entries
-  // Pattern: N° CODIGO TIPO NOMBRE DIG1 DIG2 DIMENSIONES SUPERFICIE ELEVACION LATITUD LONGITUD
-  const entryRegex =
-    /^(\d+)\s+(\d+)\s+(LAD[HAS]?)\s+(.+?)\s{2,}(\d{1,2})\s+(\d{1,2})\s+(\d+x\d+)\s+(\w+)\s+(\d+)\s*mts?\.\s+(\d{6},\d{2}[NS])\s+(\d{7},\d{2}[EW])/;
+  // Pass 1: locate every anchor row.
+  const anchors: Anchor[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const m = ANCHOR_REGEX.exec(lines[i]);
+    if (!m || !m.groups) continue;
+    const codigoStart = lines[i].indexOf(m.groups.codigo);
+    const rumboCol = lines[i].indexOf(m.groups.rumbo, codigoStart + m.groups.codigo.length);
+    const latStart = lines[i].indexOf(m.groups.lat);
+    const lonStart = lines[i].indexOf(m.groups.lon, latStart + m.groups.lat.length);
+    const ubicacionCol = lonStart + m.groups.lon.length;
+    anchors.push({
+      index: i,
+      match: m,
+      groups: m.groups as Record<string, string>,
+      rumboCol,
+      ubicacionCol,
+    });
+  }
 
-  // Alternative regex for entries where some fields might be merged
-  const altRegex =
-    /^(\d+)\s+(\d+)\s+(LAD[HAS]?)\s+(.+?)\s+(\d{1,2})\s+(\d{1,2})\s+(\d+x\d+)\s+(\w+)\s+(\d+)\s*mts?\.\s+(\d{6},\d{2}[NS])\s+(\d{7},\d{2}[EW])/;
+  // Pass 2: assign each wrap line to exactly one anchor. We need to do this
+  // in a single pass so each line lands in one place. Tie-break rules:
+  //   - Line ending with "." → wrap-below of previous anchor (it completes
+  //     the previous sentence).
+  //   - Otherwise → wrap-above of next anchor (it opens a new sentence).
+  //
+  // This matches the actual visual convention in the PDF: ubicación text is
+  // centered around its anchor row, with sentence-completers below and
+  // sentence-openers above.
+  const firstAnchorIdx = anchors[0]?.index ?? Infinity;
+  const lastAnchorIdx = anchors[anchors.length - 1]?.index ?? -1;
+
+  // Per anchor: name wrap fragments (rendered as a left column above the
+  // anchor) and ubicación above/below fragments (right column).
+  const nameWraps = new Map<number, string[]>();
+  const ubicAbove = new Map<number, string[]>();
+  const ubicBelow = new Map<number, string[]>();
 
   for (let i = 0; i < lines.length; i++) {
+    if (i < firstAnchorIdx || i > lastAnchorIdx) continue; // skip header/footer
     const line = lines[i];
+    if (!line.trim()) continue;
+    if (SKIP_WRAP_LINE_REGEX.test(line)) continue;
+    if (anchors.some((a) => a.index === i)) continue;
 
-    let match = line.match(entryRegex) || line.match(altRegex);
-    if (!match) continue;
+    const prevAnchor = [...anchors].reverse().find((a) => a.index < i);
+    const nextAnchor = anchors.find((a) => a.index > i);
+    if (!prevAnchor && !nextAnchor) continue;
 
-    // Look ahead for ubicacion and region
-    let ubicacion = "";
+    let target: Anchor;
+    let position: "above" | "below";
+    if (!prevAnchor) {
+      target = nextAnchor!;
+      position = "above";
+    } else if (!nextAnchor) {
+      target = prevAnchor;
+      position = "below";
+    } else {
+      const distPrev = i - prevAnchor.index;
+      const distNext = nextAnchor.index - i;
+      if (distPrev < distNext) {
+        target = prevAnchor;
+        position = "below";
+      } else if (distNext < distPrev) {
+        target = nextAnchor;
+        position = "above";
+      } else {
+        // Tie: use content. A line ending in "." completes the previous
+        // sentence; anything else opens the next one.
+        const trimmedRight = line.replace(REGION_REGEX, "").trim();
+        if (/\.\s*$/.test(trimmedRight)) {
+          target = prevAnchor;
+          position = "below";
+        } else {
+          target = nextAnchor;
+          position = "above";
+        }
+      }
+    }
+
+    // Split: anything left of the anchor's rumbo column is a name-wrap
+    // fragment; anything from the lon column onward is the ubicación wrap.
+    const leftPart = line.slice(0, target.rumboCol).trim();
+    const rightPart = line.slice(target.ubicacionCol).replace(REGION_REGEX, "").trim();
+
+    if (leftPart) {
+      const arr = nameWraps.get(target.index) ?? [];
+      if (position === "above") arr.unshift(leftPart);
+      else arr.push(leftPart);
+      nameWraps.set(target.index, arr);
+    }
+    if (rightPart) {
+      const bucket = position === "above" ? ubicAbove : ubicBelow;
+      const arr = bucket.get(target.index) ?? [];
+      arr.push(rightPart);
+      bucket.set(target.index, arr);
+    }
+  }
+
+  // Pass 3: build entries.
+  const entries: LADEntry[] = [];
+  for (const anchor of anchors) {
+    const g = anchor.groups;
+    const lat = parseDMS(g.lat);
+    const lon = parseDMS(g.lon);
+    // Secondary-runway rows (numero "-") may have placeholder coords. Keep
+    // them anyway so we can merge them into the primary; the merge step
+    // below will discard them.
+    const isSecondary = g.num === "-";
+    if (!isSecondary) {
+      if (lat === 0 || lon === 0) continue;
+      if (lat < -56 || lat > -21 || lon < -74 || lon > -53) continue;
+    }
+
     let region: string | null = null;
-
-    for (let j = i + 1; j < Math.min(i + 6, lines.length); j++) {
-      const nextLine = lines[j];
-
-      // Check for region code (RA + 2 letters at end of line)
-      const regionMatch = nextLine.match(/\s+(RA[NEOSC][EOACU])\s*$/);
-      if (regionMatch) {
-        region = regionMatch[1];
-      }
-
-      // Check for ubicacion info
-      if (nextLine.includes("Km.") || nextLine.includes("localidad") || nextLine.includes("Provincia")) {
-        ubicacion += " " + nextLine.trim();
-      }
-
-      // Stop if we hit the next entry
-      if (nextLine.match(/^\d+\s+\d+\s+LAD/)) break;
+    const restRaw = g.rest ?? "";
+    const regionMatch = restRaw.match(REGION_REGEX);
+    let ubicacionOnAnchor: string;
+    if (regionMatch) {
+      region = regionMatch[1];
+      ubicacionOnAnchor = restRaw.slice(0, regionMatch.index!).trim();
+    } else {
+      ubicacionOnAnchor = restRaw.trim();
     }
 
-    ubicacion = ubicacion.replace(/\s+/g, " ").trim();
+    const nameAbove = (nameWraps.get(anchor.index) ?? []).join(" ");
+    const baseName = g.name.trim().replace(/\s+/g, " ");
+    const nombre = [nameAbove, baseName].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
 
-    const lat = parseDMS(match[10]);
-    const lon = parseDMS(match[11]);
+    const above = (ubicAbove.get(anchor.index) ?? []).join(" ");
+    const below = (ubicBelow.get(anchor.index) ?? []).join(" ");
+    const ubicacion = [above, ubicacionOnAnchor, below]
+      .filter(Boolean)
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim();
 
-    // Validate coordinates are in Argentina
-    if (lat === 0 || lon === 0 || lat < -56 || lat > -21 || lon < -74 || lon > -53) {
-      continue;
+    const dim = parseDimensions(g.dim);
+    let heading1 = 0;
+    let heading2 = 0;
+    if (g.rumbo !== "-") {
+      const parts = g.rumbo.split("/");
+      heading1 = parseInt(parts[0], 10);
+      heading2 = parseInt(parts[1], 10);
     }
-
-    const dim = parseDimensions(match[7]);
-    const heading1 = parseInt(match[5], 10);
-    const heading2 = parseInt(match[6], 10);
 
     entries.push({
-      numero: parseInt(match[1], 10),
-      codigo: match[2],
-      tipo: match[3] as LADEntry["tipo"],
-      nombre: match[4].trim(),
+      numero: parseInt(g.num, 10) || 0,
+      codigo: g.codigo,
+      tipo: g.tipo as LADEntry["tipo"],
+      nombre,
       runways: [
         {
           heading1,
           heading2,
-          dimensions: match[7],
+          dimensions: g.dim.replace(/\s+/g, ""),
           length: dim.length,
           width: dim.width,
         },
       ],
-      superficie: match[8],
-      elevacion: parseInt(match[9], 10),
+      superficie: g.surface,
+      elevacion: Math.round(parseFloat(g.elev.replace(",", "."))),
       lat,
       lon,
       ubicacion,
@@ -230,67 +303,75 @@ async function parseLADText() {
     });
   }
 
-  console.log(`Parsed ${entries.length} LAD entries from ANAC PDF`);
+  // Merge secondary runways into their primary entry (matched by codigo).
+  const finalEntries: LADEntry[] = [];
+  let mergedCount = 0;
+  let orphanCount = 0;
+  for (const e of entries) {
+    const isSecondary = e.numero === 0 && /\(secundaria\)/i.test(e.nombre);
+    if (!isSecondary) {
+      finalEntries.push(e);
+      continue;
+    }
+    const primary = finalEntries.find((p) => p.codigo === e.codigo);
+    if (primary) {
+      primary.runways.push(...e.runways);
+      mergedCount++;
+    } else {
+      orphanCount++;
+    }
+  }
 
-  // Write to JSON
+  console.log(
+    `Parsed ${finalEntries.length} LAD entries from ANAC PDF ` +
+      `(merged ${mergedCount} secondary runways, ${orphanCount} orphans dropped)`
+  );
+
   const outputPath = path.join(scriptsDir, "data-sources", "lad-anac-parsed.json");
-  fs.writeFileSync(outputPath, JSON.stringify(entries, null, 2));
+  fs.writeFileSync(outputPath, JSON.stringify(finalEntries, null, 2));
   console.log(`Written to: ${outputPath}`);
 
-  // Stats
-  const tipos = entries.reduce(
-    (acc, e) => {
-      acc[e.tipo] = (acc[e.tipo] || 0) + 1;
-      return acc;
-    },
-    {} as Record<string, number>
-  );
+  const tipos = finalEntries.reduce<Record<string, number>>((acc, e) => {
+    acc[e.tipo] = (acc[e.tipo] || 0) + 1;
+    return acc;
+  }, {});
   console.log("\nBy type:", tipos);
 
-  // Surface types
-  const superficies = entries.reduce(
-    (acc, e) => {
-      acc[e.superficie] = (acc[e.superficie] || 0) + 1;
-      return acc;
-    },
-    {} as Record<string, number>
-  );
+  const superficies = finalEntries.reduce<Record<string, number>>((acc, e) => {
+    acc[e.superficie] = (acc[e.superficie] || 0) + 1;
+    return acc;
+  }, {});
   console.log("\nBy surface:", superficies);
 
-  // Regions
-  const regions = entries.reduce(
-    (acc, e) => {
-      const r = e.region || "Unknown";
-      acc[r] = (acc[r] || 0) + 1;
-      return acc;
-    },
-    {} as Record<string, number>
-  );
+  const regions = finalEntries.reduce<Record<string, number>>((acc, e) => {
+    const r = e.region || "Unknown";
+    acc[r] = (acc[r] || 0) + 1;
+    return acc;
+  }, {});
   console.log("\nBy region:", regions);
 
-  // Province distribution
-  const provincias = entries.reduce(
-    (acc, e) => {
-      const p = e.provincia || "Unknown";
-      acc[p] = (acc[p] || 0) + 1;
-      return acc;
-    },
-    {} as Record<string, number>
-  );
+  const provincias = finalEntries.reduce<Record<string, number>>((acc, e) => {
+    const p = e.provincia || "Unknown";
+    acc[p] = (acc[p] || 0) + 1;
+    return acc;
+  }, {});
   console.log("\nBy province (top 10):");
   Object.entries(provincias)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 10)
     .forEach(([p, c]) => console.log(`  ${p}: ${c}`));
 
-  // Sample entries
+  const multiRunway = finalEntries.filter((e) => e.runways.length > 1);
+  console.log(`\nEntries with >1 runway: ${multiRunway.length}`);
+
   console.log("\nSample entries:");
-  entries.slice(0, 3).forEach((e) => {
+  finalEntries.slice(0, 6).forEach((e) => {
     console.log(`  ${e.nombre}:`);
     console.log(`    Coords: ${e.lat.toFixed(4)}, ${e.lon.toFixed(4)}`);
     console.log(`    Runway: ${e.runways[0].dimensions} (${e.superficie})`);
     console.log(`    Elev: ${e.elevacion}m | Region: ${e.region} | Prov: ${e.provincia}`);
+    console.log(`    Ubicacion: ${e.ubicacion}`);
   });
 }
 
-parseLADText().catch(console.error);
+parseLADText();

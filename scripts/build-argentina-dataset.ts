@@ -17,7 +17,7 @@
  *    - Provides: LAD (Lugares Aptos Denunciados), LADH (LAD Helipuertos)
  *    - Format: PDF parsed to JSON
  *    - Source: Official government publication
- *    - URL: https://www.argentina.gob.ar/sites/default/files/listado_de_lugares_aptos_denunciados_ene_21.pdf
+ *    - URL: https://www.argentina.gob.ar/anac (search "Listado de Lugares Aptos Denunciados"; current file: LISTADO LAD 2026-02.pdf)
  *
  * OUTPUT TYPES:
  * - AD: Aerodrome (registered airport with ICAO/local code)
@@ -33,11 +33,10 @@
  *      curl -sL "https://davidmegginson.github.io/ourairports-data/airports.csv" | \
  *        grep "\"AR\"" > scripts/data-sources/ourairports-argentina.csv
  *
- *   2. Download and extract ANAC PDF:
- *      curl -sL "https://www.argentina.gob.ar/sites/default/files/listado_de_lugares_aptos_denunciados_ene_21.pdf" \
- *        -o scripts/data-sources/lad-anac-ene21.pdf
- *      pdftotext -layout scripts/data-sources/lad-anac-ene21.pdf \
- *        scripts/data-sources/lad-anac-ene21-layout.txt
+ *   2. Extract the latest ANAC PDF to text (manually download the current
+ *      "Listado LAD" from https://www.argentina.gob.ar/anac):
+ *      pdftotext -layout scripts/data-sources/lad-anac-feb26.pdf \
+ *        scripts/data-sources/lad-anac-feb26-layout.txt
  *
  *   3. Run the ANAC parser first:
  *      npx tsx scripts/parse-anac-lad-pdf.ts
@@ -289,6 +288,7 @@ function normalizeProvince(province: string | null): string | null {
 // Surface normalization mapping
 const SURFACE_NORMALIZATION: Record<string, string | null> = {
   ASF: "ASFALTO",
+  HOR: "CONCRETO",
   HORMIGON: "CONCRETO",
   "27136": null, // Invalid data
 };
@@ -490,7 +490,7 @@ async function buildDataset() {
       },
       anac: {
         url: "https://www.argentina.gob.ar/anac",
-        file: "listado_de_lugares_aptos_denunciados_ene_21.pdf",
+        file: "LISTADO LAD 2026-02.pdf",
         description: "Official Argentine civil aviation authority",
         provides: ["LAD", "LADH"],
       },
