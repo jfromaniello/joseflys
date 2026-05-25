@@ -108,18 +108,33 @@ function extractProvincia(ubicacion: string): string | null {
   return null;
 }
 
-// Anchor = the row that carries all structured columns.
+// Anchor = the row that carries all structured columns. Positional groups
+// (1=num, 2=tipo, 3=codigo, 4=name, 5=rumbo, 6=dim, 7=surface, 8=elev,
+// 9=lat, 10=lon, 11=rest). Named groups would require ES2018+ in tsconfig.
 const ANCHOR_REGEX =
-  /^\s*(?<num>\d+|-)\s+(?<tipo>LADH|LADA|LADS|LAD)\s+(?<codigo>\d+)\s+(?<name>.+?)\s{2,}(?<rumbo>\d{1,2}\/\d{1,2}|-)\s+(?<dim>\d+\s*m?\.?\s*x\s*\d+\s*m?\.?)\s+(?<surface>[A-ZÁÉÍÓÚÑ]+)\s+(?<elev>[\d,]+)\s*mts?\.\s+(?<lat>\d{3,6}(?:,\d+)?[NS])\s+(?<lon>\d{3,7}(?:,\d+)?[EW])(?<rest>.*)$/;
+  /^\s*(\d+|-)\s+(LADH|LADA|LADS|LAD)\s+(\d+)\s+(.+?)\s{2,}(\d{1,2}\/\d{1,2}|-)\s+(\d+\s*m?\.?\s*x\s*\d+\s*m?\.?)\s+([A-ZÁÉÍÓÚÑ]+)\s+([\d,]+)\s*mts?\.\s+(\d{3,6}(?:,\d+)?[NS])\s+(\d{3,7}(?:,\d+)?[EW])(.*)$/;
 
 const REGION_REGEX = /(?:^|\s+)(DR(?:CE|NE|NO|SU))\s*$/;
 
 const SKIP_WRAP_LINE_REGEX = /LISTADO|Fecha|DENOMINACI|UBICACI|REGIONAL/;
 
+interface AnchorGroups {
+  num: string;
+  tipo: string;
+  codigo: string;
+  name: string;
+  rumbo: string;
+  dim: string;
+  surface: string;
+  elev: string;
+  lat: string;
+  lon: string;
+  rest: string;
+}
+
 interface Anchor {
   index: number;
-  match: RegExpExecArray;
-  groups: Record<string, string>;
+  groups: AnchorGroups;
   rumboCol: number; // column where rumbo starts on the anchor line
   ubicacionCol: number; // column right after lon ends
 }
@@ -138,19 +153,26 @@ function parseLADText() {
   const anchors: Anchor[] = [];
   for (let i = 0; i < lines.length; i++) {
     const m = ANCHOR_REGEX.exec(lines[i]);
-    if (!m || !m.groups) continue;
-    const codigoStart = lines[i].indexOf(m.groups.codigo);
-    const rumboCol = lines[i].indexOf(m.groups.rumbo, codigoStart + m.groups.codigo.length);
-    const latStart = lines[i].indexOf(m.groups.lat);
-    const lonStart = lines[i].indexOf(m.groups.lon, latStart + m.groups.lat.length);
-    const ubicacionCol = lonStart + m.groups.lon.length;
-    anchors.push({
-      index: i,
-      match: m,
-      groups: m.groups as Record<string, string>,
-      rumboCol,
-      ubicacionCol,
-    });
+    if (!m) continue;
+    const groups: AnchorGroups = {
+      num: m[1],
+      tipo: m[2],
+      codigo: m[3],
+      name: m[4],
+      rumbo: m[5],
+      dim: m[6],
+      surface: m[7],
+      elev: m[8],
+      lat: m[9],
+      lon: m[10],
+      rest: m[11] ?? "",
+    };
+    const codigoStart = lines[i].indexOf(groups.codigo);
+    const rumboCol = lines[i].indexOf(groups.rumbo, codigoStart + groups.codigo.length);
+    const latStart = lines[i].indexOf(groups.lat);
+    const lonStart = lines[i].indexOf(groups.lon, latStart + groups.lat.length);
+    const ubicacionCol = lonStart + groups.lon.length;
+    anchors.push({ index: i, groups, rumboCol, ubicacionCol });
   }
 
   // Pass 2: assign each wrap line to exactly one anchor. We need to do this
