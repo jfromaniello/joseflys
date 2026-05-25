@@ -839,7 +839,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
               </button>
 
               {settingsOpen && (
-                <div className="absolute right-0 bottom-full mb-2 w-56 rounded-lg bg-slate-900 border border-slate-600 shadow-xl z-50 p-3 space-y-3">
+                <div className="absolute right-0 bottom-full mb-2 w-64 rounded-lg bg-slate-900 border border-slate-600 shadow-xl z-50 p-3 space-y-3">
                   <div>
                     <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
                       Playback Speed
@@ -885,7 +885,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
                             setSettingsOpen(false);
                           }}
                           disabled={points.length < 2 && opt.value !== "free"}
-                          className={`px-2 py-1.5 rounded text-xs font-medium cursor-pointer transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                          className={`px-2 py-1.5 rounded text-xs font-medium cursor-pointer transition-colors whitespace-nowrap text-center disabled:cursor-not-allowed disabled:opacity-50 ${
                             viewMode === opt.value
                               ? "bg-cyan-500 text-slate-950"
                               : "text-gray-300 hover:bg-slate-700"
@@ -935,7 +935,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
                             setSettingsOpen(false);
                           }}
                           disabled={opt.value === "photorealistic" && !HAS_GOOGLE_MAPS_KEY}
-                          className={`px-2 py-1.5 rounded text-xs font-medium cursor-pointer transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                          className={`px-2 py-1.5 rounded text-xs font-medium cursor-pointer transition-colors whitespace-nowrap text-center disabled:cursor-not-allowed disabled:opacity-50 ${
                             mapStyle === opt.value
                               ? "bg-cyan-500 text-slate-950"
                               : "text-gray-300 hover:bg-slate-700"
