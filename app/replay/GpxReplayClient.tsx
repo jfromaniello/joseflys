@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
-import type { CameraPose } from "./GpxReplayGlobe";
+import type { CameraPose, OrientationStatus } from "./GpxReplayGlobe";
 import { PageLayout } from "../components/PageLayout";
 import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
 import { Footer } from "../components/Footer";
@@ -174,6 +174,8 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
   );
 
   const cameraStateRef = useRef<CameraPose | null>(initialCamera);
+  const requestOrientationRef = useRef<(() => Promise<void>) | null>(null);
+  const [orientationStatus, setOrientationStatus] = useState<OrientationStatus>("unknown");
 
   const [points, setPoints] = useState<ReplayPoint[]>([]);
   const [rawGpx, setRawGpx] = useState<string>("");
@@ -720,6 +722,8 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
                 isFullscreen={isFullscreen}
                 initialCamera={initialCamera}
                 cameraStateRef={cameraStateRef}
+                onOrientationStatusChange={setOrientationStatus}
+                requestOrientationRef={requestOrientationRef}
               />
             </div>
 
@@ -845,7 +849,10 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
                         <button
                           key={option}
                           type="button"
-                          onClick={() => setSpeed(option)}
+                          onClick={() => {
+                            setSpeed(option);
+                            setSettingsOpen(false);
+                          }}
                           className={`px-2 py-1.5 rounded text-xs font-medium cursor-pointer transition-colors ${
                             speed === option
                               ? "bg-cyan-500 text-slate-950"
@@ -873,7 +880,10 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
                         <button
                           key={opt.value}
                           type="button"
-                          onClick={() => setViewMode(opt.value)}
+                          onClick={() => {
+                            setViewMode(opt.value);
+                            setSettingsOpen(false);
+                          }}
                           disabled={points.length < 2 && opt.value !== "free"}
                           className={`px-2 py-1.5 rounded text-xs font-medium cursor-pointer transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                             viewMode === opt.value
@@ -892,6 +902,18 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
                           ? "Cinematic chase + side angles on turns."
                           : "First-person view from the aircraft."}
                     </div>
+                    {viewMode === "cockpit" && orientationStatus === "needs-permission" ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSettingsOpen(false);
+                          void requestOrientationRef.current?.();
+                        }}
+                        className="mt-2 w-full rounded-md bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-semibold px-3 py-1.5 cursor-pointer transition-colors"
+                      >
+                        Enable head tracking
+                      </button>
+                    ) : null}
                   </div>
 
                   <div className="border-t border-slate-700 pt-3">
@@ -908,7 +930,10 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
                         <button
                           key={opt.value}
                           type="button"
-                          onClick={() => setMapStyle(opt.value)}
+                          onClick={() => {
+                            setMapStyle(opt.value);
+                            setSettingsOpen(false);
+                          }}
                           disabled={opt.value === "photorealistic" && !HAS_GOOGLE_MAPS_KEY}
                           className={`px-2 py-1.5 rounded text-xs font-medium cursor-pointer transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                             mapStyle === opt.value

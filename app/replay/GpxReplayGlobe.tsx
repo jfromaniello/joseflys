@@ -11,6 +11,13 @@ export interface CameraPose {
   pit: number;
 }
 
+export type OrientationStatus =
+  | "unknown"
+  | "unavailable"
+  | "needs-permission"
+  | "granted"
+  | "denied";
+
 type DeviceOrientationEventWithPermission = typeof DeviceOrientationEvent & {
   requestPermission?: () => Promise<"granted" | "denied" | "prompt">;
 };
@@ -35,6 +42,8 @@ interface GpxReplayGlobeProps {
   isFullscreen?: boolean;
   initialCamera?: CameraPose | null;
   cameraStateRef?: MutableRefObject<CameraPose | null>;
+  onOrientationStatusChange?: (status: OrientationStatus) => void;
+  requestOrientationRef?: MutableRefObject<(() => Promise<void>) | null>;
 }
 
 type CamMode = "chase" | "side-left" | "side-right" | "panorama-start" | "panorama-end" | "cockpit";
@@ -295,6 +304,8 @@ export function GpxReplayGlobe({
   isFullscreen = false,
   initialCamera = null,
   cameraStateRef,
+  onOrientationStatusChange,
+  requestOrientationRef,
 }: GpxReplayGlobeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<import("cesium").Viewer | null>(null);
@@ -323,9 +334,7 @@ export function GpxReplayGlobe({
   const [viewerReady, setViewerReady] = useState(false);
   const [providerEpoch, setProviderEpoch] = useState(0);
   const [loadError, setLoadError] = useState("");
-  const [orientationStatus, setOrientationStatus] = useState<
-    "unknown" | "unavailable" | "needs-permission" | "granted" | "denied"
-  >("unknown");
+  const [orientationStatus, setOrientationStatus] = useState<OrientationStatus>("unknown");
   const [showCameraBanner, setShowCameraBanner] = useState(false);
 
   useEffect(() => {
@@ -446,6 +455,20 @@ export function GpxReplayGlobe({
       setOrientationStatus("denied");
     }
   }, []);
+
+  useEffect(() => {
+    onOrientationStatusChange?.(orientationStatus);
+  }, [orientationStatus, onOrientationStatusChange]);
+
+  useEffect(() => {
+    if (!requestOrientationRef) return;
+    requestOrientationRef.current = requestOrientationPermission;
+    return () => {
+      if (requestOrientationRef.current === requestOrientationPermission) {
+        requestOrientationRef.current = null;
+      }
+    };
+  }, [requestOrientationRef, requestOrientationPermission]);
 
   useEffect(() => {
     currentTimeMsRef.current = currentTimeMs;
@@ -1043,16 +1066,6 @@ export function GpxReplayGlobe({
           <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
           {viewMode === "cinematic" ? "Cinematic camera" : "Cockpit view"} — drag to take over
         </div>
-      )}
-
-      {viewMode === "cockpit" && orientationStatus === "needs-permission" && viewerReady && (
-        <button
-          type="button"
-          onClick={requestOrientationPermission}
-          className="absolute bottom-12 left-3 z-[500] rounded-md bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-semibold px-3 py-1.5 cursor-pointer transition-colors"
-        >
-          Enable head tracking
-        </button>
       )}
 
       {loadError && (
