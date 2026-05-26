@@ -1,11 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
-import airportsData from '../../../data/airports.json';
+import { searchAerodromes, type Aerodrome } from '@/lib/clients';
 
 // Note: Not using edge runtime due to 2MB size limit (airports.json is 5MB)
-
-// Airport data structure: [code, lat, lon, name, elevation_ft]
-type AirportData = [string, number, number, string, number | null];
 
 interface GeocodeResult {
   name: string;
@@ -15,44 +12,48 @@ interface GeocodeResult {
   importance: number;
 }
 
+const TYPE_LABEL: Record<Aerodrome["type"], string> = {
+  AD: "AD",
+  LAD: "LAD",
+  HELIPORT: "HEL",
+  LADH: "LADH",
+};
+
+const TYPE_IMPORTANCE: Record<Aerodrome["type"], number> = {
+  AD: 0.95,
+  HELIPORT: 0.9,
+  LAD: 0.88,
+  LADH: 0.85,
+};
+
 /**
- * Search airports by ICAO code or name
+ * Format aerodrome for LocationSearchInput.
+ * AD keeps the legacy "CODE, name" format so selection shows the ICAO code.
+ * LAD/LADH/HELIPORT use a dash separator (no comma) so the full label is kept
+ * after the input's `split(",")[0]` selection trim.
  */
-function searchAirports(query: string): GeocodeResult[] {
-  const normalizedQuery = query.toLowerCase().trim();
-  const airports = airportsData as AirportData[];
+function formatAerodromeName(a: Aerodrome): string {
+  if (a.type === "AD") {
+    return a.code ? `${a.code}, ${a.name}` : a.name;
+  }
+  const tag = TYPE_LABEL[a.type];
+  const prefix = a.code ? `${tag} ${a.code}` : tag;
+  return `${prefix} - ${a.name}`;
+}
 
-  // Match by ICAO code (exact or starts with)
-  const codeMatches = airports.filter(([code]) =>
-    code.toLowerCase().startsWith(normalizedQuery)
-  );
-
-  // Match by name (contains)
-  const nameMatches = airports.filter(([_code, _lat, _lon, name]) =>
-    name.toLowerCase().includes(normalizedQuery)
-  );
-
-  // Combine matches (code matches first, then name matches)
-  const allMatches = [...codeMatches, ...nameMatches];
-
-  // Remove duplicates and limit to 5 results
-  const uniqueMatches = Array.from(
-    new Map(allMatches.map(airport => [airport[0], airport])).values()
-  ).slice(0, 5);
-
-  // Transform to geocode result format
-  return uniqueMatches.map(([code, lat, lon, name]) => ({
-    name: `${code}, ${name}`,
-    lat,
-    lon,
-    type: 'aerodrome',
-    importance: 0.9, // High importance for airports
+function aerodromesToGeocode(query: string, limit: number): GeocodeResult[] {
+  const { data } = searchAerodromes(query, limit);
+  return data.map((a) => ({
+    name: formatAerodromeName(a),
+    lat: a.lat,
+    lon: a.lon,
+    type: a.type === "AD" ? "aerodrome" : a.type.toLowerCase(),
+    importance: TYPE_IMPORTANCE[a.type] ?? 0.85,
   }));
 }
 
 /**
- * Geocoding API route that searches both airports and OpenStreetMap
- * This provides a safe way to query location data without exposing the client
+ * Geocoding API route that searches aerodromes (AD/LAD/LADH/HELIPORT) and OpenStreetMap.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -66,8 +67,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Search airports first
-    const airportResults = searchAirports(query);
+    // Search aerodromes (Argentina AD/LAD/LADH/HELIPORT + global ADs)
+    const aerodromeResults = aerodromesToGeocode(query, 8);
 
     // Call Nominatim API with proper user agent
     const nominatimUrl = new URL('https://nominatim.openstreetmap.org/search');
@@ -93,7 +94,7 @@ export async function GET(request: NextRequest) {
     const data = await response.json();
 
     // Transform OSM data to a simpler format
-    const osmResults = data.map((item: any) => ({
+    const osmResults: GeocodeResult[] = data.map((item: any) => ({
       name: item.display_name,
       lat: parseFloat(item.lat),
       lon: parseFloat(item.lon),
@@ -101,11 +102,9 @@ export async function GET(request: NextRequest) {
       importance: item.importance,
     }));
 
-    // Combine airport results with OSM results
-    // Airports first, then OSM results, sorted by importance
-    const combinedResults = [...airportResults, ...osmResults]
-      .sort((a, b) => b.importance - a.importance)
-      .slice(0, 10); // Limit to 10 total results
+    // Aerodromes first (already well-sorted by searchAerodromes), then OSM by importance
+    const sortedOsm = osmResults.sort((a, b) => b.importance - a.importance);
+    const combinedResults = [...aerodromeResults, ...sortedOsm].slice(0, 10);
 
     return NextResponse.json(combinedResults);
   } catch (error) {
