@@ -89,6 +89,46 @@ export function calculateInitialBearing(
 }
 
 /**
+ * Calculates the final true bearing (course) at the destination of a geodesic
+ * route, i.e. the azimuth at point 2 along the great circle from point 1.
+ *
+ * Useful in combination with `calculateInitialBearing` to assess how much the
+ * bearing turns along the route: meridian-aligned or short routes have nearly
+ * identical initial/final bearings, whereas long east-west legs at high
+ * latitudes can differ by tens of degrees.
+ */
+export function calculateFinalBearing(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
+  const result = Geodesic.WGS84.Inverse(lat1, lon1, lat2, lon2);
+  return normalizeAngle(result.azi2 ?? 0);
+}
+
+/**
+ * Returns the absolute bearing change between the initial and final azimuth
+ * of the geodesic route, in degrees (0-180).
+ *
+ * Captures the *practical* deviation from a constant course on a great
+ * circle, which depends on both distance and east-west component — far more
+ * informative than a pure distance threshold.
+ */
+export function calculateBearingChange(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
+  const result = Geodesic.WGS84.Inverse(lat1, lon1, lat2, lon2);
+  const a1 = normalizeAngle(result.azi1 ?? 0);
+  const a2 = normalizeAngle(result.azi2 ?? 0);
+  const diff = Math.abs(a2 - a1);
+  return diff > 180 ? 360 - diff : diff;
+}
+
+/**
  * Validates if a coordinate pair is within valid ranges
  */
 export function validateCoordinates(lat: number, lon: number): boolean {
@@ -96,10 +136,19 @@ export function validateCoordinates(lat: number, lon: number): boolean {
 }
 
 /**
- * Maximum recommended distance for using initial bearing
- * For distances beyond this, the bearing change along the route becomes significant
+ * Maximum recommended distance for using initial bearing.
+ * Retained for legacy callers; the route page now uses `BEARING_CHANGE_WARNING_DEG`
+ * which is a better proxy for when the initial bearing stops being a useful course.
  */
 export const MAX_RECOMMENDED_DISTANCE_NM = 1000;
+
+/**
+ * Bearing change threshold (degrees) above which the initial bearing is no
+ * longer a good approximation of the course along the geodesic route. Routes
+ * with smaller swings (e.g. predominantly N-S legs in mid latitudes) are
+ * safe to fly using just the initial bearing.
+ */
+export const BEARING_CHANGE_WARNING_DEG = 10;
 
 /**
  * Checks if a distance is within the recommended range for initial bearing calculation

@@ -11,8 +11,10 @@ import { ShareButtonSimple } from "../components/ShareButtonSimple";
 import {
   calculateHaversineDistance,
   calculateInitialBearing,
+  calculateFinalBearing,
+  calculateBearingChange,
   validateCoordinates,
-  MAX_RECOMMENDED_DISTANCE_NM,
+  BEARING_CHANGE_WARNING_DEG,
 } from "@/lib/distanceCalculations";
 import { quantizeCoordinate } from "@/lib/coordinateUrlParams";
 import { magvar } from "magvar";
@@ -198,6 +200,14 @@ export function RouteCalculatorClient({
       ? calculateInitialBearing(fromLatNum, fromLonNum, toLatNum, toLonNum)
       : null;
 
+    const finalBearing = validCoordinates
+      ? calculateFinalBearing(fromLatNum, fromLonNum, toLatNum, toLonNum)
+      : null;
+
+    const bearingChange = validCoordinates
+      ? calculateBearingChange(fromLatNum, fromLonNum, toLatNum, toLonNum)
+      : null;
+
     // Calculate magnetic variation at midpoint
     const midLat = validCoordinates ? (fromLatNum + toLatNum) / 2 : null;
     const midLon = validCoordinates ? (fromLonNum + toLonNum) / 2 : null;
@@ -214,17 +224,19 @@ export function RouteCalculatorClient({
       ? normalizeHeading(bearing - magneticVariation)
       : null;
 
-    const distanceExceedsLimit =
-      distance !== null && distance > MAX_RECOMMENDED_DISTANCE_NM;
+    const bearingChangeExceedsThreshold =
+      bearingChange !== null && bearingChange > BEARING_CHANGE_WARNING_DEG;
 
     return {
       id: toLocation.id,
       toLocation,
       distance,
       bearing,
+      finalBearing,
+      bearingChange,
       magneticVariation,
       magneticHeading,
-      distanceExceedsLimit,
+      bearingChangeExceedsThreshold,
       validCoordinates,
     };
   });
@@ -568,26 +580,28 @@ export function RouteCalculatorClient({
           {/* Results */}
           {results.some(r => r.validCoordinates) && (
             <>
-              {/* Warnings for any destinations that exceed distance limit */}
-              {results.filter(r => r.distanceExceedsLimit).map(result => (
+              {/* Warnings for any destinations where the great-circle bearing
+                  changes noticeably between origin and destination */}
+              {results.filter(r => r.bearingChangeExceedsThreshold).map(result => (
                 <div key={result.id} className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
                   <p
                     className="text-sm leading-relaxed"
                     style={{ color: "rgb(251, 191, 36)" }}
                   >
-                    <span className="font-semibold">Warning:</span> Distance to{" "}
-                    {result.toLocation.name || `(${result.toLocation.lat.toFixed(2)}, ${result.toLocation.lon.toFixed(2)})`} exceeds{" "}
-                    {MAX_RECOMMENDED_DISTANCE_NM} NM. For long distances, the
-                    bearing changes significantly along the route. The initial
-                    bearing shown may differ substantially from the final bearing at
-                    destination.
+                    <span className="font-semibold">Warning:</span> On the great-circle
+                    route to{" "}
+                    {result.toLocation.name || `(${result.toLocation.lat.toFixed(2)}, ${result.toLocation.lon.toFixed(2)})`}{" "}
+                    the bearing changes by {Math.round(result.bearingChange!)}° between
+                    origin ({formatCourse(result.bearing!)}) and destination ({formatCourse(result.finalBearing!)}).
+                    The initial bearing alone is not enough to fly the route — plan
+                    intermediate waypoints or use a constant-heading (rhumb line) leg.
                   </p>
                 </div>
               ))}
 
               {/* Results for each destination */}
               <div className="space-y-6 mb-6">
-                {results.filter(r => r.validCoordinates && !r.distanceExceedsLimit).map((result, index) => (
+                {results.filter(r => r.validCoordinates).map((result, index) => (
                   <div key={result.id} className="space-y-4">
                     {/* Destination Header */}
                     {result.toLocation.name && (
@@ -646,8 +660,16 @@ export function RouteCalculatorClient({
                             className="text-base print:text-sm"
                             style={{ color: "oklch(0.6 0.02 240)" }}
                           >
-                            true
+                            true {result.bearingChangeExceedsThreshold ? "(initial)" : ""}
                           </p>
+                          {result.bearingChangeExceedsThreshold && (
+                            <p
+                              className="text-sm mt-2 print:text-xs print:mt-1"
+                              style={{ color: "oklch(0.7 0.05 280)" }}
+                            >
+                              final: {formatCourse(result.finalBearing!)} (Δ {Math.round(result.bearingChange!)}°)
+                            </p>
+                          )}
                         </div>
 
                         {/* Magnetic Variation Result */}
@@ -703,7 +725,7 @@ export function RouteCalculatorClient({
                     </div>
 
                     {/* Divider between destinations (not after last one) */}
-                    {index < results.filter(r => r.validCoordinates && !r.distanceExceedsLimit).length - 1 && (
+                    {index < results.filter(r => r.validCoordinates).length - 1 && (
                       <div className="border-t border-gray-700"></div>
                     )}
                   </div>
