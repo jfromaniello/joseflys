@@ -330,8 +330,11 @@ export function ArgentinaMapClient() {
   const [isNovedadesOpen, setIsNovedadesOpen] = useState(false);
 
   // Auto-open the "Novedades 2026" modal once on first visit after the update.
+  // Skip when the URL carries any query string — the user landed via a deep
+  // link (filter, focused aerodrome, shared search), so don't get in the way.
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (window.location.search) return;
     if (window.localStorage.getItem(NOVEDADES_DISMISSED_KEY)) return;
     setIsNovedadesOpen(true);
   }, []);
