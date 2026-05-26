@@ -6,6 +6,9 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Navbar } from "@/app/components/Navbar";
 import argentinaData from "@/data/ad-lads/argentina.json";
+import { NovedadesModal } from "./NovedadesModal";
+
+const NOVEDADES_DISMISSED_KEY = "novedades-feb-2026-seen";
 
 // Separate search input component to prevent map re-renders
 const LLMSearchInput = memo(function LLMSearchInput({
@@ -137,33 +140,45 @@ const MarkerClusterGroup = dynamic(
   { ssr: false }
 );
 
-// Component to handle map focusing when loc param is present
+// Component to handle map focusing — either on a single point or fitting
+// multiple points within view.
+type MapFocus =
+  | { type: "point"; lat: number; lon: number }
+  | { type: "bounds"; points: { lat: number; lon: number }[] };
+
 const MapFocusController = dynamic(
   () => Promise.all([import("react-leaflet"), import("leaflet")]).then(([mod, L]) => {
     const { useMap } = mod;
     // eslint-disable-next-line react/display-name
-    return ({ focusLat, focusLon }: { focusLat: number | null; focusLon: number | null }) => {
+    return ({ focus }: { focus: MapFocus | null }) => {
       const map = useMap();
       const React = require("react");
 
       React.useEffect(() => {
-        if (focusLat !== null && focusLon !== null && !isNaN(focusLat) && !isNaN(focusLon)) {
-          // Center map on the location with zoom
-          map.setView([focusLat, focusLon], 12);
+        if (!focus) return;
 
-          // Find and open the popup for this marker after a short delay
+        if (focus.type === "point") {
+          const { lat, lon } = focus;
+          if (isNaN(lat) || isNaN(lon)) return;
+          map.setView([lat, lon], 14);
+          // Open the popup for the matching marker shortly after.
           setTimeout(() => {
-            map.eachLayer((layer) => {
+            map.eachLayer((layer: unknown) => {
               if (layer instanceof L.Marker) {
                 const pos = layer.getLatLng();
-                if (Math.abs(pos.lat - focusLat) < 0.0001 && Math.abs(pos.lng - focusLon) < 0.0001) {
+                if (Math.abs(pos.lat - lat) < 0.0001 && Math.abs(pos.lng - lon) < 0.0001) {
                   layer.openPopup();
                 }
               }
             });
           }, 500);
+        } else {
+          const latLngs = focus.points.map((p) => L.latLng(p.lat, p.lon));
+          if (latLngs.length === 0) return;
+          const bounds = L.latLngBounds(latLngs);
+          map.fitBounds(bounds, { padding: [60, 60], maxZoom: 14 });
         }
-      }, [map, focusLat, focusLon]);
+      }, [map, focus]);
 
       return null;
     };
@@ -303,8 +318,37 @@ export function ArgentinaMapClient() {
   const [mapStyle, setMapStyle] = useState<MapStyle>(
     urlMapStyle === "satellite" ? "satellite" : urlMapStyle === "hybrid" ? "hybrid" : "street"
   );
-  const [focusedAerodrome, setFocusedAerodrome] = useState<{ lat: number; lon: number } | null>(
-    urlLoc ? { lat: parseFloat(urlLoc.split(",")[0]), lon: parseFloat(urlLoc.split(",")[1]) } : null
+  const [mapFocus, setMapFocus] = useState<MapFocus | null>(
+    urlLoc
+      ? {
+          type: "point",
+          lat: parseFloat(urlLoc.split(",")[0]),
+          lon: parseFloat(urlLoc.split(",")[1]),
+        }
+      : null
+  );
+  const [isNovedadesOpen, setIsNovedadesOpen] = useState(false);
+
+  // Auto-open the "Novedades 2026" modal once on first visit after the update.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.localStorage.getItem(NOVEDADES_DISMISSED_KEY)) return;
+    setIsNovedadesOpen(true);
+  }, []);
+
+  const handleNovedadesClose = useCallback(() => {
+    setIsNovedadesOpen(false);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(NOVEDADES_DISMISSED_KEY, "1");
+    }
+  }, []);
+
+  const handleFocusEntry = useCallback(
+    (codigo: string, lat: number, lon: number) => {
+      setSearchQuery(codigo);
+      setMapFocus({ type: "point", lat, lon });
+    },
+    []
   );
 
   // Search mode: "filters" for deterministic facets, "ai" for LLM search
@@ -531,6 +575,38 @@ export function ArgentinaMapClient() {
     return result;
   }, [searchMode, selectedTypes, searchQuery, selectedProvince, selectedSurface, minRunwayLength, llmResult]);
 
+  // Auto-focus the map when a name/code search narrows the results.
+  //  - 1 match: center on it at zoom 14.
+  //  - 2..5 matches that are spatially close (< 1.5° span in both lat & lon,
+  //    roughly < 165 km): fit bounds so all are visible together.
+  //  - Anything broader (or N > 5): no auto-focus — let the user pan.
+  // Debounced so typing "HAN" → "HANGARES" doesn't shuffle the view.
+  useEffect(() => {
+    if (searchMode !== "filters") return;
+    if (!searchQuery.trim()) return;
+    if (filteredData.length === 0) return;
+
+    let next: MapFocus | null = null;
+    if (filteredData.length === 1) {
+      const only = filteredData[0];
+      next = { type: "point", lat: only.lat, lon: only.lon };
+    } else if (filteredData.length <= 5) {
+      const lats = filteredData.map((a) => a.lat);
+      const lons = filteredData.map((a) => a.lon);
+      const latSpan = Math.max(...lats) - Math.min(...lats);
+      const lonSpan = Math.max(...lons) - Math.min(...lons);
+      if (latSpan < 1.5 && lonSpan < 1.5) {
+        next = {
+          type: "bounds",
+          points: filteredData.map((a) => ({ lat: a.lat, lon: a.lon })),
+        };
+      }
+    }
+    if (!next) return;
+    const timer = setTimeout(() => setMapFocus(next), 400);
+    return () => clearTimeout(timer);
+  }, [searchMode, searchQuery, filteredData]);
+
   // Count by type
   const counts = useMemo(() => {
     const filtered = searchQuery.trim()
@@ -564,6 +640,13 @@ export function ArgentinaMapClient() {
             <p className="text-slate-400">
               {data.count.ad} AD + {data.count.heliport} Helipuertos + {data.count.lad} LAD + {data.count.ladh} LADH = {data.count.total} ubicaciones
             </p>
+            <button
+              onClick={() => setIsNovedadesOpen(true)}
+              className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/40 text-amber-200 text-sm font-medium cursor-pointer transition-colors"
+            >
+              <span aria-hidden>✨</span>
+              Novedades del listado Feb 2026
+            </button>
           </div>
 
           {/* Search Tabs */}
@@ -783,12 +866,7 @@ export function ArgentinaMapClient() {
                     url={TILE_LAYERS.hybrid.labelsUrl}
                   />
                 )}
-                {focusedAerodrome && (
-                  <MapFocusController
-                    focusLat={focusedAerodrome.lat}
-                    focusLon={focusedAerodrome.lon}
-                  />
-                )}
+                {mapFocus && <MapFocusController focus={mapFocus} />}
                 <MarkerClusterGroup
                   chunkedLoading
                   maxClusterRadius={10}
@@ -966,6 +1044,12 @@ export function ArgentinaMapClient() {
           </div>
         </div>
       </div>
+
+      <NovedadesModal
+        isOpen={isNovedadesOpen}
+        onClose={handleNovedadesClose}
+        onFocusEntry={handleFocusEntry}
+      />
     </main>
   );
 }
