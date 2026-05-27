@@ -225,6 +225,23 @@ export function formatCorrection(angle: number | null | undefined, decimals: num
 }
 
 /**
+ * Format vertical speed in feet per minute with explicit sign
+ * Examples: 450 → "+450 fpm", -1200 → "-1,200 fpm", 0 → "0 fpm"
+ *
+ * @param fpm - Vertical speed in feet per minute (positive = climb, negative = descent)
+ * @returns Formatted string like "+450 fpm" or "-1,200 fpm"
+ */
+export function formatVerticalSpeed(fpm: number | null | undefined): string {
+  if (fpm === null || fpm === undefined || isNaN(fpm)) {
+    return "-";
+  }
+  const rounded = Math.round(fpm);
+  if (rounded === 0) return "0 fpm";
+  const sign = rounded > 0 ? "+" : "";
+  return `${sign}${rounded.toLocaleString()} fpm`;
+}
+
+/**
  * Parse and normalize heading/direction to 3-digit format
  * Used for parsing URL parameters and user input
  *

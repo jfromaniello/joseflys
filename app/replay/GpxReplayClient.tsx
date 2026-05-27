@@ -8,7 +8,7 @@ import { PageLayout } from "../components/PageLayout";
 import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
 import { Footer } from "../components/Footer";
 import { Tooltip } from "../components/Tooltip";
-import { formatDistance } from "@/lib/formatters";
+import { formatDistance, formatVerticalSpeed } from "@/lib/formatters";
 import { calculateHaversineDistance } from "@/lib/distanceCalculations";
 
 interface ReplayPoint {
@@ -456,6 +456,28 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
     return eleM * 3.28084;
   }, [points, currentIndex, currentTimeMs]);
 
+  // Smoothed over a centered ~5s window so GPS altitude noise doesn't dominate.
+  const currentVerticalSpeedFpm = useMemo(() => {
+    if (points.length < 2) return null as number | null;
+
+    const HALF_WINDOW_MS = 2500;
+    let startIdx = currentIndex;
+    let endIdx = currentIndex;
+    while (startIdx > 0 && currentTimeMs - points[startIdx].timeMs < HALF_WINDOW_MS) {
+      startIdx -= 1;
+    }
+    while (endIdx < points.length - 1 && points[endIdx].timeMs - currentTimeMs < HALF_WINDOW_MS) {
+      endIdx += 1;
+    }
+    if (startIdx === endIdx) return null;
+
+    const dtMs = points[endIdx].timeMs - points[startIdx].timeMs;
+    if (dtMs <= 0) return null;
+
+    const deltaEleM = points[endIdx].ele - points[startIdx].ele;
+    return (deltaEleM * 3.28084) / (dtMs / 60000);
+  }, [points, currentIndex, currentTimeMs]);
+
   useEffect(() => {
     if (!isPlaying || timeline.durationMs <= 0) {
       lastTickRef.current = null;
@@ -783,6 +805,14 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
                       : "--"}
                   </div>
                 </div>
+                <div>
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 leading-none">
+                    V/S
+                  </div>
+                  <div className="mt-1 text-base font-semibold tabular-nums text-white leading-none">
+                    {formatVerticalSpeed(currentVerticalSpeedFpm)}
+                  </div>
+                </div>
               </div>
             ) : null}
 
@@ -984,7 +1014,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
           </div>
           </div>
 
-          <div className="mt-6 grid grid-cols-2 gap-3 items-stretch">
+          <div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-3 items-stretch">
             <StatCard
               label="Speed"
               tooltip="Computed from 3D distance between adjacent GPX points divided by their timestamp delta. Close to ground speed — without wind or aircraft anemometer data it is impossible to derive TAS or other speeds that would be more useful."
@@ -994,6 +1024,11 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
               label="Current Altitude"
               tooltip="GPX altitude is sampled at points. During playback, altitude is linearly interpolated between the current point and the next point by time."
               value={currentAltitudeFt !== null ? `${Math.round(currentAltitudeFt).toLocaleString()} ft` : "--"}
+            />
+            <StatCard
+              label="Vertical Speed"
+              tooltip="Climb (+) or descent (−) rate in feet per minute, smoothed over a ~5-second window centered on the current point to reduce GPS altitude noise."
+              value={formatVerticalSpeed(currentVerticalSpeedFpm)}
             />
           </div>
 
