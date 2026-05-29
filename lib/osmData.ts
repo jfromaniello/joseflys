@@ -330,18 +330,41 @@ async function setCachedData(cacheKey: string, osmData: OSMData): Promise<void> 
 }
 
 /**
+ * Progress stages reported while loading OSM data, so the UI can show
+ * meaningful feedback instead of an indefinite spinner.
+ */
+export type OSMLoadStage = 'cache' | 'fetching' | 'processing' | 'done';
+
+export interface OSMLoadProgress {
+  stage: OSMLoadStage;
+  message: string;
+  /** Rough completion estimate, 0..1 */
+  progress: number;
+  /** 1-based mirror attempt (only during 'fetching') */
+  attempt?: number;
+  totalMirrors?: number;
+}
+
+// Max time to wait on a single mirror before moving to the next one.
+// Overpass mirrors can hang; without this a dead mirror blocks the whole load.
+const MIRROR_TIMEOUT_MS = 25000;
+
+/**
  * Fetch OSM data from Overpass API (with caching and fallback mirrors)
  */
 export async function fetchOSMData(
-  locations: Array<{ lat: number; lon: number }>
+  locations: Array<{ lat: number; lon: number }>,
+  onProgress?: (p: OSMLoadProgress) => void
 ): Promise<OSMData> {
   const bbox = calculateBoundingBox(locations, 0.08); // ~8-10km padding
   const cacheKey = getCacheKey(bbox);
 
   // Try cache first
+  onProgress?.({ stage: 'cache', message: 'Checking local cache…', progress: 0.04 });
   const cachedData = await getCachedData(cacheKey);
   if (cachedData) {
     console.log('Using cached OSM data');
+    onProgress?.({ stage: 'done', message: 'Loaded from cache', progress: 1 });
     return cachedData;
   }
 
@@ -357,21 +380,35 @@ export async function fetchOSMData(
   let lastError: Error | null = null;
 
   // Try each mirror in sequence
-  for (const mirror of mirrors) {
+  for (let i = 0; i < mirrors.length; i++) {
+    const mirror = mirrors[i];
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), MIRROR_TIMEOUT_MS);
     try {
       console.log(`Fetching OSM data from ${mirror}...`);
+      onProgress?.({
+        stage: 'fetching',
+        message: i === 0
+          ? 'Downloading map data from OpenStreetMap…'
+          : `Map server busy, trying alternate server (${i + 1}/${mirrors.length})…`,
+        progress: 0.1 + i * 0.08,
+        attempt: i + 1,
+        totalMirrors: mirrors.length,
+      });
       const response = await fetch(mirror, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: `data=${encodeURIComponent(query)}`,
+        signal: controller.signal,
       });
 
       if (!response.ok) {
         throw new Error(`Overpass API error: ${response.status}`);
       }
 
+      onProgress?.({ stage: 'processing', message: 'Processing map features…', progress: 0.85 });
       const data = await response.json();
 
       // Convert to GeoJSON
@@ -401,16 +438,24 @@ export async function fetchOSMData(
       // Cache the data (don't await, do it in background)
       setCachedData(cacheKey, osmData).catch(() => {});
 
+      onProgress?.({ stage: 'done', message: `Loaded ${features.length} features`, progress: 1 });
       return osmData;
     } catch (error) {
-      console.warn(`Failed to fetch from ${mirror}:`, error);
+      const wasTimeout = (error as Error)?.name === 'AbortError';
+      console.warn(
+        `Failed to fetch from ${mirror}:`,
+        wasTimeout ? `timed out after ${MIRROR_TIMEOUT_MS / 1000}s` : error
+      );
       lastError = error as Error;
       // Continue to next mirror
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
 
   // All mirrors failed
   console.error('All Overpass API mirrors failed:', lastError);
+  onProgress?.({ stage: 'done', message: 'Map data unavailable', progress: 1 });
 
   // Return empty collection as fallback
   return {

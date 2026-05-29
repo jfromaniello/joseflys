@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useMemo, forwardRef, useImperativeHandle } from "react";
 import proj4 from "proj4";
 import dynamic from "next/dynamic";
-import { fetchOSMData, type OSMData, type OSMFeature } from "@/lib/osmData";
+import { fetchOSMData, type OSMData, type OSMFeature, type OSMLoadProgress } from "@/lib/osmData";
 import { magvar } from "magvar";
 import { formatAngle } from "@/lib/formatters";
 
@@ -132,6 +132,14 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [osmData, setOsmData] = useState<OSMData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [loadStatus, setLoadStatus] = useState<{ message: string; progress: number }>({
+      message: 'Loading map data…',
+      progress: 0,
+    });
+    // Eased progress shown in the bar (creeps toward the target so it never looks frozen)
+    const [displayProgress, setDisplayProgress] = useState(0);
+    const loadStatusRef = useRef({ progress: 0 });
+    const [loadElapsed, setLoadElapsed] = useState(0);
     const [error, setError] = useState<string | null>(null);
     const actualScaleRef = useRef<number>(1); // Store the actual scale used for rendering
     const [isRendering, setIsRendering] = useState(false);
@@ -241,22 +249,49 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
       return;
     }
 
+    let cancelled = false;
+
     const loadOSMData = async () => {
       setLoading(true);
       setError(null);
+      setLoadStatus({ message: 'Loading map data…', progress: 0 });
+      loadStatusRef.current.progress = 0;
+      setDisplayProgress(0);
       try {
-        const data = await fetchOSMData(locations);
-        setOsmData(data);
+        const data = await fetchOSMData(locations, (p: OSMLoadProgress) => {
+          if (cancelled) return;
+          loadStatusRef.current.progress = p.progress;
+          setLoadStatus({ message: p.message, progress: p.progress });
+        });
+        if (!cancelled) setOsmData(data);
       } catch (err) {
         console.error('Failed to load OSM data:', err);
-        setError('Failed to load map data');
+        if (!cancelled) setError('Failed to load map data');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     loadOSMData();
+    return () => { cancelled = true; };
   }, [locations, mapMode]);
+
+  // Smoothly ease the displayed progress toward the reported target and tick an
+  // elapsed-seconds counter, so a slow Overpass request still looks like it's working.
+  useEffect(() => {
+    if (!loading) return;
+    setLoadElapsed(0);
+    const start = performance.now();
+    const interval = setInterval(() => {
+      setLoadElapsed(Math.floor((performance.now() - start) / 1000));
+      setDisplayProgress(prev => {
+        const target = loadStatusRef.current.progress;
+        // Ease toward target; asymptotic approach keeps the bar moving without ever stalling.
+        return prev + (target - prev) * 0.12;
+      });
+    }, 150);
+    return () => clearInterval(interval);
+  }, [loading]);
 
   // Render BASE LAYER to OffscreenCanvas (OSM, routes, waypoints - everything except ticks)
   // This is the expensive operation that only runs when map data changes
@@ -2019,11 +2054,26 @@ export const LocalChartMap = forwardRef<LocalChartMapHandle, LocalChartMapProps>
 
   // UTM mode rendering - show loading only when waiting for OSM data
   if (loading) {
+    const pct = Math.min(99, Math.round(displayProgress * 100));
     return (
       <div className="w-full h-[600px] rounded-xl bg-slate-800/50 border-2 border-gray-700 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500 mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading map data...</p>
+        <div className="text-center w-full max-w-sm px-6">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500 mx-auto mb-5"></div>
+          <p className="text-gray-300 mb-3">{loadStatus.message}</p>
+          <div className="w-full h-2 rounded-full bg-slate-700 overflow-hidden">
+            <div
+              className="h-full bg-sky-500 rounded-full transition-[width] duration-200 ease-out"
+              style={{ width: `${pct}%` }}
+            ></div>
+          </div>
+          <p className="text-xs text-gray-500 mt-2 tabular-nums">
+            {pct}% · {loadElapsed}s
+          </p>
+          {loadElapsed >= 8 && (
+            <p className="text-xs text-amber-400/80 mt-3">
+              OpenStreetMap servers can be slow — hang tight, this only happens the first time for an area.
+            </p>
+          )}
         </div>
       </div>
     );
