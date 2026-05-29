@@ -928,7 +928,7 @@ export function ArgentinaMapClient() {
                                 </span>
                               </div>
                               {aerodrome.elevation !== null && (
-                                <div>Elevacion: {aerodrome.elevation} m</div>
+                                <div>Elevacion: {aerodrome.elevation} ft</div>
                               )}
                               {aerodrome.surface && (
                                 <div>Superficie: {aerodrome.surface}</div>

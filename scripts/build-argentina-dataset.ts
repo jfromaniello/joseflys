@@ -67,7 +67,7 @@ interface Aerodrome {
   name: string;
   lat: number;
   lon: number;
-  elevation: number | null; // meters
+  elevation: number | null; // feet (MSL)
   province: string | null;
   municipality: string | null;
   surface: string | null; // TIERRA, ASFALTO, etc.
@@ -388,7 +388,8 @@ async function buildDataset() {
       continue;
     }
 
-    const elevation = entry.elevation_ft ? Math.round(parseFloat(entry.elevation_ft) * 0.3048) : null;
+    // OurAirports `elevation_ft` is already in feet — store as-is (MSL).
+    const elevation = entry.elevation_ft ? Math.round(parseFloat(entry.elevation_ft)) : null;
     const isHeliport = entry.type === "heliport";
     const code = entry.gps_code || entry.local_code || entry.icao_code || null;
     const name = entry.name
@@ -449,7 +450,10 @@ async function buildDataset() {
       name: entry.nombre,
       lat: entry.lat,
       lon: entry.lon,
-      elevation: entry.elevacion,
+      // ANAC LAD listing expresses elevation in meters ("60 mts.") — convert to feet (MSL).
+      elevation: Number.isFinite(entry.elevacion)
+        ? Math.round(entry.elevacion * 3.28084)
+        : null,
       province: normalizeProvince(entry.provincia),
       municipality: null,
       surface: normalizeSurface(entry.superficie),
