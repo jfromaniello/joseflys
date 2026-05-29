@@ -1,7 +1,7 @@
 import { ImportFlightPlanClient } from "./ImportFlightPlanClient";
 
 export const metadata = {
-  title: "Import Flight Plan | José Flies",
+  title: "Import Flight Plan | José Flys",
   description: "Import a shared flight plan",
 };
 

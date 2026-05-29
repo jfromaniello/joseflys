@@ -255,7 +255,7 @@ export function Navbar({ currentPage }: NavbarProps) {
                 </svg>
               </div>
               <div>
-                <div className="text-white font-bold text-base leading-tight">José Flies</div>
+                <div className="text-white font-bold text-base leading-tight">José Flys</div>
                 <div className="text-xs text-gray-400 -mt-0.5">Aviation Tools</div>
               </div>
               {isDev && (
@@ -511,7 +511,7 @@ export function Navbar({ currentPage }: NavbarProps) {
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="text-white font-bold">José Flies</span>
+                          <span className="text-white font-bold">José Flys</span>
                           {isDev && (
                             <div className="px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-500/40">
                               <span className="text-xs font-bold text-amber-400">DEV</span>

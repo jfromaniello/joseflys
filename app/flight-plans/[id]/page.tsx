@@ -1,7 +1,7 @@
 import { FlightPlanDetailClient } from "./FlightPlanDetailClient";
 
 export const metadata = {
-  title: "Flight Plan Details | José Flies",
+  title: "Flight Plan Details | José Flys",
   description: "View detailed information about a flight plan and its legs",
 };
 
