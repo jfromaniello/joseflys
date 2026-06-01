@@ -1,57 +1,81 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { analyzeCircuit, type CircuitAnalysis, type PatternAerodrome } from "./patternAnalysis";
+import {
+  analyzeCircuit,
+  mergeFlightCircuits,
+  type FlightCircuits,
+  type PatternAerodrome,
+} from "./patternAnalysis";
 import type { ReplayPoint } from "./types";
 
-/** Fetches the aerodrome nearest a coordinate from the server resolver. */
-async function fetchAerodrome(
-  lat: number,
-  lon: number,
+/** Downsamples to at most `max` points for the resolver request. */
+function downsample(points: ReplayPoint[], max: number): Array<{ lat: number; lon: number }> {
+  if (points.length <= max) return points.map((p) => ({ lat: p.lat, lon: p.lon }));
+  const step = (points.length - 1) / (max - 1);
+  const out: Array<{ lat: number; lon: number }> = [];
+  for (let i = 0; i < max; i += 1) {
+    const p = points[Math.round(i * step)];
+    out.push({ lat: p.lat, lon: p.lon });
+  }
+  return out;
+}
+
+/** Fetches every aerodrome the track passes near. */
+async function fetchAerodromes(
+  points: ReplayPoint[],
   signal: AbortSignal
-): Promise<PatternAerodrome | null> {
-  const res = await fetch(`/api/replay/aerodrome?lat=${lat}&lon=${lon}`, { signal });
-  if (!res.ok) return null;
-  const data = (await res.json()) as { aerodrome: PatternAerodrome | null };
-  return data.aerodrome;
+): Promise<PatternAerodrome[]> {
+  const res = await fetch("/api/replay/aerodrome", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ points: downsample(points, 200) }),
+    signal,
+  });
+  if (!res.ok) return [];
+  const data = (await res.json()) as { aerodromes: PatternAerodrome[] };
+  return data.aerodromes ?? [];
 }
 
 /**
- * Resolves the departure/arrival aerodrome for a track and runs the traffic-
- * pattern analysis. Tries the track's start point first, then the end (a flight
- * may begin airborne but land at a field). Returns null while loading or when no
- * circuit can be analyzed.
+ * Resolves the aerodrome(s) a flight visits and runs the traffic-pattern
+ * analysis at each, merging them into one {@link FlightCircuits} (combined leg
+ * strip + unified landings). Returns null while loading or when no circuit/
+ * landing can be analyzed anywhere along the track.
  */
-export function useCircuitAnalysis(points: ReplayPoint[]): CircuitAnalysis | null {
-  const [analysis, setAnalysis] = useState<CircuitAnalysis | null>(null);
+export function useCircuitAnalysis(points: ReplayPoint[]): FlightCircuits | null {
+  const [flight, setFlight] = useState<FlightCircuits | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
 
     (async () => {
       if (points.length < 10) {
-        setAnalysis(null);
+        setFlight(null);
         return;
       }
-      const candidates = [points[0], points[points.length - 1]];
       try {
-        for (const p of candidates) {
-          const aerodrome = await fetchAerodrome(p.lat, p.lon, controller.signal);
-          if (controller.signal.aborted) return;
-          const result = aerodrome ? analyzeCircuit(points, aerodrome) : null;
-          if (result) {
-            setAnalysis(result);
-            return;
-          }
+        const aerodromes = await fetchAerodromes(points, controller.signal);
+        if (controller.signal.aborted) return;
+
+        const analyses = aerodromes
+          .map((ad) => analyzeCircuit(points, ad))
+          .filter((a): a is NonNullable<typeof a> => a != null && a.landings.length > 0);
+
+        if (analyses.length === 0) {
+          setFlight(null);
+          return;
         }
-        setAnalysis(null);
+        const startMs = points[0].timeMs;
+        const endMs = points[points.length - 1].timeMs;
+        setFlight(mergeFlightCircuits(analyses, startMs, endMs));
       } catch {
-        if (!controller.signal.aborted) setAnalysis(null);
+        if (!controller.signal.aborted) setFlight(null);
       }
     })();
 
     return () => controller.abort();
   }, [points]);
 
-  return analysis;
+  return flight;
 }

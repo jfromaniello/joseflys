@@ -1,10 +1,10 @@
 "use client";
 
 import { formatUtcShort } from "../formatTime";
-import type { Circuit } from "../patternAnalysis";
+import type { Landing } from "../patternAnalysis";
 
 interface CircuitTableProps {
-  circuits: Circuit[];
+  landings: Landing[];
   /** Track start (ms) — used to convert absolute times into seek offsets. */
   startMs: number;
   currentTimeMs: number;
@@ -19,21 +19,22 @@ function kt(value: number | null): string {
 }
 
 /**
- * Per-landing breakdown table. One row per circuit: number, aerodrome, time,
- * downwind separation, pattern altitude, and the ground speeds flown on the
- * downwind / base / final legs. Clicking a row seeks playback to the start of
- * that circuit's downwind.
+ * Per-landing breakdown. One row per landing across every aerodrome visited:
+ * number, aerodrome, time, downwind separation, pattern altitude, and the
+ * ground speeds flown on the downwind / base / final legs (dashes when a leg
+ * wasn't flown, e.g. a straight-in arrival). Clicking a row seeks playback to
+ * the start of that landing's downwind (or base/final).
  */
-export function CircuitTable({ circuits, startMs, currentTimeMs, onSeek }: CircuitTableProps) {
-  if (circuits.length === 0) return null;
+export function CircuitTable({ landings, startMs, currentTimeMs, onSeek }: CircuitTableProps) {
+  if (landings.length === 0) return null;
 
   return (
     <div className="mt-3 rounded-lg bg-slate-900/60 border border-gray-700">
       <div className="border-b border-slate-700/70 px-4 py-2.5">
         <h3 className="text-sm font-semibold text-slate-200">
-          Landings <span className="font-normal text-slate-500">· {circuits.length}</span>
+          Landings <span className="font-normal text-slate-500">· {landings.length}</span>
         </h3>
-        <p className="text-[11px] text-slate-500">Click a row to jump to that circuit&apos;s downwind.</p>
+        <p className="text-[11px] text-slate-500">Click a row to jump to that approach.</p>
       </div>
 
       <div className="overflow-x-auto">
@@ -51,39 +52,33 @@ export function CircuitTable({ circuits, startMs, currentTimeMs, onSeek }: Circu
             </tr>
           </thead>
           <tbody>
-            {circuits.map((c) => {
-              const isCurrent = currentTimeMs >= c.startMs && currentTimeMs <= c.endMs;
-              const landingMs = c.approach?.timeMs ?? c.endMs;
+            {landings.map((l) => {
+              const isCurrent = currentTimeMs >= l.startMs && currentTimeMs <= l.endMs;
               return (
                 <tr
-                  key={c.index}
-                  onClick={() => onSeek(c.startMs - startMs)}
+                  key={l.index}
+                  onClick={() => onSeek(l.startMs - startMs)}
                   className={`cursor-pointer border-t border-slate-800 transition-colors hover:bg-slate-800/60 ${
                     isCurrent ? "bg-cyan-500/10" : ""
                   }`}
                 >
-                  <td className="px-3 py-2 font-semibold text-slate-300">{c.index}</td>
+                  <td className="px-3 py-2 font-semibold text-slate-300">{l.index}</td>
                   <td className="px-3 py-2">
-                    <span className="font-semibold text-cyan-300">{c.aerodromeCode}</span>
+                    <span className="font-semibold text-cyan-300">{l.aerodromeCode}</span>
+                    {l.touched ? null : (
+                      <span className="ml-1.5 text-[10px] text-slate-500">(low pass)</span>
+                    )}
                   </td>
-                  <td className="px-3 py-2 tabular-nums text-slate-400">{formatUtcShort(landingMs)}</td>
+                  <td className="px-3 py-2 tabular-nums text-slate-400">{formatUtcShort(l.timeMs)}</td>
                   <td className="px-3 py-2 text-right tabular-nums text-slate-200">
-                    {c.separationM != null ? `${(c.separationM / METERS_PER_NM).toFixed(2)} NM` : "–"}
+                    {l.separationM != null ? `${(l.separationM / METERS_PER_NM).toFixed(2)} NM` : "–"}
                   </td>
                   <td className="px-3 py-2 text-right tabular-nums text-slate-200">
-                    {c.altitudeFtAgl != null
-                      ? `${Math.round(c.altitudeFtAgl).toLocaleString()} ft`
-                      : "–"}
+                    {l.altitudeFtAgl != null ? `${Math.round(l.altitudeFtAgl).toLocaleString()} ft` : "–"}
                   </td>
-                  <td className="px-3 py-2 text-right tabular-nums text-slate-300">
-                    {kt(c.speedsKt.downwind)}
-                  </td>
-                  <td className="px-3 py-2 text-right tabular-nums text-slate-300">
-                    {kt(c.speedsKt.base)}
-                  </td>
-                  <td className="px-3 py-2 text-right tabular-nums text-slate-300">
-                    {kt(c.speedsKt.final)}
-                  </td>
+                  <td className="px-3 py-2 text-right tabular-nums text-slate-300">{kt(l.speedsKt.downwind)}</td>
+                  <td className="px-3 py-2 text-right tabular-nums text-slate-300">{kt(l.speedsKt.base)}</td>
+                  <td className="px-3 py-2 text-right tabular-nums text-slate-300">{kt(l.speedsKt.final)}</td>
                 </tr>
               );
             })}

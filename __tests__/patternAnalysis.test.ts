@@ -93,28 +93,28 @@ describe("analyzeCircuit — SACD real flight", () => {
     expect(after).toContain("final");
   });
 
-  it("groups legs into complete circuits (downwind → approach)", () => {
-    const circuits = analysis!.circuits;
+  it("produces one landing per touch-and-go, each with circuit metrics", () => {
+    const landings = analysis!.landings;
     // The flight flew several full touch-and-go circuits.
-    expect(circuits.length).toBeGreaterThanOrEqual(5);
-    expect(circuits.length).toBeLessThanOrEqual(8);
-    // Every counted circuit reaches an approach and has downwind metrics.
-    for (const c of circuits) {
-      expect(c.approach).not.toBeNull();
-      expect(c.separationM).not.toBeNull();
-      expect(c.endMs).toBeGreaterThan(c.startMs);
+    expect(landings.length).toBeGreaterThanOrEqual(5);
+    expect(landings.length).toBeLessThanOrEqual(8);
+    for (const l of landings) {
+      // All these were full circuits, so downwind metrics are present.
+      expect(l.separationM).not.toBeNull();
+      expect(l.altitudeFtAgl).not.toBeNull();
+      expect(l.speedsKt.final).not.toBeNull();
     }
-    // Circuits are chronological and non-overlapping.
-    for (let i = 1; i < circuits.length; i += 1) {
-      expect(circuits[i].startMs).toBeGreaterThanOrEqual(circuits[i - 1].endMs);
+    // Landings are chronological.
+    for (let i = 1; i < landings.length; i += 1) {
+      expect(landings[i].timeMs).toBeGreaterThanOrEqual(landings[i - 1].timeMs);
     }
   });
 
-  it("does not count a downwind that never reaches a base/final", () => {
-    // There are at least as many downwind legs as circuits, but spurious
-    // downwind-only legs (no approach) are excluded from the circuit count.
-    const downwindSegs = analysis!.segments.filter((s) => s.phase === "downwind").length;
-    expect(analysis!.circuits.length).toBeLessThanOrEqual(downwindSegs);
+  it("excludes stray low points with no final-approach leg", () => {
+    // Every landing has an actual final leg (no rollout/taxi false positives).
+    for (const l of analysis!.landings) {
+      expect(l.speedsKt.final).not.toBeNull();
+    }
   });
 
   it("detects multiple approaches with realistic glide angles and speeds", () => {

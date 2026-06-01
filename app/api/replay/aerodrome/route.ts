@@ -1,33 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
-import { resolveAerodrome } from "@/lib/replay/resolveAerodrome";
+import { resolveAerodromesNear } from "@/lib/replay/resolveAerodrome";
 
 // Not edge: pulls from the large global airports/runways datasets.
 
+interface RequestBody {
+  points?: Array<{ lat: number; lon: number }>;
+}
+
 /**
- * GET /api/replay/aerodrome?lat=..&lon=..
+ * POST /api/replay/aerodrome
+ * Body: { points: [{ lat, lon }, ...] } — a (downsampled) track.
  *
- * Resolves the aerodrome nearest the given coordinate (ANAC first, global
- * fallback) and returns it normalized for circuit analysis. Returns
- * `{ aerodrome: null }` when nothing usable is within range.
+ * Resolves every aerodrome the track passes near (ANAC first, global fallback),
+ * normalized for circuit analysis. Returns `{ aerodromes: [] }` when none.
  */
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const lat = Number.parseFloat(searchParams.get("lat") ?? "");
-    const lon = Number.parseFloat(searchParams.get("lon") ?? "");
-
-    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-      return NextResponse.json(
-        { error: "Required: lat and lon query parameters" },
-        { status: 400 }
-      );
-    }
-
-    const aerodrome = resolveAerodrome(lat, lon);
-    return NextResponse.json(
-      { aerodrome },
-      { headers: { "Cache-Control": "public, max-age=86400" } }
+    const body = (await request.json()) as RequestBody;
+    const points = (body.points ?? []).filter(
+      (p) => Number.isFinite(p?.lat) && Number.isFinite(p?.lon)
     );
+    if (points.length === 0) {
+      return NextResponse.json({ error: "Required: points array" }, { status: 400 });
+    }
+    const aerodromes = resolveAerodromesNear(points);
+    return NextResponse.json({ aerodromes });
   } catch (error) {
     console.error("Replay aerodrome API error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

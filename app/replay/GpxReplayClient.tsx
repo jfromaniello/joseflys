@@ -194,15 +194,15 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
     () => computeTrackHeadingDeg(points, currentTimeMs),
     [points, currentTimeMs]
   );
-  const circuit = useCircuitAnalysis(points);
+  const flight = useCircuitAnalysis(points);
   const currentStage = useMemo(() => {
-    if (!circuit) return null;
-    const phase = circuitPhaseAt(circuit, currentTimeMs);
+    if (!flight) return null;
+    const phase = circuitPhaseAt(flight, currentTimeMs);
     if (phase === "downwind") return "Downwind";
     if (phase === "base") return "Base";
     if (phase === "final") return "Final";
     return null;
-  }, [circuit, currentTimeMs]);
+  }, [flight, currentTimeMs]);
 
   const recorder = useReplayRecorder({
     canvasRef: globeCanvasRef,
@@ -446,17 +446,17 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
                 />
               </div>
 
-              {circuit ? (
+              {flight ? (
                 <>
                   <CircuitTimeline
-                    analysis={circuit}
+                    flight={flight}
                     startMs={timeline.startMs}
                     durationMs={timeline.durationMs}
                     currentTimeMs={currentTimeMs}
                     onSeek={handleSliderChange}
                   />
                   <CircuitTable
-                    circuits={circuit.circuits}
+                    landings={flight.landings}
                     startMs={timeline.startMs}
                     currentTimeMs={currentTimeMs}
                     onSeek={handleSliderChange}

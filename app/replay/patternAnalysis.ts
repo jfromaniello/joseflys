@@ -117,35 +117,39 @@ export interface ApproachMetrics {
 }
 
 /**
- * One complete circuit: a downwind leg (or consecutive downwind legs with no
- * final between them) that leads to an approach. A downwind that never reaches
- * a base/final is not a circuit — the aircraft was merely flying downwind — and
- * is excluded.
+ * One landing/approach event, enriched with the circuit legs that preceded it.
+ * A full traffic-pattern arrival has downwind/base/final; a straight-in or wide
+ * descending arrival may have only a base/final (downwind metrics are then
+ * null). Built around the approach, so every touch/low-pass is captured.
  */
-export interface Circuit {
+export interface Landing {
   /** 1-based order in the flight. */
   index: number;
-  /** Aerodrome where the circuit was flown (code + name). */
+  /** Aerodrome of this landing (code + name). */
   aerodromeCode: string;
   aerodromeName: string;
-  /** Start of the first downwind leg (ms). */
+  /** Where to seek to review this landing — start of the downwind, else base/final. */
   startMs: number;
   /** End of the approach/final (ms). */
   endMs: number;
-  /** Median downwind separation from the centerline (m). */
+  /** Time of the touch/low point (ms). */
+  timeMs: number;
+  /** Whether the aircraft reached the ground (vs a low pass). */
+  touched: boolean;
+  /** Median downwind separation from the centerline (m), null without a downwind. */
   separationM: number | null;
-  /** Median downwind altitude (ft AGL). */
+  /** Median downwind altitude (ft AGL), null without a downwind. */
   altitudeFtAgl: number | null;
-  /** Median ground speed (kt) flown on each leg. */
+  /** Median ground speed (kt) flown on each leg (null when the leg is absent). */
   speedsKt: { downwind: number | null; base: number | null; final: number | null };
-  /** The approach that closed this circuit, if one was detected. */
-  approach: ApproachMetrics | null;
 }
 
 export interface CircuitAnalysis {
   aerodrome: PatternAerodrome;
   /** The runway end in use, chosen from observed takeoff/landing tracks. */
   activeRunway: PatternRunwayEnd;
+  /** Field elevation (ft AMSL) actually used for AGL — derived from the track. */
+  fieldElevationFt: number;
   /** Pattern direction actually flown. */
   flownSide: "left" | "right" | null;
   /** Pattern direction published in the AIP (when known). */
@@ -160,15 +164,77 @@ export interface CircuitAnalysis {
   typicalDownwindSeparationNm: readonly [number, number];
   /** Chronological circuit legs (for timeline chips). */
   segments: CircuitSegment[];
-  /** Complete circuits (downwind → approach), one per pass flown. */
-  circuits: Circuit[];
+  /** Landings at this aerodrome (approach + preceding circuit legs). */
+  landings: Landing[];
   /** Detected approaches/landings. */
   approaches: ApproachMetrics[];
 }
 
+/** A merged leg segment tagged with the aerodrome it was flown at. */
+export interface MergedSegment extends CircuitSegment {
+  aerodromeCode: string;
+}
+
+/** A whole flight's circuit analysis, merged across every aerodrome visited. */
+export interface FlightCircuits {
+  /** Per-aerodrome analyses (for runway/side/elevation lookups). */
+  analyses: CircuitAnalysis[];
+  /** Leg segments across all aerodromes, chronological, gaps filled en-route. */
+  segments: MergedSegment[];
+  /** All landings across aerodromes, chronological, re-indexed from 1. */
+  landings: Landing[];
+}
+
+/**
+ * Merges per-aerodrome analyses into one flight view. Meaningful legs (anything
+ * but `maneuvering`) from each field — which fall in disjoint time windows since
+ * the aircraft is near one field at a time — are unioned, sorted, and the gaps
+ * between them filled with en-route `maneuvering`. Landings are concatenated and
+ * re-indexed in time order.
+ */
+export function mergeFlightCircuits(
+  analyses: CircuitAnalysis[],
+  trackStartMs: number,
+  trackEndMs: number
+): FlightCircuits {
+  const tagged: MergedSegment[] = [];
+  for (const a of analyses) {
+    for (const s of a.segments) {
+      if (s.phase !== "maneuvering") tagged.push({ ...s, aerodromeCode: a.aerodrome.code });
+    }
+  }
+  tagged.sort((x, y) => x.startMs - y.startMs);
+
+  const filler = (startMs: number, endMs: number): MergedSegment => ({
+    phase: "maneuvering",
+    startMs,
+    endMs,
+    startIndex: -1,
+    endIndex: -1,
+    aerodromeCode: "",
+  });
+
+  const segments: MergedSegment[] = [];
+  let cursor = trackStartMs;
+  for (const s of tagged) {
+    if (s.startMs < cursor) continue; // drop the rare overlap between nearby fields
+    if (s.startMs > cursor) segments.push(filler(cursor, s.startMs));
+    segments.push(s);
+    cursor = s.endMs;
+  }
+  if (cursor < trackEndMs) segments.push(filler(cursor, trackEndMs));
+
+  const landings = analyses
+    .flatMap((a) => a.landings)
+    .sort((x, y) => x.timeMs - y.timeMs)
+    .map((l, i) => ({ ...l, index: i + 1 }));
+
+  return { analyses, segments, landings };
+}
+
 /** The circuit phase active at `timeMs`, or null if outside every segment. */
-export function circuitPhaseAt(analysis: CircuitAnalysis, timeMs: number): CircuitPhase | null {
-  for (const seg of analysis.segments) {
+export function circuitPhaseAt(flight: FlightCircuits, timeMs: number): CircuitPhase | null {
+  for (const seg of flight.segments) {
     if (timeMs >= seg.startMs && timeMs <= seg.endMs) return seg.phase;
   }
   return null;
@@ -253,11 +319,27 @@ function selectActiveRunway(
   return best;
 }
 
+/**
+ * Field elevation (ft) for AGL. GPS altitude and the database elevation can use
+ * different data — at some fields the database is off by 100 m, which would make
+ * AGL negative. Since we only analyze fields the aircraft actually got low at,
+ * the lowest GPS altitude within ~1.2 km of the field is the most reliable
+ * ground reference; fall back to the database value when no point is close.
+ */
+function fieldElevationFt(points: ReplayPoint[], aerodrome: PatternAerodrome): number {
+  let minEleM = Infinity;
+  for (const p of points) {
+    if (distanceMeters(aerodrome, p) < 1200 && p.ele < minEleM) minEleM = p.ele;
+  }
+  return Number.isFinite(minEleM) ? minEleM * METERS_TO_FEET : aerodrome.elevationFt;
+}
+
 /** Builds per-point features in the active runway's reference frame. */
 function buildFeatures(
   points: ReplayPoint[],
   aerodrome: PatternAerodrome,
-  headingTrueDeg: number
+  headingTrueDeg: number,
+  elevationFt: number
 ): PointFeature[] {
   const axisRad = toRad(headingTrueDeg);
   // Unit vectors in (east, north): along = landing direction, right = +90°.
@@ -274,7 +356,7 @@ function buildFeatures(
       index: i,
       timeMs: p.timeMs,
       distM: Math.hypot(east, north),
-      aglFt: p.ele * METERS_TO_FEET - aerodrome.elevationFt,
+      aglFt: p.ele * METERS_TO_FEET - elevationFt,
       trackDeg: nullableTrack(points, p.timeMs),
       vsFpm: computeVerticalSpeedFpm(points, findPointIndexByTime(points, p.timeMs), p.timeMs),
       along: east * alongE + north * alongN,
@@ -532,75 +614,90 @@ function medianSpeedKt(points: ReplayPoint[], indices: number[]): number | null 
 }
 
 /**
- * Groups the leg segments into complete circuits. Downwind legs are accumulated
- * until an approach (final/landing) closes the circuit; consecutive downwinds
- * with no final between them belong to the same circuit (so a downwind split by
- * a brief deviation counts once). Accumulated downwinds that never reach an
- * approach — interrupted by a new takeoff/taxi or a long excursion — are
- * discarded: the aircraft was flying downwind, not a circuit.
+ * Builds one landing per detected approach, enriched with the circuit legs that
+ * preceded it (downwind / base / final). For each approach we look back to the
+ * last takeoff/taxi (the boundary of this attempt) and collect the downwind and
+ * base legs flown since then. A straight-in arrival with no downwind leg still
+ * yields a landing — separation/altitude are simply null.
  */
-function buildCircuits(
+function buildLandings(
   segments: CircuitSegment[],
   features: PointFeature[],
   approaches: ApproachMetrics[],
   points: ReplayPoint[],
   aerodrome: PatternAerodrome
-): Circuit[] {
-  const circuits: Circuit[] = [];
-  let dwIndices: number[] = [];
-  let baseIndices: number[] = [];
-  let dwStartMs: number | null = null;
-
+): Landing[] {
   const range = (seg: CircuitSegment): number[] => {
     const out: number[] = [];
     for (let k = seg.startIndex; k <= seg.endIndex; k += 1) out.push(k);
     return out;
   };
-  const discard = () => {
-    dwIndices = [];
-    baseIndices = [];
-    dwStartMs = null;
-  };
 
-  for (const seg of segments) {
-    if (seg.phase === "downwind") {
-      dwIndices.push(...range(seg));
-      if (dwStartMs === null) dwStartMs = seg.startMs;
-    } else if (seg.phase === "base" && dwStartMs !== null) {
-      baseIndices.push(...range(seg));
-    } else if (seg.phase === "final" || seg.phase === "landing") {
-      if (dwIndices.length > 0 && dwStartMs !== null) {
-        const cross = dwIndices.map((k) => Math.abs(features[k].cross));
-        const agl = dwIndices.map((k) => features[k].aglFt).filter((a) => a > GROUND_AGL_FT);
-        const approach =
-          approaches.find((a) => a.timeMs >= seg.startMs - 5000 && a.timeMs <= seg.endMs + 30000) ??
-          null;
-        circuits.push({
-          index: circuits.length + 1,
-          aerodromeCode: aerodrome.code,
-          aerodromeName: aerodrome.name,
-          startMs: dwStartMs,
-          endMs: seg.endMs,
-          separationM: median(cross),
-          altitudeFtAgl: median(agl),
-          speedsKt: {
-            downwind: medianSpeedKt(points, dwIndices),
-            base: medianSpeedKt(points, baseIndices),
-            final: medianSpeedKt(points, range(seg)),
-          },
-          approach,
-        });
+  const sorted = [...approaches].sort((a, b) => a.timeMs - b.timeMs);
+  const landings: Landing[] = [];
+
+  for (let n = 0; n < sorted.length; n += 1) {
+    const ap = sorted[n];
+    const prevMs = n > 0 ? sorted[n - 1].timeMs : -Infinity;
+
+    // This attempt begins after the last takeoff/taxi before the approach.
+    let legStartMs = prevMs;
+    for (const seg of segments) {
+      if (
+        (seg.phase === "takeoff" || seg.phase === "taxi") &&
+        seg.endMs <= ap.timeMs &&
+        seg.endMs > legStartMs
+      ) {
+        legStartMs = seg.endMs;
       }
-      discard();
-    } else if (seg.phase === "takeoff" || seg.phase === "taxi") {
-      discard();
-    } else if (seg.phase === "maneuvering" && seg.endMs - seg.startMs > 60000) {
-      // Long excursion away from the field — the downwind led nowhere.
-      discard();
     }
-    // upwind / crosswind / short maneuvering: keep accumulating.
+
+    const dwIndices: number[] = [];
+    const baseIndices: number[] = [];
+    const finalIndices: number[] = [];
+    let dwStartMs: number | null = null;
+    let baseStartMs: number | null = null;
+    let finalStartMs: number | null = null;
+
+    for (const seg of segments) {
+      if (seg.startMs < legStartMs || seg.startMs > ap.timeMs + 30000) continue;
+      if (seg.phase === "downwind") {
+        dwIndices.push(...range(seg));
+        if (dwStartMs === null) dwStartMs = seg.startMs;
+      } else if (seg.phase === "base") {
+        baseIndices.push(...range(seg));
+        if (baseStartMs === null) baseStartMs = seg.startMs;
+      } else if (seg.phase === "final" || seg.phase === "landing") {
+        finalIndices.push(...range(seg));
+        if (finalStartMs === null) finalStartMs = seg.startMs;
+      }
+    }
+
+    // Require an actual final-approach leg — excludes stray low points such as
+    // a post-landing rollout or taxi that briefly looks like an approach.
+    if (finalIndices.length === 0) continue;
+
+    const dwCross = dwIndices.map((k) => Math.abs(features[k].cross));
+    const dwAgl = dwIndices.map((k) => features[k].aglFt).filter((a) => a > GROUND_AGL_FT);
+
+    landings.push({
+      index: landings.length + 1,
+      aerodromeCode: aerodrome.code,
+      aerodromeName: aerodrome.name,
+      startMs: dwStartMs ?? baseStartMs ?? finalStartMs ?? ap.timeMs,
+      endMs: ap.timeMs,
+      timeMs: ap.timeMs,
+      touched: ap.touched,
+      separationM: median(dwCross),
+      altitudeFtAgl: median(dwAgl),
+      speedsKt: {
+        downwind: medianSpeedKt(points, dwIndices),
+        base: medianSpeedKt(points, baseIndices),
+        final: medianSpeedKt(points, finalIndices),
+      },
+    });
   }
-  return circuits;
+  return landings;
 }
 
 /**
@@ -613,22 +710,25 @@ export function analyzeCircuit(
 ): CircuitAnalysis | null {
   if (points.length < 10 || aerodrome.runwayEnds.length === 0) return null;
 
+  // Ground reference derived from the track (robust to database elevation errors).
+  const elevationFt = fieldElevationFt(points, aerodrome);
+
   // Quick reject: does the track ever get within the pattern radius and low?
   const comesClose = points.some(
     (p) =>
       distanceMeters(aerodrome, p) < PATTERN_RADIUS_M &&
-      p.ele * METERS_TO_FEET - aerodrome.elevationFt < PATTERN_CEILING_FT_AGL
+      p.ele * METERS_TO_FEET - elevationFt < PATTERN_CEILING_FT_AGL
   );
   if (!comesClose) return null;
 
   // First pass with an arbitrary end just to gather ops tracks, then pick active.
-  const provisional = buildFeatures(points, aerodrome, aerodrome.runwayEnds[0].headingTrueDeg);
+  const provisional = buildFeatures(points, aerodrome, aerodrome.runwayEnds[0].headingTrueDeg, elevationFt);
   const activeRunway = selectActiveRunway(provisional, aerodrome) ?? aerodrome.runwayEnds[0];
 
   const features =
     activeRunway.headingTrueDeg === aerodrome.runwayEnds[0].headingTrueDeg
       ? provisional
-      : buildFeatures(points, aerodrome, activeRunway.headingTrueDeg);
+      : buildFeatures(points, aerodrome, activeRunway.headingTrueDeg, elevationFt);
 
   const phases = features.map((f) => classifyPoint(f, activeRunway.headingTrueDeg));
   const segments = segmentize(features, phases, 8000, 22000);
@@ -645,16 +745,16 @@ export function analyzeCircuit(
   }
 
   const approaches = detectApproaches(points, features, aerodrome, activeRunway);
-  const circuits = buildCircuits(segments, features, approaches, points, aerodrome);
+  const landings = buildLandings(segments, features, approaches, points, aerodrome);
 
-  // Flight-wide figures come from the circuits actually flown, not from every
-  // stray downwind heading.
-  const sepValues = circuits.map((c) => c.separationM).filter((v): v is number => v != null);
-  const altValues = circuits.map((c) => c.altitudeFtAgl).filter((v): v is number => v != null);
+  // Flight-wide figures come from the landings that actually flew a downwind.
+  const sepValues = landings.map((l) => l.separationM).filter((v): v is number => v != null);
+  const altValues = landings.map((l) => l.altitudeFtAgl).filter((v): v is number => v != null);
 
   return {
     aerodrome,
     activeRunway,
+    fieldElevationFt: elevationFt,
     flownSide: detectFlownSide(features),
     publishedSide: publishedSideFrom(aerodrome, activeRunway.headingTrueDeg),
     patternAltitudeFtAgl: median(altValues),
@@ -662,7 +762,7 @@ export function analyzeCircuit(
     downwindSeparationM: median(sepValues),
     typicalDownwindSeparationNm: TYPICAL_DOWNWIND_SEPARATION_NM,
     segments,
-    circuits,
+    landings,
     approaches,
   };
 }

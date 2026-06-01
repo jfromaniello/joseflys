@@ -1,9 +1,9 @@
 "use client";
 
-import type { CircuitAnalysis, CircuitPhase } from "../patternAnalysis";
+import type { CircuitPhase, FlightCircuits } from "../patternAnalysis";
 
 interface CircuitTimelineProps {
-  analysis: CircuitAnalysis;
+  flight: FlightCircuits;
   startMs: number;
   durationMs: number;
   currentTimeMs: number;
@@ -26,8 +26,10 @@ const PHASE_META: Record<CircuitPhase, PhaseMeta> = {
   base: { label: "Base", color: "#a855f7" },
   final: { label: "Final", color: "#ef4444" },
   landing: { label: "Landing", color: "#22c55e" },
-  maneuvering: { label: "—", color: "#1e293b" },
+  maneuvering: { label: "En route", color: "#1e293b" },
 };
+
+const METERS_PER_NM = 1852;
 
 function formatSide(side: "left" | "right" | null): string {
   if (side === "left") return "Left";
@@ -59,12 +61,8 @@ function StatCell({
 }) {
   return (
     <div className="min-w-0" title={title}>
-      <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-        {label}
-      </div>
-      <div className="mt-0.5 text-sm font-semibold tabular-nums text-slate-100 truncate">
-        {value}
-      </div>
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">{label}</div>
+      <div className="mt-0.5 text-sm font-semibold tabular-nums text-slate-100 truncate">{value}</div>
       {sub ? (
         <div className={`text-[11px] leading-tight truncate ${TONE_CLASS[subTone]}`}>{sub}</div>
       ) : null}
@@ -82,8 +80,6 @@ function altitudeVerdict(altFt: number, refFt: number): { verdict: string; tone:
   };
 }
 
-const METERS_PER_NM = 1852;
-
 /** Verdict for downwind separation (NM) vs the typical international band. */
 function separationVerdict(
   nm: number,
@@ -95,14 +91,12 @@ function separationVerdict(
 }
 
 /**
- * Aerodrome + circuit readout for a GPX replay: an identity header, a grid of
- * per-pass quality stats (runway, circuit side, pattern altitude, downwind
- * separation), and a clickable colored strip of the circuit legs aligned to the
- * playback timeline. The strip seeks on click; the current leg is outlined and
- * named in the header. Approach low-points are marked beneath.
+ * Flight-wide circuit readout: a header for the aerodrome/leg the playhead is
+ * on, per-landing quality stats, and a single combined leg strip across every
+ * aerodrome visited. Clicking a leg seeks; the current leg is outlined.
  */
 export function CircuitTimeline({
-  analysis,
+  flight,
   startMs,
   durationMs,
   currentTimeMs,
@@ -111,63 +105,53 @@ export function CircuitTimeline({
   if (durationMs <= 0) return null;
 
   const pct = (ms: number) => `${Math.max(0, Math.min(1, (ms - startMs) / durationMs)) * 100}%`;
-  const {
-    aerodrome,
-    activeRunway,
-    flownSide,
-    publishedSide,
-    patternAltitudeFtAgl,
-    standardPatternAltitudeFtAgl,
-    downwindSeparationM,
-    typicalDownwindSeparationNm,
-  } = analysis;
 
-  const sideMatches = flownSide && publishedSide ? flownSide === publishedSide : null;
-
-  // Show the circuit the playhead is on (latest one started); before the first
-  // circuit, fall back to the flight-wide median.
-  const { circuits } = analysis;
-  let activePass = -1;
-  for (let i = 0; i < circuits.length; i += 1) {
-    if (currentTimeMs >= circuits[i].startMs) activePass = i;
-  }
-  const activeCircuit = activePass >= 0 ? circuits[activePass] : null;
-  const altFt = activeCircuit?.altitudeFtAgl ?? patternAltitudeFtAgl;
-  const sepM = activeCircuit?.separationM ?? downwindSeparationM;
-  const passLabel =
-    circuits.length > 1
-      ? activeCircuit
-        ? `Circuit ${activePass + 1}/${circuits.length}`
-        : `Avg of ${circuits.length}`
-      : null;
-
-  const sepNm = sepM != null ? sepM / METERS_PER_NM : null;
-  const alt = altFt != null ? altitudeVerdict(altFt, standardPatternAltitudeFtAgl) : null;
-  const sep = sepNm != null ? separationVerdict(sepNm, typicalDownwindSeparationNm) : null;
-
-  // Current leg, for the header indicator.
-  const currentSeg = analysis.segments.find(
+  // Current leg + aerodrome from the merged strip.
+  const currentSeg = flight.segments.find(
     (s) => currentTimeMs >= s.startMs && currentTimeMs <= s.endMs
   );
   const currentMeta = currentSeg ? PHASE_META[currentSeg.phase] : null;
 
-  const runwayLengthM = aerodrome.lengthFt ? Math.round(aerodrome.lengthFt * 0.3048) : null;
+  // Current landing (latest started) → per-pass stats and field context.
+  let activePass = -1;
+  for (let i = 0; i < flight.landings.length; i += 1) {
+    if (currentTimeMs >= flight.landings[i].startMs) activePass = i;
+  }
+  const landing = activePass >= 0 ? flight.landings[activePass] : null;
+
+  const fieldCode = currentSeg?.aerodromeCode || landing?.aerodromeCode || flight.analyses[0]?.aerodrome.code;
+  const analysis = flight.analyses.find((a) => a.aerodrome.code === fieldCode) ?? flight.analyses[0];
+
+  const passLabel =
+    flight.landings.length > 1 && landing ? `Landing ${activePass + 1}/${flight.landings.length}` : null;
+
+  const altFt = landing?.altitudeFtAgl ?? null;
+  const sepNm = landing?.separationM != null ? landing.separationM / METERS_PER_NM : null;
+  const alt = altFt != null ? altitudeVerdict(altFt, analysis.standardPatternAltitudeFtAgl) : null;
+  const sep = sepNm != null ? separationVerdict(sepNm, analysis.typicalDownwindSeparationNm) : null;
+  const sideMatches =
+    analysis.flownSide && analysis.publishedSide
+      ? analysis.flownSide === analysis.publishedSide
+      : null;
 
   return (
     <div className="mt-4 rounded-lg bg-slate-900/60 border border-gray-700">
-      {/* Header: aerodrome identity + current leg + pass */}
+      {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 border-b border-slate-700/70 px-4 py-2.5">
         <div className="flex items-baseline gap-2 min-w-0">
-          <span className="text-base font-bold text-cyan-300">{aerodrome.code}</span>
-          <span className="truncate text-xs text-slate-400">{aerodrome.name}</span>
+          {currentSeg?.aerodromeCode || landing ? (
+            <>
+              <span className="text-base font-bold text-cyan-300">{analysis.aerodrome.code}</span>
+              <span className="truncate text-xs text-slate-400">{analysis.aerodrome.name}</span>
+            </>
+          ) : (
+            <span className="text-sm font-semibold text-slate-400">En route</span>
+          )}
         </div>
         <div className="flex items-center gap-3">
           {currentMeta && currentSeg?.phase !== "maneuvering" ? (
             <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-200">
-              <span
-                className="h-2.5 w-2.5 rounded-full"
-                style={{ backgroundColor: currentMeta.color }}
-              />
+              <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: currentMeta.color }} />
               {currentMeta.label}
             </span>
           ) : null}
@@ -179,64 +163,61 @@ export function CircuitTimeline({
         </div>
       </div>
 
-      {/* Stat grid */}
+      {/* Stat grid (current landing's field) */}
       <div className="grid grid-cols-2 gap-x-4 gap-y-3 px-4 py-3 sm:grid-cols-4">
         <StatCell
           label="Runway"
-          value={activeRunway.id}
-          sub={runwayLengthM ? `${runwayLengthM.toLocaleString()} m` : null}
+          value={analysis.activeRunway.id}
+          sub={analysis.aerodrome.lengthFt ? `${Math.round(analysis.aerodrome.lengthFt * 0.3048).toLocaleString()} m` : null}
         />
         <StatCell
           label="Circuit"
-          value={`${formatSide(flownSide)} hand`}
+          value={`${formatSide(analysis.flownSide)} hand`}
           sub={
-            publishedSide
+            analysis.publishedSide
               ? sideMatches
                 ? "matches published"
-                : `published ${formatSide(publishedSide).toLowerCase()}`
+                : `published ${formatSide(analysis.publishedSide).toLowerCase()}`
               : null
           }
-          subTone={publishedSide ? (sideMatches ? "good" : "warn") : "muted"}
+          subTone={analysis.publishedSide ? (sideMatches ? "good" : "warn") : "muted"}
         />
-        {alt ? (
-          <StatCell
-            label="Pattern alt"
-            value={`${Math.round(altFt as number).toLocaleString()} ft AGL`}
-            sub={alt.verdict}
-            subTone={alt.tone}
-            title={`Altitude flown on downwind, measured above the aerodrome (AGL) — the field is ~${Math.round(
-              aerodrome.elevationFt
-            ).toLocaleString()} ft, so ${standardPatternAltitudeFtAgl.toLocaleString()} ft AGL ≈ ${Math.round(
-              aerodrome.elevationFt + standardPatternAltitudeFtAgl
-            ).toLocaleString()} ft MSL. 1000 ft AGL is the common reference (FAA AIM, widely taught); Argentina doesn't fix one nationally — the AIP/VAC may publish a value per aerodrome.`}
-          />
-        ) : null}
-        {sep ? (
-          <StatCell
-            label="Downwind"
-            value={`${(sepNm as number).toFixed(2)} NM`}
-            sub={sep.verdict}
-            subTone={sep.tone}
-            title={`Lateral distance from the extended runway centerline on downwind. ~0.5–1 NM is the typical international light-aircraft pattern width. Regional teaching varies — Argentine aeroclubs fly a tighter ~500 m (≈0.27 NM): the runway at ¾ up the C150 wing strut. (${Math.round(
-              sepM as number
-            ).toLocaleString()} m here.)`}
-          />
-        ) : null}
+        <StatCell
+          label="Pattern alt"
+          value={altFt != null ? `${Math.round(altFt).toLocaleString()} ft AGL` : "–"}
+          sub={alt?.verdict}
+          subTone={alt?.tone}
+          title={`Altitude flown on downwind (AGL). The field is ~${Math.round(
+            analysis.fieldElevationFt
+          ).toLocaleString()} ft, so ${analysis.standardPatternAltitudeFtAgl.toLocaleString()} ft AGL ≈ ${Math.round(
+            analysis.fieldElevationFt + analysis.standardPatternAltitudeFtAgl
+          ).toLocaleString()} ft MSL. 1000 ft AGL is the common reference (FAA AIM, widely taught); Argentina doesn't fix one nationally.`}
+        />
+        <StatCell
+          label="Downwind"
+          value={sepNm != null ? `${sepNm.toFixed(2)} NM` : "–"}
+          sub={sep?.verdict}
+          subTone={sep?.tone}
+          title={`Lateral distance from the extended runway centerline on downwind. ~0.5–1 NM is the typical international light-aircraft pattern width. Regional teaching varies — Argentine aeroclubs fly a tighter ~500 m (≈0.27 NM): the runway at ¾ up the C150 wing strut.${
+            landing?.separationM != null ? ` (${Math.round(landing.separationM).toLocaleString()} m here.)` : ""
+          }`}
+        />
       </div>
 
-      {/* Leg strip */}
+      {/* Combined leg strip */}
       <div className="px-4 pb-3">
         <div className="relative flex h-7 w-full overflow-hidden rounded">
-          {analysis.segments.map((seg, i) => {
+          {flight.segments.map((seg, i) => {
             const meta = PHASE_META[seg.phase];
             const isCurrent = currentTimeMs >= seg.startMs && currentTimeMs <= seg.endMs;
             const widthMs = Math.max(1, seg.endMs - seg.startMs);
+            const where = seg.aerodromeCode ? ` @ ${seg.aerodromeCode}` : "";
             return (
               <button
                 key={`${seg.startMs}-${i}`}
                 type="button"
                 onClick={() => onSeek(seg.startMs - startMs)}
-                title={`${meta.label} (${Math.round(widthMs / 1000)}s)`}
+                title={`${meta.label}${where} (${Math.round(widthMs / 1000)}s)`}
                 aria-label={`Jump to ${meta.label}`}
                 style={{ flexGrow: widthMs, backgroundColor: meta.color }}
                 className={`relative min-w-0 cursor-pointer transition-opacity hover:opacity-90 ${
@@ -249,33 +230,11 @@ export function CircuitTimeline({
               </button>
             );
           })}
-          {/* Current-time marker */}
           <div
             className="pointer-events-none absolute top-0 bottom-0 w-px bg-white"
             style={{ left: pct(currentTimeMs) }}
           />
         </div>
-
-        {/* Approach markers */}
-        {analysis.approaches.length > 0 ? (
-          <div className="relative mt-1 h-3 w-full">
-            {analysis.approaches.map((ap, i) => (
-              <button
-                key={`${ap.timeMs}-${i}`}
-                type="button"
-                onClick={() => onSeek(ap.timeMs - startMs)}
-                className="absolute -translate-x-1/2 cursor-pointer text-[10px] leading-none text-slate-400 hover:text-slate-200"
-                style={{ left: pct(ap.timeMs) }}
-                aria-label={`Jump to approach ${i + 1}`}
-                title={`Approach ${i + 1}: ${ap.glideAngleDeg?.toFixed(1) ?? "?"}° glide, ${
-                  ap.finalSpeedKt?.toFixed(0) ?? "?"
-                } kt${ap.touched ? ", touchdown" : ", low pass"}`}
-              >
-                ▴
-              </button>
-            ))}
-          </div>
-        ) : null}
       </div>
     </div>
   );
