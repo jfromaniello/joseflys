@@ -168,9 +168,11 @@ export function useReplayRecorder({
       };
 
       const finishRecording = async (recorder: Mp4Recorder) => {
+        if (abortRef.current) return;
         setStatus("encoding");
         try {
           const blob = await recorder.finish();
+          if (abortRef.current) return;
           recorder.dispose();
           recorderRef.current = null;
 
@@ -183,6 +185,7 @@ export function useReplayRecorder({
           setProgress(1);
           setStatus("done");
         } catch (err) {
+          if (abortRef.current) return;
           recorder.dispose();
           recorderRef.current = null;
           setStatus("error");
@@ -221,12 +224,19 @@ export function useReplayRecorder({
           const totalFrames = Math.max(2, Math.round(FPS * clipSeconds));
 
           control.begin();
+          let aborted = false;
           try {
             for (let i = 0; i < totalFrames; i += 1) {
-              if (abortRef.current) return;
+              if (abortRef.current) {
+                aborted = true;
+                break;
+              }
               const timeMs = start + (i / (totalFrames - 1)) * dur;
               await control.frameAtTime(timeMs);
-              if (abortRef.current) return;
+              if (abortRef.current) {
+                aborted = true;
+                break;
+              }
               composeFrame(timeMs);
               await recorder.addFrame(composite, i * frameDurMicros, i % (FPS * 2) === 0);
               setProgress((i + 1) / totalFrames);
@@ -235,11 +245,17 @@ export function useReplayRecorder({
             control.end();
             recorder.dispose();
             recorderRef.current = null;
+            if (abortRef.current) return;
             setStatus("error");
             setError(err instanceof Error ? err.message : "Encoding failed.");
             return;
           }
           control.end();
+          if (aborted) {
+            recorder.dispose();
+            recorderRef.current = null;
+            return;
+          }
           await finishRecording(recorder);
           return;
         }
@@ -264,6 +280,7 @@ export function useReplayRecorder({
             const tMicros = (now - startNow) * 1000;
             recorder.addFrame(composite, tMicros, frameIndex % (FPS * 2) === 0).catch((err) => {
               cleanupLoop();
+              if (abortRef.current) return;
               setStatus("error");
               setError(err instanceof Error ? err.message : "Encoding failed.");
             });

@@ -1,8 +1,10 @@
 interface FooterProps {
   description: string;
+  /** Optional attribution/credits line shown below the links (e.g. data & model licenses). */
+  attribution?: React.ReactNode;
 }
 
-export function Footer({ description }: FooterProps) {
+export function Footer({ description, attribution }: FooterProps) {
   return (
     <footer className="text-center mt-8 print-footer">
       <p
@@ -51,6 +53,11 @@ export function Footer({ description }: FooterProps) {
           View on GitHub
         </a>
       </div>
+      {attribution ? (
+        <p className="mt-3 text-xs leading-relaxed" style={{ color: "oklch(0.5 0.015 240)" }}>
+          {attribution}
+        </p>
+      ) : null}
     </footer>
   );
 }

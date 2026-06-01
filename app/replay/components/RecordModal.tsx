@@ -13,6 +13,8 @@ interface RecordModalProps {
   supported: boolean;
   onStart: (options: RecordOptions) => void;
   onClose: () => void;
+  /** Aborts an in-progress recording and returns to the options screen. */
+  onCancel: () => void;
   /** Live camera mode (set up the shot from here). */
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
@@ -50,6 +52,7 @@ export function RecordModal({
   supported,
   onStart,
   onClose,
+  onCancel,
   viewMode,
   onViewModeChange,
   showTrack,
@@ -135,6 +138,13 @@ export function RecordModal({
               />
             </div>
             <p className="text-[11px] text-slate-400">Keep this tab focused while recording.</p>
+            <button
+              type="button"
+              onClick={onCancel}
+              className="w-full rounded-md px-4 py-2 text-sm font-medium cursor-pointer transition-colors bg-slate-700 hover:bg-slate-600 text-white"
+            >
+              Cancel
+            </button>
           </div>
         ) : (
           <div className="space-y-4">

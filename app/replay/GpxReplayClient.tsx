@@ -447,7 +447,54 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
         </div>
       </main>
 
-      <Footer description="Replay GPX tracks in a 3D globe with smooth time-based line animation." />
+      <Footer
+        description="Replay GPX tracks in a 3D globe with smooth time-based line animation."
+        attribution={
+          <>
+            3D globe by{" "}
+            <a
+              href="https://cesium.com/platform/cesiumjs/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:brightness-125"
+              style={{ color: "oklch(0.6 0.1 230)" }}
+            >
+              CesiumJS
+            </a>{" "}
+            · imagery © Esri, OpenStreetMap contributors · aircraft model{" "}
+            <a
+              href="https://sketchfab.com/3d-models/free-cessna-172-replica-low-poly-basic-model-aa0f72aead044664a0555f047cb36262"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:brightness-125"
+              style={{ color: "oklch(0.6 0.1 230)" }}
+            >
+              “Cessna 172”
+            </a>{" "}
+            by{" "}
+            <a
+              href="https://sketchfab.com/quadzii"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:brightness-125"
+              style={{ color: "oklch(0.6 0.1 230)" }}
+            >
+              quadzii
+            </a>{" "}
+            (
+            <a
+              href="https://creativecommons.org/licenses/by/4.0/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:brightness-125"
+              style={{ color: "oklch(0.6 0.1 230)" }}
+            >
+              CC BY 4.0
+            </a>
+            )
+          </>
+        }
+      />
 
       {shareModalOpen && shareUrl ? (
         <ShareModal url={shareUrl} onClose={() => setShareModalOpen(false)} />
@@ -462,6 +509,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
           supported={recorder.supported}
           onStart={(opts) => recorder.startRecording(opts)}
           onClose={handleCloseRecordModal}
+          onCancel={() => recorder.reset()}
           viewMode={viewMode}
           onViewModeChange={changeViewMode}
           showTrack={showTrack}
