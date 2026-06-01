@@ -29,6 +29,7 @@ export class Mp4Recorder {
   readonly width: number;
   readonly height: number;
   private readonly framerate: number;
+  private readonly frameDurationMicros: number;
   private encoder!: VideoEncoder;
   private muxer!: Muxer<ArrayBufferTarget>;
   private encodeError: Error | null = null;
@@ -37,6 +38,7 @@ export class Mp4Recorder {
     this.width = width - (width % 2);
     this.height = height - (height % 2);
     this.framerate = framerate;
+    this.frameDurationMicros = Math.round(1_000_000 / framerate);
   }
 
   /** Configures the encoder/muxer. Returns false when no usable codec is found. */
@@ -59,7 +61,15 @@ export class Mp4Recorder {
 
     const pixels = this.width * this.height;
     const bitrate = Math.round(Math.min(12_000_000, Math.max(2_500_000, pixels * this.framerate * 0.08)));
-    this.encoder.configure({ codec, width: this.width, height: this.height, framerate: this.framerate, bitrate });
+    this.encoder.configure({
+      codec,
+      width: this.width,
+      height: this.height,
+      framerate: this.framerate,
+      bitrate,
+      // Real-time capture: avoids B-frame reordering so chunks stay monotonic.
+      latencyMode: "realtime",
+    });
     return true;
   }
 
@@ -69,7 +79,12 @@ export class Mp4Recorder {
    */
   async addFrame(source: HTMLCanvasElement, timestampMicros: number, keyFrame: boolean): Promise<void> {
     if (this.encodeError) throw this.encodeError;
-    const frame = new VideoFrame(source, { timestamp: Math.max(0, Math.round(timestampMicros)) });
+    const frame = new VideoFrame(source, {
+      timestamp: Math.max(0, Math.round(timestampMicros)),
+      // mp4-muxer reads EncodedVideoChunk.duration (derived from the frame's
+      // duration); without it the duration is null and the muxer throws.
+      duration: this.frameDurationMicros,
+    });
     try {
       this.encoder.encode(frame, { keyFrame });
     } finally {
