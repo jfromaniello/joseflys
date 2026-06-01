@@ -69,14 +69,14 @@ describe("computeGpxStats", () => {
 
 describe("formatTrackDuration", () => {
   it("formats sub-hour durations as minutes", () => {
-    expect(formatTrackDuration(23 * 60 * 1000)).toBe("23m");
+    expect(formatTrackDuration(23 * 60 * 1000)).toBe("23min");
   });
 
   it("formats hour+ durations as hours and minutes", () => {
-    expect(formatTrackDuration((83 * 60 + 0) * 1000)).toBe("1h 23m");
+    expect(formatTrackDuration((83 * 60 + 0) * 1000)).toBe("1h 23min");
   });
 
   it("rounds to the nearest minute", () => {
-    expect(formatTrackDuration(89 * 1000)).toBe("1m");
+    expect(formatTrackDuration(89 * 1000)).toBe("1min");
   });
 });

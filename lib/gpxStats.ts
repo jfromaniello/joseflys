@@ -124,11 +124,11 @@ export function computeGpxStats(content: string): GpxStats | null {
   };
 }
 
-/** Formats a duration in milliseconds as "1h 23m" or "23m". */
+/** Formats a duration in milliseconds as "1h 23min" or "23min". */
 export function formatTrackDuration(durationMs: number): string {
   const totalMinutes = Math.round(durationMs / 60000);
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
-  if (hours > 0) return `${hours}h ${minutes}m`;
-  return `${minutes}m`;
+  if (hours > 0) return `${hours}h ${minutes}min`;
+  return `${minutes}min`;
 }
