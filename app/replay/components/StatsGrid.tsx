@@ -1,10 +1,11 @@
-import { formatDistance, formatVerticalSpeed } from "@/lib/formatters";
+import { formatCourse, formatDistance, formatVerticalSpeed } from "@/lib/formatters";
 import { StatCard } from "./StatCard";
 
 interface StatsGridProps {
   speedKnots: number | null;
   altitudeFt: number | null;
   verticalSpeedFpm: number | null;
+  trackDeg: number | null;
   totalDistanceNm: number;
   durationMs: number;
   pointCount: number;
@@ -16,6 +17,7 @@ export function StatsGrid({
   speedKnots,
   altitudeFt,
   verticalSpeedFpm,
+  trackDeg,
   totalDistanceNm,
   durationMs,
   pointCount,
@@ -23,7 +25,7 @@ export function StatsGrid({
 }: StatsGridProps) {
   return (
     <>
-      <div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-3 items-stretch">
+      <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3 items-stretch">
         <StatCard
           label="Speed"
           tooltip="Computed from 3D distance between adjacent GPX points divided by their timestamp delta. Close to ground speed — without wind or aircraft anemometer data it is impossible to derive TAS or other speeds that would be more useful."
@@ -38,6 +40,11 @@ export function StatsGrid({
           label="Vertical Speed"
           tooltip="Climb (+) or descent (−) rate in feet per minute, smoothed over a ~5-second window centered on the current point to reduce GPS altitude noise."
           value={formatVerticalSpeed(verticalSpeedFpm)}
+        />
+        <StatCard
+          label="Track"
+          tooltip="Magnetic course over ground, derived from the GPS motion heading (true) and corrected with the WMM magnetic declination at the current position — what you would compare against runways and charts."
+          value={trackDeg !== null ? formatCourse(trackDeg) : "--"}
         />
       </div>
 

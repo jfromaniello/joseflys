@@ -5,6 +5,7 @@ import type { ReplayPoint, SpeedOption } from "./types";
 import {
   computeAltitudeFt,
   computeGroundSpeed,
+  computeTrackHeadingDeg,
   computeVerticalSpeedFpm,
   findPointIndexByTime,
 } from "./replayMetrics";
@@ -163,6 +164,7 @@ export function useReplayRecorder({
           speedKnots: computeGroundSpeed(pts, index).knots,
           altitudeFt: computeAltitudeFt(pts, index, timeMs),
           vsFpm: computeVerticalSpeedFpm(pts, index, timeMs),
+          trackDeg: computeTrackHeadingDeg(pts, timeMs),
           timeMs,
         });
       };

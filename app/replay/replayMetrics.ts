@@ -1,4 +1,6 @@
+import { magvar } from "magvar";
 import { calculateHaversineDistance } from "@/lib/distanceCalculations";
+import { computeMotionHeadingAdaptive } from "./cameraMath";
 import type { ReplayPoint } from "./types";
 
 const METERS_PER_NM = 1852;
@@ -113,6 +115,33 @@ export function computeAltitudeFt(
   const t = Math.max(0, Math.min(1, tRaw));
   const eleM = from.ele + (to.ele - from.ele) * t;
   return eleM * METERS_TO_FEET;
+}
+
+/**
+ * Magnetic track over ground in degrees [0, 360) at `currentTimeMs`.
+ *
+ * The raw GPS motion heading (same value that orients the aircraft marker) is a
+ * *true* course; it is converted to magnetic using the WMM declination at the
+ * current position. Following the project convention (WMM positive = East), the
+ * conversion is `magnetic = true - declination` — matching `magneticCourse` in
+ * `lib/courseCalculations.ts`. Returns `null` when the heading can't be resolved
+ * (e.g. stationary).
+ */
+export function computeTrackHeadingDeg(
+  points: ReplayPoint[],
+  currentTimeMs: number
+): number | null {
+  const headingRad = computeMotionHeadingAdaptive(points, currentTimeMs, 150, 30000);
+  if (headingRad === null) return null;
+
+  const trueDeg = (headingRad * 180) / Math.PI;
+
+  const index = findPointIndexByTime(points, currentTimeMs);
+  const here = points[Math.max(0, Math.min(index, points.length - 1))];
+  const declination = here ? magvar(here.lat, here.lon, 0) : 0;
+
+  const magneticDeg = trueDeg - declination;
+  return ((magneticDeg % 360) + 360) % 360;
 }
 
 /**

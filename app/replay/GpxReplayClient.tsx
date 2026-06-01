@@ -23,6 +23,7 @@ import {
   computeGroundSpeed,
   computeTimeline,
   computeTotalDistanceNm,
+  computeTrackHeadingDeg,
   computeVerticalSpeedFpm,
   findPointIndexByTime,
 } from "./replayMetrics";
@@ -184,6 +185,10 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
   const currentVerticalSpeedFpm = useMemo(
     () => computeVerticalSpeedFpm(points, currentIndex, currentTimeMs),
     [points, currentIndex, currentTimeMs]
+  );
+  const currentTrackDeg = useMemo(
+    () => computeTrackHeadingDeg(points, currentTimeMs),
+    [points, currentTimeMs]
   );
 
   const recorder = useReplayRecorder({
@@ -397,6 +402,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
                   speedKnots={currentSpeed.knots}
                   altitudeFt={currentAltitudeFt}
                   verticalSpeedFpm={currentVerticalSpeedFpm}
+                  trackDeg={currentTrackDeg}
                 />
 
                 <ReplayControls
@@ -430,6 +436,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
                 speedKnots={currentSpeed.knots}
                 altitudeFt={currentAltitudeFt}
                 verticalSpeedFpm={currentVerticalSpeedFpm}
+                trackDeg={currentTrackDeg}
                 totalDistanceNm={totalDistanceNm}
                 durationMs={timeline.durationMs}
                 pointCount={points.length}

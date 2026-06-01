@@ -1,4 +1,4 @@
-import { formatVerticalSpeed } from "@/lib/formatters";
+import { formatCourse, formatVerticalSpeed } from "@/lib/formatters";
 import { formatUtc } from "./formatTime";
 
 /** Per-frame telemetry values drawn over the recorded video. */
@@ -6,6 +6,8 @@ export interface HudFrame {
   speedKnots: number | null;
   altitudeFt: number | null;
   vsFpm: number | null;
+  /** Course over ground (true), degrees [0, 360). */
+  trackDeg: number | null;
   /** Absolute UTC timestamp of the frame (ms). */
   timeMs: number;
 }
@@ -33,6 +35,7 @@ export function drawHud(ctx: CanvasRenderingContext2D, width: number, height: nu
     ["SPEED", field(frame.speedKnots !== null ? frame.speedKnots.toFixed(0) : null, "KT")],
     ["ALTITUDE", field(frame.altitudeFt !== null ? Math.round(frame.altitudeFt).toLocaleString("en-US") : null, "ft")],
     ["V/S", formatVerticalSpeed(frame.vsFpm)],
+    ["TRACK", frame.trackDeg !== null ? formatCourse(frame.trackDeg) : "--"],
   ];
   const panelW = Math.round(190 * scale);
   const rowH = Math.round(46 * scale);
