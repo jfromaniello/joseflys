@@ -36,12 +36,16 @@ import {
   usePersistedViewMode,
 } from "./useReplayPreferences";
 import { useReplayRecorder } from "./useReplayRecorder";
+import { useCircuitAnalysis } from "./useCircuitAnalysis";
 import { ReplayToolbar } from "./components/ReplayToolbar";
 import { GpxDropzone } from "./components/GpxDropzone";
 import { FullscreenButton } from "./components/FullscreenButton";
 import { TelemetryOverlay } from "./components/TelemetryOverlay";
 import { ReplayControls } from "./components/ReplayControls";
 import { StatsGrid } from "./components/StatsGrid";
+import { CircuitTimeline } from "./components/CircuitTimeline";
+import { CircuitTable } from "./components/CircuitTable";
+import { circuitPhaseAt } from "./patternAnalysis";
 import { ShareModal } from "./components/ShareModal";
 import { RecordModal } from "./components/RecordModal";
 
@@ -190,6 +194,15 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
     () => computeTrackHeadingDeg(points, currentTimeMs),
     [points, currentTimeMs]
   );
+  const circuit = useCircuitAnalysis(points);
+  const currentStage = useMemo(() => {
+    if (!circuit) return null;
+    const phase = circuitPhaseAt(circuit, currentTimeMs);
+    if (phase === "downwind") return "Downwind";
+    if (phase === "base") return "Base";
+    if (phase === "final") return "Final";
+    return null;
+  }, [circuit, currentTimeMs]);
 
   const recorder = useReplayRecorder({
     canvasRef: globeCanvasRef,
@@ -403,6 +416,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
                   altitudeFt={currentAltitudeFt}
                   verticalSpeedFpm={currentVerticalSpeedFpm}
                   trackDeg={currentTrackDeg}
+                  stage={currentStage}
                 />
 
                 <ReplayControls
@@ -431,6 +445,24 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
                   onChaseDistanceChange={setChaseDistance}
                 />
               </div>
+
+              {circuit ? (
+                <>
+                  <CircuitTimeline
+                    analysis={circuit}
+                    startMs={timeline.startMs}
+                    durationMs={timeline.durationMs}
+                    currentTimeMs={currentTimeMs}
+                    onSeek={handleSliderChange}
+                  />
+                  <CircuitTable
+                    circuits={circuit.circuits}
+                    startMs={timeline.startMs}
+                    currentTimeMs={currentTimeMs}
+                    onSeek={handleSliderChange}
+                  />
+                </>
+              ) : null}
 
               <StatsGrid
                 speedKnots={currentSpeed.knots}

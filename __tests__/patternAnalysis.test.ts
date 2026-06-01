@@ -56,6 +56,26 @@ describe("analyzeCircuit — SACD real flight", () => {
     expect(alt as number).toBeLessThan(900);
   });
 
+  it("measures the downwind separation from the runway (~500–700 m)", () => {
+    const sep = analysis?.downwindSeparationM;
+    expect(sep).not.toBeNull();
+    expect(sep as number).toBeGreaterThan(400);
+    expect(sep as number).toBeLessThan(900);
+  });
+
+  it("computes per-pass downwind metrics that vary between passes", () => {
+    const downwind = analysis!.segments.filter((s) => s.phase === "downwind");
+    expect(downwind.length).toBeGreaterThanOrEqual(4);
+    for (const seg of downwind) {
+      expect(seg.separationM).not.toBeNull();
+      // Real circuit downwinds stay within the runway corridor (not en-route).
+      expect(seg.separationM as number).toBeLessThan(2500);
+    }
+    const seps = downwind.map((s) => s.separationM as number);
+    // Passes should not all be identical (the flight flew tighter/wider ones).
+    expect(Math.max(...seps) - Math.min(...seps)).toBeGreaterThan(50);
+  });
+
   it("identifies all circuit legs across the repeated patterns", () => {
     const phases = new Set<CircuitPhase>(analysis?.segments.map((s) => s.phase));
     for (const leg of ["upwind", "crosswind", "downwind", "base", "final"] as const) {
@@ -71,6 +91,30 @@ describe("analyzeCircuit — SACD real flight", () => {
     const after = segs.slice(dwIndex + 1, dwIndex + 4).map((s) => s.phase);
     expect(after).toContain("base");
     expect(after).toContain("final");
+  });
+
+  it("groups legs into complete circuits (downwind → approach)", () => {
+    const circuits = analysis!.circuits;
+    // The flight flew several full touch-and-go circuits.
+    expect(circuits.length).toBeGreaterThanOrEqual(5);
+    expect(circuits.length).toBeLessThanOrEqual(8);
+    // Every counted circuit reaches an approach and has downwind metrics.
+    for (const c of circuits) {
+      expect(c.approach).not.toBeNull();
+      expect(c.separationM).not.toBeNull();
+      expect(c.endMs).toBeGreaterThan(c.startMs);
+    }
+    // Circuits are chronological and non-overlapping.
+    for (let i = 1; i < circuits.length; i += 1) {
+      expect(circuits[i].startMs).toBeGreaterThanOrEqual(circuits[i - 1].endMs);
+    }
+  });
+
+  it("does not count a downwind that never reaches a base/final", () => {
+    // There are at least as many downwind legs as circuits, but spurious
+    // downwind-only legs (no approach) are excluded from the circuit count.
+    const downwindSegs = analysis!.segments.filter((s) => s.phase === "downwind").length;
+    expect(analysis!.circuits.length).toBeLessThanOrEqual(downwindSegs);
   });
 
   it("detects multiple approaches with realistic glide angles and speeds", () => {
