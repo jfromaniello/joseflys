@@ -51,14 +51,25 @@ function buildTrackPath(points: Array<{ lat: number; lon: number }>): string | n
     .join(" ");
 }
 
-function StatBlock({ label, value }: { label: string; value: string }) {
+function StatBlock({ label, value, width }: { label: string; value: string; width?: number }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "6px",
+        ...(width ? { width: `${width}px` } : {}),
+      }}
+    >
       <div style={{ fontSize: "26px", color: "#7c93b8", fontWeight: 600 }}>{label}</div>
-      <div style={{ fontSize: "52px", color: "white", fontWeight: 700 }}>{value}</div>
+      <div style={{ fontSize: "52px", color: "white", fontWeight: 700, whiteSpace: "nowrap" }}>{value}</div>
     </div>
   );
 }
+
+// Fixed width for the left column so the right column ("Max Altitude" / "Top
+// Speed") lines up across both rows regardless of value width.
+const LEFT_COL_WIDTH = 200;
 
 function Header() {
   return (
@@ -118,15 +129,23 @@ function renderImage(stats: GpxStats | null) {
 
             {stats ? (
               <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
-                <div style={{ display: "flex", gap: "72px" }}>
-                  <StatBlock label="Distance" value={`${formatDistance(stats.distanceNm, 1)} NM`} />
+                <div style={{ display: "flex", gap: "56px" }}>
+                  <StatBlock
+                    label="Distance"
+                    value={`${formatDistance(stats.distanceNm, 1)} NM`}
+                    width={LEFT_COL_WIDTH}
+                  />
                   <StatBlock
                     label="Max Altitude"
                     value={`${Math.round(stats.maxAltitudeFt).toLocaleString("en-US")} ft`}
                   />
                 </div>
-                <div style={{ display: "flex", gap: "72px" }}>
-                  <StatBlock label="Duration" value={formatTrackDuration(stats.durationMs)} />
+                <div style={{ display: "flex", gap: "56px" }}>
+                  <StatBlock
+                    label="Duration"
+                    value={formatTrackDuration(stats.durationMs)}
+                    width={LEFT_COL_WIDTH}
+                  />
                   <StatBlock label="Top Speed" value={`${Math.round(stats.maxSpeedKt)} KT`} />
                 </div>
               </div>
