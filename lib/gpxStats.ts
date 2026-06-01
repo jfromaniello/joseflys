@@ -24,7 +24,7 @@ export interface GpxStats {
   maxAltitudeFt: number;
   /** Track duration in milliseconds (last timestamp minus first). */
   durationMs: number;
-  /** Peak ground speed in knots across adjacent points. */
+  /** Peak ground speed in knots, smoothed over a window to reject GPS spikes. */
   maxSpeedKt: number;
   /** Number of parsed track points. */
   pointCount: number;
@@ -83,6 +83,51 @@ function parseTrackPoints(content: string): GpxTrackPoint[] {
   return points;
 }
 
+/** Half-width of the speed-smoothing window (ms). ~10s total span. */
+const SPEED_HALF_WINDOW_MS = 5000;
+
+/**
+ * Peak ground speed in knots, smoothed over a centered ~10-second window.
+ *
+ * A single bad GPS fix produces a one-second segment that "teleports" tens of
+ * metres, yielding implausible point-to-point speeds (e.g. 170+ kt on a ~90 kt
+ * flight). Measuring displacement between the window endpoints instead of
+ * summing every micro-segment cancels such out-and-back spikes, so the reported
+ * top speed reflects sustained motion rather than GPS jitter.
+ */
+function computeMaxSpeedKt(points: GpxTrackPoint[]): number {
+  let maxSpeedKt = 0;
+
+  for (let i = 0; i < points.length; i += 1) {
+    let start = i;
+    let end = i;
+    while (start > 0 && points[i].timeMs - points[start].timeMs < SPEED_HALF_WINDOW_MS) {
+      start -= 1;
+    }
+    while (end < points.length - 1 && points[end].timeMs - points[i].timeMs < SPEED_HALF_WINDOW_MS) {
+      end += 1;
+    }
+    if (start === end) continue;
+
+    const hours = (points[end].timeMs - points[start].timeMs) / 3_600_000;
+    if (hours <= 0) continue;
+
+    const groundNm = calculateHaversineDistance(
+      points[start].lat,
+      points[start].lon,
+      points[end].lat,
+      points[end].lon
+    );
+    const verticalNm = Math.abs(points[end].ele - points[start].ele) / 1852;
+    const distanceNm = Math.sqrt(groundNm * groundNm + verticalNm * verticalNm);
+
+    const knots = distanceNm / hours;
+    if (knots > maxSpeedKt) maxSpeedKt = knots;
+  }
+
+  return maxSpeedKt;
+}
+
 /**
  * Computes summary statistics from raw GPX text. Returns `null` if the track
  * does not contain at least two valid, timestamped track points.
@@ -93,32 +138,22 @@ export function computeGpxStats(content: string): GpxStats | null {
 
   let distanceNm = 0;
   let maxAltitudeFt = points[0].ele * METERS_TO_FEET;
-  let maxSpeedKt = 0;
 
   for (let i = 1; i < points.length; i += 1) {
     const from = points[i - 1];
     const to = points[i];
 
-    const groundNm = calculateHaversineDistance(from.lat, from.lon, to.lat, to.lon);
-    distanceNm += groundNm;
+    distanceNm += calculateHaversineDistance(from.lat, from.lon, to.lat, to.lon);
 
     const altFt = to.ele * METERS_TO_FEET;
     if (altFt > maxAltitudeFt) maxAltitudeFt = altFt;
-
-    const verticalNm = Math.abs(to.ele - from.ele) / 1852;
-    const segmentNm = Math.sqrt(groundNm * groundNm + verticalNm * verticalNm);
-    const hours = (to.timeMs - from.timeMs) / 3_600_000;
-    if (hours > 0) {
-      const knots = segmentNm / hours;
-      if (knots > maxSpeedKt) maxSpeedKt = knots;
-    }
   }
 
   return {
     distanceNm,
     maxAltitudeFt,
     durationMs: Math.max(0, points[points.length - 1].timeMs - points[0].timeMs),
-    maxSpeedKt,
+    maxSpeedKt: computeMaxSpeedKt(points),
     pointCount: points.length,
     path: downsamplePath(points),
   };
