@@ -70,7 +70,10 @@ export function createPageMetadata({
       url,
       siteName: SITE_CONFIG.name,
       locale: "en_US",
-      images: ogImage ? [{ url: ogImage }] : undefined,
+      // Omit the `images` key entirely when no explicit image is provided.
+      // Setting it to `undefined` still suppresses the file-based
+      // `opengraph-image` convention, so the og:image tag never gets injected.
+      ...(ogImage ? { images: [{ url: ogImage }] } : {}),
     },
     twitter: {
       card: "summary_large_image",
@@ -78,7 +81,7 @@ export function createPageMetadata({
       description,
       creator: SITE_CONFIG.author.twitter,
       site: SITE_CONFIG.author.twitter,
-      images: ogImage ? [{ url: ogImage }] : undefined,
+      ...(ogImage ? { images: [{ url: ogImage }] } : {}),
     },
     alternates: {
       canonical: url,
