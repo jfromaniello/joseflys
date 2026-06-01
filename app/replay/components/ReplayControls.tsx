@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { formatUtc, formatUtcShort } from "../formatTime";
 import {
   SPEED_OPTIONS,
+  VIEW_MODE_OPTIONS,
   type MapStyle,
   type OrientationStatus,
   type SpeedOption,
@@ -31,13 +32,9 @@ interface ReplayControlsProps {
   orientationStatus: OrientationStatus;
   headTrackingEnabled: boolean;
   onHeadTrackingToggle: () => void;
+  showTrack: boolean;
+  onShowTrackChange: (value: boolean) => void;
 }
-
-const VIEW_MODE_OPTIONS: { value: ViewMode; label: string }[] = [
-  { value: "free", label: "Free" },
-  { value: "cinematic", label: "Cinematic" },
-  { value: "cockpit", label: "Cockpit" },
-];
 
 const MAP_STYLE_OPTIONS: { value: MapStyle; label: string }[] = [
   { value: "standard", label: "Standard" },
@@ -80,6 +77,8 @@ export function ReplayControls({
   orientationStatus,
   headTrackingEnabled,
   onHeadTrackingToggle,
+  showTrack,
+  onShowTrackChange,
 }: ReplayControlsProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
@@ -266,6 +265,29 @@ export function ReplayControls({
                   ? "Satellite imagery + DEM terrain."
                   : "Google photorealistic 3D mesh (like Google Earth)."}
               </div>
+            </div>
+
+            <div className="border-t border-slate-700 pt-3">
+              <button
+                type="button"
+                onClick={() => onShowTrackChange(!showTrack)}
+                className="flex w-full items-center justify-between cursor-pointer"
+              >
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                  Track line
+                </span>
+                <span
+                  className={`relative h-5 w-9 rounded-full transition-colors ${
+                    showTrack ? "bg-cyan-500" : "bg-slate-600"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${
+                      showTrack ? "left-[1.125rem]" : "left-0.5"
+                    }`}
+                  />
+                </span>
+              </button>
             </div>
           </div>
         )}

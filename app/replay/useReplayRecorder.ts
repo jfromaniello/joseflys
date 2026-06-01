@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ReplayPoint } from "./types";
+import type { ReplayPoint, SpeedOption } from "./types";
 import {
   computeAltitudeFt,
   computeGroundSpeed,
@@ -22,6 +22,13 @@ export type RecordingStatus =
   | "done"
   | "error";
 
+/** Options chosen in the record modal before starting. */
+export interface RecordOptions {
+  speed: SpeedOption;
+  /** Whether to composite the telemetry HUD onto the video. */
+  showTelemetry: boolean;
+}
+
 interface UseReplayRecorderParams {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   points: ReplayPoint[];
@@ -41,7 +48,7 @@ interface UseReplayRecorderResult {
   /** Object URL of the finished MP4 (for preview / re-download). */
   resultUrl: string | null;
   error: string | null;
-  startRecording: (speedMultiplier: number) => void;
+  startRecording: (options: RecordOptions) => void;
   reset: () => void;
 }
 
@@ -104,7 +111,7 @@ export function useReplayRecorder({
   }, [cleanupLoop]);
 
   const startRecording = useCallback(
-    (speedMultiplier: number) => {
+    ({ speed: speedMultiplier, showTelemetry }: RecordOptions) => {
       const canvas = canvasRef.current;
       const { durationMs: duration } = latest.current;
       if (!supported || !canvas || duration <= 0 || status === "recording" || status === "encoding") {
@@ -158,19 +165,19 @@ export function useReplayRecorder({
 
           if (now - lastCaptureNow >= FRAME_INTERVAL_MS) {
             lastCaptureNow = now;
-            const timeMs = start + elapsed;
-            const index = findPointIndexByTime(pts, timeMs);
-            const speed = computeGroundSpeed(pts, index);
 
             ctx.clearRect(0, 0, width, height);
             ctx.drawImage(canvas, 0, 0, width, height);
-            drawHud(ctx, width, height, {
-              speedKnots: speed.knots,
-              altitudeFt: computeAltitudeFt(pts, index, timeMs),
-              vsFpm: computeVerticalSpeedFpm(pts, index, timeMs),
-              timeMs,
-              progress: dur > 0 ? elapsed / dur : 0,
-            });
+            if (showTelemetry) {
+              const timeMs = start + elapsed;
+              const index = findPointIndexByTime(pts, timeMs);
+              drawHud(ctx, width, height, {
+                speedKnots: computeGroundSpeed(pts, index).knots,
+                altitudeFt: computeAltitudeFt(pts, index, timeMs),
+                vsFpm: computeVerticalSpeedFpm(pts, index, timeMs),
+                timeMs,
+              });
+            }
 
             const tMicros = (now - startNow) * 1000;
             recorder

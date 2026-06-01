@@ -27,7 +27,7 @@ import {
 } from "./replayMetrics";
 import { createShareUrl, type ShareStatus } from "./shareReplay";
 import { useFullscreen } from "./useFullscreen";
-import { usePersistedMapStyle, usePersistedViewMode } from "./useReplayPreferences";
+import { usePersistedMapStyle, usePersistedShowTrack, usePersistedViewMode } from "./useReplayPreferences";
 import { useReplayRecorder } from "./useReplayRecorder";
 import { ReplayToolbar } from "./components/ReplayToolbar";
 import { GpxDropzone } from "./components/GpxDropzone";
@@ -102,6 +102,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
   const { isFullscreen, wrapperRef: fullscreenWrapperRef, toggleFullscreen } = useFullscreen();
   const [viewMode, setViewMode] = usePersistedViewMode(initialViewParam);
   const [mapStyle, setMapStyle] = usePersistedMapStyle(HAS_GOOGLE_MAPS_KEY);
+  const [showTrack, setShowTrack] = usePersistedShowTrack();
 
   // Switching away from cockpit always disables head-tracking. Head-tracking can
   // only be enabled while in cockpit, so this is the single place it resets.
@@ -367,6 +368,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
                     requestOrientationRef={requestOrientationRef}
                     headTrackingEnabled={headTrackingEnabled}
                     canvasRef={globeCanvasRef}
+                    showTrack={showTrack}
                   />
                 </div>
 
@@ -398,6 +400,8 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
                   orientationStatus={orientationStatus}
                   headTrackingEnabled={headTrackingEnabled}
                   onHeadTrackingToggle={() => void handleHeadTrackingToggle()}
+                  showTrack={showTrack}
+                  onShowTrackChange={setShowTrack}
                 />
               </div>
 
@@ -435,8 +439,12 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
           resultUrl={recorder.resultUrl}
           error={recorder.error}
           supported={recorder.supported}
-          onStart={(s) => recorder.startRecording(s)}
+          onStart={(opts) => recorder.startRecording(opts)}
           onClose={handleCloseRecordModal}
+          viewMode={viewMode}
+          onViewModeChange={changeViewMode}
+          showTrack={showTrack}
+          onShowTrackChange={setShowTrack}
         />
       ) : null}
     </PageLayout>

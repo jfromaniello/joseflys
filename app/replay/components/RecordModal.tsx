@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { SPEED_OPTIONS, type SpeedOption } from "../types";
-import type { RecordingStatus } from "../useReplayRecorder";
+import { SPEED_OPTIONS, VIEW_MODE_OPTIONS, type SpeedOption, type ViewMode } from "../types";
+import type { RecordingStatus, RecordOptions } from "../useReplayRecorder";
 
 interface RecordModalProps {
   status: RecordingStatus;
@@ -10,11 +10,32 @@ interface RecordModalProps {
   resultUrl: string | null;
   error: string | null;
   supported: boolean;
-  onStart: (speed: SpeedOption) => void;
+  onStart: (options: RecordOptions) => void;
   onClose: () => void;
+  /** Live camera mode (set up the shot from here). */
+  viewMode: ViewMode;
+  onViewModeChange: (mode: ViewMode) => void;
+  /** Live track-line visibility. */
+  showTrack: boolean;
+  onShowTrackChange: (value: boolean) => void;
 }
 
 const DEFAULT_SPEED: SpeedOption = 50;
+
+function Toggle({ label, on, onToggle }: { label: string; on: boolean; onToggle: () => void }) {
+  return (
+    <button type="button" onClick={onToggle} className="flex w-full items-center justify-between cursor-pointer">
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{label}</span>
+      <span className={`relative h-5 w-9 rounded-full transition-colors ${on ? "bg-cyan-500" : "bg-slate-600"}`}>
+        <span
+          className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${
+            on ? "left-[1.125rem]" : "left-0.5"
+          }`}
+        />
+      </span>
+    </button>
+  );
+}
 
 /** Pre-record options, live progress, and the finished-clip preview/download. */
 export function RecordModal({
@@ -25,8 +46,13 @@ export function RecordModal({
   supported,
   onStart,
   onClose,
+  viewMode,
+  onViewModeChange,
+  showTrack,
+  onShowTrackChange,
 }: RecordModalProps) {
   const [speed, setSpeed] = useState<SpeedOption>(DEFAULT_SPEED);
+  const [showTelemetry, setShowTelemetry] = useState(true);
 
   const busy = status === "recording" || status === "encoding";
 
@@ -53,7 +79,7 @@ export function RecordModal({
           <div>
             <h3 className="text-lg font-semibold text-white">Record this replay</h3>
             <p className="text-xs mt-1" style={{ color: "oklch(0.7 0.02 240)" }}>
-              Plays the whole flight and saves an MP4 with the 3D view and telemetry.
+              Plays the whole flight and saves an MP4 of the 3D view.
             </p>
           </div>
           {!busy ? (
@@ -106,6 +132,24 @@ export function RecordModal({
         ) : (
           <div className="space-y-4">
             <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Camera</div>
+              <div className="grid grid-cols-3 gap-1 rounded-md bg-slate-800/60 p-0.5">
+                {VIEW_MODE_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => onViewModeChange(opt.value)}
+                    className={`px-2 py-1.5 rounded text-xs font-medium cursor-pointer transition-colors ${
+                      viewMode === opt.value ? "bg-cyan-500 text-slate-950" : "text-gray-300 hover:bg-slate-700"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
               <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
                 Playback speed
               </div>
@@ -123,14 +167,16 @@ export function RecordModal({
                   </button>
                 ))}
               </div>
-              <p className="mt-1.5 text-[11px] text-slate-400 leading-tight">
-                Higher speed = shorter clip, but fast-moving terrain may look less sharp while tiles load.
-                Cinematic camera makes the best clips.
-              </p>
             </div>
+
+            <div className="space-y-2.5 border-t border-slate-700 pt-3">
+              <Toggle label="Telemetry HUD" on={showTelemetry} onToggle={() => setShowTelemetry((v) => !v)} />
+              <Toggle label="Track line" on={showTrack} onToggle={() => onShowTrackChange(!showTrack)} />
+            </div>
+
             <button
               type="button"
-              onClick={() => onStart(speed)}
+              onClick={() => onStart({ speed, showTelemetry })}
               className="w-full rounded-md px-4 py-2.5 text-sm font-semibold cursor-pointer transition-colors bg-red-600 hover:bg-red-500 text-white"
             >
               Start recording

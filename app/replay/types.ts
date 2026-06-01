@@ -44,6 +44,13 @@ export type ViewMode = "free" | "cinematic" | "cockpit";
 
 export const VIEW_MODES: ViewMode[] = ["free", "cinematic", "cockpit"];
 
+/** View mode options with display labels, shared by the controls and record modal. */
+export const VIEW_MODE_OPTIONS: { value: ViewMode; label: string }[] = [
+  { value: "free", label: "Free" },
+  { value: "cinematic", label: "Cinematic" },
+  { value: "cockpit", label: "Cockpit" },
+];
+
 export function isViewMode(value: string): value is ViewMode {
   return (VIEW_MODES as string[]).includes(value);
 }

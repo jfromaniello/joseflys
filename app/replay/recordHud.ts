@@ -8,8 +8,6 @@ export interface HudFrame {
   vsFpm: number | null;
   /** Absolute UTC timestamp of the frame (ms). */
   timeMs: number;
-  /** Playback progress in [0, 1] for the bottom bar. */
-  progress: number;
 }
 
 function field(value: string | null, unit: string): string {
@@ -17,10 +15,10 @@ function field(value: string | null, unit: string): string {
 }
 
 /**
- * Draws the telemetry HUD (speed / altitude / vertical speed panel, a progress
- * bar with the UTC clock, and a branding watermark) onto a 2D context that
- * already holds the globe frame. Sizes scale with canvas width so output looks
- * consistent across resolutions.
+ * Draws the telemetry HUD (speed / altitude / vertical speed panel, the UTC
+ * clock, and a branding watermark) onto a 2D context that already holds the
+ * globe frame. Sizes scale with canvas width so output looks consistent across
+ * resolutions.
  */
 export function drawHud(ctx: CanvasRenderingContext2D, width: number, height: number, frame: HudFrame): void {
   const scale = width / 1280;
@@ -56,33 +54,16 @@ export function drawHud(ctx: CanvasRenderingContext2D, width: number, height: nu
     ctx.fillText(value, panelX + pad, y + Math.round(16 * scale));
   });
 
-  // --- Progress bar + clock (bottom) ---
-  const barH = Math.round(6 * scale);
-  const barY = height - pad - barH;
-  const barX = pad;
-  const barW = width - pad * 2;
-
-  roundRect(ctx, barX, barY, barW, barH, barH / 2);
-  ctx.fillStyle = "rgba(148, 163, 184, 0.35)";
-  ctx.fill();
-
-  const filled = Math.max(0, Math.min(1, frame.progress)) * barW;
-  if (filled > 0) {
-    roundRect(ctx, barX, barY, filled, barH, barH / 2);
-    ctx.fillStyle = "#22d3ee";
-    ctx.fill();
-  }
-
+  // --- Clock (bottom-left) + watermark (bottom-right) ---
+  const lineY = height - pad - Math.round(16 * scale);
   ctx.font = font(15, 600);
   ctx.fillStyle = "#e2e8f0";
-  const clock = formatUtc(frame.timeMs);
-  ctx.fillText(clock, barX, barY - Math.round(24 * scale));
+  ctx.fillText(formatUtc(frame.timeMs), pad, lineY);
 
-  // --- Watermark (bottom-right, above the bar) ---
   ctx.font = font(15, 700);
   ctx.fillStyle = "rgba(226, 232, 240, 0.85)";
   ctx.textAlign = "right";
-  ctx.fillText("joseflys.com", width - pad, barY - Math.round(24 * scale));
+  ctx.fillText("joseflys.com", width - pad, lineY);
   ctx.textAlign = "left";
 
   ctx.restore();

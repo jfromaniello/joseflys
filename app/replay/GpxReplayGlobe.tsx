@@ -39,6 +39,8 @@ interface GpxReplayGlobeProps {
   headTrackingEnabled?: boolean;
   /** Receives the live WebGL canvas so the parent can capture frames for video export. */
   canvasRef?: MutableRefObject<HTMLCanvasElement | null>;
+  /** Whether the cyan track polyline is rendered. */
+  showTrack?: boolean;
 }
 
 const CESIUM_ION_TOKEN = process.env.NEXT_PUBLIC_CESIUM_ION_TOKEN;
@@ -57,6 +59,7 @@ export function GpxReplayGlobe({
   onOrientationStatusChange,
   requestOrientationRef,
   canvasRef,
+  showTrack = true,
   headTrackingEnabled = false,
 }: GpxReplayGlobeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -689,6 +692,11 @@ export function GpxReplayGlobe({
       fittedRef.current = true;
     }
   }, [safePoints, clampedIndex, currentTimeMs, viewerReady]);
+
+  useEffect(() => {
+    if (!viewerReady) return;
+    if (replayLineRef.current) replayLineRef.current.show = showTrack;
+  }, [showTrack, viewerReady]);
 
   useEffect(() => {
     const viewer = viewerRef.current;

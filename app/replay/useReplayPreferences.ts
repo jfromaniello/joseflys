@@ -6,6 +6,7 @@ import { isMapStyle, isViewMode, type MapStyle, type ViewMode } from "./types";
 const VIEW_MODE_KEY = "gpxReplay.viewMode";
 const LEGACY_AUTO_CAMERA_KEY = "gpxReplay.autoCamera";
 const MAP_STYLE_KEY = "gpxReplay.mapStyle";
+const SHOW_TRACK_KEY = "gpxReplay.showTrack";
 
 /**
  * View-mode state persisted to localStorage.
@@ -65,4 +66,28 @@ export function usePersistedMapStyle(hasGoogleMapsKey: boolean): [MapStyle, (sty
   }, [mapStyle]);
 
   return [mapStyle, setMapStyle];
+}
+
+/**
+ * Whether the cyan track polyline is shown, persisted to localStorage (default
+ * on). Same SSR-safe mount-hydration approach as {@link usePersistedViewMode}.
+ */
+export function usePersistedShowTrack(): [boolean, (value: boolean) => void] {
+  const [showTrack, setShowTrack] = useState(true);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = window.localStorage.getItem(SHOW_TRACK_KEY);
+    if (stored === null) return;
+    // One-shot hydration from an external store on mount (see note above).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setShowTrack(stored === "true");
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(SHOW_TRACK_KEY, String(showTrack));
+  }, [showTrack]);
+
+  return [showTrack, setShowTrack];
 }
