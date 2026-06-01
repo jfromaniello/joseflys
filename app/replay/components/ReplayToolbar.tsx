@@ -10,6 +10,9 @@ interface ReplayToolbarProps {
   onShare: () => void;
   canShare: boolean;
   shareStatus: ShareStatus;
+  onRecord: () => void;
+  /** Hidden when MP4 recording isn't supported by the browser. */
+  canRecord: boolean;
 }
 
 function shareLabel(status: ShareStatus): string {
@@ -43,6 +46,8 @@ export function ReplayToolbar({
   onShare,
   canShare,
   shareStatus,
+  onRecord,
+  canRecord,
 }: ReplayToolbarProps) {
   return (
     <div className="mb-6 pb-6 border-b border-gray-700 flex items-start justify-between gap-3">
@@ -66,6 +71,20 @@ export function ReplayToolbar({
             </svg>
             <span className="hidden sm:inline">New GPX</span>
           </button>
+          {canRecord ? (
+            <button
+              type="button"
+              onClick={onRecord}
+              title="Record this replay as an MP4 video"
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium cursor-pointer transition-colors bg-slate-700 hover:bg-slate-600 text-white"
+            >
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="8" />
+                <circle cx="12" cy="12" r="3" fill="currentColor" stroke="none" />
+              </svg>
+              <span className="hidden sm:inline">Record</span>
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={onShare}

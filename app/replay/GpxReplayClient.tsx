@@ -28,6 +28,7 @@ import {
 import { createShareUrl, type ShareStatus } from "./shareReplay";
 import { useFullscreen } from "./useFullscreen";
 import { usePersistedMapStyle, usePersistedViewMode } from "./useReplayPreferences";
+import { useReplayRecorder } from "./useReplayRecorder";
 import { ReplayToolbar } from "./components/ReplayToolbar";
 import { GpxDropzone } from "./components/GpxDropzone";
 import { FullscreenButton } from "./components/FullscreenButton";
@@ -35,6 +36,7 @@ import { TelemetryOverlay } from "./components/TelemetryOverlay";
 import { ReplayControls } from "./components/ReplayControls";
 import { StatsGrid } from "./components/StatsGrid";
 import { ShareModal } from "./components/ShareModal";
+import { RecordModal } from "./components/RecordModal";
 
 interface GpxReplayClientProps {
   initialGpx?: string;
@@ -91,9 +93,11 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
   const [shareStatus, setShareStatus] = useState<ShareStatus>("idle");
   const [shareUrl, setShareUrl] = useState<string>("");
   const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [recordModalOpen, setRecordModalOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastTickRef = useRef<number | null>(null);
   const initialGpxAppliedRef = useRef(false);
+  const globeCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const { isFullscreen, wrapperRef: fullscreenWrapperRef, toggleFullscreen } = useFullscreen();
   const [viewMode, setViewMode] = usePersistedViewMode(initialViewParam);
@@ -165,6 +169,25 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
     () => computeVerticalSpeedFpm(points, currentIndex, currentTimeMs),
     [points, currentIndex, currentTimeMs]
   );
+
+  const recorder = useReplayRecorder({
+    canvasRef: globeCanvasRef,
+    points,
+    startMs: timeline.startMs,
+    durationMs: timeline.durationMs,
+    setElapsedMs,
+    setIsPlaying,
+  });
+
+  const handleRecord = useCallback(() => {
+    recorder.reset();
+    setRecordModalOpen(true);
+  }, [recorder]);
+
+  const handleCloseRecordModal = useCallback(() => {
+    setRecordModalOpen(false);
+    recorder.reset();
+  }, [recorder]);
 
   // --- Playback animation loop (real time × speed) ---
   useEffect(() => {
@@ -305,6 +328,8 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
             onShare={handleShare}
             canShare={canShare}
             shareStatus={shareStatus}
+            onRecord={handleRecord}
+            canRecord={recorder.supported}
           />
 
           {!hasTrack ? (
@@ -341,6 +366,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
                     onOrientationStatusChange={setOrientationStatus}
                     requestOrientationRef={requestOrientationRef}
                     headTrackingEnabled={headTrackingEnabled}
+                    canvasRef={globeCanvasRef}
                   />
                 </div>
 
@@ -400,6 +426,18 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
 
       {shareModalOpen && shareUrl ? (
         <ShareModal url={shareUrl} onClose={() => setShareModalOpen(false)} />
+      ) : null}
+
+      {recordModalOpen ? (
+        <RecordModal
+          status={recorder.status}
+          progress={recorder.progress}
+          resultUrl={recorder.resultUrl}
+          error={recorder.error}
+          supported={recorder.supported}
+          onStart={(s) => recorder.startRecording(s)}
+          onClose={handleCloseRecordModal}
+        />
       ) : null}
     </PageLayout>
   );

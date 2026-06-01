@@ -37,6 +37,8 @@ interface GpxReplayGlobeProps {
   onOrientationStatusChange?: (status: OrientationStatus) => void;
   requestOrientationRef?: MutableRefObject<(() => Promise<OrientationStatus>) | null>;
   headTrackingEnabled?: boolean;
+  /** Receives the live WebGL canvas so the parent can capture frames for video export. */
+  canvasRef?: MutableRefObject<HTMLCanvasElement | null>;
 }
 
 const CESIUM_ION_TOKEN = process.env.NEXT_PUBLIC_CESIUM_ION_TOKEN;
@@ -54,6 +56,7 @@ export function GpxReplayGlobe({
   cameraStateRef,
   onOrientationStatusChange,
   requestOrientationRef,
+  canvasRef,
   headTrackingEnabled = false,
 }: GpxReplayGlobeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -360,6 +363,9 @@ export function GpxReplayGlobe({
           infoBox: false,
           shouldAnimate: false,
           baseLayer: false,
+          // Required so the WebGL canvas retains its last frame and can be read
+          // back for video export (captureStream/drawImage). Minor perf cost.
+          contextOptions: { webgl: { preserveDrawingBuffer: true } },
         });
 
         viewer.scene.globe.enableLighting = false;
@@ -401,6 +407,7 @@ export function GpxReplayGlobe({
         });
 
         viewerRef.current = viewer;
+        if (canvasRef) canvasRef.current = viewer.scene.canvas;
         setViewerReady(true);
 
         if (safePointsRef.current.length > 0) {
@@ -455,10 +462,13 @@ export function GpxReplayGlobe({
       replayLineRef.current = null;
       currentMarkerRef.current = null;
       googleTilesetRef.current = null;
+      if (canvasRef) canvasRef.current = null;
       setViewerReady(false);
       setLoadError("");
     };
-  }, []);
+    // canvasRef is a stable ref container from the parent; listed to satisfy
+    // exhaustive-deps without re-initializing the viewer.
+  }, [canvasRef]);
 
   const initialCameraAppliedRef = useRef(false);
 
