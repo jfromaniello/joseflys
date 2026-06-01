@@ -175,6 +175,32 @@ export interface MergedSegment extends CircuitSegment {
   aerodromeCode: string;
 }
 
+/** Coarse, aerodrome-independent vertical phase of flight. */
+export type FlightPhaseType = "taxi" | "climb" | "cruise" | "descent";
+
+/** A contiguous run of one flight phase, with its vertical-profile metrics. */
+export interface FlightPhase {
+  type: FlightPhaseType;
+  startMs: number;
+  endMs: number;
+  startIndex: number;
+  endIndex: number;
+  startAltFt: number;
+  endAltFt: number;
+  /** Mean vertical speed across the phase (fpm; signed). */
+  avgVsFpm: number;
+  /** Ground distance covered during the phase (NM). */
+  distanceNm: number;
+}
+
+/** A notable point in the vertical profile. */
+export type FlightMarkerType = "takeoff" | "toc" | "tod" | "landing";
+export interface FlightMarker {
+  type: FlightMarkerType;
+  timeMs: number;
+  altFt: number;
+}
+
 /** A whole flight's circuit analysis, merged across every aerodrome visited. */
 export interface FlightCircuits {
   /** Per-aerodrome analyses (for runway/side/elevation lookups). */
@@ -183,6 +209,135 @@ export interface FlightCircuits {
   segments: MergedSegment[];
   /** All landings across aerodromes, chronological, re-indexed from 1. */
   landings: Landing[];
+  /** Whole-flight vertical phases (taxi/climb/cruise/descent). */
+  phases: FlightPhase[];
+  /** Takeoff / top-of-climb / top-of-descent / landing markers. */
+  markers: FlightMarker[];
+}
+
+const VS_WINDOW_MS = 20000;
+const PHASE_VS_THRESHOLD_FPM = 200;
+const TAXI_SPEED_KT = 30;
+const MIN_PHASE_MS = 30000;
+
+/** Vertical speed (fpm) smoothed over a ~40s window centered on point `i`. */
+function smoothedVsFpm(points: ReplayPoint[], i: number): number {
+  const t = points[i].timeMs;
+  let a = i;
+  let b = i;
+  while (a > 0 && t - points[a].timeMs < VS_WINDOW_MS) a -= 1;
+  while (b < points.length - 1 && points[b].timeMs - t < VS_WINDOW_MS) b += 1;
+  const dtMin = (points[b].timeMs - points[a].timeMs) / 60000;
+  if (dtMin <= 0) return 0;
+  return ((points[b].ele - points[a].ele) * METERS_TO_FEET) / dtMin;
+}
+
+/** Ground speed (kt) from the segment at point `i`. */
+function groundSpeedKtAt(points: ReplayPoint[], i: number): number {
+  const j = Math.max(0, Math.min(i, points.length - 2));
+  const dtH = (points[j + 1].timeMs - points[j].timeMs) / 3_600_000;
+  if (dtH <= 0) return 0;
+  return distanceMeters(points[j], points[j + 1]) / 1852 / dtH;
+}
+
+/**
+ * Classifies the whole flight into coarse vertical phases (taxi / climb / cruise
+ * / descent) from smoothed vertical speed and ground speed, then derives the
+ * takeoff, top-of-climb, top-of-descent, and landing markers from the phase
+ * transitions. Aerodrome-independent — it works on any track.
+ */
+export function detectFlightPhases(points: ReplayPoint[]): {
+  phases: FlightPhase[];
+  markers: FlightMarker[];
+} {
+  if (points.length < 10) return { phases: [], markers: [] };
+
+  const cls: FlightPhaseType[] = points.map((_, i) => {
+    if (groundSpeedKtAt(points, i) < TAXI_SPEED_KT) return "taxi";
+    const vs = smoothedVsFpm(points, i);
+    if (vs > PHASE_VS_THRESHOLD_FPM) return "climb";
+    if (vs < -PHASE_VS_THRESHOLD_FPM) return "descent";
+    return "cruise";
+  });
+
+  // Build runs, then fold runs shorter than MIN_PHASE_MS into a neighbor until
+  // stable, so a brief blip doesn't fragment a phase.
+  interface Run {
+    type: FlightPhaseType;
+    startIndex: number;
+    endIndex: number;
+  }
+  const buildRuns = (labels: FlightPhaseType[]): Run[] => {
+    const runs: Run[] = [];
+    for (let i = 0; i < labels.length; i += 1) {
+      const last = runs[runs.length - 1];
+      if (last && last.type === labels[i]) last.endIndex = i;
+      else runs.push({ type: labels[i], startIndex: i, endIndex: i });
+    }
+    return runs;
+  };
+  const dur = (r: Run) => points[r.endIndex].timeMs - points[r.startIndex].timeMs;
+
+  const labels = cls.slice();
+  for (;;) {
+    const runs = buildRuns(labels);
+    if (runs.length <= 1) break;
+    let shortest = -1;
+    for (let i = 0; i < runs.length; i += 1) {
+      if (dur(runs[i]) < MIN_PHASE_MS && (shortest < 0 || dur(runs[i]) < dur(runs[shortest]))) {
+        shortest = i;
+      }
+    }
+    if (shortest < 0) break;
+    const r = runs[shortest];
+    const prev = runs[shortest - 1];
+    const next = runs[shortest + 1];
+    const into = !prev ? next : !next ? prev : dur(prev) >= dur(next) ? prev : next;
+    for (let k = r.startIndex; k <= r.endIndex; k += 1) labels[k] = into.type;
+  }
+
+  const runs = buildRuns(labels);
+  const phases: FlightPhase[] = runs.map((r) => {
+    let distanceNm = 0;
+    for (let k = r.startIndex + 1; k <= r.endIndex; k += 1) {
+      distanceNm += distanceMeters(points[k - 1], points[k]) / 1852;
+    }
+    const startAltFt = points[r.startIndex].ele * METERS_TO_FEET;
+    const endAltFt = points[r.endIndex].ele * METERS_TO_FEET;
+    const minutes = (points[r.endIndex].timeMs - points[r.startIndex].timeMs) / 60000;
+    return {
+      type: r.type,
+      startMs: points[r.startIndex].timeMs,
+      endMs: points[r.endIndex].timeMs,
+      startIndex: r.startIndex,
+      endIndex: r.endIndex,
+      startAltFt,
+      endAltFt,
+      avgVsFpm: minutes > 0 ? (endAltFt - startAltFt) / minutes : 0,
+      distanceNm,
+    };
+  });
+
+  // Markers from phase transitions.
+  const markers: FlightMarker[] = [];
+  const altAt = (idx: number) => points[idx].ele * METERS_TO_FEET;
+  for (let i = 1; i < phases.length; i += 1) {
+    const prev = phases[i - 1].type;
+    const cur = phases[i].type;
+    const at = phases[i].startMs;
+    const alt = altAt(phases[i].startIndex);
+    if (prev === "taxi" && (cur === "climb" || cur === "cruise")) {
+      markers.push({ type: "takeoff", timeMs: at, altFt: alt });
+    } else if (prev === "climb" && cur === "cruise") {
+      markers.push({ type: "toc", timeMs: at, altFt: alt });
+    } else if (prev === "cruise" && cur === "descent") {
+      markers.push({ type: "tod", timeMs: at, altFt: alt });
+    } else if ((prev === "descent" || prev === "cruise") && cur === "taxi") {
+      markers.push({ type: "landing", timeMs: at, altFt: alt });
+    }
+  }
+
+  return { phases, markers };
 }
 
 /**
@@ -194,9 +349,10 @@ export interface FlightCircuits {
  */
 export function mergeFlightCircuits(
   analyses: CircuitAnalysis[],
-  trackStartMs: number,
-  trackEndMs: number
+  points: ReplayPoint[]
 ): FlightCircuits {
+  const trackStartMs = points[0]?.timeMs ?? 0;
+  const trackEndMs = points[points.length - 1]?.timeMs ?? 0;
   const tagged: MergedSegment[] = [];
   for (const a of analyses) {
     for (const s of a.segments) {
@@ -229,7 +385,9 @@ export function mergeFlightCircuits(
     .sort((x, y) => x.timeMs - y.timeMs)
     .map((l, i) => ({ ...l, index: i + 1 }));
 
-  return { analyses, segments, landings };
+  const { phases, markers } = detectFlightPhases(points);
+
+  return { analyses, segments, landings, phases, markers };
 }
 
 /** The circuit phase active at `timeMs`, or null if outside every segment. */

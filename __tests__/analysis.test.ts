@@ -4,7 +4,7 @@ import {
   analyzeCircuit,
   type CircuitPhase,
   type PatternAerodrome,
-} from "../app/replay/patternAnalysis";
+} from "../app/replay/analysis";
 import type { ReplayPoint } from "../app/replay/types";
 
 /**

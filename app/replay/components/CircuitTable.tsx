@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { formatUtcShort } from "../formatTime";
-import type { Landing } from "../patternAnalysis";
+import { CollapsibleHeader } from "./CollapsibleHeader";
+import type { Landing } from "../analysis";
 
 interface CircuitTableProps {
   landings: Landing[];
@@ -26,17 +28,20 @@ function kt(value: number | null): string {
  * the start of that landing's downwind (or base/final).
  */
 export function CircuitTable({ landings, startMs, currentTimeMs, onSeek }: CircuitTableProps) {
+  const [collapsed, setCollapsed] = useState(false);
   if (landings.length === 0) return null;
 
   return (
     <div className="mt-3 rounded-lg bg-slate-900/60 border border-gray-700">
-      <div className="border-b border-slate-700/70 px-4 py-2.5">
-        <h3 className="text-sm font-semibold text-slate-200">
-          Landings <span className="font-normal text-slate-500">· {landings.length}</span>
-        </h3>
-        <p className="text-[11px] text-slate-500">Click a row to jump to that approach.</p>
-      </div>
+      <CollapsibleHeader
+        title="Landings"
+        count={landings.length}
+        hint="Click a row to jump to that approach."
+        collapsed={collapsed}
+        onToggle={() => setCollapsed((v) => !v)}
+      />
 
+      {collapsed ? null : (
       <div className="overflow-x-auto">
         <table className="w-full text-left text-xs">
           <thead>
@@ -85,9 +90,12 @@ export function CircuitTable({ landings, startMs, currentTimeMs, onSeek }: Circu
           </tbody>
         </table>
       </div>
-      <div className="px-3 py-1.5 text-right text-[10px] text-slate-600">
-        Speeds are GPS ground speed (kt), not airspeed.
-      </div>
+      )}
+      {collapsed ? null : (
+        <div className="px-3 py-1.5 text-right text-[10px] text-slate-600">
+          Speeds are GPS ground speed (kt), not airspeed.
+        </div>
+      )}
     </div>
   );
 }

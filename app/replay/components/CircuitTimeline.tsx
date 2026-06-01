@@ -1,6 +1,6 @@
 "use client";
 
-import type { CircuitPhase, FlightCircuits } from "../patternAnalysis";
+import type { CircuitPhase, FlightCircuits } from "../analysis";
 
 interface CircuitTimelineProps {
   flight: FlightCircuits;
@@ -102,7 +102,7 @@ export function CircuitTimeline({
   currentTimeMs,
   onSeek,
 }: CircuitTimelineProps) {
-  if (durationMs <= 0) return null;
+  if (durationMs <= 0 || flight.analyses.length === 0) return null;
 
   const pct = (ms: number) => `${Math.max(0, Math.min(1, (ms - startMs) / durationMs)) * 100}%`;
 

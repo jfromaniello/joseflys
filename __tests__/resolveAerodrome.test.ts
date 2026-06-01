@@ -3,7 +3,7 @@ import {
   resolveAerodrome,
   parsePublishedTurnDirection,
 } from "../lib/replay/resolveAerodrome";
-import { analyzeCircuit } from "../app/replay/patternAnalysis";
+import { analyzeCircuit } from "../app/replay/analysis";
 import circuitFixture from "./fixtures/sacd-circuit.json";
 import type { ReplayPoint } from "../app/replay/types";
 

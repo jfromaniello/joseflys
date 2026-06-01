@@ -18,7 +18,7 @@ import runwaysData from "@/data/runways.json";
 import anacDetails from "@/data/anac-details.json";
 import type { AnacAerodromeDetail } from "@/lib/clients/anac";
 import { parseAnacRunways } from "@/lib/clients/anac";
-import type { PatternAerodrome, PatternRunwayEnd } from "@/app/replay/patternAnalysis";
+import type { PatternAerodrome, PatternRunwayEnd } from "@/app/replay/analysis";
 
 const METERS_TO_FEET = 3.28084;
 /** Max distance from the query point to still count as "this flight's field". */

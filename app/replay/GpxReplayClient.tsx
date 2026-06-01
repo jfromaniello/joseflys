@@ -45,7 +45,8 @@ import { ReplayControls } from "./components/ReplayControls";
 import { StatsGrid } from "./components/StatsGrid";
 import { CircuitTimeline } from "./components/CircuitTimeline";
 import { CircuitTable } from "./components/CircuitTable";
-import { circuitPhaseAt } from "./patternAnalysis";
+import { FlightPhasesTable } from "./components/FlightPhasesTable";
+import { circuitPhaseAt } from "./analysis";
 import { ShareModal } from "./components/ShareModal";
 import { RecordModal } from "./components/RecordModal";
 
@@ -452,6 +453,13 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
                     flight={flight}
                     startMs={timeline.startMs}
                     durationMs={timeline.durationMs}
+                    currentTimeMs={currentTimeMs}
+                    onSeek={handleSliderChange}
+                  />
+                  <FlightPhasesTable
+                    phases={flight.phases}
+                    markers={flight.markers}
+                    startMs={timeline.startMs}
                     currentTimeMs={currentTimeMs}
                     onSeek={handleSliderChange}
                   />

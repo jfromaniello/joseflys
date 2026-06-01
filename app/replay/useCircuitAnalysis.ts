@@ -6,7 +6,7 @@ import {
   mergeFlightCircuits,
   type FlightCircuits,
   type PatternAerodrome,
-} from "./patternAnalysis";
+} from "./analysis";
 import type { ReplayPoint } from "./types";
 
 /** Downsamples to at most `max` points for the resolver request. */
@@ -62,13 +62,10 @@ export function useCircuitAnalysis(points: ReplayPoint[]): FlightCircuits | null
           .map((ad) => analyzeCircuit(points, ad))
           .filter((a): a is NonNullable<typeof a> => a != null && a.landings.length > 0);
 
-        if (analyses.length === 0) {
-          setFlight(null);
-          return;
-        }
-        const startMs = points[0].timeMs;
-        const endMs = points[points.length - 1].timeMs;
-        setFlight(mergeFlightCircuits(analyses, startMs, endMs));
+        // Phases come from the whole track, so the analysis is shown even when
+        // no aerodrome was resolved (e.g. a flight away from any known field).
+        const merged = mergeFlightCircuits(analyses, points);
+        setFlight(merged.phases.length > 0 || merged.landings.length > 0 ? merged : null);
       } catch {
         if (!controller.signal.aborted) setFlight(null);
       }
