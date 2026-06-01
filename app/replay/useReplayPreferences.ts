@@ -8,6 +8,7 @@ const VIEW_MODE_KEY = "gpxReplay.viewMode";
 const LEGACY_AUTO_CAMERA_KEY = "gpxReplay.autoCamera";
 const MAP_STYLE_KEY = "gpxReplay.mapStyle";
 const SHOW_TRACK_KEY = "gpxReplay.showTrack";
+const SHOW_WALL_KEY = "gpxReplay.showWall";
 const CHASE_DISTANCE_KEY = "gpxReplay.chaseDistance";
 
 /**
@@ -92,6 +93,34 @@ export function usePersistedShowTrack(): [boolean, (value: boolean) => void] {
   }, [showTrack]);
 
   return [showTrack, setShowTrack];
+}
+
+/**
+ * Whether the translucent altitude wall is shown, persisted to localStorage
+ * (default off). A `wall` URL param ("1"/"0") wins and suppresses the stored
+ * value, so shared links honor the sender's choice. Same SSR-safe
+ * mount-hydration approach as {@link usePersistedViewMode}.
+ */
+export function usePersistedShowWall(urlParam: string | null): [boolean, (value: boolean) => void] {
+  const fromUrl = urlParam === "1" || urlParam === "true";
+  const [showWall, setShowWall] = useState(urlParam === "1" || urlParam === "0" ? fromUrl : false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (urlParam === "1" || urlParam === "0") return; // URL wins
+    const stored = window.localStorage.getItem(SHOW_WALL_KEY);
+    if (stored === null) return;
+    // One-shot hydration from an external store on mount (see note above).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setShowWall(stored === "true");
+  }, [urlParam]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(SHOW_WALL_KEY, String(showWall));
+  }, [showWall]);
+
+  return [showWall, setShowWall];
 }
 
 /** Bounds for the user-adjustable chase camera distance (metres behind). */

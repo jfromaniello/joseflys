@@ -54,6 +54,8 @@ interface GpxReplayGlobeProps {
   canvasRef?: MutableRefObject<HTMLCanvasElement | null>;
   /** Whether the cyan track polyline is rendered. */
   showTrack?: boolean;
+  /** Whether a translucent altitude wall is drawn from the track down to the ground. */
+  showWall?: boolean;
   /** Chase camera distance in metres behind the aircraft. */
   chaseDistanceM?: number;
   /** Receives an imperative controller for deterministic frame-by-frame capture. */
@@ -85,6 +87,7 @@ export function GpxReplayGlobe({
   requestOrientationRef,
   canvasRef,
   showTrack = true,
+  showWall = false,
   chaseDistanceM = DEFAULT_CHASE_RANGE_M,
   captureControlRef,
   headTrackingEnabled = false,
@@ -93,6 +96,8 @@ export function GpxReplayGlobe({
   const viewerRef = useRef<import("cesium").Viewer | null>(null);
   const cesiumRef = useRef<typeof import("cesium") | null>(null);
   const replayLineRef = useRef<import("cesium").Entity | null>(null);
+  const wallEntityRef = useRef<import("cesium").Entity | null>(null);
+  const minEleRef = useRef<number>(0);
   const currentMarkerRef = useRef<import("cesium").Entity | null>(null);
   const renderedPathRef = useRef<import("cesium").Cartesian3[]>([]);
   const markerPositionRef = useRef<import("cesium").Cartesian3 | null>(null);
@@ -294,6 +299,10 @@ export function GpxReplayGlobe({
     markerPositionRef.current = null;
     lastRenderedIndexRef.current = -1;
     altitudeOffsetRef.current = 0;
+    minEleRef.current = safePoints.reduce(
+      (min, p) => (p.ele < min ? p.ele : min),
+      safePoints[0]?.ele ?? 0
+    );
   }, [safePoints]);
 
   useEffect(() => {
@@ -421,6 +430,20 @@ export function GpxReplayGlobe({
           )
         );
 
+        wallEntityRef.current = viewer.entities.add({
+          name: "Altitude Wall",
+          show: false, // set by the showWall toggle effect once ready
+          wall: {
+            positions: new Cesium.CallbackProperty(() => renderedPathRef.current, false),
+            minimumHeights: new Cesium.CallbackProperty(() => {
+              const floor = getAdjustedAltitude(minEleRef.current) - 5;
+              return new Array(renderedPathRef.current.length).fill(floor);
+            }, false),
+            material: Cesium.Color.fromCssColorString("#22d3ee").withAlpha(0.35),
+            outline: false,
+          },
+        });
+
         replayLineRef.current = viewer.entities.add({
           name: "Replay Track",
           polyline: {
@@ -522,6 +545,7 @@ export function GpxReplayGlobe({
         viewerRef.current = null;
       }
       replayLineRef.current = null;
+      wallEntityRef.current = null;
       currentMarkerRef.current = null;
       googleTilesetRef.current = null;
       if (canvasRef) canvasRef.current = null;
@@ -755,6 +779,12 @@ export function GpxReplayGlobe({
     if (!viewerReady) return;
     if (replayLineRef.current) replayLineRef.current.show = showTrack;
   }, [showTrack, viewerReady]);
+
+  useEffect(() => {
+    if (!viewerReady) return;
+    if (wallEntityRef.current) wallEntityRef.current.show = showWall;
+    viewerRef.current?.scene.requestRender();
+  }, [showWall, viewerReady]);
 
   // Imperative controller for deterministic ("Sharp") capture: positions the
   // aircraft + camera directly per time (no flyTo/damping) and waits for tiles.

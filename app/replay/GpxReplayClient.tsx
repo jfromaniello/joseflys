@@ -33,6 +33,7 @@ import {
   usePersistedChaseDistance,
   usePersistedMapStyle,
   usePersistedShowTrack,
+  usePersistedShowWall,
   usePersistedViewMode,
 } from "./useReplayPreferences";
 import { useReplayRecorder } from "./useReplayRecorder";
@@ -76,6 +77,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
   const initialViewParam = searchParams.get("view");
   const initialCamParam = searchParams.get("cam");
   const initialCdParam = searchParams.get("cd");
+  const initialWallParam = searchParams.get("wall");
 
   const initialElapsedMs = useMemo(() => {
     const parsed = initialTParam ? Number.parseInt(initialTParam, 10) : 0;
@@ -123,6 +125,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
   const [viewMode, setViewMode] = usePersistedViewMode(initialViewParam);
   const [mapStyle, setMapStyle] = usePersistedMapStyle(HAS_GOOGLE_MAPS_KEY);
   const [showTrack, setShowTrack] = usePersistedShowTrack();
+  const [showWall, setShowWall] = usePersistedShowWall(initialWallParam);
   const [chaseDistance, setChaseDistance] = usePersistedChaseDistance(initialChaseDistance);
 
   // Switching away from cockpit always disables head-tracking. Head-tracking can
@@ -315,6 +318,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
         viewMode,
         camera: cameraStateRef.current,
         chaseDistance,
+        showWall,
       });
       setShareUrl(finalUrl);
       try {
@@ -328,7 +332,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
       console.error(err);
       setShareStatus("error");
     }
-  }, [rawGpx, clampedElapsedMs, speed, shareStatus, viewMode, chaseDistance]);
+  }, [rawGpx, clampedElapsedMs, speed, shareStatus, viewMode, chaseDistance, showWall]);
 
   const canShare = points.length >= 2 && rawGpx.length > 0;
   const hasTrack = points.length > 0;
@@ -405,6 +409,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
                     headTrackingEnabled={headTrackingEnabled}
                     canvasRef={globeCanvasRef}
                     showTrack={showTrack}
+                    showWall={showWall}
                     chaseDistanceM={chaseDistance}
                     captureControlRef={captureControlRef}
                   />
@@ -442,6 +447,8 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
                   onHeadTrackingToggle={() => void handleHeadTrackingToggle()}
                   showTrack={showTrack}
                   onShowTrackChange={setShowTrack}
+                  showWall={showWall}
+                  onShowWallChange={setShowWall}
                   chaseDistance={chaseDistance}
                   onChaseDistanceChange={setChaseDistance}
                 />
@@ -557,6 +564,8 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
           onStart={(opts) => recorder.startRecording(opts)}
           onClose={handleCloseRecordModal}
           onCancel={() => recorder.reset()}
+          speed={speed}
+          onSpeedChange={setSpeed}
           viewMode={viewMode}
           onViewModeChange={changeViewMode}
           showTrack={showTrack}

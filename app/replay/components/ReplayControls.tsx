@@ -35,6 +35,8 @@ interface ReplayControlsProps {
   onHeadTrackingToggle: () => void;
   showTrack: boolean;
   onShowTrackChange: (value: boolean) => void;
+  showWall: boolean;
+  onShowWallChange: (value: boolean) => void;
   chaseDistance: number;
   onChaseDistanceChange: (value: number) => void;
 }
@@ -84,6 +86,8 @@ export function ReplayControls({
   onHeadTrackingToggle,
   showTrack,
   onShowTrackChange,
+  showWall,
+  onShowWallChange,
   chaseDistance,
   onChaseDistanceChange,
 }: ReplayControlsProps) {
@@ -308,6 +312,27 @@ export function ReplayControls({
                   <span
                     className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${
                       showTrack ? "left-[1.125rem]" : "left-0.5"
+                    }`}
+                  />
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onShowWallChange(!showWall)}
+                className="mt-2.5 flex w-full items-center justify-between cursor-pointer"
+              >
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                  Altitude wall
+                </span>
+                <span
+                  className={`relative h-5 w-9 rounded-full transition-colors ${
+                    showWall ? "bg-cyan-500" : "bg-slate-600"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${
+                      showWall ? "left-[1.125rem]" : "left-0.5"
                     }`}
                   />
                 </span>

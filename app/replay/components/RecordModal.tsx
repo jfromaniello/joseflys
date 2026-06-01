@@ -15,6 +15,9 @@ interface RecordModalProps {
   onClose: () => void;
   /** Aborts an in-progress recording and returns to the options screen. */
   onCancel: () => void;
+  /** Live playback speed (shared with the gear menu). */
+  speed: SpeedOption;
+  onSpeedChange: (speed: SpeedOption) => void;
   /** Live camera mode (set up the shot from here). */
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
@@ -25,8 +28,6 @@ interface RecordModalProps {
   chaseDistance: number;
   onChaseDistanceChange: (value: number) => void;
 }
-
-const DEFAULT_SPEED: SpeedOption = 50;
 
 function Toggle({ label, on, onToggle }: { label: string; on: boolean; onToggle: () => void }) {
   return (
@@ -53,6 +54,8 @@ export function RecordModal({
   onStart,
   onClose,
   onCancel,
+  speed,
+  onSpeedChange,
   viewMode,
   onViewModeChange,
   showTrack,
@@ -60,7 +63,6 @@ export function RecordModal({
   chaseDistance,
   onChaseDistanceChange,
 }: RecordModalProps) {
-  const [speed, setSpeed] = useState<SpeedOption>(DEFAULT_SPEED);
   const [showTelemetry, setShowTelemetry] = useState(true);
   const [quality, setQuality] = useState<RecordQuality>("sharp");
 
@@ -192,7 +194,7 @@ export function RecordModal({
                   <button
                     key={option}
                     type="button"
-                    onClick={() => setSpeed(option)}
+                    onClick={() => onSpeedChange(option)}
                     className={`px-2 py-1.5 rounded text-xs font-medium cursor-pointer transition-colors ${
                       speed === option ? "bg-cyan-500 text-slate-950" : "text-gray-300 hover:bg-slate-700"
                     }`}

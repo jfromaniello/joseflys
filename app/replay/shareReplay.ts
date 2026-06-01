@@ -13,6 +13,8 @@ interface ShareOptions {
   camera: CameraPose | null;
   /** Chase camera distance (metres). */
   chaseDistance: number;
+  /** Whether the altitude wall overlay is on. */
+  showWall: boolean;
 }
 
 /**
@@ -38,6 +40,7 @@ export async function createShareUrl(rawGpx: string, options: ShareOptions): Pro
   url.searchParams.set("speed", String(options.speed));
   url.searchParams.set("view", options.viewMode);
   url.searchParams.set("cd", String(Math.round(options.chaseDistance)));
+  url.searchParams.set("wall", options.showWall ? "1" : "0");
   if (options.camera) {
     url.searchParams.set("cam", serializeCamera(options.camera));
   }
