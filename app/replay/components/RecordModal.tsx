@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { SPEED_OPTIONS, VIEW_MODE_OPTIONS, type SpeedOption, type ViewMode } from "../types";
-import type { RecordingStatus, RecordOptions } from "../useReplayRecorder";
+import type { RecordingStatus, RecordOptions, RecordQuality } from "../useReplayRecorder";
 
 interface RecordModalProps {
   status: RecordingStatus;
@@ -53,6 +53,7 @@ export function RecordModal({
 }: RecordModalProps) {
   const [speed, setSpeed] = useState<SpeedOption>(DEFAULT_SPEED);
   const [showTelemetry, setShowTelemetry] = useState(true);
+  const [quality, setQuality] = useState<RecordQuality>("sharp");
 
   const busy = status === "recording" || status === "encoding";
 
@@ -169,6 +170,34 @@ export function RecordModal({
               </div>
             </div>
 
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                Quality
+              </div>
+              <div className="grid grid-cols-2 gap-1 rounded-md bg-slate-800/60 p-0.5">
+                {([
+                  { value: "sharp", label: "Sharp" },
+                  { value: "fast", label: "Fast" },
+                ] as const).map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setQuality(opt.value)}
+                    className={`px-2 py-1.5 rounded text-xs font-medium cursor-pointer transition-colors ${
+                      quality === opt.value ? "bg-cyan-500 text-slate-950" : "text-gray-300 hover:bg-slate-700"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-1.5 text-[11px] text-slate-400 leading-tight">
+                {quality === "sharp"
+                  ? "Waits for terrain tiles to load each frame — crisp, but takes longer."
+                  : "Real-time capture — quick, but fast terrain may look blurry while tiles load."}
+              </p>
+            </div>
+
             <div className="space-y-2.5 border-t border-slate-700 pt-3">
               <Toggle label="Telemetry HUD" on={showTelemetry} onToggle={() => setShowTelemetry((v) => !v)} />
               <Toggle label="Track line" on={showTrack} onToggle={() => onShowTrackChange(!showTrack)} />
@@ -176,7 +205,7 @@ export function RecordModal({
 
             <button
               type="button"
-              onClick={() => onStart({ speed, showTelemetry })}
+              onClick={() => onStart({ speed, showTelemetry, quality })}
               className="w-full rounded-md px-4 py-2.5 text-sm font-semibold cursor-pointer transition-colors bg-red-600 hover:bg-red-500 text-white"
             >
               Start recording

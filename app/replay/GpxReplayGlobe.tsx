@@ -14,11 +14,22 @@ import {
   computeCameraPose,
   computeMotionHeadingAdaptive,
   findActiveCamMode,
+  findIndexAtTime,
   getInterpolatedPoint,
   lerpAngle,
   type CamEvent,
   type CamMode,
 } from "./cameraMath";
+
+/** Imperative controller used by the recorder for deterministic ("Sharp") capture. */
+export interface CaptureControl {
+  /** Enters capture mode (suspends the live camera follow, resets the trail). */
+  begin: () => void;
+  /** Positions the aircraft + camera at `timeMs` and waits until tiles are loaded. */
+  frameAtTime: (timeMs: number) => Promise<void>;
+  /** Leaves capture mode and restores live behavior. */
+  end: () => void;
+}
 
 type DeviceOrientationEventWithPermission = typeof DeviceOrientationEvent & {
   requestPermission?: () => Promise<"granted" | "denied" | "prompt">;
@@ -41,6 +52,8 @@ interface GpxReplayGlobeProps {
   canvasRef?: MutableRefObject<HTMLCanvasElement | null>;
   /** Whether the cyan track polyline is rendered. */
   showTrack?: boolean;
+  /** Receives an imperative controller for deterministic frame-by-frame capture. */
+  captureControlRef?: MutableRefObject<CaptureControl | null>;
 }
 
 const CESIUM_ION_TOKEN = process.env.NEXT_PUBLIC_CESIUM_ION_TOKEN;
@@ -60,6 +73,7 @@ export function GpxReplayGlobe({
   requestOrientationRef,
   canvasRef,
   showTrack = true,
+  captureControlRef,
   headTrackingEnabled = false,
 }: GpxReplayGlobeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -78,6 +92,7 @@ export function GpxReplayGlobe({
   const camEventsRef = useRef<CamEvent[]>([]);
   const camCurrentModeRef = useRef<CamMode | null>(null);
   const camIsFlyingRef = useRef<boolean>(false);
+  const captureModeRef = useRef<boolean>(false);
   const viewModeRef = useRef<ViewMode>(viewMode);
   const onInterruptRef = useRef<(() => void) | undefined>(onViewModeInterrupt);
   const altitudeOffsetRef = useRef<number>(0);
@@ -698,6 +713,123 @@ export function GpxReplayGlobe({
     if (replayLineRef.current) replayLineRef.current.show = showTrack;
   }, [showTrack, viewerReady]);
 
+  // Imperative controller for deterministic ("Sharp") capture: positions the
+  // aircraft + camera directly per time (no flyTo/damping) and waits for tiles.
+  useEffect(() => {
+    if (!viewerReady || !captureControlRef) return;
+
+    const adjustAlt = (ele: number) => Math.max(0, (ele || 0) + altitudeOffsetRef.current);
+
+    const positionAt = (timeMs: number) => {
+      const Cesium = cesiumRef.current;
+      const pts = safePointsRef.current;
+      if (!Cesium || pts.length < 2) return;
+      const index = findIndexAtTime(pts, timeMs);
+      const interpolated = getInterpolatedPoint(pts, index, timeMs);
+      if (!interpolated) return;
+
+      const targetBaseIndex = Math.max(0, Math.min(index, pts.length - 1));
+      const lastRendered = lastRenderedIndexRef.current;
+      if (lastRendered === -1 || targetBaseIndex < lastRendered) {
+        const next: import("cesium").Cartesian3[] = [];
+        for (let i = 0; i <= targetBaseIndex; i += 1) {
+          next.push(Cesium.Cartesian3.fromDegrees(pts[i].lon, pts[i].lat, adjustAlt(pts[i].ele)));
+        }
+        renderedPathRef.current = next;
+      } else if (targetBaseIndex > lastRendered) {
+        for (let i = lastRendered + 1; i <= targetBaseIndex; i += 1) {
+          renderedPathRef.current.push(Cesium.Cartesian3.fromDegrees(pts[i].lon, pts[i].lat, adjustAlt(pts[i].ele)));
+        }
+      }
+      lastRenderedIndexRef.current = targetBaseIndex;
+
+      markerPositionRef.current = Cesium.Cartesian3.fromDegrees(
+        interpolated.lon,
+        interpolated.lat,
+        Math.max(10, (interpolated.ele || 0) + altitudeOffsetRef.current)
+      );
+    };
+
+    const cameraAt = (timeMs: number) => {
+      const Cesium = cesiumRef.current;
+      const viewer = viewerRef.current;
+      if (!Cesium || !viewer || viewModeRef.current === "free") return;
+      const aircraft = markerPositionRef.current;
+      const pts = safePointsRef.current;
+      if (!aircraft || pts.length < 2) return;
+
+      const heading =
+        computeMotionHeadingAdaptive(pts, timeMs, 150, 30000) ??
+        lastValidHeadingRef.current ??
+        viewer.camera.heading;
+      lastValidHeadingRef.current = heading;
+
+      const mode: CamMode =
+        viewModeRef.current === "cockpit" ? "cockpit" : findActiveCamMode(camEventsRef.current, timeMs);
+      const pose = computeCameraPose(
+        Cesium,
+        mode,
+        aircraft,
+        heading,
+        boundingSphereRef.current,
+        cockpitHeadingOffsetRef.current,
+        cockpitPitchOffsetRef.current
+      );
+      viewer.camera.setView({
+        destination: pose.destination,
+        orientation: { heading: pose.heading, pitch: pose.pitch, roll: 0 },
+      });
+    };
+
+    // Resolves once imagery/terrain finish streaming (or after a safety cap),
+    // then one extra frame so the fully-loaded render has painted.
+    const waitForTiles = () =>
+      new Promise<void>((resolve) => {
+        const viewer = viewerRef.current;
+        if (!viewer) {
+          resolve();
+          return;
+        }
+        let frames = 0;
+        const check = () => {
+          frames += 1;
+          if (viewer.scene.globe.tilesLoaded || frames > 120) {
+            viewer.scene.requestRender();
+            requestAnimationFrame(() => resolve());
+            return;
+          }
+          viewer.scene.requestRender();
+          requestAnimationFrame(check);
+        };
+        requestAnimationFrame(check);
+      });
+
+    captureControlRef.current = {
+      begin: () => {
+        captureModeRef.current = true;
+        lastValidHeadingRef.current = null;
+        lastRenderedIndexRef.current = -1;
+        renderedPathRef.current = [];
+        if (currentMarkerRef.current) {
+          currentMarkerRef.current.show = viewModeRef.current !== "cockpit";
+        }
+      },
+      frameAtTime: async (timeMs: number) => {
+        positionAt(timeMs);
+        cameraAt(timeMs);
+        await waitForTiles();
+      },
+      end: () => {
+        captureModeRef.current = false;
+      },
+    };
+
+    return () => {
+      captureControlRef.current = null;
+      captureModeRef.current = false;
+    };
+  }, [viewerReady, captureControlRef]);
+
   useEffect(() => {
     const viewer = viewerRef.current;
     const Cesium = cesiumRef.current;
@@ -715,6 +847,8 @@ export function GpxReplayGlobe({
     }
 
     const onPreRender = () => {
+      // During deterministic capture the recorder positions the camera itself.
+      if (captureModeRef.current) return;
       const currentViewMode = viewModeRef.current;
       if (currentViewMode === "free") return;
       if (camIsFlyingRef.current) return;

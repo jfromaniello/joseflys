@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
+import type { CaptureControl } from "./GpxReplayGlobe";
 import { PageLayout } from "../components/PageLayout";
 import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
 import { Footer } from "../components/Footer";
@@ -98,6 +99,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
   const lastTickRef = useRef<number | null>(null);
   const initialGpxAppliedRef = useRef(false);
   const globeCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const captureControlRef = useRef<CaptureControl | null>(null);
 
   const { isFullscreen, wrapperRef: fullscreenWrapperRef, toggleFullscreen } = useFullscreen();
   const [viewMode, setViewMode] = usePersistedViewMode(initialViewParam);
@@ -178,6 +180,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
     durationMs: timeline.durationMs,
     setElapsedMs,
     setIsPlaying,
+    captureControlRef,
   });
 
   const handleRecord = useCallback(() => {
@@ -369,6 +372,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
                     headTrackingEnabled={headTrackingEnabled}
                     canvasRef={globeCanvasRef}
                     showTrack={showTrack}
+                    captureControlRef={captureControlRef}
                   />
                 </div>
 
