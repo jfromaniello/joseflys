@@ -114,7 +114,8 @@ function renderImage(stats: GpxStats | null) {
           width: "100%",
           display: "flex",
           flexDirection: "column",
-          justifyContent: "space-between",
+          justifyContent: "center",
+          gap: "56px",
           background: "linear-gradient(to bottom right, #0f172a 0%, #172554 50%, #0f172a 100%)",
           fontFamily: "system-ui, sans-serif",
           padding: "64px",
@@ -181,8 +182,6 @@ function renderImage(stats: GpxStats | null) {
             </div>
           ) : null}
         </div>
-
-        <div style={{ fontSize: "28px", color: "#64748b" }}>José&apos;s Aviation Tools · 3D GPX Replay</div>
       </div>
     ),
     { ...size }
