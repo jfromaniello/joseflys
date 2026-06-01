@@ -1,0 +1,480 @@
+/**
+ * Traffic-pattern (circuit) analysis for a GPX replay.
+ *
+ * Given a track and the departure/arrival aerodrome (runway orientation, field
+ * elevation, optional published turn side), this classifies each moment near
+ * the field into a circuit leg — taxi, takeoff/upwind, crosswind, downwind,
+ * base ("básica"), final, landing — and derives learning metrics: the runway in
+ * use, the pattern direction (left/right) versus the published one, the pattern
+ * altitude flown versus the standard, and each approach's glide angle, touchdown
+ * point, and speed on final.
+ *
+ * All geometry is pure and works in TRUE headings. The caller is responsible for
+ * resolving the aerodrome (ANAC for Argentina, the global dataset otherwise) and
+ * normalizing it into {@link PatternAerodrome}.
+ */
+
+import { computeMotionHeadingAdaptive } from "./cameraMath";
+import { computeVerticalSpeedFpm, findPointIndexByTime } from "./replayMetrics";
+import type { ReplayPoint } from "./types";
+
+const METERS_TO_FEET = 3.28084;
+const STANDARD_PATTERN_ALTITUDE_FT_AGL = 1000;
+
+/** Distance from the field within which we attempt to classify circuit legs. */
+const PATTERN_RADIUS_M = 9260; // ~5 NM
+/** AGL ceiling above which the aircraft is considered to have left the circuit. */
+const PATTERN_CEILING_FT_AGL = 1800;
+/** AGL at/below which the aircraft is treated as on the ground. */
+const GROUND_AGL_FT = 35;
+
+/** One landing direction of a runway. */
+export interface PatternRunwayEnd {
+  /** Threshold designator, e.g. "05" or "23". */
+  id: string;
+  /** Landing/takeoff heading in TRUE degrees [0, 360). */
+  headingTrueDeg: number;
+  /** Threshold latitude, if known (global dataset). Falls back to field center. */
+  thresholdLat?: number | null;
+  /** Threshold longitude, if known. */
+  thresholdLon?: number | null;
+}
+
+/** A resolved aerodrome, normalized across data sources. */
+export interface PatternAerodrome {
+  source: "anac" | "global";
+  code: string;
+  name: string;
+  /** Reference point (field center). */
+  lat: number;
+  lon: number;
+  /** Field elevation in feet AMSL. */
+  elevationFt: number;
+  /** Runway ends (each landing direction). */
+  runwayEnds: PatternRunwayEnd[];
+  /** Runway length in feet, if known. */
+  lengthFt?: number | null;
+  /**
+   * Compass direction (TRUE degrees) toward which the published circuit turns,
+   * parsed from the AIP norms (e.g. "virajes al NW" → 315). Used to derive the
+   * published pattern side. Null when unknown.
+   */
+  publishedTurnDirectionDeg?: number | null;
+}
+
+/** Circuit legs, in roughly chronological order around the pattern. */
+export type CircuitPhase =
+  | "taxi"
+  | "takeoff"
+  | "upwind"
+  | "crosswind"
+  | "downwind"
+  | "base"
+  | "final"
+  | "landing"
+  | "maneuvering";
+
+/** A contiguous run of one phase. */
+export interface CircuitSegment {
+  phase: CircuitPhase;
+  startMs: number;
+  endMs: number;
+  /** Index range into the source points (inclusive). */
+  startIndex: number;
+  endIndex: number;
+}
+
+/** A detected approach/landing and its quality metrics. */
+export interface ApproachMetrics {
+  /** Timestamp of the lowest point (touchdown or low pass). */
+  timeMs: number;
+  /** Glide angle on final in degrees (descent vs ground distance). */
+  glideAngleDeg: number | null;
+  /** Lowest AGL reached, in feet. */
+  minAglFt: number;
+  /** Along-runway distance from the threshold to the low point, in feet. */
+  touchdownFromThresholdFt: number | null;
+  /** Ground speed near the low point, in knots. */
+  finalSpeedKt: number | null;
+  /** Whether the aircraft actually reached the ground (vs a low/go-around). */
+  touched: boolean;
+}
+
+export interface CircuitAnalysis {
+  aerodrome: PatternAerodrome;
+  /** The runway end in use, chosen from observed takeoff/landing tracks. */
+  activeRunway: PatternRunwayEnd;
+  /** Pattern direction actually flown. */
+  flownSide: "left" | "right" | null;
+  /** Pattern direction published in the AIP (when known). */
+  publishedSide: "left" | "right" | null;
+  /** Median AGL (ft) flown on downwind, the de-facto pattern altitude. */
+  patternAltitudeFtAgl: number | null;
+  /** Standard pattern altitude for comparison (1000 ft AGL). */
+  standardPatternAltitudeFtAgl: number;
+  /** Chronological circuit legs (for timeline chips). */
+  segments: CircuitSegment[];
+  /** Detected approaches/landings. */
+  approaches: ApproachMetrics[];
+}
+
+/** Per-point features in the runway-relative frame. */
+interface PointFeature {
+  index: number;
+  timeMs: number;
+  distM: number;
+  aglFt: number;
+  /** Track over ground (TRUE degrees) or null when stationary. */
+  trackDeg: number | null;
+  vsFpm: number | null;
+  /** Along-runway distance (m), positive toward the active heading. */
+  along: number;
+  /** Cross-track offset (m), positive to the RIGHT of the active heading. */
+  cross: number;
+}
+
+const toRad = (d: number) => (d * Math.PI) / 180;
+const toDeg = (r: number) => (r * 180) / Math.PI;
+const norm360 = (d: number) => ((d % 360) + 360) % 360;
+
+/** Signed shortest difference b−a in degrees, within (−180, 180]. */
+function angleDelta(a: number, b: number): number {
+  return ((b - a + 540) % 360) - 180;
+}
+
+/** East/north offset in meters from `origin` to `p` (local tangent plane). */
+function offsetMeters(
+  origin: { lat: number; lon: number },
+  p: { lat: number; lon: number }
+): { east: number; north: number } {
+  const R = 6371000;
+  const lat0 = toRad(origin.lat);
+  const east = toRad(p.lon - origin.lon) * Math.cos(lat0) * R;
+  const north = toRad(p.lat - origin.lat) * R;
+  return { east, north };
+}
+
+function distanceMeters(
+  a: { lat: number; lon: number },
+  b: { lat: number; lon: number }
+): number {
+  const { east, north } = offsetMeters(a, b);
+  return Math.hypot(east, north);
+}
+
+/**
+ * Picks the runway end in use from the tracks observed during low-altitude
+ * operations (takeoff/landing): the end whose true heading best matches the
+ * average operational track. Returns null if no usable runways.
+ */
+function selectActiveRunway(
+  features: PointFeature[],
+  aerodrome: PatternAerodrome
+): PatternRunwayEnd | null {
+  const ends = aerodrome.runwayEnds;
+  if (ends.length === 0) return null;
+  if (ends.length === 1) return ends[0];
+
+  // Tracks while low and close to the field — the runway alignment moments.
+  const opsTracks = features
+    .filter((f) => f.aglFt < 500 && f.distM < 2500 && f.trackDeg !== null)
+    .map((f) => f.trackDeg as number);
+
+  if (opsTracks.length === 0) return ends[0];
+
+  let best = ends[0];
+  let bestScore = Infinity;
+  for (const end of ends) {
+    // Mean absolute alignment error of ops tracks to this landing heading.
+    const score =
+      opsTracks.reduce((sum, t) => sum + Math.abs(angleDelta(end.headingTrueDeg, t)), 0) /
+      opsTracks.length;
+    if (score < bestScore) {
+      bestScore = score;
+      best = end;
+    }
+  }
+  return best;
+}
+
+/** Builds per-point features in the active runway's reference frame. */
+function buildFeatures(
+  points: ReplayPoint[],
+  aerodrome: PatternAerodrome,
+  headingTrueDeg: number
+): PointFeature[] {
+  const axisRad = toRad(headingTrueDeg);
+  // Unit vectors in (east, north): along = landing direction, right = +90°.
+  const alongE = Math.sin(axisRad);
+  const alongN = Math.cos(axisRad);
+  const rightE = Math.cos(axisRad);
+  const rightN = -Math.sin(axisRad);
+
+  const out: PointFeature[] = [];
+  for (let i = 0; i < points.length; i += 1) {
+    const p = points[i];
+    const { east, north } = offsetMeters(aerodrome, p);
+    out.push({
+      index: i,
+      timeMs: p.timeMs,
+      distM: Math.hypot(east, north),
+      aglFt: p.ele * METERS_TO_FEET - aerodrome.elevationFt,
+      trackDeg: nullableTrack(points, p.timeMs),
+      vsFpm: computeVerticalSpeedFpm(points, findPointIndexByTime(points, p.timeMs), p.timeMs),
+      along: east * alongE + north * alongN,
+      cross: east * rightE + north * rightN,
+    });
+  }
+  return out;
+}
+
+function nullableTrack(points: ReplayPoint[], timeMs: number): number | null {
+  const rad = computeMotionHeadingAdaptive(points, timeMs, 150, 30000);
+  return rad === null ? null : norm360(toDeg(rad));
+}
+
+/**
+ * Classifies a single point into a circuit phase relative to the active runway
+ * heading `H` (true). `H` points in the landing direction.
+ */
+function classifyPoint(f: PointFeature, headingTrueDeg: number): CircuitPhase {
+  if (f.distM > PATTERN_RADIUS_M || f.aglFt > PATTERN_CEILING_FT_AGL) {
+    return "maneuvering";
+  }
+  if (f.aglFt <= GROUND_AGL_FT) {
+    return f.distM < 1200 ? "taxi" : "maneuvering";
+  }
+  if (f.trackDeg === null) return "maneuvering";
+
+  const rel = angleDelta(headingTrueDeg, f.trackDeg); // −180..180, 0 = aligned with landing
+  const absRel = Math.abs(rel);
+  const climbing = (f.vsFpm ?? 0) > 150;
+  const descending = (f.vsFpm ?? 0) < -150;
+
+  // Aligned with the landing direction.
+  if (absRel < 45) {
+    // Before the threshold and descending → final; past the field & climbing → upwind.
+    if (descending && f.along < 0 && f.aglFt < PATTERN_CEILING_FT_AGL) return "final";
+    if (f.aglFt < GROUND_AGL_FT * 4 && descending) return "final";
+    return "upwind";
+  }
+  // Opposite the landing direction → downwind.
+  if (absRel > 135) {
+    return "downwind";
+  }
+  // Perpendicular: crosswind (after departure, climbing) vs base (before final, descending).
+  if (descending) return "base";
+  if (climbing) return "crosswind";
+  // Ambiguous perpendicular leg: use along-track position as the tiebreaker.
+  return f.along > 0 ? "crosswind" : "base";
+}
+
+/** Merges consecutive equal-phase points into segments, dropping brief blips. */
+function segmentize(
+  features: PointFeature[],
+  phases: CircuitPhase[],
+  minDurationMs: number
+): CircuitSegment[] {
+  const raw: CircuitSegment[] = [];
+  for (let i = 0; i < features.length; i += 1) {
+    const phase = phases[i];
+    const last = raw[raw.length - 1];
+    if (last && last.phase === phase) {
+      last.endMs = features[i].timeMs;
+      last.endIndex = features[i].index;
+    } else {
+      raw.push({
+        phase,
+        startMs: features[i].timeMs,
+        endMs: features[i].timeMs,
+        startIndex: features[i].index,
+        endIndex: features[i].index,
+      });
+    }
+  }
+
+  // Absorb too-short segments into the previous one (noise suppression).
+  const merged: CircuitSegment[] = [];
+  for (const seg of raw) {
+    const prev = merged[merged.length - 1];
+    const short = seg.endMs - seg.startMs < minDurationMs;
+    if (prev && short) {
+      prev.endMs = seg.endMs;
+      prev.endIndex = seg.endIndex;
+    } else if (prev && prev.phase === seg.phase) {
+      prev.endMs = seg.endMs;
+      prev.endIndex = seg.endIndex;
+    } else {
+      merged.push({ ...seg });
+    }
+  }
+  return merged;
+}
+
+/**
+ * Determines the turn direction flown around the circuit. Left traffic = left
+ * (counterclockwise) turns = net negative heading change while maneuvering near
+ * the field. Returns null if there isn't enough turning to tell.
+ */
+function detectFlownSide(features: PointFeature[]): "left" | "right" | null {
+  const inPattern = features.filter(
+    (f) => f.distM < PATTERN_RADIUS_M && f.aglFt > GROUND_AGL_FT && f.aglFt < PATTERN_CEILING_FT_AGL && f.trackDeg !== null
+  );
+  let net = 0;
+  let total = 0;
+  for (let i = 1; i < inPattern.length; i += 1) {
+    const dt = inPattern[i].timeMs - inPattern[i - 1].timeMs;
+    if (dt <= 0 || dt > 15000) continue; // skip gaps between separate circuits
+    const d = angleDelta(inPattern[i - 1].trackDeg as number, inPattern[i].trackDeg as number);
+    net += d;
+    total += Math.abs(d);
+  }
+  if (total < 180) return null;
+  return net < 0 ? "left" : "right";
+}
+
+/** Derives the published pattern side from the published turn direction. */
+function publishedSideFrom(
+  aerodrome: PatternAerodrome,
+  headingTrueDeg: number
+): "left" | "right" | null {
+  const dir = aerodrome.publishedTurnDirectionDeg;
+  if (dir == null) return null;
+  // A turn direction to the left of the landing heading ⇒ left-hand circuit.
+  return angleDelta(headingTrueDeg, dir) < 0 ? "left" : "right";
+}
+
+/** Median of a numeric array (returns null when empty). */
+function median(values: number[]): number | null {
+  if (values.length === 0) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+/**
+ * Finds approaches: local AGL minima near the field, each scored for glide
+ * angle, touchdown position relative to the threshold, and final speed.
+ */
+function detectApproaches(
+  points: ReplayPoint[],
+  features: PointFeature[],
+  aerodrome: PatternAerodrome,
+  activeRunway: PatternRunwayEnd
+): ApproachMetrics[] {
+  const approaches: ApproachMetrics[] = [];
+
+  // Candidate low points: AGL minima within 1.5 km of the field.
+  for (let i = 1; i < features.length - 1; i += 1) {
+    const f = features[i];
+    if (f.distM > 1500) continue;
+    if (f.aglFt > 150) continue;
+    const isLocalMin =
+      f.aglFt <= features[i - 1].aglFt && f.aglFt <= features[i + 1].aglFt;
+    if (!isLocalMin) continue;
+
+    // Must arrive from the air (descended from the pattern), not be taxiing or
+    // a takeoff roll: require recent altitude and a flying ground speed.
+    const finalSpeedKt = speedKtNear(points, f.index);
+    if (finalSpeedKt == null || finalSpeedKt < 25) continue;
+    let recentMaxAgl = 0;
+    for (let k = i - 1; k >= 0 && f.timeMs - features[k].timeMs < 90000; k -= 1) {
+      if (features[k].aglFt > recentMaxAgl) recentMaxAgl = features[k].aglFt;
+    }
+    if (recentMaxAgl < 300) continue;
+
+    // De-dupe minima that are within 20s of the previous approach.
+    if (approaches.length && f.timeMs - approaches[approaches.length - 1].timeMs < 20000) {
+      continue;
+    }
+
+    // Glide angle: descent vs ground distance over the ~30s leading up to it.
+    const startMs = f.timeMs - 30000;
+    let s = i;
+    while (s > 0 && features[s].timeMs > startMs && features[s].aglFt < PATTERN_CEILING_FT_AGL) {
+      s -= 1;
+    }
+    const altLostFt = features[s].aglFt - f.aglFt;
+    const groundM = distanceMeters(points[features[s].index], points[f.index]);
+    const glideAngleDeg =
+      groundM > 50 && altLostFt > 0
+        ? toDeg(Math.atan2(altLostFt / METERS_TO_FEET, groundM))
+        : null;
+
+    // Touchdown position: along-runway distance from the threshold.
+    const thresholdAlong = aerodrome.lengthFt
+      ? -(aerodrome.lengthFt / METERS_TO_FEET) / 2
+      : 0;
+    const touchdownFromThresholdFt =
+      aerodrome.lengthFt != null ? (f.along - thresholdAlong) * METERS_TO_FEET : null;
+
+    approaches.push({
+      timeMs: f.timeMs,
+      glideAngleDeg,
+      minAglFt: f.aglFt,
+      touchdownFromThresholdFt,
+      finalSpeedKt,
+      touched: f.aglFt <= GROUND_AGL_FT,
+    });
+  }
+  void activeRunway;
+  return approaches;
+}
+
+/** Ground speed (kt) from the segment around `index`. */
+function speedKtNear(points: ReplayPoint[], index: number): number | null {
+  const i = Math.max(0, Math.min(index, points.length - 2));
+  const a = points[i];
+  const b = points[i + 1];
+  const dtH = (b.timeMs - a.timeMs) / 3_600_000;
+  if (dtH <= 0) return null;
+  const distNm = (distanceMeters(a, b) / 1852);
+  return distNm / dtH;
+}
+
+/**
+ * Analyzes the circuit flown at `aerodrome`. Returns null when the track never
+ * comes near the field (no circuit to analyze) or the aerodrome has no runways.
+ */
+export function analyzeCircuit(
+  points: ReplayPoint[],
+  aerodrome: PatternAerodrome
+): CircuitAnalysis | null {
+  if (points.length < 10 || aerodrome.runwayEnds.length === 0) return null;
+
+  // Quick reject: does the track ever get within the pattern radius and low?
+  const comesClose = points.some(
+    (p) =>
+      distanceMeters(aerodrome, p) < PATTERN_RADIUS_M &&
+      p.ele * METERS_TO_FEET - aerodrome.elevationFt < PATTERN_CEILING_FT_AGL
+  );
+  if (!comesClose) return null;
+
+  // First pass with an arbitrary end just to gather ops tracks, then pick active.
+  const provisional = buildFeatures(points, aerodrome, aerodrome.runwayEnds[0].headingTrueDeg);
+  const activeRunway = selectActiveRunway(provisional, aerodrome) ?? aerodrome.runwayEnds[0];
+
+  const features =
+    activeRunway.headingTrueDeg === aerodrome.runwayEnds[0].headingTrueDeg
+      ? provisional
+      : buildFeatures(points, aerodrome, activeRunway.headingTrueDeg);
+
+  const phases = features.map((f) => classifyPoint(f, activeRunway.headingTrueDeg));
+  const segments = segmentize(features, phases, 8000);
+
+  const downwindAgl = features
+    .filter((_, i) => phases[i] === "downwind")
+    .map((f) => f.aglFt)
+    .filter((a) => a > GROUND_AGL_FT);
+
+  return {
+    aerodrome,
+    activeRunway,
+    flownSide: detectFlownSide(features),
+    publishedSide: publishedSideFrom(aerodrome, activeRunway.headingTrueDeg),
+    patternAltitudeFtAgl: median(downwindAgl),
+    standardPatternAltitudeFtAgl: STANDARD_PATTERN_ALTITUDE_FT_AGL,
+    segments,
+    approaches: detectApproaches(points, features, aerodrome, activeRunway),
+  };
+}
