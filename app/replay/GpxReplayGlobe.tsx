@@ -17,9 +17,11 @@ import {
   findIndexAtTime,
   getInterpolatedPoint,
   lerpAngle,
+  DEFAULT_CHASE_RANGE_M,
   type CamEvent,
   type CamMode,
 } from "./cameraMath";
+import { estimateAttitude } from "./aircraftAttitude";
 
 /** Imperative controller used by the recorder for deterministic ("Sharp") capture. */
 export interface CaptureControl {
@@ -52,12 +54,22 @@ interface GpxReplayGlobeProps {
   canvasRef?: MutableRefObject<HTMLCanvasElement | null>;
   /** Whether the cyan track polyline is rendered. */
   showTrack?: boolean;
+  /** Chase camera distance in metres behind the aircraft. */
+  chaseDistanceM?: number;
   /** Receives an imperative controller for deterministic frame-by-frame capture. */
   captureControlRef?: MutableRefObject<CaptureControl | null>;
 }
 
 const CESIUM_ION_TOKEN = process.env.NEXT_PUBLIC_CESIUM_ION_TOKEN;
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
+// Aircraft marker model (low-poly Cessna 172). minimumPixelSize keeps it visible
+// from afar regardless of the GLB's authored scale; heading offset corrects the
+// model's nose axis so it points along the course.
+const MODEL_URI = "/models/cessna_172.glb";
+const MODEL_SCALE = 1;
+const MODEL_MIN_PIXELS = 25;
+const MODEL_HEADING_OFFSET_RAD = -Math.PI / 2;
 
 export function GpxReplayGlobe({
   points,
@@ -73,6 +85,7 @@ export function GpxReplayGlobe({
   requestOrientationRef,
   canvasRef,
   showTrack = true,
+  chaseDistanceM = DEFAULT_CHASE_RANGE_M,
   captureControlRef,
   headTrackingEnabled = false,
 }: GpxReplayGlobeProps) {
@@ -94,6 +107,7 @@ export function GpxReplayGlobe({
   const camIsFlyingRef = useRef<boolean>(false);
   const captureModeRef = useRef<boolean>(false);
   const viewModeRef = useRef<ViewMode>(viewMode);
+  const chaseDistanceRef = useRef<number>(chaseDistanceM);
   const onInterruptRef = useRef<(() => void) | undefined>(onViewModeInterrupt);
   const altitudeOffsetRef = useRef<number>(0);
   const lastValidHeadingRef = useRef<number | null>(null);
@@ -147,6 +161,10 @@ export function GpxReplayGlobe({
   useEffect(() => {
     viewModeRef.current = viewMode;
   }, [viewMode]);
+
+  useEffect(() => {
+    chaseDistanceRef.current = chaseDistanceM;
+  }, [chaseDistanceM]);
 
   useEffect(() => {
     const viewer = viewerRef.current;
@@ -415,12 +433,28 @@ export function GpxReplayGlobe({
             false,
             Cesium.ReferenceFrame.FIXED
           ),
-          point: {
-            pixelSize: 12,
-            color: Cesium.Color.fromCssColorString("#f59e0b"),
-            outlineColor: Cesium.Color.WHITE,
-            outlineWidth: 2,
-            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          orientation: new Cesium.CallbackProperty((_time, result) => {
+            const pos = markerPositionRef.current;
+            if (!pos) return undefined;
+            const att = estimateAttitude(safePointsRef.current, currentTimeMsRef.current);
+            const hpr = new Cesium.HeadingPitchRoll(
+              (att?.headingRad ?? 0) + MODEL_HEADING_OFFSET_RAD,
+              att?.pitchRad ?? 0,
+              att?.rollRad ?? 0
+            );
+            return Cesium.Transforms.headingPitchRollQuaternion(
+              pos,
+              hpr,
+              Cesium.Ellipsoid.WGS84,
+              Cesium.Transforms.eastNorthUpToFixedFrame,
+              result as import("cesium").Quaternion
+            );
+          }, false),
+          model: {
+            uri: MODEL_URI,
+            scale: MODEL_SCALE,
+            minimumPixelSize: MODEL_MIN_PIXELS,
+            maximumScale: 20000,
           },
         });
 
@@ -724,6 +758,8 @@ export function GpxReplayGlobe({
       const Cesium = cesiumRef.current;
       const pts = safePointsRef.current;
       if (!Cesium || pts.length < 2) return;
+      // Keep the time ref current so the model orientation callback is correct.
+      currentTimeMsRef.current = timeMs;
       const index = findIndexAtTime(pts, timeMs);
       const interpolated = getInterpolatedPoint(pts, index, timeMs);
       if (!interpolated) return;
@@ -765,7 +801,11 @@ export function GpxReplayGlobe({
       lastValidHeadingRef.current = heading;
 
       const mode: CamMode =
-        viewModeRef.current === "cockpit" ? "cockpit" : findActiveCamMode(camEventsRef.current, timeMs);
+        viewModeRef.current === "cockpit"
+          ? "cockpit"
+          : viewModeRef.current === "chase"
+            ? "chase"
+            : findActiveCamMode(camEventsRef.current, timeMs);
       const pose = computeCameraPose(
         Cesium,
         mode,
@@ -773,7 +813,8 @@ export function GpxReplayGlobe({
         heading,
         boundingSphereRef.current,
         cockpitHeadingOffsetRef.current,
-        cockpitPitchOffsetRef.current
+        cockpitPitchOffsetRef.current,
+        chaseDistanceRef.current
       );
       viewer.camera.setView({
         destination: pose.destination,
@@ -867,7 +908,9 @@ export function GpxReplayGlobe({
       const mode: CamMode =
         currentViewMode === "cockpit"
           ? "cockpit"
-          : findActiveCamMode(camEventsRef.current, currentMs);
+          : currentViewMode === "chase"
+            ? "chase"
+            : findActiveCamMode(camEventsRef.current, currentMs);
 
       const sphere = boundingSphereRef.current;
       const pose = computeCameraPose(
@@ -877,7 +920,8 @@ export function GpxReplayGlobe({
         motionHeading,
         sphere,
         cockpitHeadingOffsetRef.current,
-        cockpitPitchOffsetRef.current
+        cockpitPitchOffsetRef.current,
+        chaseDistanceRef.current
       );
 
       if (mode !== camCurrentModeRef.current) {
@@ -982,7 +1026,12 @@ export function GpxReplayGlobe({
       {viewMode !== "free" && viewerReady && showCameraBanner && (
         <div className="absolute bottom-3 left-3 z-[500] rounded-md bg-cyan-900/60 border border-cyan-500/50 px-3 py-1.5 text-xs text-cyan-100 flex items-center gap-2 transition-opacity duration-500">
           <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
-          {viewMode === "cinematic" ? "Cinematic camera" : "Cockpit view"} — drag to take over
+          {viewMode === "cinematic"
+            ? "Cinematic camera"
+            : viewMode === "chase"
+              ? "Chase camera"
+              : "Cockpit view"}{" "}
+          — drag to take over
         </div>
       )}
 

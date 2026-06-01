@@ -10,6 +10,7 @@ import {
   type SpeedOption,
   type ViewMode,
 } from "../types";
+import { CHASE_DISTANCE_MAX, CHASE_DISTANCE_MIN } from "../useReplayPreferences";
 
 interface ReplayControlsProps {
   isFullscreen: boolean;
@@ -34,6 +35,8 @@ interface ReplayControlsProps {
   onHeadTrackingToggle: () => void;
   showTrack: boolean;
   onShowTrackChange: (value: boolean) => void;
+  chaseDistance: number;
+  onChaseDistanceChange: (value: number) => void;
 }
 
 const MAP_STYLE_OPTIONS: { value: MapStyle; label: string }[] = [
@@ -45,6 +48,8 @@ function viewModeHint(viewMode: ViewMode): string {
   switch (viewMode) {
     case "free":
       return "Manual camera. Drag to look around.";
+    case "chase":
+      return "Locked chase camera behind the aircraft.";
     case "cinematic":
       return "Cinematic chase + side angles on turns.";
     case "cockpit":
@@ -79,6 +84,8 @@ export function ReplayControls({
   onHeadTrackingToggle,
   showTrack,
   onShowTrackChange,
+  chaseDistance,
+  onChaseDistanceChange,
 }: ReplayControlsProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
@@ -196,7 +203,7 @@ export function ReplayControls({
               <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
                 Camera
               </div>
-              <div className="grid grid-cols-3 gap-1 rounded-md bg-slate-800/60 p-0.5">
+              <div className="grid grid-cols-2 gap-1 rounded-md bg-slate-800/60 p-0.5">
                 {VIEW_MODE_OPTIONS.map((opt) => (
                   <button
                     key={opt.value}
@@ -215,6 +222,23 @@ export function ReplayControls({
                 ))}
               </div>
               <div className="mt-1.5 text-[10px] text-slate-400 leading-tight">{viewModeHint(viewMode)}</div>
+              {viewMode === "chase" || viewMode === "cinematic" ? (
+                <div className="mt-2">
+                  <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
+                    <span>Chase distance</span>
+                    <span className="tabular-nums text-slate-300">{chaseDistance} m</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={CHASE_DISTANCE_MIN}
+                    max={CHASE_DISTANCE_MAX}
+                    step={50}
+                    value={chaseDistance}
+                    onChange={(e) => onChaseDistanceChange(Number.parseInt(e.target.value, 10))}
+                    className="w-full accent-cyan-500 cursor-pointer"
+                  />
+                </div>
+              ) : null}
               {viewMode === "cockpit" && orientationStatus !== "unavailable" ? (
                 <button
                   type="button"

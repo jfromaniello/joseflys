@@ -28,7 +28,12 @@ import {
 } from "./replayMetrics";
 import { createShareUrl, type ShareStatus } from "./shareReplay";
 import { useFullscreen } from "./useFullscreen";
-import { usePersistedMapStyle, usePersistedShowTrack, usePersistedViewMode } from "./useReplayPreferences";
+import {
+  usePersistedChaseDistance,
+  usePersistedMapStyle,
+  usePersistedShowTrack,
+  usePersistedViewMode,
+} from "./useReplayPreferences";
 import { useReplayRecorder } from "./useReplayRecorder";
 import { ReplayToolbar } from "./components/ReplayToolbar";
 import { GpxDropzone } from "./components/GpxDropzone";
@@ -64,6 +69,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
   const initialSpeedParam = searchParams.get("speed");
   const initialViewParam = searchParams.get("view");
   const initialCamParam = searchParams.get("cam");
+  const initialCdParam = searchParams.get("cd");
 
   const initialElapsedMs = useMemo(() => {
     const parsed = initialTParam ? Number.parseInt(initialTParam, 10) : 0;
@@ -79,6 +85,12 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
     () => parseCameraParam(initialCamParam),
     [initialCamParam]
   );
+
+  const initialChaseDistance = useMemo<number | null>(() => {
+    if (!initialCdParam) return null;
+    const parsed = Number.parseInt(initialCdParam, 10);
+    return Number.isFinite(parsed) ? parsed : null;
+  }, [initialCdParam]);
 
   const cameraStateRef = useRef<CameraPose | null>(initialCamera);
   const requestOrientationRef = useRef<(() => Promise<OrientationStatus>) | null>(null);
@@ -105,6 +117,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
   const [viewMode, setViewMode] = usePersistedViewMode(initialViewParam);
   const [mapStyle, setMapStyle] = usePersistedMapStyle(HAS_GOOGLE_MAPS_KEY);
   const [showTrack, setShowTrack] = usePersistedShowTrack();
+  const [chaseDistance, setChaseDistance] = usePersistedChaseDistance(initialChaseDistance);
 
   // Switching away from cockpit always disables head-tracking. Head-tracking can
   // only be enabled while in cockpit, so this is the single place it resets.
@@ -282,6 +295,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
         speed,
         viewMode,
         camera: cameraStateRef.current,
+        chaseDistance,
       });
       setShareUrl(finalUrl);
       try {
@@ -295,7 +309,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
       console.error(err);
       setShareStatus("error");
     }
-  }, [rawGpx, clampedElapsedMs, speed, shareStatus, viewMode]);
+  }, [rawGpx, clampedElapsedMs, speed, shareStatus, viewMode, chaseDistance]);
 
   const canShare = points.length >= 2 && rawGpx.length > 0;
   const hasTrack = points.length > 0;
@@ -372,6 +386,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
                     headTrackingEnabled={headTrackingEnabled}
                     canvasRef={globeCanvasRef}
                     showTrack={showTrack}
+                    chaseDistanceM={chaseDistance}
                     captureControlRef={captureControlRef}
                   />
                 </div>
@@ -406,6 +421,8 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
                   onHeadTrackingToggle={() => void handleHeadTrackingToggle()}
                   showTrack={showTrack}
                   onShowTrackChange={setShowTrack}
+                  chaseDistance={chaseDistance}
+                  onChaseDistanceChange={setChaseDistance}
                 />
               </div>
 
@@ -449,6 +466,8 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
           onViewModeChange={changeViewMode}
           showTrack={showTrack}
           onShowTrackChange={setShowTrack}
+          chaseDistance={chaseDistance}
+          onChaseDistanceChange={setChaseDistance}
         />
       ) : null}
     </PageLayout>

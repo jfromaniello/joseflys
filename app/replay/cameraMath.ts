@@ -271,6 +271,10 @@ export function computeCockpitPose(
   };
 }
 
+/** Default chase distance (metres behind the aircraft). Height tracks this ratio. */
+export const DEFAULT_CHASE_RANGE_M = 500;
+const CHASE_HEIGHT_RATIO = 0.35;
+
 /** Resolves the camera pose for a given {@link CamMode}. */
 export function computeCameraPose(
   Cesium: typeof import("cesium"),
@@ -279,11 +283,21 @@ export function computeCameraPose(
   motionHeadingRad: number,
   sphere: import("cesium").BoundingSphere | null,
   cockpitHeadingOffsetRad = 0,
-  cockpitPitchOffsetRad = 0
+  cockpitPitchOffsetRad = 0,
+  chaseRangeM = DEFAULT_CHASE_RANGE_M
 ): CamPose {
   switch (mode) {
     case "chase":
-      return computePoseFromAircraft(Cesium, aircraftPos, motionHeadingRad, 2500, 900, toRad(-18));
+      // Close chase: metres behind / above the aircraft (height tracks range to
+      // keep the framing angle), look-down pitch.
+      return computePoseFromAircraft(
+        Cesium,
+        aircraftPos,
+        motionHeadingRad,
+        chaseRangeM,
+        chaseRangeM * CHASE_HEIGHT_RATIO,
+        toRad(-15)
+      );
     case "side-left":
       return computePoseFromAircraft(Cesium, aircraftPos, motionHeadingRad - Math.PI / 2, 2400, 600, toRad(-12));
     case "side-right":

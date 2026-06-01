@@ -11,6 +11,8 @@ interface ShareOptions {
   viewMode: ViewMode;
   /** Current camera pose, if any, to restore the exact view. */
   camera: CameraPose | null;
+  /** Chase camera distance (metres). */
+  chaseDistance: number;
 }
 
 /**
@@ -35,6 +37,7 @@ export async function createShareUrl(rawGpx: string, options: ShareOptions): Pro
   url.searchParams.set("t", String(Math.round(options.elapsedMs)));
   url.searchParams.set("speed", String(options.speed));
   url.searchParams.set("view", options.viewMode);
+  url.searchParams.set("cd", String(Math.round(options.chaseDistance)));
   if (options.camera) {
     url.searchParams.set("cam", serializeCamera(options.camera));
   }

@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { isMapStyle, isViewMode, type MapStyle, type ViewMode } from "./types";
+import { DEFAULT_CHASE_RANGE_M } from "./cameraMath";
 
 const VIEW_MODE_KEY = "gpxReplay.viewMode";
 const LEGACY_AUTO_CAMERA_KEY = "gpxReplay.autoCamera";
 const MAP_STYLE_KEY = "gpxReplay.mapStyle";
 const SHOW_TRACK_KEY = "gpxReplay.showTrack";
+const CHASE_DISTANCE_KEY = "gpxReplay.chaseDistance";
 
 /**
  * View-mode state persisted to localStorage.
@@ -90,4 +92,40 @@ export function usePersistedShowTrack(): [boolean, (value: boolean) => void] {
   }, [showTrack]);
 
   return [showTrack, setShowTrack];
+}
+
+/** Bounds for the user-adjustable chase camera distance (metres behind). */
+export const CHASE_DISTANCE_MIN = 150;
+export const CHASE_DISTANCE_MAX = 1500;
+
+function clampChaseDistance(value: number): number {
+  return Math.max(CHASE_DISTANCE_MIN, Math.min(CHASE_DISTANCE_MAX, value));
+}
+
+/**
+ * Chase camera distance (metres behind the aircraft), persisted to localStorage.
+ * A valid `cd` URL param wins and suppresses the stored value (so shared links
+ * are honored). Same SSR-safe mount-hydration approach as {@link usePersistedViewMode}.
+ */
+export function usePersistedChaseDistance(urlParam: number | null): [number, (value: number) => void] {
+  const [distance, setDistance] = useState(
+    urlParam !== null && Number.isFinite(urlParam) ? clampChaseDistance(urlParam) : DEFAULT_CHASE_RANGE_M
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (urlParam !== null && Number.isFinite(urlParam)) return;
+    const stored = Number.parseInt(window.localStorage.getItem(CHASE_DISTANCE_KEY) ?? "", 10);
+    if (!Number.isFinite(stored)) return;
+    // One-shot hydration from an external store on mount (see note above).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDistance(clampChaseDistance(stored));
+  }, [urlParam]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(CHASE_DISTANCE_KEY, String(distance));
+  }, [distance]);
+
+  return [distance, setDistance];
 }

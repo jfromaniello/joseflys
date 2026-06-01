@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { SPEED_OPTIONS, VIEW_MODE_OPTIONS, type SpeedOption, type ViewMode } from "../types";
+import { CHASE_DISTANCE_MAX, CHASE_DISTANCE_MIN } from "../useReplayPreferences";
 import type { RecordingStatus, RecordOptions, RecordQuality } from "../useReplayRecorder";
 
 interface RecordModalProps {
@@ -18,6 +19,9 @@ interface RecordModalProps {
   /** Live track-line visibility. */
   showTrack: boolean;
   onShowTrackChange: (value: boolean) => void;
+  /** Live chase camera distance (metres). */
+  chaseDistance: number;
+  onChaseDistanceChange: (value: number) => void;
 }
 
 const DEFAULT_SPEED: SpeedOption = 50;
@@ -50,6 +54,8 @@ export function RecordModal({
   onViewModeChange,
   showTrack,
   onShowTrackChange,
+  chaseDistance,
+  onChaseDistanceChange,
 }: RecordModalProps) {
   const [speed, setSpeed] = useState<SpeedOption>(DEFAULT_SPEED);
   const [showTelemetry, setShowTelemetry] = useState(true);
@@ -134,7 +140,7 @@ export function RecordModal({
           <div className="space-y-4">
             <div>
               <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Camera</div>
-              <div className="grid grid-cols-3 gap-1 rounded-md bg-slate-800/60 p-0.5">
+              <div className="grid grid-cols-2 gap-1 rounded-md bg-slate-800/60 p-0.5">
                 {VIEW_MODE_OPTIONS.map((opt) => (
                   <button
                     key={opt.value}
@@ -148,6 +154,23 @@ export function RecordModal({
                   </button>
                 ))}
               </div>
+              {viewMode === "chase" || viewMode === "cinematic" ? (
+                <div className="mt-2">
+                  <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
+                    <span>Chase distance</span>
+                    <span className="tabular-nums text-slate-300">{chaseDistance} m</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={CHASE_DISTANCE_MIN}
+                    max={CHASE_DISTANCE_MAX}
+                    step={50}
+                    value={chaseDistance}
+                    onChange={(e) => onChaseDistanceChange(Number.parseInt(e.target.value, 10))}
+                    className="w-full accent-cyan-500 cursor-pointer"
+                  />
+                </div>
+              ) : null}
             </div>
 
             <div>

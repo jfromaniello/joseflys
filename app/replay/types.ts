@@ -40,13 +40,14 @@ export type OrientationStatus =
   | "denied";
 
 /** Camera behavior selected by the user. */
-export type ViewMode = "free" | "cinematic" | "cockpit";
+export type ViewMode = "free" | "chase" | "cinematic" | "cockpit";
 
-export const VIEW_MODES: ViewMode[] = ["free", "cinematic", "cockpit"];
+export const VIEW_MODES: ViewMode[] = ["free", "chase", "cinematic", "cockpit"];
 
 /** View mode options with display labels, shared by the controls and record modal. */
 export const VIEW_MODE_OPTIONS: { value: ViewMode; label: string }[] = [
   { value: "free", label: "Free" },
+  { value: "chase", label: "Chase" },
   { value: "cinematic", label: "Cinematic" },
   { value: "cockpit", label: "Cockpit" },
 ];
