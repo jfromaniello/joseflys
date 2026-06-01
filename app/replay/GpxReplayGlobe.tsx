@@ -409,7 +409,17 @@ export function GpxReplayGlobe({
         viewer.scene.screenSpaceCameraController.enableTilt = true;
         viewer.scene.screenSpaceCameraController.enableLook = true;
 
-        (viewer.cesiumWidget.creditContainer as HTMLElement).style.display = "none";
+        // Keep the credit container visible — Cesium ion, the imagery (Esri /
+        // OSM) and terrain providers all require their attribution to be shown.
+        (viewer.cesiumWidget.creditContainer as HTMLElement).style.display = "";
+
+        // Attribution for the aircraft model (CC BY 4.0 requires credit + link).
+        viewer.creditDisplay.addStaticCredit(
+          new Cesium.Credit(
+            'Aircraft: <a href="https://sketchfab.com/3d-models/free-cessna-172-replica-low-poly-basic-model-aa0f72aead044664a0555f047cb36262" target="_blank" rel="noopener">Cessna 172</a> by <a href="https://sketchfab.com/quadzii" target="_blank" rel="noopener">quadzii</a> (<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>)',
+            true
+          )
+        );
 
         replayLineRef.current = viewer.entities.add({
           name: "Replay Track",
@@ -677,7 +687,6 @@ export function GpxReplayGlobe({
       altitudeOffsetRef.current = 0;
       renderedPathRef.current = [];
       lastRenderedIndexRef.current = -1;
-      (viewer.cesiumWidget.creditContainer as HTMLElement).style.display = "none";
       if (imageryLoaded) setLoadError("");
       setProviderEpoch((n) => n + 1);
     })();
