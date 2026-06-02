@@ -500,6 +500,11 @@ export function GpxReplayGlobe({
         viewer.scene.screenSpaceCameraController.enableTilt = true;
         viewer.scene.screenSpaceCameraController.enableLook = true;
 
+        // Retain many more ancestor tiles so the upsampled parent is always
+        // available as a fallback when zooming in (avoids the "data not yet
+        // available" placeholder flickering in).
+        viewer.scene.globe.tileCacheSize = 1000;
+
         // Keep the credit container visible — Cesium ion, the imagery (Esri /
         // OSM) and terrain providers all require their attribution to be shown.
         (viewer.cesiumWidget.creditContainer as HTMLElement).style.display = "";
@@ -757,7 +762,10 @@ export function GpxReplayGlobe({
         const arcGisTiles = new Cesium.UrlTemplateImageryProvider({
           url: "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
           credit: "Esri World Imagery",
-          maximumLevel: 19,
+          // Cap at the level Esri reliably has worldwide. Beyond it Cesium
+          // upsamples the parent tile (blurry but present) instead of requesting
+          // a non-existent deeper tile, which renders as "data not yet available".
+          maximumLevel: 18,
         });
         viewer.imageryLayers.addImageryProvider(arcGisTiles);
         imageryLoaded = true;
