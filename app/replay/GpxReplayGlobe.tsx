@@ -176,15 +176,24 @@ export function GpxReplayGlobe({
   // reference in standard and photorealistic modes because the Google 3D tiles
   // sit on the real terrain surface too.
   const groundHeightAt = useCallback((lon: number, lat: number, index?: number): number | undefined => {
-    if (index !== undefined) {
-      const sampled = terrainHeightsRef.current[index];
-      if (Number.isFinite(sampled)) return sampled;
-    }
     const viewer = viewerRef.current;
     const Cesium = cesiumRef.current;
     if (viewer && Cesium) {
-      const h = viewer.scene.globe.getHeight(Cesium.Cartographic.fromDegrees(lon, lat));
-      if (Number.isFinite(h)) return h;
+      const provider = viewer.terrainProvider;
+      const globeHasTerrain = provider && !(provider instanceof Cesium.EllipsoidTerrainProvider);
+      // Standard mode: the live globe height matches the rendered terrain mesh
+      // exactly, so prefer it (the most-detailed pre-sample can read a few metres
+      // above the LOD actually drawn, which would float the model).
+      if (globeHasTerrain) {
+        const h = viewer.scene.globe.getHeight(Cesium.Cartographic.fromDegrees(lon, lat));
+        if (Number.isFinite(h)) return h;
+      }
+    }
+    // Photorealistic mode (ellipsoid globe) or live height unavailable: use the
+    // pre-sampled world-terrain height, which the Google 3D tiles sit on.
+    if (index !== undefined) {
+      const sampled = terrainHeightsRef.current[index];
+      if (Number.isFinite(sampled)) return sampled;
     }
     return undefined;
   }, []);

@@ -5,9 +5,11 @@
  * angles in radians.
  */
 
+import { magvar } from "magvar";
 import {
   computeMotionHeadingAdaptive,
   computeMotionHeadingRad,
+  findIndexAtTime,
   haversineMeters,
   interpolateAtTime,
   sampleField,
@@ -15,6 +17,45 @@ import {
 import type { ReplayPoint } from "./types";
 
 const DEG_TO_RAD = Math.PI / 180;
+
+/**
+ * Geographic (true) heading in radians where the aircraft nose points at
+ * `timeMs`, from the recorded magnetic heading when the track has it — converted
+ * to true with the WMM declination (true = magnetic + declination). This is
+ * stable even when stationary, unlike a GPS motion heading. The magnetic heading
+ * is circularly interpolated between the bracketing points to avoid 0°/360° jumps.
+ * Returns `null` when the track doesn't record heading.
+ */
+function recordedHeadingRad(points: ReplayPoint[], timeMs: number): number | null {
+  const idx = findIndexAtTime(points, timeMs);
+
+  // Nearest points with a recorded heading at/before and after `idx`. Avionics
+  // logs leave the magnetic heading blank for the first ~minute while the AHRS
+  // aligns; back/forward-filling from the closest valid sample keeps the nose
+  // pointing sensibly (e.g. the first known heading) instead of spinning on GPS
+  // noise while taxiing.
+  let fromIdx = Math.min(idx, points.length - 1);
+  while (fromIdx >= 0 && points[fromIdx].headingMagDeg === undefined) fromIdx -= 1;
+  let toIdx = idx + 1;
+  while (toIdx < points.length && points[toIdx].headingMagDeg === undefined) toIdx += 1;
+
+  const from = fromIdx >= 0 ? points[fromIdx] : null;
+  const to = toIdx < points.length ? points[toIdx] : null;
+  if (!from && !to) return null;
+
+  let magDeg: number;
+  if (from && to && to.timeMs > from.timeMs) {
+    const t = Math.max(0, Math.min(1, (timeMs - from.timeMs) / (to.timeMs - from.timeMs)));
+    const shortest = (((to.headingMagDeg as number) - (from.headingMagDeg as number) + 540) % 360) - 180;
+    magDeg = (from.headingMagDeg as number) + shortest * t;
+  } else {
+    magDeg = (from ?? to)!.headingMagDeg as number;
+  }
+
+  const here = interpolateAtTime(points, timeMs);
+  const declination = here ? magvar(here.lat, here.lon, 0) : 0;
+  return (magDeg + declination) * DEG_TO_RAD;
+}
 
 export interface Attitude {
   /** Course over ground, radians clockwise from north. */
@@ -43,16 +84,17 @@ function signedDelta(a: number, b: number): number {
 }
 
 /**
- * Estimates attitude at `timeMs`. Returns `null` when motion heading can't be
- * derived (e.g. fewer than two points or no movement).
+ * Estimates attitude at `timeMs`. Prefers the aircraft's recorded heading (so
+ * the nose is correct even while taxiing/stationary, where a GPS motion heading
+ * is just noise); falls back to the GPS course over ground. Returns `null` only
+ * when neither a recorded nor a motion heading can be derived.
  */
 export function estimateAttitude(points: ReplayPoint[], timeMs: number): Attitude | null {
-  const headingRad = computeMotionHeadingAdaptive(points, timeMs, 150, 30000);
+  const headingRad = recordedHeadingRad(points, timeMs) ?? computeMotionHeadingAdaptive(points, timeMs, 150, 30000);
   if (headingRad === null) return null;
 
   // Prefer real recorded attitude (Garmin AHRS) when the track carries it; the
-  // GPS-derived estimates below are only a fallback for plain GPX. The nose
-  // still points along the course over ground — only pitch/roll are measured.
+  // GPS-derived estimates below are only a fallback for plain GPX.
   const recordedPitch = sampleField(points, timeMs, "pitchDeg");
   const recordedRoll = sampleField(points, timeMs, "rollDeg");
 
