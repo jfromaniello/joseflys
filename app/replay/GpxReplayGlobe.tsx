@@ -116,6 +116,10 @@ export function GpxReplayGlobe({
   // so the line reaches the model without ever mutating the base array in place.
   const renderedPathRef = useRef<import("cesium").Cartesian3[]>([]);
   const displayPathRef = useRef<import("cesium").Cartesian3[]>([]);
+  // Ground floor (terrain height) under each base point / display vertex, so the
+  // altitude wall ends at the surface instead of a global minimum.
+  const baseFloorsRef = useRef<number[]>([]);
+  const wallFloorsRef = useRef<number[]>([]);
   const markerPositionRef = useRef<import("cesium").Cartesian3 | null>(null);
   const lastRenderedIndexRef = useRef<number>(-1);
   const fittedRef = useRef(false);
@@ -513,9 +517,13 @@ export function GpxReplayGlobe({
           show: false, // set by the showWall toggle effect once ready
           wall: {
             positions: new Cesium.CallbackProperty(() => displayPathRef.current, false),
+            // Floor follows the ground under each vertex so the curtain ends at
+            // the terrain (never poking below the tile). Falls back to a global
+            // minimum if per-vertex floors aren't ready yet.
             minimumHeights: new Cesium.CallbackProperty(() => {
-              const floor = getAdjustedAltitude(minEleRef.current) - 5;
-              return new Array(displayPathRef.current.length).fill(floor);
+              const floors = wallFloorsRef.current;
+              if (floors.length === displayPathRef.current.length) return floors;
+              return new Array(displayPathRef.current.length).fill(getAdjustedAltitude(minEleRef.current) - 5);
             }, false),
             material: Cesium.Color.fromCssColorString("#22d3ee").withAlpha(0.35),
             outline: false,
@@ -821,18 +829,18 @@ export function GpxReplayGlobe({
       if (!interpolated) return;
 
       const lastRendered = lastRenderedIndexRef.current;
+      const addBasePoint = (i: number) => {
+        const ground = groundHeightAt(pts[i].lon, pts[i].lat, i);
+        const alt = ground !== undefined ? Math.max(pts[i].ele || 0, ground + GROUND_CLEARANCE_M) : pts[i].ele || 0;
+        renderedPathRef.current.push(Cesium.Cartesian3.fromDegrees(pts[i].lon, pts[i].lat, alt));
+        baseFloorsRef.current.push(ground !== undefined ? ground : alt);
+      };
       if (lastRendered === -1 || targetBaseIndex < lastRendered) {
-        const next: import("cesium").Cartesian3[] = [];
-        for (let i = 0; i <= targetBaseIndex; i += 1) {
-          next.push(Cesium.Cartesian3.fromDegrees(pts[i].lon, pts[i].lat, clampedAlt(pts[i].lon, pts[i].lat, pts[i].ele, i)));
-        }
-        renderedPathRef.current = next;
+        renderedPathRef.current = [];
+        baseFloorsRef.current = [];
+        for (let i = 0; i <= targetBaseIndex; i += 1) addBasePoint(i);
       } else if (targetBaseIndex > lastRendered) {
-        for (let i = lastRendered + 1; i <= targetBaseIndex; i += 1) {
-          renderedPathRef.current.push(
-            Cesium.Cartesian3.fromDegrees(pts[i].lon, pts[i].lat, clampedAlt(pts[i].lon, pts[i].lat, pts[i].ele, i))
-          );
-        }
+        for (let i = lastRendered + 1; i <= targetBaseIndex; i += 1) addBasePoint(i);
       }
       lastRenderedIndexRef.current = targetBaseIndex;
 
@@ -857,13 +865,17 @@ export function GpxReplayGlobe({
         ...renderedPathRef.current,
         Cesium.Cartesian3.fromDegrees(interpolated.lon, interpolated.lat, headAlt),
       ];
+      wallFloorsRef.current = [
+        ...baseFloorsRef.current,
+        headGround !== undefined ? headGround : headAlt,
+      ];
       markerPositionRef.current = Cesium.Cartesian3.fromDegrees(
         interpolated.lon,
         interpolated.lat,
         Math.max(headAlt, 10)
       );
     },
-    [clampedAlt, groundHeightAt]
+    [groundHeightAt]
   );
 
   // Smooth motion: drive the aircraft/trace from Cesium's own render loop so it
