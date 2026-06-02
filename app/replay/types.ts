@@ -5,17 +5,49 @@
  * single source of truth without creating an import cycle.
  */
 
-/** A single GPX track point, normalized for replay. */
+/**
+ * A single track point, normalized for replay.
+ *
+ * The first four fields come from any source (GPX or Garmin CSV). The remaining
+ * fields are optional rich telemetry only present in avionics logs (Garmin G3X
+ * CSV); consumers must treat them as possibly `undefined` and fall back to
+ * GPS-derived values when absent.
+ */
 export interface ReplayPoint {
   /** Latitude in decimal degrees. */
   lat: number;
   /** Longitude in decimal degrees. */
   lon: number;
-  /** Elevation in meters (GPX standard). */
+  /** Elevation in meters (GPS altitude). */
   ele: number;
   /** Absolute timestamp in milliseconds since epoch. */
   timeMs: number;
+  /** Recorded GPS ground speed in knots. */
+  groundSpeedKt?: number;
+  /** Indicated airspeed in knots. */
+  iasKt?: number;
+  /** True airspeed in knots. */
+  tasKt?: number;
+  /** Recorded vertical speed in feet per minute. */
+  vsFpm?: number;
+  /** Aircraft pitch in degrees (nose up positive). */
+  pitchDeg?: number;
+  /** Aircraft roll/bank in degrees (right wing down positive). */
+  rollDeg?: number;
+  /** Magnetic heading in degrees (where the nose points, not course). */
+  headingMagDeg?: number;
+  /** Wind direction in degrees (direction the wind is coming from). */
+  windDirDeg?: number;
+  /** Wind speed in knots. */
+  windSpeedKt?: number;
+  /** Outside air temperature in degrees Celsius. */
+  oatC?: number;
+  /** Height above ground in feet (avionics-computed AGL). */
+  aglFt?: number;
 }
+
+/** Source format a track was loaded from. */
+export type TrackFormat = "gpx" | "garmin-csv";
 
 /** A serializable camera pose used to share/restore the 3D view. */
 export interface CameraPose {

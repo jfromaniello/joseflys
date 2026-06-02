@@ -30,16 +30,17 @@ export function GpxDropzone({ onFile, onChoose }: GpxDropzoneProps) {
         isDragOver ? "border-sky-400 bg-sky-500/10" : "border-gray-600 bg-slate-900/40"
       }`}
     >
-      <p className="text-white font-medium mb-2">Drag and drop your GPX file here</p>
+      <p className="text-white font-medium mb-2">Drag and drop your GPX track or Garmin CSV log here</p>
       <p className="text-sm mb-4" style={{ color: "oklch(0.65 0.02 240)" }}>
-        File must include track point timestamps (`time` in `trkpt`).
+        GPX must include track point timestamps. Garmin G3X CSV logs add airspeed,
+        attitude and wind.
       </p>
       <button
         type="button"
         onClick={onChoose}
         className="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-medium cursor-pointer transition-colors"
       >
-        Choose GPX File
+        Choose file
       </button>
     </div>
   );

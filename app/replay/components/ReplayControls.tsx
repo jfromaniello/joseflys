@@ -179,7 +179,7 @@ export function ReplayControls({
         </button>
 
         {settingsOpen && (
-          <div className="absolute right-0 bottom-full mb-2 w-64 rounded-lg bg-slate-900 border border-slate-600 shadow-xl z-50 p-3 space-y-3">
+          <div className="absolute right-0 bottom-full mb-2 w-64 rounded-lg bg-slate-900 border border-slate-600 shadow-xl z-[700] p-3 space-y-3">
             <div>
               <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
                 Playback Speed

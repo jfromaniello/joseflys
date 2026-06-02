@@ -10,8 +10,11 @@ import {
   computeMotionHeadingRad,
   haversineMeters,
   interpolateAtTime,
+  sampleField,
 } from "./cameraMath";
 import type { ReplayPoint } from "./types";
+
+const DEG_TO_RAD = Math.PI / 180;
 
 export interface Attitude {
   /** Course over ground, radians clockwise from north. */
@@ -47,24 +50,40 @@ export function estimateAttitude(points: ReplayPoint[], timeMs: number): Attitud
   const headingRad = computeMotionHeadingAdaptive(points, timeMs, 150, 30000);
   if (headingRad === null) return null;
 
-  // Pitch from climb gradient over a centered window.
-  let pitchRad = 0;
-  const before = interpolateAtTime(points, timeMs - PITCH_WINDOW_MS / 2);
-  const after = interpolateAtTime(points, timeMs + PITCH_WINDOW_MS / 2);
-  if (before && after) {
-    const horiz = haversineMeters(before.lat, before.lon, after.lat, after.lon);
-    if (horiz > 1) {
-      pitchRad = clamp(Math.atan2(after.ele - before.ele, horiz), MAX_PITCH_RAD);
+  // Prefer real recorded attitude (Garmin AHRS) when the track carries it; the
+  // GPS-derived estimates below are only a fallback for plain GPX. The nose
+  // still points along the course over ground — only pitch/roll are measured.
+  const recordedPitch = sampleField(points, timeMs, "pitchDeg");
+  const recordedRoll = sampleField(points, timeMs, "rollDeg");
+
+  let pitchRad: number;
+  if (recordedPitch !== null) {
+    pitchRad = recordedPitch * DEG_TO_RAD;
+  } else {
+    // Pitch from climb gradient over a centered window.
+    pitchRad = 0;
+    const before = interpolateAtTime(points, timeMs - PITCH_WINDOW_MS / 2);
+    const after = interpolateAtTime(points, timeMs + PITCH_WINDOW_MS / 2);
+    if (before && after) {
+      const horiz = haversineMeters(before.lat, before.lon, after.lat, after.lon);
+      if (horiz > 1) {
+        pitchRad = clamp(Math.atan2(after.ele - before.ele, horiz), MAX_PITCH_RAD);
+      }
     }
   }
 
-  // Roll from turn rate (change in motion heading over time).
-  let rollRad = 0;
-  const hPrev = computeMotionHeadingRad(points, timeMs - ROLL_SPAN_MS / 2, ROLL_HEADING_WINDOW_MS);
-  const hNext = computeMotionHeadingRad(points, timeMs + ROLL_SPAN_MS / 2, ROLL_HEADING_WINDOW_MS);
-  if (hPrev !== null && hNext !== null) {
-    const turnRate = signedDelta(hPrev, hNext) / (ROLL_SPAN_MS / 1000); // rad/s
-    rollRad = clamp(turnRate * ROLL_GAIN, MAX_ROLL_RAD);
+  let rollRad: number;
+  if (recordedRoll !== null) {
+    rollRad = recordedRoll * DEG_TO_RAD;
+  } else {
+    // Roll from turn rate (change in motion heading over time).
+    rollRad = 0;
+    const hPrev = computeMotionHeadingRad(points, timeMs - ROLL_SPAN_MS / 2, ROLL_HEADING_WINDOW_MS);
+    const hNext = computeMotionHeadingRad(points, timeMs + ROLL_SPAN_MS / 2, ROLL_HEADING_WINDOW_MS);
+    if (hPrev !== null && hNext !== null) {
+      const turnRate = signedDelta(hPrev, hNext) / (ROLL_SPAN_MS / 1000); // rad/s
+      rollRad = clamp(turnRate * ROLL_GAIN, MAX_ROLL_RAD);
+    }
   }
 
   return { headingRad, pitchRad, rollRad };

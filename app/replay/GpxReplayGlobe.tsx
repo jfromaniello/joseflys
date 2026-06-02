@@ -39,8 +39,12 @@ type DeviceOrientationEventWithPermission = typeof DeviceOrientationEvent & {
 
 interface GpxReplayGlobeProps {
   points: ReplayPoint[];
-  currentIndex: number;
   currentTimeMs: number;
+  /** Whether playback is running — lets the globe extrapolate motion at its own
+   * frame rate for smooth animation, decoupled from React's commit cadence. */
+  isPlaying?: boolean;
+  /** Playback speed multiplier (used for the smooth-motion extrapolation). */
+  speed?: number;
   viewMode: ViewMode;
   mapStyle?: MapStyle;
   onViewModeInterrupt?: () => void;
@@ -73,10 +77,16 @@ const MODEL_SCALE = 1;
 const MODEL_MIN_PIXELS = 25;
 const MODEL_HEADING_OFFSET_RAD = -Math.PI / 2;
 
+// Minimum clearance (metres) kept between the rendered aircraft and the ground
+// below it, so a GPS altitude that dips under the rendered surface (terrain or
+// the Google 3D tiles, which both sit on the real terrain) never buries the model.
+const GROUND_CLEARANCE_M = 5;
+
 export function GpxReplayGlobe({
   points,
-  currentIndex,
   currentTimeMs,
+  isPlaying = false,
+  speed = 1,
   viewMode,
   mapStyle = "standard",
   onViewModeInterrupt,
@@ -99,7 +109,13 @@ export function GpxReplayGlobe({
   const wallEntityRef = useRef<import("cesium").Entity | null>(null);
   const minEleRef = useRef<number>(0);
   const currentMarkerRef = useRef<import("cesium").Entity | null>(null);
+  // `renderedPathRef` holds only whole track points up to the current index
+  // (built incrementally, idempotent under repeated runs). `displayPathRef` is
+  // what the polyline/wall actually render: the base path plus a single transient
+  // "head" vertex at the interpolated aircraft position, rebuilt fresh each frame
+  // so the line reaches the model without ever mutating the base array in place.
   const renderedPathRef = useRef<import("cesium").Cartesian3[]>([]);
+  const displayPathRef = useRef<import("cesium").Cartesian3[]>([]);
   const markerPositionRef = useRef<import("cesium").Cartesian3 | null>(null);
   const lastRenderedIndexRef = useRef<number>(-1);
   const fittedRef = useRef(false);
@@ -115,15 +131,27 @@ export function GpxReplayGlobe({
   const chaseDistanceRef = useRef<number>(chaseDistanceM);
   const onInterruptRef = useRef<(() => void) | undefined>(onViewModeInterrupt);
   const altitudeOffsetRef = useRef<number>(0);
+  // Terrain (ground) height in metres sampled per safe-point index; empty until
+  // the async terrain sample resolves. Used to clamp render altitude above ground.
+  const terrainHeightsRef = useRef<number[]>([]);
+  // Anchor for smooth wall-clock extrapolation of playback time between React
+  // commits: the last known (absolute track time, performance.now()) pair.
+  const playAnchorRef = useRef<{ timeMs: number; wall: number }>({ timeMs: 0, wall: 0 });
+  const isPlayingRef = useRef<boolean>(false);
+  const speedRef = useRef<number>(1);
   const lastValidHeadingRef = useRef<number | null>(null);
   const cockpitHeadingOffsetRef = useRef<number>(0);
   const cockpitPitchOffsetRef = useRef<number>(0);
   const cockpitBaselineAlphaRef = useRef<number | null>(null);
   const cockpitBaselineBetaRef = useRef<number | null>(null);
   const googleTilesetRef = useRef<import("cesium").Cesium3DTileset | null>(null);
+  // World-terrain provider kept solely for sampling ground heights, independent
+  // of the rendered provider (which is an ellipsoid in photorealistic mode).
+  const samplingTerrainRef = useRef<import("cesium").TerrainProvider | null>(null);
 
   const [viewerReady, setViewerReady] = useState(false);
-  const [providerEpoch, setProviderEpoch] = useState(0);
+  // Bumped when the render terrain/imagery provider changes, to force a re-render.
+  const [, setProviderEpoch] = useState(0);
   const [loadError, setLoadError] = useState("");
   const [orientationStatus, setOrientationStatus] = useState<OrientationStatus>("unknown");
   const [showCameraBanner, setShowCameraBanner] = useState(false);
@@ -139,9 +167,38 @@ export function GpxReplayGlobe({
   }, [viewMode]);
 
   const getAdjustedAltitude = (eleMeters: number): number => {
-    const adjusted = (eleMeters || 0) + altitudeOffsetRef.current;
-    return Math.max(0, adjusted);
+    return Math.max(0, eleMeters || 0);
   };
+
+  // Ground (real-world MSL terrain) height in metres at a track point. Prefers
+  // the most-detailed pre-sampled value (populated for every point regardless of
+  // render mode), falling back to the live globe terrain height. This is the same
+  // reference in standard and photorealistic modes because the Google 3D tiles
+  // sit on the real terrain surface too.
+  const groundHeightAt = useCallback((lon: number, lat: number, index?: number): number | undefined => {
+    if (index !== undefined) {
+      const sampled = terrainHeightsRef.current[index];
+      if (Number.isFinite(sampled)) return sampled;
+    }
+    const viewer = viewerRef.current;
+    const Cesium = cesiumRef.current;
+    if (viewer && Cesium) {
+      const h = viewer.scene.globe.getHeight(Cesium.Cartographic.fromDegrees(lon, lat));
+      if (Number.isFinite(h)) return h;
+    }
+    return undefined;
+  }, []);
+
+  // Render altitude for a trace point: the true GPS altitude, but never below the
+  // local ground + a small clearance so it can't be buried under the surface.
+  const clampedAlt = useCallback(
+    (lon: number, lat: number, ele: number, index?: number): number => {
+      const base = ele || 0;
+      const ground = groundHeightAt(lon, lat, index);
+      return ground !== undefined ? Math.max(base, ground + GROUND_CLEARANCE_M) : base;
+    },
+    [groundHeightAt]
+  );
 
   const safePoints = useMemo(
     () =>
@@ -158,14 +215,21 @@ export function GpxReplayGlobe({
     [points]
   );
 
-  const clampedIndex = useMemo(() => {
-    if (safePoints.length === 0) return 0;
-    return Math.max(0, Math.min(currentIndex, safePoints.length - 1));
-  }, [currentIndex, safePoints.length]);
-
   useEffect(() => {
     viewModeRef.current = viewMode;
   }, [viewMode]);
+
+  // Keep playback state in refs for the per-frame smooth ticker, and re-anchor
+  // the wall-clock extrapolation whenever playback starts/stops or speed changes.
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+    playAnchorRef.current = { timeMs: currentTimeMsRef.current, wall: performance.now() };
+  }, [isPlaying]);
+
+  useEffect(() => {
+    speedRef.current = speed;
+    playAnchorRef.current = { timeMs: currentTimeMsRef.current, wall: performance.now() };
+  }, [speed]);
 
   useEffect(() => {
     chaseDistanceRef.current = chaseDistanceM;
@@ -275,6 +339,9 @@ export function GpxReplayGlobe({
 
   useEffect(() => {
     currentTimeMsRef.current = currentTimeMs;
+    // Re-anchor the extrapolation to React's authoritative time each commit; the
+    // ticker extrapolates forward from here so it stays smooth between commits.
+    playAnchorRef.current = { timeMs: currentTimeMs, wall: performance.now() };
   }, [currentTimeMs]);
 
   useEffect(() => {
@@ -296,9 +363,11 @@ export function GpxReplayGlobe({
   useEffect(() => {
     fittedRef.current = false;
     renderedPathRef.current = [];
+    displayPathRef.current = [];
     markerPositionRef.current = null;
     lastRenderedIndexRef.current = -1;
     altitudeOffsetRef.current = 0;
+    terrainHeightsRef.current = [];
     minEleRef.current = safePoints.reduce(
       (min, p) => (p.ele < min ? p.ele : min),
       safePoints[0]?.ele ?? 0
@@ -306,50 +375,50 @@ export function GpxReplayGlobe({
   }, [safePoints]);
 
   useEffect(() => {
-    const viewer = viewerRef.current;
     const Cesium = cesiumRef.current;
-    if (!viewer || !Cesium || !viewerReady || safePoints.length === 0) return;
-
-    const terrainProvider = viewer.terrainProvider;
-    if (!terrainProvider || terrainProvider instanceof Cesium.EllipsoidTerrainProvider) {
-      altitudeOffsetRef.current = 0;
-      return;
-    }
+    if (!Cesium || !viewerReady || safePoints.length === 0 || !CESIUM_ION_TOKEN) return;
 
     let cancelled = false;
-    const first = safePoints[0];
-    const cartographic = Cesium.Cartographic.fromDegrees(first.lon, first.lat);
+    // Sample the real-world terrain height for every track point so the aircraft
+    // can be clamped above the ground. Uses a dedicated world-terrain provider so
+    // it works even in photorealistic mode (where the rendered provider is an
+    // ellipsoid). The Google 3D tiles sit on this same surface, so it's the right
+    // reference in both modes.
+    const cartographics = safePoints.map((p) => Cesium.Cartographic.fromDegrees(p.lon, p.lat));
 
-    Cesium.sampleTerrainMostDetailed(terrainProvider, [cartographic])
-      .then((updated) => {
-        if (cancelled) return;
-        const sampled = updated[0];
-        if (!sampled || !Number.isFinite(sampled.height)) return;
-
-        const offset = sampled.height - (first.ele || 0);
-        if (Math.abs(offset) > 200) {
-          altitudeOffsetRef.current = 0;
-          return;
+    (async () => {
+      try {
+        if (!samplingTerrainRef.current) {
+          samplingTerrainRef.current = await Cesium.createWorldTerrainAsync();
         }
+        if (cancelled) return;
+        const updated = await Cesium.sampleTerrainMostDetailed(
+          samplingTerrainRef.current,
+          cartographics
+        );
+        if (cancelled) return;
 
-        altitudeOffsetRef.current = offset;
+        terrainHeightsRef.current = updated.map((c) => c.height);
+
+        // Rebuild the trace so the clamped altitudes take effect.
         renderedPathRef.current = [];
+        displayPathRef.current = [];
         lastRenderedIndexRef.current = -1;
 
-        const positions = safePoints.map((p) =>
-          Cesium.Cartesian3.fromDegrees(p.lon, p.lat, getAdjustedAltitude(p.ele))
+        const positions = safePoints.map((p, i) =>
+          Cesium.Cartesian3.fromDegrees(p.lon, p.lat, clampedAlt(p.lon, p.lat, p.ele, i))
         );
         boundingSphereRef.current = Cesium.BoundingSphere.fromPoints(positions);
-      })
-      .catch((err) => {
+      } catch (err) {
         const message = err instanceof Error ? err.message : "";
         if (message) console.error("Terrain sampling failed", err);
-      });
+      }
+    })();
 
     return () => {
       cancelled = true;
     };
-  }, [safePoints, viewerReady, providerEpoch]);
+  }, [safePoints, viewerReady, clampedAlt]);
 
   useEffect(() => {
     const originalError = console.error;
@@ -434,10 +503,10 @@ export function GpxReplayGlobe({
           name: "Altitude Wall",
           show: false, // set by the showWall toggle effect once ready
           wall: {
-            positions: new Cesium.CallbackProperty(() => renderedPathRef.current, false),
+            positions: new Cesium.CallbackProperty(() => displayPathRef.current, false),
             minimumHeights: new Cesium.CallbackProperty(() => {
               const floor = getAdjustedAltitude(minEleRef.current) - 5;
-              return new Array(renderedPathRef.current.length).fill(floor);
+              return new Array(displayPathRef.current.length).fill(floor);
             }, false),
             material: Cesium.Color.fromCssColorString("#22d3ee").withAlpha(0.35),
             outline: false,
@@ -447,11 +516,15 @@ export function GpxReplayGlobe({
         replayLineRef.current = viewer.entities.add({
           name: "Replay Track",
           polyline: {
-            positions: new Cesium.CallbackProperty(() => renderedPathRef.current, false),
+            positions: new Cesium.CallbackProperty(() => displayPathRef.current, false),
             width: 4,
             material: Cesium.Color.fromCssColorString("#22d3ee").withAlpha(0.95),
             clampToGround: false,
-            arcType: Cesium.ArcType.GEODESIC,
+            // Straight segments (not GEODESIC): the points are ~1 s apart so the
+            // visual difference is nil, and GEODESIC subdivision on a per-frame
+            // length-changing CallbackProperty leaves a stale "stretched" segment
+            // to the moving head vertex (the "death triangle").
+            arcType: Cesium.ArcType.NONE,
           },
         });
 
@@ -634,6 +707,7 @@ export function GpxReplayGlobe({
         viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider();
         altitudeOffsetRef.current = 0;
         renderedPathRef.current = [];
+        displayPathRef.current = [];
         lastRenderedIndexRef.current = -1;
 
         try {
@@ -710,6 +784,7 @@ export function GpxReplayGlobe({
       if (cancelled) return;
       altitudeOffsetRef.current = 0;
       renderedPathRef.current = [];
+      displayPathRef.current = [];
       lastRenderedIndexRef.current = -1;
       if (imageryLoaded) setLoadError("");
       setProviderEpoch((n) => n + 1);
@@ -720,60 +795,116 @@ export function GpxReplayGlobe({
     };
   }, [mapStyle, viewerReady]);
 
+  // Positions the aircraft + trace at an absolute track time. Stable (reads only
+  // refs) so the per-frame ticker and the capture controller can both call it.
+  // The base path is built incrementally; a transient head vertex at the
+  // interpolated position keeps the line reaching the model.
+  const positionAircraftAtTime = useCallback(
+    (timeMs: number) => {
+      const Cesium = cesiumRef.current;
+      const pts = safePointsRef.current;
+      if (!Cesium || pts.length < 2) return;
+      currentTimeMsRef.current = timeMs;
+
+      const index = findIndexAtTime(pts, timeMs);
+      const targetBaseIndex = Math.max(0, Math.min(index, pts.length - 1));
+      const interpolated = getInterpolatedPoint(pts, targetBaseIndex, timeMs);
+      if (!interpolated) return;
+
+      const lastRendered = lastRenderedIndexRef.current;
+      if (lastRendered === -1 || targetBaseIndex < lastRendered) {
+        const next: import("cesium").Cartesian3[] = [];
+        for (let i = 0; i <= targetBaseIndex; i += 1) {
+          next.push(Cesium.Cartesian3.fromDegrees(pts[i].lon, pts[i].lat, clampedAlt(pts[i].lon, pts[i].lat, pts[i].ele, i)));
+        }
+        renderedPathRef.current = next;
+      } else if (targetBaseIndex > lastRendered) {
+        for (let i = lastRendered + 1; i <= targetBaseIndex; i += 1) {
+          renderedPathRef.current.push(
+            Cesium.Cartesian3.fromDegrees(pts[i].lon, pts[i].lat, clampedAlt(pts[i].lon, pts[i].lat, pts[i].ele, i))
+          );
+        }
+      }
+      lastRenderedIndexRef.current = targetBaseIndex;
+
+      // Head/marker altitude: true GPS altitude, clamped above the ground. The
+      // ground is interpolated from the most-detailed pre-sampled terrain between
+      // the bracketing points (falling back to the live globe height).
+      const from = pts[targetBaseIndex];
+      const to = pts[targetBaseIndex + 1];
+      const t =
+        to && to.timeMs > from.timeMs
+          ? Math.max(0, Math.min(1, (timeMs - from.timeMs) / (to.timeMs - from.timeMs)))
+          : 0;
+      const gFrom = groundHeightAt(from.lon, from.lat, targetBaseIndex);
+      const gTo = to ? groundHeightAt(to.lon, to.lat, targetBaseIndex + 1) : gFrom;
+      const headGround =
+        gFrom !== undefined ? (gTo !== undefined ? gFrom + (gTo - gFrom) * t : gFrom) : undefined;
+      const headBase = interpolated.ele || 0;
+      const headAlt =
+        headGround !== undefined ? Math.max(headBase, headGround + GROUND_CLEARANCE_M) : headBase;
+
+      displayPathRef.current = [
+        ...renderedPathRef.current,
+        Cesium.Cartesian3.fromDegrees(interpolated.lon, interpolated.lat, headAlt),
+      ];
+      markerPositionRef.current = Cesium.Cartesian3.fromDegrees(
+        interpolated.lon,
+        interpolated.lat,
+        Math.max(headAlt, 10)
+      );
+    },
+    [clampedAlt, groundHeightAt]
+  );
+
+  // Smooth motion: drive the aircraft/trace from Cesium's own render loop so it
+  // updates every rendered frame (not only on React commits). While playing, the
+  // track time is extrapolated from the last React anchor with the wall clock —
+  // so dropped React frames don't stutter the animation.
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer || !viewerReady) return;
+
+    const tick = () => {
+      if (captureModeRef.current) return; // capture positions the aircraft itself
+      const pts = safePointsRef.current;
+      if (pts.length < 2) return;
+      let t: number;
+      if (isPlayingRef.current) {
+        const anchor = playAnchorRef.current;
+        t = anchor.timeMs + (performance.now() - anchor.wall) * speedRef.current;
+        const first = pts[0].timeMs;
+        const last = pts[pts.length - 1].timeMs;
+        t = Math.max(first, Math.min(t, last));
+      } else {
+        t = currentTimeMsRef.current;
+      }
+      positionAircraftAtTime(t);
+    };
+
+    viewer.scene.preRender.addEventListener(tick);
+    return () => {
+      viewer.scene.preRender.removeEventListener(tick);
+    };
+  }, [viewerReady, positionAircraftAtTime]);
+
+  // Initial fit: frame the whole track once after load (free mode only).
   useEffect(() => {
     const viewer = viewerRef.current;
     const Cesium = cesiumRef.current;
+    if (!viewer || !Cesium || !viewerReady || safePoints.length < 2) return;
+    if (fittedRef.current || viewModeRef.current !== "free") return;
 
-    if (!viewer || !Cesium || !viewerReady) return;
-
-    if (safePoints.length < 2) {
-      renderedPathRef.current = [];
-      markerPositionRef.current = null;
-      lastRenderedIndexRef.current = -1;
-      return;
-    }
-
-    const interpolated = getInterpolatedPoint(safePoints, clampedIndex, currentTimeMs);
-    if (!interpolated) return;
-
-    const targetBaseIndex = Math.max(0, Math.min(clampedIndex, safePoints.length - 1));
-    const lastRendered = lastRenderedIndexRef.current;
-
-    if (lastRendered === -1 || targetBaseIndex < lastRendered) {
-      const next: import("cesium").Cartesian3[] = [];
-      for (let i = 0; i <= targetBaseIndex; i += 1) {
-        const p = safePoints[i];
-        next.push(Cesium.Cartesian3.fromDegrees(p.lon, p.lat, getAdjustedAltitude(p.ele)));
-      }
-      renderedPathRef.current = next;
-      lastRenderedIndexRef.current = targetBaseIndex;
-    } else if (targetBaseIndex > lastRendered) {
-      for (let i = lastRendered + 1; i <= targetBaseIndex; i += 1) {
-        const p = safePoints[i];
-        renderedPathRef.current.push(Cesium.Cartesian3.fromDegrees(p.lon, p.lat, getAdjustedAltitude(p.ele)));
-      }
-      lastRenderedIndexRef.current = targetBaseIndex;
-    }
-
-    const markerAltitude = Math.max(10, (interpolated.ele || 0) + altitudeOffsetRef.current);
-    markerPositionRef.current = Cesium.Cartesian3.fromDegrees(
-      interpolated.lon,
-      interpolated.lat,
-      markerAltitude
+    const allPositions = safePoints.map((p) =>
+      Cesium.Cartesian3.fromDegrees(p.lon, p.lat, getAdjustedAltitude(p.ele))
     );
-
-    if (!fittedRef.current && viewModeRef.current === "free") {
-      const allPositions = safePoints.map((p) =>
-        Cesium.Cartesian3.fromDegrees(p.lon, p.lat, getAdjustedAltitude(p.ele))
-      );
-      const sphere = Cesium.BoundingSphere.fromPoints(allPositions);
-      viewer.camera.flyToBoundingSphere(sphere, {
-        duration: 1.25,
-        offset: new Cesium.HeadingPitchRange(0, Cesium.Math.toRadians(-45), Math.max(sphere.radius * 1.5, 2000)),
-      });
-      fittedRef.current = true;
-    }
-  }, [safePoints, clampedIndex, currentTimeMs, viewerReady]);
+    const sphere = Cesium.BoundingSphere.fromPoints(allPositions);
+    viewer.camera.flyToBoundingSphere(sphere, {
+      duration: 1.25,
+      offset: new Cesium.HeadingPitchRange(0, Cesium.Math.toRadians(-45), Math.max(sphere.radius * 1.5, 2000)),
+    });
+    fittedRef.current = true;
+  }, [safePoints, viewerReady]);
 
   useEffect(() => {
     if (!viewerReady) return;
@@ -791,39 +922,9 @@ export function GpxReplayGlobe({
   useEffect(() => {
     if (!viewerReady || !captureControlRef) return;
 
-    const adjustAlt = (ele: number) => Math.max(0, (ele || 0) + altitudeOffsetRef.current);
-
-    const positionAt = (timeMs: number) => {
-      const Cesium = cesiumRef.current;
-      const pts = safePointsRef.current;
-      if (!Cesium || pts.length < 2) return;
-      // Keep the time ref current so the model orientation callback is correct.
-      currentTimeMsRef.current = timeMs;
-      const index = findIndexAtTime(pts, timeMs);
-      const interpolated = getInterpolatedPoint(pts, index, timeMs);
-      if (!interpolated) return;
-
-      const targetBaseIndex = Math.max(0, Math.min(index, pts.length - 1));
-      const lastRendered = lastRenderedIndexRef.current;
-      if (lastRendered === -1 || targetBaseIndex < lastRendered) {
-        const next: import("cesium").Cartesian3[] = [];
-        for (let i = 0; i <= targetBaseIndex; i += 1) {
-          next.push(Cesium.Cartesian3.fromDegrees(pts[i].lon, pts[i].lat, adjustAlt(pts[i].ele)));
-        }
-        renderedPathRef.current = next;
-      } else if (targetBaseIndex > lastRendered) {
-        for (let i = lastRendered + 1; i <= targetBaseIndex; i += 1) {
-          renderedPathRef.current.push(Cesium.Cartesian3.fromDegrees(pts[i].lon, pts[i].lat, adjustAlt(pts[i].ele)));
-        }
-      }
-      lastRenderedIndexRef.current = targetBaseIndex;
-
-      markerPositionRef.current = Cesium.Cartesian3.fromDegrees(
-        interpolated.lon,
-        interpolated.lat,
-        Math.max(10, (interpolated.ele || 0) + altitudeOffsetRef.current)
-      );
-    };
+    // Deterministic capture reuses the same terrain-clamped positioning as live
+    // playback so the recorded frames match exactly.
+    const positionAt = (timeMs: number) => positionAircraftAtTime(timeMs);
 
     const cameraAt = (timeMs: number) => {
       const Cesium = cesiumRef.current;
@@ -890,6 +991,7 @@ export function GpxReplayGlobe({
         lastValidHeadingRef.current = null;
         lastRenderedIndexRef.current = -1;
         renderedPathRef.current = [];
+        displayPathRef.current = [];
         if (currentMarkerRef.current) {
           currentMarkerRef.current.show = viewModeRef.current !== "cockpit";
         }
@@ -908,7 +1010,7 @@ export function GpxReplayGlobe({
       captureControlRef.current = null;
       captureModeRef.current = false;
     };
-  }, [viewerReady, captureControlRef]);
+  }, [viewerReady, captureControlRef, positionAircraftAtTime]);
 
   useEffect(() => {
     const viewer = viewerRef.current;

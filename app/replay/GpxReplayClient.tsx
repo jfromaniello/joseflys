@@ -16,7 +16,7 @@ import {
   type SpeedOption,
   type ViewMode,
 } from "./types";
-import { parseGpxText } from "./parseGpx";
+import { parseTrack } from "./parseTrack";
 import { parseCameraParam } from "./cameraParams";
 import {
   computeAltitudeFt,
@@ -25,7 +25,10 @@ import {
   computeTotalDistanceNm,
   computeTrackHeadingDeg,
   computeVerticalSpeedFpm,
+  computeWindComponents,
   findPointIndexByTime,
+  hasRichTelemetry,
+  sampleTelemetry,
 } from "./replayMetrics";
 import { createShareUrl, type ShareStatus } from "./shareReplay";
 import { useFullscreen } from "./useFullscreen";
@@ -159,15 +162,15 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
     if (!initialGpx || initialGpxAppliedRef.current) return;
     initialGpxAppliedRef.current = true;
     try {
-      const parsed = parseGpxText(initialGpx);
-      // One-shot load of server-provided GPX into state on mount. Parsing relies
-      // on DOMParser (client only), so it can't run in a lazy initializer.
+      const { points: parsed } = parseTrack(initialGpx);
+      // One-shot load of server-provided track into state on mount. GPX parsing
+      // relies on DOMParser (client only), so it can't run in a lazy initializer.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setPoints(parsed);
       setRawGpx(initialGpx);
       setError("");
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to parse shared GPX.";
+      const message = err instanceof Error ? err.message : "Failed to parse shared track.";
       setError(message);
     }
   }, [initialGpx]);
@@ -182,10 +185,18 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
     [points, currentTimeMs]
   );
   const totalDistanceNm = useMemo(() => computeTotalDistanceNm(points), [points]);
-  const currentSpeed = useMemo(
+  const richTelemetry = useMemo(() => hasRichTelemetry(points), [points]);
+  const telemetry = useMemo(
+    () => sampleTelemetry(points, currentTimeMs),
+    [points, currentTimeMs]
+  );
+  const derivedSpeed = useMemo(
     () => computeGroundSpeed(points, currentIndex),
     [points, currentIndex]
   );
+  // Prefer the avionics-recorded ground speed when present; fall back to the
+  // GPS-derived value for plain GPX tracks.
+  const currentSpeedKnots = telemetry.groundSpeedKt ?? derivedSpeed.knots;
   const currentAltitudeFt = useMemo(
     () => computeAltitudeFt(points, currentIndex, currentTimeMs),
     [points, currentIndex, currentTimeMs]
@@ -197,6 +208,10 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
   const currentTrackDeg = useMemo(
     () => computeTrackHeadingDeg(points, currentTimeMs),
     [points, currentTimeMs]
+  );
+  const windComponents = useMemo(
+    () => computeWindComponents(telemetry.windDirDeg, telemetry.windSpeedKt, currentTrackDeg),
+    [telemetry.windDirDeg, telemetry.windSpeedKt, currentTrackDeg]
   );
   const flight = useCircuitAnalysis(points);
   const currentStage = useMemo(() => {
@@ -275,14 +290,15 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
 
   const handleFile = useCallback(
     async (file: File) => {
-      if (!file.name.toLowerCase().endsWith(".gpx")) {
-        setError("Please select a .gpx file.");
+      const name = file.name.toLowerCase();
+      if (!name.endsWith(".gpx") && !name.endsWith(".csv")) {
+        setError("Please select a .gpx track or a Garmin .csv log.");
         return;
       }
 
       try {
         const text = await file.text();
-        const parsed = parseGpxText(text);
+        const { points: parsed } = parseTrack(text);
         setPoints(parsed);
         setRawGpx(text);
         setElapsedMs(0);
@@ -290,7 +306,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
         setError("");
         resetShare();
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to parse GPX file.";
+        const message = err instanceof Error ? err.message : "Failed to parse track file.";
         setError(message);
         setPoints([]);
         setRawGpx("");
@@ -353,7 +369,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
           <input
             ref={inputRef}
             type="file"
-            accept=".gpx,application/gpx+xml"
+            accept=".gpx,.csv,application/gpx+xml,text/csv"
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0];
@@ -396,8 +412,9 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
                 <div className={isFullscreen ? "flex-1 relative" : ""}>
                   <GpxReplayGlobe
                     points={points}
-                    currentIndex={currentIndex}
                     currentTimeMs={currentTimeMs}
+                    isPlaying={isPlaying}
+                    speed={speed}
                     viewMode={viewMode}
                     mapStyle={mapStyle}
                     onViewModeInterrupt={handleViewModeInterrupt}
@@ -418,11 +435,16 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
                 <FullscreenButton isFullscreen={isFullscreen} onToggle={() => void toggleFullscreen()} />
 
                 <TelemetryOverlay
-                  speedKnots={currentSpeed.knots}
+                  speedKnots={currentSpeedKnots}
                   altitudeFt={currentAltitudeFt}
                   verticalSpeedFpm={currentVerticalSpeedFpm}
                   trackDeg={currentTrackDeg}
                   stage={currentStage}
+                  iasKt={telemetry.iasKt}
+                  tasKt={telemetry.tasKt}
+                  windDirDeg={telemetry.windDirDeg}
+                  windSpeedKt={telemetry.windSpeedKt}
+                  windComponents={windComponents}
                 />
 
                 <ReplayControls
@@ -480,7 +502,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
               ) : null}
 
               <StatsGrid
-                speedKnots={currentSpeed.knots}
+                speedKnots={currentSpeedKnots}
                 altitudeFt={currentAltitudeFt}
                 verticalSpeedFpm={currentVerticalSpeedFpm}
                 trackDeg={currentTrackDeg}
@@ -488,6 +510,12 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
                 durationMs={timeline.durationMs}
                 pointCount={points.length}
                 currentIndex={currentIndex}
+                hasRichTelemetry={richTelemetry}
+                iasKt={telemetry.iasKt}
+                tasKt={telemetry.tasKt}
+                windDirDeg={telemetry.windDirDeg}
+                windSpeedKt={telemetry.windSpeedKt}
+                windComponents={windComponents}
               />
             </>
           ) : null}

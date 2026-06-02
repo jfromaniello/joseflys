@@ -107,6 +107,40 @@ export function interpolateAtTime(points: ReplayPoint[], targetMs: number): Repl
   return getInterpolatedPoint(points, idx, targetMs);
 }
 
+/** Optional numeric fields on {@link ReplayPoint} that vary continuously. */
+type NumericPointKey = {
+  [K in keyof ReplayPoint]-?: NonNullable<ReplayPoint[K]> extends number ? K : never;
+}[keyof ReplayPoint];
+
+/**
+ * Linearly interpolates an optional numeric field (e.g. `iasKt`, `pitchDeg`) at
+ * `targetMs` between the bracketing points. Falls back to whichever endpoint is
+ * defined when only one has the field, and returns `null` when neither does —
+ * so tracks lacking the field (plain GPX) yield `null` cleanly.
+ *
+ * Note: meant for non-wrapping quantities. Don't use it on compass directions,
+ * which can jump across 0°/360°.
+ */
+export function sampleField(
+  points: ReplayPoint[],
+  targetMs: number,
+  key: NumericPointKey
+): number | null {
+  if (points.length === 0) return null;
+  const idx = findIndexAtTime(points, targetMs);
+  const from = points[idx];
+  const a = from?.[key];
+  const to = points[idx + 1];
+  if (idx >= points.length - 1 || !to) return typeof a === "number" ? a : null;
+  const b = to[key];
+  if (typeof a !== "number") return typeof b === "number" ? b : null;
+  if (typeof b !== "number") return a;
+  const segment = to.timeMs - from.timeMs;
+  if (segment <= 0) return a;
+  const t = Math.max(0, Math.min(1, (targetMs - from.timeMs) / segment));
+  return a + (b - a) * t;
+}
+
 /** Great-circle distance in meters (spherical Earth approximation). */
 export function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371000;

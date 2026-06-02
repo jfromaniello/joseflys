@@ -7,6 +7,7 @@
  */
 
 import { calculateHaversineDistance } from "@/lib/distanceCalculations";
+import { isGarminCsv, parseGarminCsv } from "@/app/replay/parseGarminCsv";
 
 const METERS_TO_FEET = 3.28084;
 
@@ -129,11 +130,26 @@ function computeMaxSpeedKt(points: GpxTrackPoint[]): number {
 }
 
 /**
- * Computes summary statistics from raw GPX text. Returns `null` if the track
- * does not contain at least two valid, timestamped track points.
+ * Computes summary statistics from raw track text (GPX or a Garmin G3X CSV log).
+ * Returns `null` if the track does not contain at least two valid, timestamped
+ * points.
  */
 export function computeGpxStats(content: string): GpxStats | null {
-  const points = parseTrackPoints(content);
+  let points: GpxTrackPoint[];
+  if (isGarminCsv(content)) {
+    try {
+      points = parseGarminCsv(content).map((p) => ({
+        lat: p.lat,
+        lon: p.lon,
+        ele: p.ele,
+        timeMs: p.timeMs,
+      }));
+    } catch {
+      return null;
+    }
+  } else {
+    points = parseTrackPoints(content);
+  }
   if (points.length < 2) return null;
 
   let distanceNm = 0;

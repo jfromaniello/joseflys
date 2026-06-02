@@ -1,6 +1,6 @@
 import { magvar } from "magvar";
 import { calculateHaversineDistance } from "@/lib/distanceCalculations";
-import { computeMotionHeadingAdaptive } from "./cameraMath";
+import { computeMotionHeadingAdaptive, findIndexAtTime, sampleField } from "./cameraMath";
 import type { ReplayPoint } from "./types";
 
 const METERS_PER_NM = 1852;
@@ -142,6 +142,89 @@ export function computeTrackHeadingDeg(
 
   const magneticDeg = trueDeg - declination;
   return ((magneticDeg % 360) + 360) % 360;
+}
+
+/**
+ * Whether any point carries rich avionics telemetry (airspeed, attitude, or
+ * wind). Used to decide whether to surface the richer readouts that plain GPX
+ * tracks can't provide.
+ */
+export function hasRichTelemetry(points: ReplayPoint[]): boolean {
+  return points.some(
+    (p) => p.iasKt !== undefined || p.tasKt !== undefined || p.windSpeedKt !== undefined
+  );
+}
+
+/** Live avionics readouts sampled at a moment in the track. */
+export interface TelemetrySample {
+  /** Recorded GPS ground speed (kt), or `null` if the track lacks it. */
+  groundSpeedKt: number | null;
+  iasKt: number | null;
+  tasKt: number | null;
+  windDirDeg: number | null;
+  windSpeedKt: number | null;
+  oatC: number | null;
+}
+
+/**
+ * Samples the recorded avionics fields at `currentTimeMs`. Continuous quantities
+ * are linearly interpolated; wind direction is taken from the nearest point to
+ * avoid interpolating across the 0°/360° wrap. Every field is `null` when the
+ * track does not carry it (e.g. plain GPX).
+ */
+export function sampleTelemetry(points: ReplayPoint[], currentTimeMs: number): TelemetrySample {
+  let windDirDeg: number | null = null;
+  if (points.length > 0) {
+    const idx = findIndexAtTime(points, currentTimeMs);
+    const here = points[idx];
+    const next = points[idx + 1];
+    // Pick the temporally closer of the two bracketing points for direction.
+    const useNext =
+      next && currentTimeMs - here.timeMs > next.timeMs - currentTimeMs ? true : false;
+    const chosen = useNext && next ? next : here;
+    windDirDeg = chosen?.windDirDeg ?? next?.windDirDeg ?? here?.windDirDeg ?? null;
+  }
+
+  return {
+    groundSpeedKt: sampleField(points, currentTimeMs, "groundSpeedKt"),
+    iasKt: sampleField(points, currentTimeMs, "iasKt"),
+    tasKt: sampleField(points, currentTimeMs, "tasKt"),
+    windDirDeg,
+    windSpeedKt: sampleField(points, currentTimeMs, "windSpeedKt"),
+    oatC: sampleField(points, currentTimeMs, "oatC"),
+  };
+}
+
+/** Headwind / crosswind decomposition of the wind relative to the ground track. */
+export interface WindComponents {
+  /** Positive = headwind, negative = tailwind (kt). */
+  headwindKt: number;
+  /** Magnitude of the crosswind (kt). */
+  crosswindKt: number;
+  /** Side the crosswind blows from, relative to the nose. */
+  crosswindSide: "L" | "R";
+}
+
+/**
+ * Decomposes wind into head/tail and crosswind components relative to the
+ * ground `trackDeg`. Wind direction is "from", so a wind blowing straight at the
+ * aircraft (windDir == track) is a pure headwind. Returns `null` if any input is
+ * missing.
+ */
+export function computeWindComponents(
+  windDirDeg: number | null,
+  windSpeedKt: number | null,
+  trackDeg: number | null
+): WindComponents | null {
+  if (windDirDeg === null || windSpeedKt === null || trackDeg === null) return null;
+  const angleRad = ((windDirDeg - trackDeg) * Math.PI) / 180;
+  const headwindKt = windSpeedKt * Math.cos(angleRad);
+  const cross = windSpeedKt * Math.sin(angleRad);
+  return {
+    headwindKt,
+    crosswindKt: Math.abs(cross),
+    crosswindSide: cross >= 0 ? "R" : "L",
+  };
 }
 
 /**

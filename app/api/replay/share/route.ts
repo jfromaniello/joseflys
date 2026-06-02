@@ -45,13 +45,13 @@ export async function POST(request: NextRequest) {
     const gpx = await request.text();
 
     if (!gpx || typeof gpx !== "string" || gpx.trim().length === 0) {
-      return NextResponse.json({ error: "Request body must be GPX text" }, { status: 400 });
+      return NextResponse.json({ error: "Request body must be a track" }, { status: 400 });
     }
 
     if (gpx.length > MAX_GPX_SIZE) {
       return NextResponse.json(
         {
-          error: `GPX too large. Maximum size is ${Math.round(MAX_GPX_SIZE / 1024)}KB`,
+          error: `Track too large. Maximum size is ${Math.round(MAX_GPX_SIZE / 1024)}KB`,
           maxSize: MAX_GPX_SIZE,
           actualSize: gpx.length,
         },
@@ -59,18 +59,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!gpx.includes("<gpx")) {
-      return NextResponse.json({ error: "Not a valid GPX document" }, { status: 400 });
+    // Accept either a GPX document or a Garmin G3X CSV log; store with the
+    // matching extension so the share page can re-parse it correctly.
+    const isGpx = gpx.includes("<gpx");
+    const isGarminCsv =
+      gpx.includes("#airframe_info") ||
+      (gpx.includes("Latitude (deg)") && gpx.includes("Longitude (deg)"));
+
+    if (!isGpx && !isGarminCsv) {
+      return NextResponse.json(
+        { error: "Not a valid GPX document or Garmin CSV log" },
+        { status: 400 }
+      );
     }
 
     const shortId = await generateShortId(gpx);
-    const pathname = `replays/${shortId}.gpx`;
+    const extension = isGpx ? "gpx" : "csv";
+    const pathname = `replays/${shortId}.${extension}`;
 
     await put(pathname, gpx, {
       access: "public",
       addRandomSuffix: false,
       allowOverwrite: true,
-      contentType: "application/gpx+xml",
+      contentType: isGpx ? "application/gpx+xml" : "text/csv",
     });
 
     const baseUrl = request.nextUrl.origin;
