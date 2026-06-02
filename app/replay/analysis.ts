@@ -140,8 +140,10 @@ export interface Landing {
   separationM: number | null;
   /** Median downwind altitude (ft AGL), null without a downwind. */
   altitudeFtAgl: number | null;
-  /** Median ground speed (kt) flown on each leg (null when the leg is absent). */
+  /** Median speed (kt) flown on each leg (null when the leg is absent). */
   speedsKt: { downwind: number | null; base: number | null; final: number | null };
+  /** Whether `speedsKt` are indicated airspeed (Garmin) or GPS ground speed. */
+  speedSource: "ias" | "gs";
 }
 
 export interface CircuitAnalysis {
@@ -771,6 +773,14 @@ function medianSpeedKt(points: ReplayPoint[], indices: number[]): number | null 
   return median(speeds);
 }
 
+/** Median recorded indicated airspeed (kt) across indices; null when unrecorded. */
+function medianIasKt(points: ReplayPoint[], indices: number[]): number | null {
+  const ias = indices
+    .map((i) => points[i]?.iasKt)
+    .filter((v): v is number => typeof v === "number");
+  return median(ias);
+}
+
 /**
  * Builds one landing per detected approach, enriched with the circuit legs that
  * preceded it (downwind / base / final). For each approach we look back to the
@@ -793,6 +803,12 @@ function buildLandings(
 
   const sorted = [...approaches].sort((a, b) => a.timeMs - b.timeMs);
   const landings: Landing[] = [];
+
+  // Prefer recorded indicated airspeed (far more useful for studying approaches)
+  // when the track has it (Garmin CSV); fall back to GPS ground speed for GPX.
+  const useIas = points.some((p) => typeof p.iasKt === "number");
+  const legSpeed = (indices: number[]): number | null =>
+    useIas ? medianIasKt(points, indices) ?? medianSpeedKt(points, indices) : medianSpeedKt(points, indices);
 
   for (let n = 0; n < sorted.length; n += 1) {
     const ap = sorted[n];
@@ -849,10 +865,11 @@ function buildLandings(
       separationM: median(dwCross),
       altitudeFtAgl: median(dwAgl),
       speedsKt: {
-        downwind: medianSpeedKt(points, dwIndices),
-        base: medianSpeedKt(points, baseIndices),
-        final: medianSpeedKt(points, finalIndices),
+        downwind: legSpeed(dwIndices),
+        base: legSpeed(baseIndices),
+        final: legSpeed(finalIndices),
       },
+      speedSource: useIas ? "ias" : "gs",
     });
   }
   return landings;

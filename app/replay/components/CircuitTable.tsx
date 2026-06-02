@@ -31,6 +31,8 @@ export function CircuitTable({ landings, startMs, currentTimeMs, onSeek }: Circu
   const [collapsed, setCollapsed] = useState(false);
   if (landings.length === 0) return null;
 
+  const showsIas = landings[0]?.speedSource === "ias";
+
   return (
     <div className="mt-3 rounded-lg bg-slate-900/60 border border-gray-700">
       <CollapsibleHeader
@@ -51,9 +53,9 @@ export function CircuitTable({ landings, startMs, currentTimeMs, onSeek }: Circu
               <th className="px-3 py-2 font-semibold">Time</th>
               <th className="px-3 py-2 font-semibold text-right">Downwind sep</th>
               <th className="px-3 py-2 font-semibold text-right">Pattern alt</th>
-              <th className="px-3 py-2 font-semibold text-right">DW spd</th>
-              <th className="px-3 py-2 font-semibold text-right">Base spd</th>
-              <th className="px-3 py-2 font-semibold text-right">Final spd</th>
+              <th className="px-3 py-2 font-semibold text-right">DW {showsIas ? "IAS" : "spd"}</th>
+              <th className="px-3 py-2 font-semibold text-right">Base {showsIas ? "IAS" : "spd"}</th>
+              <th className="px-3 py-2 font-semibold text-right">Final {showsIas ? "IAS" : "spd"}</th>
             </tr>
           </thead>
           <tbody>
@@ -93,7 +95,9 @@ export function CircuitTable({ landings, startMs, currentTimeMs, onSeek }: Circu
       )}
       {collapsed ? null : (
         <div className="px-3 py-1.5 text-right text-[10px] text-slate-600">
-          Speeds are GPS ground speed (kt), not airspeed.
+          {showsIas
+            ? "Speeds are indicated airspeed (IAS, kt) from the avionics."
+            : "Speeds are GPS ground speed (kt), not airspeed."}
         </div>
       )}
     </div>
