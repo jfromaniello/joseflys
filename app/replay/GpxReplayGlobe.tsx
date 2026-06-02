@@ -80,7 +80,7 @@ const MODEL_HEADING_OFFSET_RAD = -Math.PI / 2;
 // Minimum clearance (metres) kept between the rendered aircraft and the ground
 // below it, so a GPS altitude that dips under the rendered surface (terrain or
 // the Google 3D tiles, which both sit on the real terrain) never buries the model.
-const GROUND_CLEARANCE_M = 5;
+const GROUND_CLEARANCE_M = 0;
 
 export function GpxReplayGlobe({
   points,
