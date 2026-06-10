@@ -971,7 +971,7 @@ export default function Home() {
               </div>
             </Link>
 
-            {/* GPX Replay 3D Card */}
+            {/* Flight Replay 3D Card */}
             <Link
               href="/replay"
               className="group block p-8 rounded-2xl bg-slate-800/50 backdrop-blur-sm border-2 border-gray-700 hover:border-purple-500/50 transition-all hover:scale-[1.02] active:scale-[0.98]"
@@ -999,7 +999,7 @@ export default function Home() {
                 </div>
                 <div className="flex-1">
                   <h3 className="text-2xl font-bold mb-2" style={{ color: "white" }}>
-                    GPX Replay 3D
+                    Flight Replay 3D
                   </h3>
                   <p
                     className="text-sm leading-relaxed"

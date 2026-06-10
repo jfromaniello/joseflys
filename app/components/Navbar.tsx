@@ -190,7 +190,7 @@ const educational = [
   },
   {
     id: "replay" as const,
-    name: "GPX Replay 3D",
+    name: "Flight Replay 3D",
     href: "/replay",
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>

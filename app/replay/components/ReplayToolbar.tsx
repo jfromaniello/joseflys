@@ -40,7 +40,7 @@ export function ReplayToolbar({
   return (
     <div className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-gray-800 bg-slate-900/70 px-3 sm:px-4">
       <div className="flex min-w-0 items-baseline gap-2.5">
-        <h1 className="shrink-0 text-sm font-bold text-white">GPX Replay 3D</h1>
+        <h1 className="shrink-0 text-sm font-bold text-white">Flight Replay 3D</h1>
         {trackName ? (
           <span className="truncate text-xs" style={{ color: "oklch(0.62 0.02 240)" }} title={trackName}>
             {trackName}

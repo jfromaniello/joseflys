@@ -384,7 +384,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
     return (
       <PageLayout currentPage="replay">
         <CalculatorPageHeader
-          title="GPX Replay 3D"
+          title="Flight Replay 3D"
           description="Drop a GPX track and replay it over time in a 3D globe."
         />
 

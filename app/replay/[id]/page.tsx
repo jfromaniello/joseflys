@@ -32,7 +32,7 @@ export async function generateMetadata({
 
   if (!stats) {
     return createPageMetadata({
-      title: "Shared Flight Replay | GPX Replay 3D",
+      title: "Shared Flight | Flight Replay 3D",
       description:
         "Replay this shared flight track in an animated 3D globe with time-based playback and speed controls.",
       keywords: ["GPX replay", "shared flight", "3D flight path", "flight replay"],
@@ -48,7 +48,7 @@ export async function generateMetadata({
   ].join(" · ");
 
   return createPageMetadata({
-    title: "Shared Flight Replay | GPX Replay 3D",
+    title: "Shared Flight | Flight Replay 3D",
     description: `${summary} — replay this flight in an animated 3D globe with time-based playback and speed controls.`,
     keywords: ["GPX replay", "shared flight", "3D flight path", "flight replay"],
     path: `/replay/${id}`,
