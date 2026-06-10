@@ -1,9 +1,28 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { SPEED_OPTIONS, VIEW_MODE_OPTIONS, type SpeedOption, type ViewMode } from "../types";
-import { CHASE_DISTANCE_MAX, CHASE_DISTANCE_MIN } from "../useReplayPreferences";
+import {
+  RECORD_RESOLUTIONS,
+  recordOutputSize,
+  SPEED_OPTIONS,
+  VIEW_MODE_OPTIONS,
+  type RecordAspect,
+  type SpeedOption,
+  type ViewMode,
+} from "../types";
+import {
+  CHASE_DISTANCE_MAX,
+  CHASE_DISTANCE_MIN,
+  usePersistedRecordAspect,
+  usePersistedRecordResolution,
+} from "../useReplayPreferences";
 import type { RecordingStatus, RecordOptions, RecordQuality } from "../useReplayRecorder";
+
+const ASPECT_OPTIONS: { value: RecordAspect; label: string }[] = [
+  { value: "16:9", label: "16:9" },
+  { value: "9:16", label: "9:16" },
+  { value: "screen", label: "Screen" },
+];
 
 interface RecordModalProps {
   status: RecordingStatus;
@@ -65,6 +84,10 @@ export function RecordModal({
 }: RecordModalProps) {
   const [showTelemetry, setShowTelemetry] = useState(true);
   const [quality, setQuality] = useState<RecordQuality>("sharp");
+  const [aspect, setAspect] = usePersistedRecordAspect();
+  const [resolution, setResolution] = usePersistedRecordResolution();
+
+  const outputSize = recordOutputSize(aspect, resolution);
 
   const busy = status === "recording" || status === "encoding";
 
@@ -116,7 +139,11 @@ export function RecordModal({
           <p className="text-sm text-red-300">{error ?? "Something went wrong while recording."}</p>
         ) : status === "done" && resultUrl ? (
           <div className="space-y-3">
-            <video src={resultUrl} controls className="w-full rounded-lg border border-slate-700 bg-black" />
+            <video
+              src={resultUrl}
+              controls
+              className="w-full max-h-[55vh] object-contain rounded-lg border border-slate-700 bg-black"
+            />
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs text-emerald-400">Saved to your downloads.</span>
               <a
@@ -207,6 +234,47 @@ export function RecordModal({
 
             <div>
               <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                Format
+              </div>
+              <div className="grid grid-cols-3 gap-1 rounded-md bg-slate-800/60 p-0.5">
+                {ASPECT_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setAspect(opt.value)}
+                    className={`px-2 py-1.5 rounded text-xs font-medium cursor-pointer transition-colors ${
+                      aspect === opt.value ? "bg-cyan-500 text-slate-950" : "text-gray-300 hover:bg-slate-700"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              {aspect !== "screen" ? (
+                <div className="mt-1 grid grid-cols-2 gap-1 rounded-md bg-slate-800/60 p-0.5">
+                  {RECORD_RESOLUTIONS.map((opt) => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => setResolution(opt)}
+                      className={`px-2 py-1.5 rounded text-xs font-medium cursor-pointer transition-colors ${
+                        resolution === opt ? "bg-cyan-500 text-slate-950" : "text-gray-300 hover:bg-slate-700"
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+              <p className="mt-1.5 text-[11px] text-slate-400 leading-tight">
+                {outputSize
+                  ? `Exports a ${outputSize.width}×${outputSize.height} MP4, independent of your window size.`
+                  : "Matches the current 3D view size (varies by screen and window)."}
+              </p>
+            </div>
+
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
                 Quality
               </div>
               <div className="grid grid-cols-2 gap-1 rounded-md bg-slate-800/60 p-0.5">
@@ -240,7 +308,7 @@ export function RecordModal({
 
             <button
               type="button"
-              onClick={() => onStart({ speed, showTelemetry, quality })}
+              onClick={() => onStart({ speed, showTelemetry, quality, aspect, resolution })}
               className="w-full rounded-md px-4 py-2.5 text-sm font-semibold cursor-pointer transition-colors bg-red-600 hover:bg-red-500 text-white"
             >
               Start recording

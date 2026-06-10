@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ReplayPoint, SpeedOption } from "./types";
+import { recordOutputSize, type RecordAspect, type RecordResolution, type ReplayPoint, type SpeedOption } from "./types";
 import {
   computeAltitudeFt,
   computeGroundSpeed,
@@ -18,6 +18,13 @@ import type { CaptureControl } from "./GpxReplayGlobe";
 
 const FPS = 30;
 const FRAME_INTERVAL_MS = 1000 / FPS;
+
+// Logical (CSS-pixel) width the PFD scene is laid out at for fixed presets: a
+// typical desktop viewport for landscape, a phone-sized one for vertical —
+// mirroring how the live overlay would look on those devices. Using a constant
+// (instead of the live canvas size) keeps the overlay framing identical across
+// machines and across resolutions of the same aspect.
+const PFD_LAYOUT_WIDTH: Record<"16:9" | "9:16", number> = { "16:9": 1280, "9:16": 420 };
 
 export type RecordingStatus =
   | "idle"
@@ -40,6 +47,10 @@ export interface RecordOptions {
   /** Whether to composite the telemetry HUD onto the video. */
   showTelemetry: boolean;
   quality: RecordQuality;
+  /** Output aspect: fixed 16:9 / 9:16 presets, or "screen" to match the live canvas. */
+  aspect: RecordAspect;
+  /** Output resolution preset (ignored when `aspect` is "screen"). */
+  resolution: RecordResolution;
 }
 
 interface UseReplayRecorderParams {
@@ -104,6 +115,9 @@ export function useReplayRecorder({
   const resultUrlRef = useRef<string | null>(null);
   const abortRef = useRef(false);
 
+  // Whether the globe viewport is currently fixed to the recording size.
+  const viewportFixedRef = useRef(false);
+
   const cleanupLoop = useCallback(() => {
     if (rafRef.current !== null) {
       cancelAnimationFrame(rafRef.current);
@@ -111,17 +125,26 @@ export function useReplayRecorder({
     }
   }, []);
 
+  // Restores the responsive globe layout after a fixed-size capture (idempotent).
+  const releaseViewport = useCallback(() => {
+    if (!viewportFixedRef.current) return;
+    viewportFixedRef.current = false;
+    void captureControlRef.current?.setRecordingSize(null);
+  }, [captureControlRef]);
+
   useEffect(() => {
     return () => {
       cleanupLoop();
+      releaseViewport();
       recorderRef.current?.dispose();
       if (resultUrlRef.current) URL.revokeObjectURL(resultUrlRef.current);
     };
-  }, [cleanupLoop]);
+  }, [cleanupLoop, releaseViewport]);
 
   const reset = useCallback(() => {
     abortRef.current = true;
     cleanupLoop();
+    releaseViewport();
     recorderRef.current?.dispose();
     recorderRef.current = null;
     if (resultUrlRef.current) {
@@ -132,13 +155,21 @@ export function useReplayRecorder({
     setError(null);
     setProgress(0);
     setStatus("idle");
-  }, [cleanupLoop]);
+  }, [cleanupLoop, releaseViewport]);
 
   const startRecording = useCallback(
-    ({ speed: speedMultiplier, showTelemetry, quality }: RecordOptions) => {
+    ({ speed: speedMultiplier, showTelemetry, quality, aspect, resolution }: RecordOptions) => {
       const canvas = canvasRef.current;
       const { durationMs: duration } = latest.current;
       if (!supported || !canvas || duration <= 0 || status === "recording" || status === "encoding") {
+        return;
+      }
+
+      // Fixed presets need the globe controller to pin the viewport size.
+      const output = recordOutputSize(aspect, resolution);
+      if (output && !captureControlRef.current) {
+        setStatus("error");
+        setError("3D view isn't ready yet.");
         return;
       }
 
@@ -149,9 +180,11 @@ export function useReplayRecorder({
       setStatus("recording");
       setElapsedMs(0);
 
-      // Composite target: globe frame + HUD, sized to the canvas backing store.
-      const width = canvas.width;
-      const height = canvas.height;
+      // Composite target: globe frame + HUD. Fixed presets render at exact
+      // output pixels regardless of window size / devicePixelRatio; "screen"
+      // keeps the live canvas backing-store size.
+      const width = output ? output.width : canvas.width;
+      const height = output ? output.height : canvas.height;
       const composite = document.createElement("canvas");
       composite.width = width;
       composite.height = height;
@@ -162,11 +195,13 @@ export function useReplayRecorder({
         return;
       }
 
-      // The PFD scene is laid out in CSS pixels matching the live overlay, then
-      // scaled onto the (device-pixel) backing store when composited.
-      const cssWidth = canvas.clientWidth || width;
-      const cssHeight = canvas.clientHeight || height;
+      // The PFD scene is laid out in CSS pixels, then scaled onto the
+      // (device-pixel) backing store when composited. Fixed presets use a
+      // standard logical width; "screen" mirrors the live overlay.
+      const cssWidth =
+        output && aspect !== "screen" ? PFD_LAYOUT_WIDTH[aspect] : canvas.clientWidth || width;
       const pfdScale = width / cssWidth;
+      const cssHeight = output ? height / pfdScale : canvas.clientHeight || height;
 
       // Draws the globe frame + (optionally) the telemetry overlay for a given
       // time: the glass-cockpit PFD when it is live on screen, the simple HUD
@@ -192,6 +227,7 @@ export function useReplayRecorder({
       };
 
       const finishRecording = async (recorder: Mp4Recorder) => {
+        releaseViewport();
         if (abortRef.current) return;
         setStatus("encoding");
         try {
@@ -230,12 +266,25 @@ export function useReplayRecorder({
           return;
         }
 
+        // Pin the globe viewport to the chosen output size for the whole capture.
+        if (output && captureControlRef.current) {
+          viewportFixedRef.current = true;
+          await captureControlRef.current.setRecordingSize(output);
+          if (abortRef.current) {
+            releaseViewport();
+            recorder.dispose();
+            recorderRef.current = null;
+            return;
+          }
+        }
+
         const frameDurMicros = Math.round(1_000_000 / FPS);
 
         if (quality === "sharp") {
           // Deterministic: step time in fixed increments, wait for tiles each frame.
           const control = captureControlRef.current;
           if (!control) {
+            releaseViewport();
             recorder.dispose();
             recorderRef.current = null;
             setStatus("error");
@@ -267,6 +316,7 @@ export function useReplayRecorder({
             }
           } catch (err) {
             control.end();
+            releaseViewport();
             recorder.dispose();
             recorderRef.current = null;
             if (abortRef.current) return;
@@ -276,6 +326,7 @@ export function useReplayRecorder({
           }
           control.end();
           if (aborted) {
+            releaseViewport();
             recorder.dispose();
             recorderRef.current = null;
             return;
@@ -304,6 +355,7 @@ export function useReplayRecorder({
             const tMicros = (now - startNow) * 1000;
             recorder.addFrame(composite, tMicros, frameIndex % (FPS * 2) === 0).catch((err) => {
               cleanupLoop();
+              releaseViewport();
               if (abortRef.current) return;
               setStatus("error");
               setError(err instanceof Error ? err.message : "Encoding failed.");
@@ -323,7 +375,7 @@ export function useReplayRecorder({
         rafRef.current = requestAnimationFrame(loop);
       })();
     },
-    [canvasRef, supported, status, setElapsedMs, setIsPlaying, cleanupLoop, captureControlRef]
+    [canvasRef, supported, status, setElapsedMs, setIsPlaying, cleanupLoop, releaseViewport, captureControlRef]
   );
 
   return { supported, status, progress, resultUrl, error, startRecording, reset };

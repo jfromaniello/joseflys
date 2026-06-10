@@ -1,7 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { isMapStyle, isViewMode, type MapStyle, type ViewMode } from "./types";
+import {
+  isMapStyle,
+  isRecordAspect,
+  isRecordResolution,
+  isViewMode,
+  type MapStyle,
+  type RecordAspect,
+  type RecordResolution,
+  type ViewMode,
+} from "./types";
 import { DEFAULT_CHASE_RANGE_M } from "./cameraMath";
 
 const VIEW_MODE_KEY = "gpxReplay.viewMode";
@@ -11,6 +20,8 @@ const SHOW_TRACK_KEY = "gpxReplay.showTrack";
 const SHOW_WALL_KEY = "gpxReplay.showWall";
 const CHASE_DISTANCE_KEY = "gpxReplay.chaseDistance";
 const SHOW_PFD_KEY = "gpxReplay.showPfd";
+const RECORD_ASPECT_KEY = "gpxReplay.recordAspect";
+const RECORD_RESOLUTION_KEY = "gpxReplay.recordResolution";
 
 /**
  * View-mode state persisted to localStorage.
@@ -147,6 +158,54 @@ export function usePersistedShowPfd(): [boolean, (value: boolean) => void] {
   }, [showPfd]);
 
   return [showPfd, setShowPfd];
+}
+
+/**
+ * Recording output aspect ratio, persisted to localStorage (default 16:9).
+ * Same SSR-safe mount-hydration approach as {@link usePersistedViewMode}.
+ */
+export function usePersistedRecordAspect(): [RecordAspect, (value: RecordAspect) => void] {
+  const [aspect, setAspect] = useState<RecordAspect>("16:9");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = window.localStorage.getItem(RECORD_ASPECT_KEY);
+    if (!stored || !isRecordAspect(stored)) return;
+    // One-shot hydration from an external store on mount (see note above).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setAspect(stored);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(RECORD_ASPECT_KEY, aspect);
+  }, [aspect]);
+
+  return [aspect, setAspect];
+}
+
+/**
+ * Recording output resolution preset, persisted to localStorage (default
+ * 1080p). Same SSR-safe mount-hydration approach as {@link usePersistedViewMode}.
+ */
+export function usePersistedRecordResolution(): [RecordResolution, (value: RecordResolution) => void] {
+  const [resolution, setResolution] = useState<RecordResolution>("1080p");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = window.localStorage.getItem(RECORD_RESOLUTION_KEY);
+    if (!stored || !isRecordResolution(stored)) return;
+    // One-shot hydration from an external store on mount (see note above).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setResolution(stored);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(RECORD_RESOLUTION_KEY, resolution);
+  }, [resolution]);
+
+  return [resolution, setResolution];
 }
 
 /** Bounds for the user-adjustable chase camera distance (metres behind). */

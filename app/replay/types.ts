@@ -121,6 +121,35 @@ export function isMapStyle(value: string): value is MapStyle {
   return (MAP_STYLES as string[]).includes(value);
 }
 
+/** Recording output aspect ratio ("screen" matches the live canvas size). */
+export type RecordAspect = "16:9" | "9:16" | "screen";
+
+export const RECORD_ASPECTS: RecordAspect[] = ["16:9", "9:16", "screen"];
+
+export function isRecordAspect(value: string): value is RecordAspect {
+  return (RECORD_ASPECTS as string[]).includes(value);
+}
+
+/** Recording output resolution preset (interpreted per aspect ratio). */
+export type RecordResolution = "1080p" | "720p";
+
+export const RECORD_RESOLUTIONS: RecordResolution[] = ["1080p", "720p"];
+
+export function isRecordResolution(value: string): value is RecordResolution {
+  return (RECORD_RESOLUTIONS as string[]).includes(value);
+}
+
+/** Output pixel dimensions for a recording preset; null means "match the live canvas". */
+export function recordOutputSize(
+  aspect: RecordAspect,
+  resolution: RecordResolution
+): { width: number; height: number } | null {
+  if (aspect === "screen") return null;
+  const long = resolution === "1080p" ? 1920 : 1280;
+  const short = resolution === "1080p" ? 1080 : 720;
+  return aspect === "16:9" ? { width: long, height: short } : { width: short, height: long };
+}
+
 /** Allowed playback speed multipliers. */
 export const SPEED_OPTIONS = [1, 10, 50, 100] as const;
 

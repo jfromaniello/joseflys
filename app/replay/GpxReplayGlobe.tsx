@@ -33,6 +33,13 @@ export interface CaptureControl {
   frameAtTime: (timeMs: number) => Promise<void>;
   /** Leaves capture mode and restores live behavior. */
   end: () => void;
+  /**
+   * Fixes the globe viewport so the WebGL backing store matches `size` (output
+   * pixels) regardless of window size or devicePixelRatio: the container is
+   * letterboxed to the target aspect and `resolutionScale` compensates for the
+   * CSS-to-device pixel ratio. Pass null to restore the responsive layout.
+   */
+  setRecordingSize: (size: { width: number; height: number } | null) => Promise<void>;
 }
 
 type DeviceOrientationEventWithPermission = typeof DeviceOrientationEvent & {
@@ -142,6 +149,13 @@ export function GpxReplayGlobe({
   const markerPositionRef = useRef<import("cesium").Cartesian3 | null>(null);
   const lastRenderedIndexRef = useRef<number>(-1);
   const fittedRef = useRef(false);
+  // Saved container styles + resolutionScale while a fixed recording viewport is
+  // applied (see CaptureControl.setRecordingSize). Kept in a ref so the restore
+  // data survives re-runs of the capture-control effect.
+  const recordingViewportRef = useRef<{
+    style: { width: string; height: string; position: string; inset: string; margin: string };
+    resolutionScale: number;
+  } | null>(null);
 
   const safePointsRef = useRef<ReplayPoint[]>([]);
   const currentTimeMsRef = useRef<number>(0);
@@ -1042,6 +1056,74 @@ export function GpxReplayGlobe({
         requestAnimationFrame(check);
       });
 
+    // Forces a resize/render pass and resolves once the new size has painted.
+    const settleResize = () =>
+      new Promise<void>((resolve) => {
+        const viewer = viewerRef.current;
+        if (!viewer) {
+          resolve();
+          return;
+        }
+        viewer.resize();
+        viewer.scene.requestRender();
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      });
+
+    const setRecordingSize = async (size: { width: number; height: number } | null) => {
+      const viewer = viewerRef.current;
+      const container = containerRef.current;
+      if (!viewer || !container) return;
+
+      if (size === null) {
+        const saved = recordingViewportRef.current;
+        if (!saved) return;
+        recordingViewportRef.current = null;
+        container.style.width = saved.style.width;
+        container.style.height = saved.style.height;
+        container.style.position = saved.style.position;
+        container.style.inset = saved.style.inset;
+        container.style.margin = saved.style.margin;
+        viewer.resolutionScale = saved.resolutionScale;
+        await settleResize();
+        return;
+      }
+
+      if (!recordingViewportRef.current) {
+        recordingViewportRef.current = {
+          style: {
+            width: container.style.width,
+            height: container.style.height,
+            position: container.style.position,
+            inset: container.style.inset,
+            margin: container.style.margin,
+          },
+          resolutionScale: viewer.resolutionScale,
+        };
+      }
+
+      // CSS→device pixel ratio Cesium is currently rendering at (covers both
+      // devicePixelRatio and useBrowserRecommendedResolution).
+      const canvas = viewer.scene.canvas;
+      const currentRatio = canvas.clientWidth > 0 ? canvas.width / canvas.clientWidth : 1;
+      const baseRatio = currentRatio / recordingViewportRef.current.resolutionScale || 1;
+
+      // Letterbox a box of the target aspect into the area the globe occupies,
+      // centered; resolutionScale then maps it to the exact output pixels.
+      const avail = container.parentElement?.getBoundingClientRect() ?? container.getBoundingClientRect();
+      const rawFit = Math.min(avail.width / size.width, avail.height / size.height);
+      const fit = Number.isFinite(rawFit) && rawFit > 0 ? rawFit : 0.25;
+      const cssW = Math.max(2, Math.round(size.width * fit));
+      const cssH = Math.max(2, Math.round(size.height * fit));
+
+      container.style.position = "absolute";
+      container.style.inset = "0";
+      container.style.margin = "auto";
+      container.style.width = `${cssW}px`;
+      container.style.height = `${cssH}px`;
+      viewer.resolutionScale = size.width / (cssW * baseRatio);
+      await settleResize();
+    };
+
     captureControlRef.current = {
       begin: () => {
         captureModeRef.current = true;
@@ -1061,6 +1143,7 @@ export function GpxReplayGlobe({
       end: () => {
         captureModeRef.current = false;
       },
+      setRecordingSize,
     };
 
     return () => {
