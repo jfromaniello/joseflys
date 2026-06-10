@@ -1148,12 +1148,10 @@ export function GpxReplayGlobe({
   }, [viewMode, viewerReady]);
 
   return (
-    <div className={isFullscreen ? "relative h-full" : "relative"}>
+    <div className="relative h-full">
       <div
         ref={containerRef}
-        className={`w-full overflow-hidden ${
-          isFullscreen ? "h-full" : "h-[580px] rounded-xl border-2 border-gray-700"
-        }`}
+        className="w-full h-full overflow-hidden"
         style={{
           position: "relative",
           userSelect: "none",

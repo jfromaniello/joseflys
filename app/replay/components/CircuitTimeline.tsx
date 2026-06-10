@@ -135,7 +135,7 @@ export function CircuitTimeline({
       : null;
 
   return (
-    <div className="mt-4 rounded-lg bg-slate-900/60 border border-gray-700">
+    <div className="rounded-lg bg-slate-900/60 border border-gray-700">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 border-b border-slate-700/70 px-4 py-2.5">
         <div className="flex items-baseline gap-2 min-w-0">
@@ -164,7 +164,7 @@ export function CircuitTimeline({
       </div>
 
       {/* Stat grid (current landing's field) */}
-      <div className="grid grid-cols-2 gap-x-4 gap-y-3 px-4 py-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-3 px-4 py-3 @lg:grid-cols-4">
         <StatCell
           label="Runway"
           value={analysis.activeRunway.id}

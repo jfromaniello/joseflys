@@ -5,9 +5,11 @@ import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import type { CaptureControl } from "./GpxReplayGlobe";
 import { PageLayout } from "../components/PageLayout";
+import { Navbar } from "../components/Navbar";
 import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
 import { Footer } from "../components/Footer";
 import { Tooltip } from "../components/Tooltip";
+import { formatDistance } from "@/lib/formatters";
 import {
   isSpeedOption,
   type CameraPose,
@@ -27,7 +29,6 @@ import {
   computeVerticalSpeedFpm,
   computeWindComponents,
   findPointIndexByTime,
-  hasRichTelemetry,
   sampleTelemetry,
 } from "./replayMetrics";
 import { createShareUrl, type ShareStatus } from "./shareReplay";
@@ -46,7 +47,6 @@ import { GpxDropzone } from "./components/GpxDropzone";
 import { FullscreenButton } from "./components/FullscreenButton";
 import { TelemetryOverlay } from "./components/TelemetryOverlay";
 import { ReplayControls } from "./components/ReplayControls";
-import { StatsGrid } from "./components/StatsGrid";
 import { CircuitTimeline } from "./components/CircuitTimeline";
 import { CircuitTable } from "./components/CircuitTable";
 import { FlightPhasesTable } from "./components/FlightPhasesTable";
@@ -64,7 +64,7 @@ const GpxReplayGlobe = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="w-full h-[580px] rounded-xl border-2 border-gray-700 bg-slate-900/30 flex items-center justify-center">
+      <div className="w-full h-full bg-slate-900/30 flex items-center justify-center">
         <div className="text-gray-400">Loading 3D replay globe...</div>
       </div>
     ),
@@ -110,6 +110,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
 
   const [points, setPoints] = useState<ReplayPoint[]>([]);
   const [rawGpx, setRawGpx] = useState<string>("");
+  const [trackName, setTrackName] = useState<string>(initialGpxName ?? "");
   const [error, setError] = useState<string>("");
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState<SpeedOption>(initialSpeed);
@@ -185,7 +186,6 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
     [points, currentTimeMs]
   );
   const totalDistanceNm = useMemo(() => computeTotalDistanceNm(points), [points]);
-  const richTelemetry = useMemo(() => hasRichTelemetry(points), [points]);
   const telemetry = useMemo(
     () => sampleTelemetry(points, currentTimeMs),
     [points, currentTimeMs]
@@ -301,6 +301,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
         const { points: parsed } = parseTrack(text);
         setPoints(parsed);
         setRawGpx(text);
+        setTrackName(file.name);
         setElapsedMs(0);
         setIsPlaying(false);
         setError("");
@@ -310,6 +311,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
         setError(message);
         setPoints([]);
         setRawGpx("");
+        setTrackName("");
         setElapsedMs(0);
         setIsPlaying(false);
         resetShare();
@@ -353,129 +355,152 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
   const canShare = points.length >= 2 && rawGpx.length > 0;
   const hasTrack = points.length > 0;
 
-  return (
-    <PageLayout currentPage="replay">
-      <CalculatorPageHeader
-        title="GPX Replay 3D"
-        description="Drop a GPX track and replay it over time in a 3D globe."
-      />
+  const fileInput = (
+    <input
+      ref={inputRef}
+      type="file"
+      accept=".gpx,.csv,application/gpx+xml,text/csv"
+      className="hidden"
+      onChange={(e) => {
+        const file = e.target.files?.[0];
+        if (file) void handleFile(file);
+        e.currentTarget.value = "";
+      }}
+    />
+  );
 
-      <main className="w-full max-w-6xl">
-        <div
-          className={`rounded-2xl p-6 sm:p-8 shadow-2xl bg-slate-800/50 border border-gray-700 ${
-            isFullscreen ? "" : "backdrop-blur-sm"
-          }`}
-        >
-          <input
-            ref={inputRef}
-            type="file"
-            accept=".gpx,.csv,application/gpx+xml,text/csv"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) void handleFile(file);
-              e.currentTarget.value = "";
-            }}
-          />
+  // --- Landing state: no track loaded yet (drop target + site footer) ---
+  if (!hasTrack) {
+    return (
+      <PageLayout currentPage="replay">
+        <CalculatorPageHeader
+          title="GPX Replay 3D"
+          description="Drop a GPX track and replay it over time in a 3D globe."
+        />
 
-          <ReplayToolbar
-            pointCount={points.length}
-            initialGpxName={initialGpxName}
-            onNewGpx={() => inputRef.current?.click()}
-            onShare={handleShare}
-            canShare={canShare}
-            shareStatus={shareStatus}
-            onRecord={handleRecord}
-            canRecord={recorder.supported}
-          />
+        <main className="w-full max-w-3xl">
+          <div className="rounded-2xl p-6 sm:p-8 shadow-2xl bg-slate-800/50 border border-gray-700 backdrop-blur-sm">
+            {fileInput}
 
-          {!hasTrack ? (
-            <GpxDropzone onFile={(file) => void handleFile(file)} onChoose={() => inputRef.current?.click()} />
-          ) : null}
-
-          {error ? (
-            <div className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200">
-              {error}
-            </div>
-          ) : null}
-
-          {hasTrack ? (
-            <>
-              <div
-                ref={fullscreenWrapperRef}
-                className={
-                  isFullscreen
-                    ? "fixed inset-0 z-[9999] bg-slate-950 flex flex-col w-screen h-dvh"
-                    : "relative"
-                }
-              >
-                <div className={isFullscreen ? "flex-1 relative" : ""}>
-                  <GpxReplayGlobe
-                    points={points}
-                    currentTimeMs={currentTimeMs}
-                    isPlaying={isPlaying}
-                    speed={speed}
-                    viewMode={viewMode}
-                    mapStyle={mapStyle}
-                    onViewModeInterrupt={handleViewModeInterrupt}
-                    isFullscreen={isFullscreen}
-                    initialCamera={initialCamera}
-                    cameraStateRef={cameraStateRef}
-                    onOrientationStatusChange={setOrientationStatus}
-                    requestOrientationRef={requestOrientationRef}
-                    headTrackingEnabled={headTrackingEnabled}
-                    canvasRef={globeCanvasRef}
-                    showTrack={showTrack}
-                    showWall={showWall}
-                    chaseDistanceM={chaseDistance}
-                    captureControlRef={captureControlRef}
-                  />
-                </div>
-
-                <FullscreenButton isFullscreen={isFullscreen} onToggle={() => void toggleFullscreen()} />
-
-                <TelemetryOverlay
-                  speedKnots={currentSpeedKnots}
-                  altitudeFt={currentAltitudeFt}
-                  verticalSpeedFpm={currentVerticalSpeedFpm}
-                  trackDeg={currentTrackDeg}
-                  stage={currentStage}
-                  iasKt={telemetry.iasKt}
-                  tasKt={telemetry.tasKt}
-                  windDirDeg={telemetry.windDirDeg}
-                  windSpeedKt={telemetry.windSpeedKt}
-                  windComponents={windComponents}
-                />
-
-                <ReplayControls
-                  isFullscreen={isFullscreen}
-                  isPlaying={isPlaying}
-                  onTogglePlay={() => setIsPlaying((prev) => !prev)}
-                  elapsedMs={clampedElapsedMs}
-                  endMs={timeline.endMs}
-                  currentTimeMs={currentTimeMs}
-                  durationMs={timeline.durationMs}
-                  pointCount={points.length}
-                  onSliderChange={handleSliderChange}
-                  speed={speed}
-                  onSpeedChange={setSpeed}
-                  viewMode={viewMode}
-                  onViewModeChange={changeViewMode}
-                  mapStyle={mapStyle}
-                  onMapStyleChange={setMapStyle}
-                  hasGoogleMapsKey={HAS_GOOGLE_MAPS_KEY}
-                  orientationStatus={orientationStatus}
-                  headTrackingEnabled={headTrackingEnabled}
-                  onHeadTrackingToggle={() => void handleHeadTrackingToggle()}
-                  showTrack={showTrack}
-                  onShowTrackChange={setShowTrack}
-                  showWall={showWall}
-                  onShowWallChange={setShowWall}
-                  chaseDistance={chaseDistance}
-                  onChaseDistanceChange={setChaseDistance}
-                />
+            {error ? (
+              <div className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200">
+                {error}
               </div>
+            ) : null}
 
+            <GpxDropzone onFile={(file) => void handleFile(file)} onChoose={() => inputRef.current?.click()} />
+
+            <div className="mt-6 text-xs" style={{ color: "oklch(0.62 0.02 240)" }}>
+              <div className="flex items-center gap-2">
+                <span>Need help?</span>
+                <Tooltip content="The replay uses GPX track point times. If your file has no timestamps, export again with time data enabled." />
+              </div>
+            </div>
+          </div>
+        </main>
+
+        <Footer
+          description="Replay GPX tracks in a 3D globe with smooth time-based line animation."
+          attribution={<ReplayAttribution />}
+        />
+      </PageLayout>
+    );
+  }
+
+  // --- Replay state: full-viewport app shell (globe + side analysis panel) ---
+  return (
+    <div className="min-h-screen bg-linear-to-br from-slate-900 via-blue-950 to-slate-900">
+      <Navbar currentPage="replay" />
+      {fileInput}
+
+      <div className="flex flex-col xl:h-[calc(100dvh-3.5rem)]">
+        <ReplayToolbar
+          trackName={trackName}
+          onNewGpx={() => inputRef.current?.click()}
+          onShare={handleShare}
+          canShare={canShare}
+          shareStatus={shareStatus}
+          onRecord={handleRecord}
+          canRecord={recorder.supported}
+        />
+
+        <div className="flex flex-1 min-h-0 flex-col xl:flex-row">
+          <div
+            ref={fullscreenWrapperRef}
+            className={
+              isFullscreen
+                ? "fixed inset-0 z-[9999] bg-slate-950 flex flex-col w-screen h-dvh"
+                : "relative h-[calc(100dvh-9rem)] min-h-[20rem] xl:h-auto xl:flex-1 xl:min-w-0"
+            }
+          >
+            <div className={isFullscreen ? "flex-1 relative" : "h-full"}>
+              <GpxReplayGlobe
+                points={points}
+                currentTimeMs={currentTimeMs}
+                isPlaying={isPlaying}
+                speed={speed}
+                viewMode={viewMode}
+                mapStyle={mapStyle}
+                onViewModeInterrupt={handleViewModeInterrupt}
+                isFullscreen={isFullscreen}
+                initialCamera={initialCamera}
+                cameraStateRef={cameraStateRef}
+                onOrientationStatusChange={setOrientationStatus}
+                requestOrientationRef={requestOrientationRef}
+                headTrackingEnabled={headTrackingEnabled}
+                canvasRef={globeCanvasRef}
+                showTrack={showTrack}
+                showWall={showWall}
+                chaseDistanceM={chaseDistance}
+                captureControlRef={captureControlRef}
+              />
+            </div>
+
+            <FullscreenButton isFullscreen={isFullscreen} onToggle={() => void toggleFullscreen()} />
+
+            <TelemetryOverlay
+              speedKnots={currentSpeedKnots}
+              altitudeFt={currentAltitudeFt}
+              verticalSpeedFpm={currentVerticalSpeedFpm}
+              trackDeg={currentTrackDeg}
+              stage={currentStage}
+              iasKt={telemetry.iasKt}
+              tasKt={telemetry.tasKt}
+              windDirDeg={telemetry.windDirDeg}
+              windSpeedKt={telemetry.windSpeedKt}
+              windComponents={windComponents}
+            />
+
+            <ReplayControls
+              isPlaying={isPlaying}
+              onTogglePlay={() => setIsPlaying((prev) => !prev)}
+              elapsedMs={clampedElapsedMs}
+              endMs={timeline.endMs}
+              currentTimeMs={currentTimeMs}
+              durationMs={timeline.durationMs}
+              pointCount={points.length}
+              onSliderChange={handleSliderChange}
+              speed={speed}
+              onSpeedChange={setSpeed}
+              viewMode={viewMode}
+              onViewModeChange={changeViewMode}
+              mapStyle={mapStyle}
+              onMapStyleChange={setMapStyle}
+              hasGoogleMapsKey={HAS_GOOGLE_MAPS_KEY}
+              orientationStatus={orientationStatus}
+              headTrackingEnabled={headTrackingEnabled}
+              onHeadTrackingToggle={() => void handleHeadTrackingToggle()}
+              showTrack={showTrack}
+              onShowTrackChange={setShowTrack}
+              showWall={showWall}
+              onShowWallChange={setShowWall}
+              chaseDistance={chaseDistance}
+              onChaseDistanceChange={setChaseDistance}
+            />
+          </div>
+
+          <aside className="@container shrink-0 bg-slate-900/30 xl:w-[26rem] xl:border-l xl:border-gray-800 xl:overflow-y-auto">
+            <div className="flex flex-col gap-3 p-3">
               {flight ? (
                 <>
                   <CircuitTimeline
@@ -501,82 +526,18 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
                 </>
               ) : null}
 
-              <StatsGrid
-                speedKnots={currentSpeedKnots}
-                altitudeFt={currentAltitudeFt}
-                verticalSpeedFpm={currentVerticalSpeedFpm}
-                trackDeg={currentTrackDeg}
-                totalDistanceNm={totalDistanceNm}
-                durationMs={timeline.durationMs}
-                pointCount={points.length}
-                currentIndex={currentIndex}
-                hasRichTelemetry={richTelemetry}
-                iasKt={telemetry.iasKt}
-                tasKt={telemetry.tasKt}
-                windDirDeg={telemetry.windDirDeg}
-                windSpeedKt={telemetry.windSpeedKt}
-                windComponents={windComponents}
-              />
-            </>
-          ) : null}
+              <div className="rounded-lg bg-slate-900/60 border border-gray-700 px-4 py-2.5 text-xs tabular-nums text-slate-400">
+                {formatDistance(totalDistanceNm, 1)} NM · {Math.round(timeline.durationMs / 60000)} min ·{" "}
+                {points.length.toLocaleString()} points
+              </div>
 
-          <div className="mt-6 text-xs" style={{ color: "oklch(0.62 0.02 240)" }}>
-            <div className="flex items-center gap-2">
-              <span>Need help?</span>
-              <Tooltip content="The replay uses GPX track point times. If your file has no timestamps, export again with time data enabled." />
+              <div className="px-1 text-[10px] leading-relaxed text-slate-500">
+                <ReplayAttribution />
+              </div>
             </div>
-          </div>
+          </aside>
         </div>
-      </main>
-
-      <Footer
-        description="Replay GPX tracks in a 3D globe with smooth time-based line animation."
-        attribution={
-          <>
-            3D globe by{" "}
-            <a
-              href="https://cesium.com/platform/cesiumjs/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline hover:brightness-125"
-              style={{ color: "oklch(0.6 0.1 230)" }}
-            >
-              CesiumJS
-            </a>{" "}
-            · imagery © Esri, OpenStreetMap contributors · aircraft model{" "}
-            <a
-              href="https://sketchfab.com/3d-models/free-cessna-172-replica-low-poly-basic-model-aa0f72aead044664a0555f047cb36262"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline hover:brightness-125"
-              style={{ color: "oklch(0.6 0.1 230)" }}
-            >
-              “Cessna 172”
-            </a>{" "}
-            by{" "}
-            <a
-              href="https://sketchfab.com/quadzii"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline hover:brightness-125"
-              style={{ color: "oklch(0.6 0.1 230)" }}
-            >
-              quadzii
-            </a>{" "}
-            (
-            <a
-              href="https://creativecommons.org/licenses/by/4.0/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline hover:brightness-125"
-              style={{ color: "oklch(0.6 0.1 230)" }}
-            >
-              CC BY 4.0
-            </a>
-            )
-          </>
-        }
-      />
+      </div>
 
       {shareModalOpen && shareUrl ? (
         <ShareModal url={shareUrl} onClose={() => setShareModalOpen(false)} />
@@ -602,6 +563,55 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
           onChaseDistanceChange={setChaseDistance}
         />
       ) : null}
-    </PageLayout>
+    </div>
+  );
+}
+
+/** Imagery / Cesium / 3D-model credits, shared by the footer and the replay side panel. */
+function ReplayAttribution() {
+  return (
+    <>
+      3D globe by{" "}
+      <a
+        href="https://cesium.com/platform/cesiumjs/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline hover:brightness-125"
+        style={{ color: "oklch(0.6 0.1 230)" }}
+      >
+        CesiumJS
+      </a>{" "}
+      · imagery © Esri, OpenStreetMap contributors · aircraft model{" "}
+      <a
+        href="https://sketchfab.com/3d-models/free-cessna-172-replica-low-poly-basic-model-aa0f72aead044664a0555f047cb36262"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline hover:brightness-125"
+        style={{ color: "oklch(0.6 0.1 230)" }}
+      >
+        “Cessna 172”
+      </a>{" "}
+      by{" "}
+      <a
+        href="https://sketchfab.com/quadzii"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline hover:brightness-125"
+        style={{ color: "oklch(0.6 0.1 230)" }}
+      >
+        quadzii
+      </a>{" "}
+      (
+      <a
+        href="https://creativecommons.org/licenses/by/4.0/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline hover:brightness-125"
+        style={{ color: "oklch(0.6 0.1 230)" }}
+      >
+        CC BY 4.0
+      </a>
+      )
+    </>
   );
 }

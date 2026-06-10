@@ -13,7 +13,6 @@ import {
 import { CHASE_DISTANCE_MAX, CHASE_DISTANCE_MIN } from "../useReplayPreferences";
 
 interface ReplayControlsProps {
-  isFullscreen: boolean;
   isPlaying: boolean;
   onTogglePlay: () => void;
   /** Elapsed ms within the track, clamped to its duration. */
@@ -65,7 +64,6 @@ function viewModeHint(viewMode: ViewMode): string {
  * own open/close (with click-outside) state for the dropdown.
  */
 export function ReplayControls({
-  isFullscreen,
   isPlaying,
   onTogglePlay,
   elapsedMs,
@@ -108,13 +106,7 @@ export function ReplayControls({
   const disabled = pointCount < 2 || durationMs <= 0;
 
   return (
-    <div
-      className={
-        isFullscreen
-          ? "absolute bottom-4 left-4 right-4 z-[600] flex items-center gap-3 rounded-lg bg-slate-900/85 border border-gray-700 px-3 py-2 backdrop-blur"
-          : "mt-4 flex items-center gap-3 rounded-lg bg-slate-900/60 border border-gray-700 px-3 py-2"
-      }
-    >
+    <div className="absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 z-[600] flex items-center gap-3 rounded-lg bg-slate-900/85 border border-gray-700 px-3 py-2 backdrop-blur">
       <button
         type="button"
         onClick={onTogglePlay}

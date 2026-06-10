@@ -34,7 +34,7 @@ export function CircuitTable({ landings, startMs, currentTimeMs, onSeek }: Circu
   const showsIas = landings[0]?.speedSource === "ias";
 
   return (
-    <div className="mt-3 rounded-lg bg-slate-900/60 border border-gray-700">
+    <div className="rounded-lg bg-slate-900/60 border border-gray-700">
       <CollapsibleHeader
         title="Landings"
         count={landings.length}
@@ -48,14 +48,14 @@ export function CircuitTable({ landings, startMs, currentTimeMs, onSeek }: Circu
         <table className="w-full text-left text-xs">
           <thead>
             <tr className="text-[10px] uppercase tracking-wider text-slate-500">
-              <th className="px-3 py-2 font-semibold">#</th>
-              <th className="px-3 py-2 font-semibold">Aerodrome</th>
-              <th className="px-3 py-2 font-semibold">Time</th>
-              <th className="px-3 py-2 font-semibold text-right">Downwind sep</th>
-              <th className="px-3 py-2 font-semibold text-right">Pattern alt</th>
-              <th className="px-3 py-2 font-semibold text-right">DW {showsIas ? "IAS" : "spd"}</th>
-              <th className="px-3 py-2 font-semibold text-right">Base {showsIas ? "IAS" : "spd"}</th>
-              <th className="px-3 py-2 font-semibold text-right">Final {showsIas ? "IAS" : "spd"}</th>
+              <th className="px-2 py-2 font-semibold">#</th>
+              <th className="px-2 py-2 font-semibold">Aerodrome</th>
+              <th className="px-2 py-2 font-semibold">Time</th>
+              <th className="px-2 py-2 font-semibold text-right">Downwind sep</th>
+              <th className="px-2 py-2 font-semibold text-right">Pattern alt</th>
+              <th className="px-2 py-2 font-semibold text-right">DW {showsIas ? "IAS" : "spd"}</th>
+              <th className="px-2 py-2 font-semibold text-right">Base {showsIas ? "IAS" : "spd"}</th>
+              <th className="px-2 py-2 font-semibold text-right">Final {showsIas ? "IAS" : "spd"}</th>
             </tr>
           </thead>
           <tbody>
@@ -69,23 +69,23 @@ export function CircuitTable({ landings, startMs, currentTimeMs, onSeek }: Circu
                     isCurrent ? "bg-cyan-500/10" : ""
                   }`}
                 >
-                  <td className="px-3 py-2 font-semibold text-slate-300">{l.index}</td>
-                  <td className="px-3 py-2">
+                  <td className="px-2 py-2 font-semibold text-slate-300">{l.index}</td>
+                  <td className="px-2 py-2">
                     <span className="font-semibold text-cyan-300">{l.aerodromeCode}</span>
                     {l.touched ? null : (
                       <span className="ml-1.5 text-[10px] text-slate-500">(low pass)</span>
                     )}
                   </td>
-                  <td className="px-3 py-2 tabular-nums text-slate-400">{formatUtcShort(l.timeMs)}</td>
-                  <td className="px-3 py-2 text-right tabular-nums text-slate-200">
+                  <td className="px-2 py-2 tabular-nums text-slate-400">{formatUtcShort(l.timeMs)}</td>
+                  <td className="px-2 py-2 text-right tabular-nums text-slate-200">
                     {l.separationM != null ? `${(l.separationM / METERS_PER_NM).toFixed(2)} NM` : "–"}
                   </td>
-                  <td className="px-3 py-2 text-right tabular-nums text-slate-200">
+                  <td className="px-2 py-2 text-right tabular-nums text-slate-200">
                     {l.altitudeFtAgl != null ? `${Math.round(l.altitudeFtAgl).toLocaleString()} ft` : "–"}
                   </td>
-                  <td className="px-3 py-2 text-right tabular-nums text-slate-300">{kt(l.speedsKt.downwind)}</td>
-                  <td className="px-3 py-2 text-right tabular-nums text-slate-300">{kt(l.speedsKt.base)}</td>
-                  <td className="px-3 py-2 text-right tabular-nums text-slate-300">{kt(l.speedsKt.final)}</td>
+                  <td className="px-2 py-2 text-right tabular-nums text-slate-300">{kt(l.speedsKt.downwind)}</td>
+                  <td className="px-2 py-2 text-right tabular-nums text-slate-300">{kt(l.speedsKt.base)}</td>
+                  <td className="px-2 py-2 text-right tabular-nums text-slate-300">{kt(l.speedsKt.final)}</td>
                 </tr>
               );
             })}
