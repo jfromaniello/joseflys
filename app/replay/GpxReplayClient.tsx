@@ -214,6 +214,16 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
     [telemetry.windDirDeg, telemetry.windSpeedKt, currentTrackDeg]
   );
   const flight = useCircuitAnalysis(points);
+  // Aerodromes the flight visits, for terrain flattening around their runways.
+  const flattenCenters = useMemo(
+    () =>
+      (flight?.analyses ?? []).map((a) => ({
+        lat: a.aerodrome.lat,
+        lon: a.aerodrome.lon,
+        runwayLengthFt: a.aerodrome.lengthFt,
+      })),
+    [flight]
+  );
   const currentStage = useMemo(() => {
     if (!flight) return null;
     const phase = circuitPhaseAt(flight, currentTimeMs);
@@ -453,6 +463,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
                 showWall={showWall}
                 chaseDistanceM={chaseDistance}
                 captureControlRef={captureControlRef}
+                flattenCenters={flattenCenters}
               />
             </div>
 

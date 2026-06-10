@@ -23,6 +23,7 @@ import {
   type CamMode,
 } from "./cameraMath";
 import { estimateAttitude, recordedHeadingRad } from "./aircraftAttitude";
+import { createAerodromeFlatteningProvider, type FlattenCenter } from "./terrainFlattening";
 
 /** Imperative controller used by the recorder for deterministic ("Sharp") capture. */
 export interface CaptureControl {
@@ -65,6 +66,8 @@ interface GpxReplayGlobeProps {
   chaseDistanceM?: number;
   /** Receives an imperative controller for deterministic frame-by-frame capture. */
   captureControlRef?: MutableRefObject<CaptureControl | null>;
+  /** Aerodromes to flatten the terrain around (standard map style only). */
+  flattenCenters?: FlattenCenter[];
 }
 
 const CESIUM_ION_TOKEN = process.env.NEXT_PUBLIC_CESIUM_ION_TOKEN;
@@ -109,6 +112,7 @@ export function GpxReplayGlobe({
   showWall = false,
   chaseDistanceM = DEFAULT_CHASE_RANGE_M,
   captureControlRef,
+  flattenCenters,
   headTrackingEnabled = false,
 }: GpxReplayGlobeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -805,7 +809,11 @@ export function GpxReplayGlobe({
             requestWaterMask: true,
           });
           if (cancelled) return;
-          viewer.terrainProvider = terrain;
+          // DEM noise makes runways look wavy; flatten a disc around each
+          // visited aerodrome so the field renders as flat as it really is.
+          const flattened = await createAerodromeFlatteningProvider(Cesium, terrain, flattenCenters ?? []);
+          if (cancelled) return;
+          viewer.terrainProvider = flattened;
         } catch (err) {
           const message = err instanceof Error ? err.message : "";
           if (message) console.error("Cesium terrain failed", err);
@@ -827,7 +835,7 @@ export function GpxReplayGlobe({
     return () => {
       cancelled = true;
     };
-  }, [mapStyle, viewerReady]);
+  }, [mapStyle, viewerReady, flattenCenters]);
 
   // Positions the aircraft + trace at an absolute track time. Stable (reads only
   // refs) so the per-frame ticker and the capture controller can both call it.
