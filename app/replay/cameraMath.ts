@@ -29,6 +29,8 @@ export interface CamPose {
   destination: import("cesium").Cartesian3;
   heading: number;
   pitch: number;
+  /** Bank around the view direction, radians (positive = right wing down). */
+  roll: number;
 }
 
 /** Degrees → radians. */
@@ -283,7 +285,7 @@ export function computePoseFromAircraft(
   const offsetENU = new Cesium.Cartesian3(eastOff, northOff, heightOffset);
   const offsetECEF = Cesium.Matrix4.multiplyByPointAsVector(enu, offsetENU, new Cesium.Cartesian3());
   const camPos = Cesium.Cartesian3.add(target, offsetECEF, new Cesium.Cartesian3());
-  return { destination: camPos, heading: cameraHeadingRad, pitch: pitchRad };
+  return { destination: camPos, heading: cameraHeadingRad, pitch: pitchRad, roll: 0 };
 }
 
 /** First-person cockpit pose, slightly above the aircraft, with optional head-tracking offsets. */
@@ -292,7 +294,8 @@ export function computeCockpitPose(
   aircraftPos: import("cesium").Cartesian3,
   motionHeadingRad: number,
   headingOffsetRad: number,
-  pitchOffsetRad: number
+  pitchOffsetRad: number,
+  rollRad = 0
 ): CamPose {
   const enu = Cesium.Transforms.eastNorthUpToFixedFrame(aircraftPos);
   const offsetENU = new Cesium.Cartesian3(0, 0, 4);
@@ -302,6 +305,7 @@ export function computeCockpitPose(
     destination: camPos,
     heading: motionHeadingRad + headingOffsetRad,
     pitch: toRad(-2) + pitchOffsetRad,
+    roll: rollRad,
   };
 }
 
@@ -318,7 +322,8 @@ export function computeCameraPose(
   sphere: import("cesium").BoundingSphere | null,
   cockpitHeadingOffsetRad = 0,
   cockpitPitchOffsetRad = 0,
-  chaseRangeM = DEFAULT_CHASE_RANGE_M
+  chaseRangeM = DEFAULT_CHASE_RANGE_M,
+  cockpitRollRad = 0
 ): CamPose {
   switch (mode) {
     case "chase":
@@ -343,7 +348,14 @@ export function computeCameraPose(
       return computePoseFromAircraft(Cesium, aircraftPos, motionHeadingRad, range, height, toRad(-38));
     }
     case "cockpit":
-      return computeCockpitPose(Cesium, aircraftPos, motionHeadingRad, cockpitHeadingOffsetRad, cockpitPitchOffsetRad);
+      return computeCockpitPose(
+        Cesium,
+        aircraftPos,
+        motionHeadingRad,
+        cockpitHeadingOffsetRad,
+        cockpitPitchOffsetRad,
+        cockpitRollRad
+      );
     default:
       return computePoseFromAircraft(Cesium, aircraftPos, motionHeadingRad, 2500, 900, toRad(-18));
   }

@@ -17,11 +17,12 @@ import {
   findIndexAtTime,
   getInterpolatedPoint,
   lerpAngle,
+  sampleField,
   DEFAULT_CHASE_RANGE_M,
   type CamEvent,
   type CamMode,
 } from "./cameraMath";
-import { estimateAttitude } from "./aircraftAttitude";
+import { estimateAttitude, recordedHeadingRad } from "./aircraftAttitude";
 
 /** Imperative controller used by the recorder for deterministic ("Sharp") capture. */
 export interface CaptureControl {
@@ -81,6 +82,14 @@ const MODEL_HEADING_OFFSET_RAD = -Math.PI / 2;
 // below it, so a GPS altitude that dips under the rendered surface (terrain or
 // the Google 3D tiles, which both sit on the real terrain) never buries the model.
 const GROUND_CLEARANCE_M = 0;
+
+// Recorded bank angle (radians) banked into the cockpit camera. Only avionics
+// logs (Garmin CSV) carry rollDeg; plain GPX yields 0 so the horizon stays level
+// rather than tilting on a synthetic turn-rate estimate.
+function recordedRollRad(points: ReplayPoint[], timeMs: number): number {
+  const rollDeg = sampleField(points, timeMs, "rollDeg");
+  return rollDeg === null ? 0 : (rollDeg * Math.PI) / 180;
+}
 
 export function GpxReplayGlobe({
   points,
@@ -963,11 +972,11 @@ export function GpxReplayGlobe({
       const pts = safePointsRef.current;
       if (!aircraft || pts.length < 2) return;
 
-      const heading =
+      const motionHeading =
         computeMotionHeadingAdaptive(pts, timeMs, 150, 30000) ??
         lastValidHeadingRef.current ??
         viewer.camera.heading;
-      lastValidHeadingRef.current = heading;
+      lastValidHeadingRef.current = motionHeading;
 
       const mode: CamMode =
         viewModeRef.current === "cockpit"
@@ -975,19 +984,23 @@ export function GpxReplayGlobe({
           : viewModeRef.current === "chase"
             ? "chase"
             : findActiveCamMode(camEventsRef.current, timeMs);
+      // Cockpit looks along the nose (recorded heading) like live playback.
+      const cameraHeading =
+        mode === "cockpit" ? (recordedHeadingRad(pts, timeMs) ?? motionHeading) : motionHeading;
       const pose = computeCameraPose(
         Cesium,
         mode,
         aircraft,
-        heading,
+        cameraHeading,
         boundingSphereRef.current,
         cockpitHeadingOffsetRef.current,
         cockpitPitchOffsetRef.current,
-        chaseDistanceRef.current
+        chaseDistanceRef.current,
+        mode === "cockpit" ? recordedRollRad(pts, timeMs) : 0
       );
       viewer.camera.setView({
         destination: pose.destination,
-        orientation: { heading: pose.heading, pitch: pose.pitch, roll: 0 },
+        orientation: { heading: pose.heading, pitch: pose.pitch, roll: pose.roll },
       });
     };
 
@@ -1082,16 +1095,22 @@ export function GpxReplayGlobe({
             ? "chase"
             : findActiveCamMode(camEventsRef.current, currentMs);
 
+      // The cockpit looks where the nose points (recorded heading, so crosswind
+      // crab is visible); external cameras follow the flight path instead.
+      const cameraHeading =
+        mode === "cockpit" ? (recordedHeadingRad(pointsNow, currentMs) ?? motionHeading) : motionHeading;
+
       const sphere = boundingSphereRef.current;
       const pose = computeCameraPose(
         Cesium,
         mode,
         aircraft,
-        motionHeading,
+        cameraHeading,
         sphere,
         cockpitHeadingOffsetRef.current,
         cockpitPitchOffsetRef.current,
-        chaseDistanceRef.current
+        chaseDistanceRef.current,
+        mode === "cockpit" ? recordedRollRad(pointsNow, currentMs) : 0
       );
 
       if (mode !== camCurrentModeRef.current) {
@@ -1099,7 +1118,7 @@ export function GpxReplayGlobe({
         camIsFlyingRef.current = true;
         viewer.camera.flyTo({
           destination: pose.destination,
-          orientation: { heading: pose.heading, pitch: pose.pitch, roll: 0 },
+          orientation: { heading: pose.heading, pitch: pose.pitch, roll: pose.roll },
           duration: mode === "cockpit" ? 1.2 : 2.5,
           complete: () => {
             camIsFlyingRef.current = false;
@@ -1118,9 +1137,10 @@ export function GpxReplayGlobe({
       const newPos = Cesium.Cartesian3.lerp(currentPos, pose.destination, posDamping, new Cesium.Cartesian3());
       const newHeading = lerpAngle(viewer.camera.heading, pose.heading, headingDamping);
       const newPitch = viewer.camera.pitch + (pose.pitch - viewer.camera.pitch) * pitchDamping;
+      const newRoll = lerpAngle(viewer.camera.roll, pose.roll, pitchDamping);
       viewer.camera.setView({
         destination: newPos,
-        orientation: { heading: newHeading, pitch: newPitch, roll: 0 },
+        orientation: { heading: newHeading, pitch: newPitch, roll: newRoll },
       });
     };
 

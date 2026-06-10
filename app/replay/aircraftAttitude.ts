@@ -26,7 +26,7 @@ const DEG_TO_RAD = Math.PI / 180;
  * is circularly interpolated between the bracketing points to avoid 0°/360° jumps.
  * Returns `null` when the track doesn't record heading.
  */
-function recordedHeadingRad(points: ReplayPoint[], timeMs: number): number | null {
+export function recordedHeadingRad(points: ReplayPoint[], timeMs: number): number | null {
   const idx = findIndexAtTime(points, timeMs);
 
   // Nearest points with a recorded heading at/before and after `idx`. Avionics
