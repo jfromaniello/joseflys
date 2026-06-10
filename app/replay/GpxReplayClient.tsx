@@ -29,13 +29,19 @@ import {
   computeVerticalSpeedFpm,
   computeWindComponents,
   findPointIndexByTime,
+  hasEngineData,
+  hasRichTelemetry,
+  sampleEngine,
   sampleTelemetry,
 } from "./replayMetrics";
+import { sampleField } from "./cameraMath";
+import { sampleMagneticHeadingDeg } from "./aircraftAttitude";
 import { createShareUrl, type ShareStatus } from "./shareReplay";
 import { useFullscreen } from "./useFullscreen";
 import {
   usePersistedChaseDistance,
   usePersistedMapStyle,
+  usePersistedShowPfd,
   usePersistedShowTrack,
   usePersistedShowWall,
   usePersistedViewMode,
@@ -46,6 +52,7 @@ import { ReplayToolbar } from "./components/ReplayToolbar";
 import { GpxDropzone } from "./components/GpxDropzone";
 import { FullscreenButton } from "./components/FullscreenButton";
 import { TelemetryOverlay } from "./components/TelemetryOverlay";
+import { CockpitPfdOverlay } from "./components/CockpitPfdOverlay";
 import { ReplayControls } from "./components/ReplayControls";
 import { CircuitTimeline } from "./components/CircuitTimeline";
 import { CircuitTable } from "./components/CircuitTable";
@@ -130,6 +137,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
   const [mapStyle, setMapStyle] = usePersistedMapStyle(HAS_GOOGLE_MAPS_KEY);
   const [showTrack, setShowTrack] = usePersistedShowTrack();
   const [showWall, setShowWall] = usePersistedShowWall(initialWallParam);
+  const [showPfd, setShowPfd] = usePersistedShowPfd();
   const [chaseDistance, setChaseDistance] = usePersistedChaseDistance(initialChaseDistance);
 
   // Switching away from cockpit always disables head-tracking. Head-tracking can
@@ -213,6 +221,27 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
     () => computeWindComponents(telemetry.windDirDeg, telemetry.windSpeedKt, currentTrackDeg),
     [telemetry.windDirDeg, telemetry.windSpeedKt, currentTrackDeg]
   );
+  const hasAvionics = useMemo(() => hasRichTelemetry(points), [points]);
+  const currentHeadingMagDeg = useMemo(
+    () => sampleMagneticHeadingDeg(points, currentTimeMs),
+    [points, currentTimeMs]
+  );
+  const currentRollDeg = useMemo(
+    () => sampleField(points, currentTimeMs, "rollDeg"),
+    [points, currentTimeMs]
+  );
+  const currentPitchDeg = useMemo(
+    () => sampleField(points, currentTimeMs, "pitchDeg"),
+    [points, currentTimeMs]
+  );
+  const engineAvailable = useMemo(() => hasEngineData(points), [points]);
+  const engine = useMemo(
+    () => (engineAvailable ? sampleEngine(points, currentTimeMs) : null),
+    [engineAvailable, points, currentTimeMs]
+  );
+  // The glass-cockpit overlay replaces the simple telemetry box in cockpit view
+  // when the track carries avionics data and the user hasn't turned it off.
+  const pfdActive = viewMode === "cockpit" && hasAvionics && showPfd;
   const flight = useCircuitAnalysis(points);
   // Aerodromes the flight visits, for terrain flattening around their runways.
   const flattenCenters = useMemo(
@@ -469,18 +498,36 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
 
             <FullscreenButton isFullscreen={isFullscreen} onToggle={() => void toggleFullscreen()} />
 
-            <TelemetryOverlay
-              speedKnots={currentSpeedKnots}
-              altitudeFt={currentAltitudeFt}
-              verticalSpeedFpm={currentVerticalSpeedFpm}
-              trackDeg={currentTrackDeg}
-              stage={currentStage}
-              iasKt={telemetry.iasKt}
-              tasKt={telemetry.tasKt}
-              windDirDeg={telemetry.windDirDeg}
-              windSpeedKt={telemetry.windSpeedKt}
-              windComponents={windComponents}
-            />
+            {pfdActive ? (
+              <CockpitPfdOverlay
+                iasKt={telemetry.iasKt}
+                groundSpeedKt={currentSpeedKnots}
+                tasKt={telemetry.tasKt}
+                altitudeFt={currentAltitudeFt}
+                vsFpm={telemetry.vsFpm ?? currentVerticalSpeedFpm}
+                headingDeg={currentHeadingMagDeg ?? currentTrackDeg}
+                rollDeg={currentRollDeg}
+                pitchDeg={currentPitchDeg}
+                windDirDeg={telemetry.windDirDeg}
+                windSpeedKt={telemetry.windSpeedKt}
+                oatC={telemetry.oatC}
+                aglFt={telemetry.aglFt}
+                engine={engine}
+              />
+            ) : (
+              <TelemetryOverlay
+                speedKnots={currentSpeedKnots}
+                altitudeFt={currentAltitudeFt}
+                verticalSpeedFpm={currentVerticalSpeedFpm}
+                trackDeg={currentTrackDeg}
+                stage={currentStage}
+                iasKt={telemetry.iasKt}
+                tasKt={telemetry.tasKt}
+                windDirDeg={telemetry.windDirDeg}
+                windSpeedKt={telemetry.windSpeedKt}
+                windComponents={windComponents}
+              />
+            )}
 
             <ReplayControls
               isPlaying={isPlaying}
@@ -507,6 +554,9 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
               onShowWallChange={setShowWall}
               chaseDistance={chaseDistance}
               onChaseDistanceChange={setChaseDistance}
+              pfdAvailable={hasAvionics}
+              showPfd={showPfd}
+              onShowPfdChange={setShowPfd}
             />
           </div>
 

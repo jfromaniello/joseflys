@@ -35,6 +35,24 @@ describe("parseGarminCsv", () => {
     expect(p.aglFt).toBeCloseTo(900, 0);
   });
 
+  it("parses engine (EIS) fields, keeping the hottest EGT", () => {
+    const points = parseGarminCsv(csv);
+    const p = points[0];
+    expect(p.manifoldInHg).toBeCloseTo(25.8, 1);
+    expect(p.rpm).toBeCloseTo(4910, 0);
+    expect(p.oilPressPsi).toBeCloseTo(45, 0);
+    expect(p.oilTempF).toBeCloseTo(181, 0);
+    expect(p.coolantTempF).toBeCloseTo(217, 0);
+    expect(p.fuelFlowGph).toBeCloseTo(5.3, 1);
+    expect(p.fuelPressPsi).toBeCloseTo(4.1, 1);
+    expect(p.volts).toBeCloseTo(14.0, 1);
+    expect(p.amps).toBeCloseTo(8, 0);
+    // Hottest of EGT1-4 (1497, 1452, 1371, 1341).
+    expect(p.egtMaxF).toBeCloseTo(1497, 0);
+    // The fixture airframe has no CHT columns.
+    expect(p.chtMaxF).toBeUndefined();
+  });
+
   it("builds absolute timestamps from local time + UTC offset", () => {
     const points = parseGarminCsv(csv);
     // First sampled row: 2026-05-29 17:02:21 local, -03:00 → 20:02:21 UTC.

@@ -10,6 +10,7 @@ const MAP_STYLE_KEY = "gpxReplay.mapStyle";
 const SHOW_TRACK_KEY = "gpxReplay.showTrack";
 const SHOW_WALL_KEY = "gpxReplay.showWall";
 const CHASE_DISTANCE_KEY = "gpxReplay.chaseDistance";
+const SHOW_PFD_KEY = "gpxReplay.showPfd";
 
 /**
  * View-mode state persisted to localStorage.
@@ -121,6 +122,31 @@ export function usePersistedShowWall(urlParam: string | null): [boolean, (value:
   }, [showWall]);
 
   return [showWall, setShowWall];
+}
+
+/**
+ * Whether the glass-cockpit (PFD) overlay is shown in cockpit view, persisted
+ * to localStorage (default on). Same SSR-safe mount-hydration approach as
+ * {@link usePersistedViewMode}.
+ */
+export function usePersistedShowPfd(): [boolean, (value: boolean) => void] {
+  const [showPfd, setShowPfd] = useState(true);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = window.localStorage.getItem(SHOW_PFD_KEY);
+    if (stored === null) return;
+    // One-shot hydration from an external store on mount (see note above).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setShowPfd(stored === "true");
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(SHOW_PFD_KEY, String(showPfd));
+  }, [showPfd]);
+
+  return [showPfd, setShowPfd];
 }
 
 /** Bounds for the user-adjustable chase camera distance (metres behind). */

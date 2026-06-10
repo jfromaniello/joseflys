@@ -1190,7 +1190,9 @@ export function GpxReplayGlobe({
         }}
       />
 
-      {viewerReady && (
+      {/* In cockpit the camera is locked to the aircraft, so recentering only
+          makes sense to re-zero head-tracking offsets; hide it otherwise. */}
+      {viewerReady && (viewMode !== "cockpit" || headTrackingEnabled) && (
         <button
           type="button"
           className="absolute top-3 left-3 z-[500] rounded-md bg-slate-900/80 text-xs text-white border border-slate-600 px-3 py-2 cursor-pointer hover:bg-slate-800"

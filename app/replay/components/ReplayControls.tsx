@@ -38,6 +38,10 @@ interface ReplayControlsProps {
   onShowWallChange: (value: boolean) => void;
   chaseDistance: number;
   onChaseDistanceChange: (value: number) => void;
+  /** Whether the track records avionics data, enabling the cockpit PFD overlay. */
+  pfdAvailable: boolean;
+  showPfd: boolean;
+  onShowPfdChange: (value: boolean) => void;
 }
 
 const MAP_STYLE_OPTIONS: { value: MapStyle; label: string }[] = [
@@ -88,6 +92,9 @@ export function ReplayControls({
   onShowWallChange,
   chaseDistance,
   onChaseDistanceChange,
+  pfdAvailable,
+  showPfd,
+  onShowPfdChange,
 }: ReplayControlsProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
@@ -234,6 +241,28 @@ export function ReplayControls({
                     className="w-full accent-cyan-500 cursor-pointer"
                   />
                 </div>
+              ) : null}
+              {viewMode === "cockpit" && pfdAvailable ? (
+                <button
+                  type="button"
+                  onClick={() => onShowPfdChange(!showPfd)}
+                  className="mt-2.5 flex w-full items-center justify-between cursor-pointer"
+                >
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                    Flight instruments
+                  </span>
+                  <span
+                    className={`relative h-5 w-9 rounded-full transition-colors ${
+                      showPfd ? "bg-cyan-500" : "bg-slate-600"
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${
+                        showPfd ? "left-[1.125rem]" : "left-0.5"
+                      }`}
+                    />
+                  </span>
+                </button>
               ) : null}
               {viewMode === "cockpit" && orientationStatus !== "unavailable" ? (
                 <button

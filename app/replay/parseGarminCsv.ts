@@ -25,7 +25,20 @@ const COLUMN_HEADERS = {
   windSpeedKt: "Wind Speed (kt)",
   oatC: "Outside Air Temp (deg C)",
   aglFt: "Height Above Ground (ft)",
+  rpm: "RPM",
+  manifoldInHg: "Manifold Press (inch Hg)",
+  fuelFlowGph: "Fuel Flow (gal/hour)",
+  fuelPressPsi: "Fuel Press (PSI)",
+  oilPressPsi: "Oil Press (PSI)",
+  oilTempF: "Oil Temp (deg F)",
+  coolantTempF: "Coolant Temp (deg F)",
+  volts: "Volts",
+  amps: "Alt Amps",
 } as const;
+
+/** Per-cylinder temperature columns; the replay keeps only the hottest reading. */
+const EGT_HEADERS = [1, 2, 3, 4, 5, 6].map((n) => `EGT${n} (deg F)`);
+const CHT_HEADERS = [1, 2, 3, 4, 5, 6].map((n) => `CHT${n} (deg F)`);
 
 /**
  * Whether `content` looks like a Garmin G3X data log. These logs lead with an
@@ -118,6 +131,28 @@ export function parseGarminCsv(content: string): ReplayPoint[] {
     windSpeedKt: col(COLUMN_HEADERS.windSpeedKt),
     oatC: col(COLUMN_HEADERS.oatC),
     aglFt: col(COLUMN_HEADERS.aglFt),
+    rpm: col(COLUMN_HEADERS.rpm),
+    manifoldInHg: col(COLUMN_HEADERS.manifoldInHg),
+    fuelFlowGph: col(COLUMN_HEADERS.fuelFlowGph),
+    fuelPressPsi: col(COLUMN_HEADERS.fuelPressPsi),
+    oilPressPsi: col(COLUMN_HEADERS.oilPressPsi),
+    oilTempF: col(COLUMN_HEADERS.oilTempF),
+    coolantTempF: col(COLUMN_HEADERS.coolantTempF),
+    volts: col(COLUMN_HEADERS.volts),
+    amps: col(COLUMN_HEADERS.amps),
+  };
+
+  const egtCols = EGT_HEADERS.map(col).filter((i) => i !== -1);
+  const chtCols = CHT_HEADERS.map(col).filter((i) => i !== -1);
+
+  /** Hottest reading across per-cylinder columns, or `undefined` when all blank. */
+  const maxOf = (row: string[], cols: number[]): number | undefined => {
+    let max: number | undefined;
+    for (const i of cols) {
+      const value = num(row[i]);
+      if (value !== undefined && (max === undefined || value > max)) max = value;
+    }
+    return max;
   };
 
   if (idx.lat === -1 || idx.lon === -1) {
@@ -161,6 +196,17 @@ export function parseGarminCsv(content: string): ReplayPoint[] {
       windSpeedKt: num(at(row, idx.windSpeedKt)),
       oatC: num(at(row, idx.oatC)),
       aglFt: num(at(row, idx.aglFt)),
+      rpm: num(at(row, idx.rpm)),
+      manifoldInHg: num(at(row, idx.manifoldInHg)),
+      fuelFlowGph: num(at(row, idx.fuelFlowGph)),
+      fuelPressPsi: num(at(row, idx.fuelPressPsi)),
+      oilPressPsi: num(at(row, idx.oilPressPsi)),
+      oilTempF: num(at(row, idx.oilTempF)),
+      coolantTempF: num(at(row, idx.coolantTempF)),
+      volts: num(at(row, idx.volts)),
+      amps: num(at(row, idx.amps)),
+      egtMaxF: maxOf(row, egtCols),
+      chtMaxF: maxOf(row, chtCols),
     });
   }
 

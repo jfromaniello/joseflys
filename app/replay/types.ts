@@ -44,6 +44,28 @@ export interface ReplayPoint {
   oatC?: number;
   /** Height above ground in feet (avionics-computed AGL). */
   aglFt?: number;
+  /** Engine RPM. */
+  rpm?: number;
+  /** Engine manifold pressure in inches of mercury. */
+  manifoldInHg?: number;
+  /** Fuel flow in gallons per hour. */
+  fuelFlowGph?: number;
+  /** Fuel pressure in PSI. */
+  fuelPressPsi?: number;
+  /** Oil pressure in PSI. */
+  oilPressPsi?: number;
+  /** Oil temperature in degrees Fahrenheit. */
+  oilTempF?: number;
+  /** Coolant temperature in degrees Fahrenheit (e.g. Rotax engines). */
+  coolantTempF?: number;
+  /** Hottest exhaust gas temperature across cylinders, degrees Fahrenheit. */
+  egtMaxF?: number;
+  /** Hottest cylinder head temperature across cylinders, degrees Fahrenheit. */
+  chtMaxF?: number;
+  /** Electrical bus voltage. */
+  volts?: number;
+  /** Alternator amps. */
+  amps?: number;
 }
 
 /** Source format a track was loaded from. */

@@ -164,6 +164,10 @@ export interface TelemetrySample {
   windDirDeg: number | null;
   windSpeedKt: number | null;
   oatC: number | null;
+  /** Recorded vertical speed (fpm), or `null` if the track lacks it. */
+  vsFpm: number | null;
+  /** Recorded height above ground (ft), or `null` if the track lacks it. */
+  aglFt: number | null;
 }
 
 /**
@@ -192,6 +196,50 @@ export function sampleTelemetry(points: ReplayPoint[], currentTimeMs: number): T
     windDirDeg,
     windSpeedKt: sampleField(points, currentTimeMs, "windSpeedKt"),
     oatC: sampleField(points, currentTimeMs, "oatC"),
+    vsFpm: sampleField(points, currentTimeMs, "vsFpm"),
+    aglFt: sampleField(points, currentTimeMs, "aglFt"),
+  };
+}
+
+/** Whether any point carries engine (EIS) data — only Garmin logs with an engine feed do. */
+export function hasEngineData(points: ReplayPoint[]): boolean {
+  return points.some(
+    (p) => p.rpm !== undefined || p.fuelFlowGph !== undefined || p.manifoldInHg !== undefined
+  );
+}
+
+/** Engine (EIS) readouts sampled at a moment in the track. */
+export interface EngineSample {
+  rpm: number | null;
+  manifoldInHg: number | null;
+  fuelFlowGph: number | null;
+  fuelPressPsi: number | null;
+  oilPressPsi: number | null;
+  oilTempF: number | null;
+  coolantTempF: number | null;
+  egtMaxF: number | null;
+  chtMaxF: number | null;
+  volts: number | null;
+  amps: number | null;
+}
+
+/**
+ * Samples the recorded engine fields at `currentTimeMs`, linearly interpolated.
+ * Every field is `null` when the track does not carry it.
+ */
+export function sampleEngine(points: ReplayPoint[], currentTimeMs: number): EngineSample {
+  return {
+    rpm: sampleField(points, currentTimeMs, "rpm"),
+    manifoldInHg: sampleField(points, currentTimeMs, "manifoldInHg"),
+    fuelFlowGph: sampleField(points, currentTimeMs, "fuelFlowGph"),
+    fuelPressPsi: sampleField(points, currentTimeMs, "fuelPressPsi"),
+    oilPressPsi: sampleField(points, currentTimeMs, "oilPressPsi"),
+    oilTempF: sampleField(points, currentTimeMs, "oilTempF"),
+    coolantTempF: sampleField(points, currentTimeMs, "coolantTempF"),
+    egtMaxF: sampleField(points, currentTimeMs, "egtMaxF"),
+    chtMaxF: sampleField(points, currentTimeMs, "chtMaxF"),
+    volts: sampleField(points, currentTimeMs, "volts"),
+    amps: sampleField(points, currentTimeMs, "amps"),
   };
 }
 

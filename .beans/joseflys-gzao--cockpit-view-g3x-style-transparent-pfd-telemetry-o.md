@@ -1,13 +1,13 @@
 ---
 # joseflys-gzao
 title: 'Cockpit view: G3X-style transparent PFD telemetry overlay for CSV replays'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 tags:
     - replay
 created_at: 2026-06-10T14:17:16Z
-updated_at: 2026-06-10T14:17:16Z
+updated_at: 2026-06-10T14:21:10Z
 ---
 
 ## Summary
@@ -90,3 +90,18 @@ All values sampled/interpolated at `currentTimeMs` (see Data plumbing below).
 - Exact G3X replica, synthetic vision, HSI/CDI, autopilot annunciations.
 - Speed tape color arcs (needs per-aircraft V-speeds config).
 - Engine/EIS strip (no engine data in current CSV mapping).
+
+## Implementation notes (2026-06-10)
+
+Implemented and verified in-browser with the anonymized G3X fixture:
+
+- `app/replay/components/CockpitPfdOverlay.tsx`: speed tape (left, IAS w/ GS fallback), altitude tape + VSI to its right, bank arc with rotating pointer + digital pitch (top center), compass rose with rotating card, lubber line, heading lens and magenta wind vector (bottom center), yellow waterline symbol, air-data block (bottom-left: GS/TAS/OAT/AGL) and two-column ENGINE block (bottom-right).
+- Tape tick math extracted to `app/replay/pfdMath.ts` (unit-tested).
+- `sampleMagneticHeadingDeg()` extracted from `recordedHeadingRad()` (circular interpolation + AHRS back-fill); `sampleTelemetry()` extended with recorded `vsFpm`/`aglFt`.
+- Engine (EIS) fields parsed from Garmin CSV (`RPM`, `Manifold Press`, `Fuel Flow`, `Fuel Press`, `Oil Press/Temp`, `Coolant Temp`, `Volts`, `Alt Amps`, hottest `EGT1-6`/`CHT1-6`) into `ReplayPoint`, sampled via `sampleEngine()`.
+- "Flight instruments" toggle in playback settings (cockpit only), persisted as `gpxReplay.showPfd`; simple `TelemetryOverlay` returns when off or for plain GPX.
+- Recenter button hidden in cockpit unless head-tracking is active (it only re-zeros head-tracking offsets there).
+
+Deferred / follow-ups:
+- Video export captures only the WebGL canvas (`preserveDrawingBuffer`), so the DOM overlay does not appear in recorded MP4s — compositing the PFD into the capture is a separate task.
+- Speed-tape color arcs (needs per-aircraft V-speeds), HSI/CDI, synthetic vision remain out of scope.

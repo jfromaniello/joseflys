@@ -19,21 +19,17 @@ import type { ReplayPoint } from "./types";
 const DEG_TO_RAD = Math.PI / 180;
 
 /**
- * Geographic (true) heading in radians where the aircraft nose points at
- * `timeMs`, from the recorded magnetic heading when the track has it — converted
- * to true with the WMM declination (true = magnetic + declination). This is
- * stable even when stationary, unlike a GPS motion heading. The magnetic heading
- * is circularly interpolated between the bracketing points to avoid 0°/360° jumps.
- * Returns `null` when the track doesn't record heading.
+ * Recorded magnetic heading in degrees [0, 360) at `timeMs`, circularly
+ * interpolated between the bracketing points to avoid 0°/360° jumps.
+ *
+ * Avionics logs leave the magnetic heading blank for the first ~minute while
+ * the AHRS aligns; back/forward-filling from the closest valid sample keeps the
+ * value sensible (e.g. the first known heading) instead of spinning on GPS
+ * noise while taxiing. Returns `null` when the track doesn't record heading.
  */
-export function recordedHeadingRad(points: ReplayPoint[], timeMs: number): number | null {
+export function sampleMagneticHeadingDeg(points: ReplayPoint[], timeMs: number): number | null {
   const idx = findIndexAtTime(points, timeMs);
 
-  // Nearest points with a recorded heading at/before and after `idx`. Avionics
-  // logs leave the magnetic heading blank for the first ~minute while the AHRS
-  // aligns; back/forward-filling from the closest valid sample keeps the nose
-  // pointing sensibly (e.g. the first known heading) instead of spinning on GPS
-  // noise while taxiing.
   let fromIdx = Math.min(idx, points.length - 1);
   while (fromIdx >= 0 && points[fromIdx].headingMagDeg === undefined) fromIdx -= 1;
   let toIdx = idx + 1;
@@ -51,6 +47,20 @@ export function recordedHeadingRad(points: ReplayPoint[], timeMs: number): numbe
   } else {
     magDeg = (from ?? to)!.headingMagDeg as number;
   }
+
+  return ((magDeg % 360) + 360) % 360;
+}
+
+/**
+ * Geographic (true) heading in radians where the aircraft nose points at
+ * `timeMs`, from the recorded magnetic heading when the track has it — converted
+ * to true with the WMM declination (true = magnetic + declination). This is
+ * stable even when stationary, unlike a GPS motion heading. Returns `null` when
+ * the track doesn't record heading.
+ */
+export function recordedHeadingRad(points: ReplayPoint[], timeMs: number): number | null {
+  const magDeg = sampleMagneticHeadingDeg(points, timeMs);
+  if (magDeg === null) return null;
 
   const here = interpolateAtTime(points, timeMs);
   const declination = here ? magvar(here.lat, here.lon, 0) : 0;
