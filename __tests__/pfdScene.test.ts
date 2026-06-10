@@ -48,6 +48,16 @@ describe("buildPfdScene", () => {
     expect(texts).toContain("N"); // rose cardinal
   });
 
+  it("shows TAS at the bottom of the speed tape, not in the aux block", () => {
+    const scene = buildPfdScene(1280, 800, baseData, {});
+    const texts = textsOf(scene);
+    expect(texts).toContain("TAS");
+    expect(texts).toContain("77"); // rounded TAS value on the tape chip
+    expect(texts).not.toContain("77 KT · TAS"); // no aux row form
+    const noTas = textsOf(buildPfdScene(1280, 800, { ...baseData, tasKt: null }, {}));
+    expect(noTas).not.toContain("TAS");
+  });
+
   it("labels the speed tape GS when IAS is not recorded", () => {
     const texts = textsOf(buildPfdScene(1280, 800, { ...baseData, iasKt: null }, {}));
     expect(texts).toContain("GS");

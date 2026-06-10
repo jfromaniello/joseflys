@@ -208,9 +208,17 @@ export function samplePfdData(points: ReplayPoint[], timeMs: number): PfdData {
 
 // --- Airspeed tape (left) --------------------------------------------------
 
-function buildSpeedTape(iasKt: number | null, groundSpeedKt: number | null): PfdNode[] {
+function buildSpeedTape(
+  iasKt: number | null,
+  groundSpeedKt: number | null,
+  tasKt: number | null
+): PfdNode[] {
   const value = iasKt ?? groundSpeedKt;
-  const ticks = value === null ? [] : computeTapeTicks(value, TAPE_H, PX_PER_KT, 5, 10, 0);
+  // Ticks sliding under the bottom TAS chip would bleed through it.
+  const maxTickY = tasKt !== null ? TAPE_H - 18 : TAPE_H;
+  const ticks = (value === null ? [] : computeTapeTicks(value, TAPE_H, PX_PER_KT, 5, 10, 0)).filter(
+    (tick) => tick.y <= maxTickY
+  );
   const lensY = TAPE_H / 2;
   const nodes: PfdNode[] = [
     { kind: "rect", x: 0, y: 0, width: SPEED_W, height: TAPE_H, fill: STRIP_FILL, rx: 4 },
@@ -278,13 +286,43 @@ function buildSpeedTape(iasKt: number | null, groundSpeedKt: number | null): Pfd
     }
   );
 
+  // TAS readout pinned to the tape bottom, like the real G3X airspeed tape.
+  if (tasKt !== null) {
+    nodes.push(
+      { kind: "rect", x: 0, y: TAPE_H - 16, width: SPEED_W, height: 16, fill: LENS_FILL, rx: 4 },
+      {
+        kind: "text",
+        x: 6,
+        y: TAPE_H - 4.5,
+        text: "TAS",
+        size: 9,
+        weight: 600,
+        fill: MUTED_COLOR,
+        anchor: "start",
+      },
+      {
+        kind: "text",
+        x: SPEED_W - 6,
+        y: TAPE_H - 4,
+        text: String(Math.round(tasKt)),
+        size: 11,
+        weight: 700,
+        fill: "#fff",
+        anchor: "end",
+      }
+    );
+  }
+
   return nodes;
 }
 
 // --- Altitude tape (right) --------------------------------------------------
 
 function buildAltitudeTape(altitudeFt: number | null): PfdNode[] {
-  const ticks = altitudeFt === null ? [] : computeTapeTicks(altitudeFt, TAPE_H, PX_PER_FT, 50, 100);
+  // Ticks sliding under the top FT MSL chip would bleed through it.
+  const ticks = (
+    altitudeFt === null ? [] : computeTapeTicks(altitudeFt, TAPE_H, PX_PER_FT, 50, 100)
+  ).filter((tick) => tick.y >= 17);
   const lensY = TAPE_H / 2;
   const nodes: PfdNode[] = [
     { kind: "rect", x: 14, y: 0, width: ALT_W, height: TAPE_H, fill: STRIP_FILL, rx: 4 },
@@ -745,7 +783,6 @@ function buildAuxBlock(data: PfdData): { nodes: PfdNode[]; height: number } | nu
   if (data.groundSpeedKt !== null && data.iasKt !== null) {
     rows.push(["GS", `${Math.round(data.groundSpeedKt)} KT`]);
   }
-  if (data.tasKt !== null) rows.push(["TAS", `${Math.round(data.tasKt)} KT`]);
   if (data.oatC !== null) rows.push(["OAT", `${Math.round(data.oatC)}°C`]);
   if (data.aglFt !== null) rows.push(["AGL", `${Math.round(data.aglFt).toLocaleString("en-US")} ft`]);
   if (rows.length === 0) return null;
@@ -969,7 +1006,11 @@ export function buildPfdScene(
     speedLeft = 136;
   }
 
-  nodes.push(group(buildSpeedTape(data.iasKt, data.groundSpeedKt), [translate(speedLeft, height / 2 - TAPE_H / 2)]));
+  nodes.push(
+    group(buildSpeedTape(data.iasKt, data.groundSpeedKt, data.tasKt), [
+      translate(speedLeft, height / 2 - TAPE_H / 2),
+    ])
+  );
 
   const altLeft = width - margin - (ALT_W + 14) - 4 - (VSI_W + 18);
   nodes.push(
