@@ -1,13 +1,13 @@
 ---
 # joseflys-gzao
 title: 'Cockpit view: G3X-style transparent PFD telemetry overlay for CSV replays'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 tags:
     - replay
 created_at: 2026-06-10T14:17:16Z
-updated_at: 2026-06-10T14:21:10Z
+updated_at: 2026-06-10T15:23:08Z
 ---
 
 ## Summary
