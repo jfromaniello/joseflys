@@ -30,13 +30,10 @@ import {
   computeWindComponents,
   computeEngineRanges,
   findPointIndexByTime,
-  hasEngineData,
   hasRichTelemetry,
-  sampleEngine,
   sampleTelemetry,
 } from "./replayMetrics";
-import { sampleField } from "./cameraMath";
-import { sampleMagneticHeadingDeg } from "./aircraftAttitude";
+import { samplePfdData } from "./pfdScene";
 import { createShareUrl, type ShareStatus } from "./shareReplay";
 import { useFullscreen } from "./useFullscreen";
 import {
@@ -223,27 +220,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
     [telemetry.windDirDeg, telemetry.windSpeedKt, currentTrackDeg]
   );
   const hasAvionics = useMemo(() => hasRichTelemetry(points), [points]);
-  const currentHeadingMagDeg = useMemo(
-    () => sampleMagneticHeadingDeg(points, currentTimeMs),
-    [points, currentTimeMs]
-  );
-  const currentRollDeg = useMemo(
-    () => sampleField(points, currentTimeMs, "rollDeg"),
-    [points, currentTimeMs]
-  );
-  const currentPitchDeg = useMemo(
-    () => sampleField(points, currentTimeMs, "pitchDeg"),
-    [points, currentTimeMs]
-  );
-  const currentLatAccG = useMemo(
-    () => sampleField(points, currentTimeMs, "latAccG"),
-    [points, currentTimeMs]
-  );
-  const engineAvailable = useMemo(() => hasEngineData(points), [points]);
-  const engine = useMemo(
-    () => (engineAvailable ? sampleEngine(points, currentTimeMs) : null),
-    [engineAvailable, points, currentTimeMs]
-  );
+  const pfdData = useMemo(() => samplePfdData(points, currentTimeMs), [points, currentTimeMs]);
   const engineRanges = useMemo(() => computeEngineRanges(points), [points]);
   // The glass-cockpit overlay replaces the simple telemetry box in cockpit view
   // when the track carries avionics data and the user hasn't turned it off.
@@ -276,6 +253,8 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
     setElapsedMs,
     setIsPlaying,
     captureControlRef,
+    pfdActive,
+    engineRanges,
   });
 
   const handleRecord = useCallback(() => {
@@ -505,23 +484,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
             <FullscreenButton isFullscreen={isFullscreen} onToggle={() => void toggleFullscreen()} />
 
             {pfdActive ? (
-              <CockpitPfdOverlay
-                iasKt={telemetry.iasKt}
-                groundSpeedKt={currentSpeedKnots}
-                tasKt={telemetry.tasKt}
-                altitudeFt={currentAltitudeFt}
-                vsFpm={telemetry.vsFpm ?? currentVerticalSpeedFpm}
-                headingDeg={currentHeadingMagDeg ?? currentTrackDeg}
-                rollDeg={currentRollDeg}
-                pitchDeg={currentPitchDeg}
-                latAccG={currentLatAccG}
-                windDirDeg={telemetry.windDirDeg}
-                windSpeedKt={telemetry.windSpeedKt}
-                oatC={telemetry.oatC}
-                aglFt={telemetry.aglFt}
-                engine={engine}
-                engineRanges={engineRanges}
-              />
+              <CockpitPfdOverlay data={pfdData} engineRanges={engineRanges} />
             ) : (
               <TelemetryOverlay
                 speedKnots={currentSpeedKnots}

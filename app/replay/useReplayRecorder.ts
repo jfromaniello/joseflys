@@ -8,8 +8,11 @@ import {
   computeTrackHeadingDeg,
   computeVerticalSpeedFpm,
   findPointIndexByTime,
+  type EngineRanges,
 } from "./replayMetrics";
 import { drawHud } from "./recordHud";
+import { buildPfdScene, samplePfdData } from "./pfdScene";
+import { drawPfdScene } from "./pfdCanvas";
 import { Mp4Recorder, downloadBlob, isMp4RecordingSupported } from "./recordReplay";
 import type { CaptureControl } from "./GpxReplayGlobe";
 
@@ -50,6 +53,10 @@ interface UseReplayRecorderParams {
   setIsPlaying: (playing: boolean) => void;
   /** Imperative globe controller for deterministic ("Sharp") capture. */
   captureControlRef: React.RefObject<CaptureControl | null>;
+  /** Whether the glass-cockpit PFD overlay is live (cockpit view + avionics + toggle). */
+  pfdActive: boolean;
+  /** Gauge scales for the PFD's EIS strip, derived from the track. */
+  engineRanges: EngineRanges;
 }
 
 interface UseReplayRecorderResult {
@@ -77,6 +84,8 @@ export function useReplayRecorder({
   setElapsedMs,
   setIsPlaying,
   captureControlRef,
+  pfdActive,
+  engineRanges,
 }: UseReplayRecorderParams): UseReplayRecorderResult {
   const [supported] = useState(isMp4RecordingSupported);
   const [status, setStatus] = useState<RecordingStatus>("idle");
@@ -85,9 +94,9 @@ export function useReplayRecorder({
   const [error, setError] = useState<string | null>(null);
 
   // Latest values read inside the rAF loop without re-subscribing it.
-  const latest = useRef({ points, startMs, durationMs });
+  const latest = useRef({ points, startMs, durationMs, pfdActive, engineRanges });
   useEffect(() => {
-    latest.current = { points, startMs, durationMs };
+    latest.current = { points, startMs, durationMs, pfdActive, engineRanges };
   });
 
   const rafRef = useRef<number | null>(null);
@@ -153,12 +162,25 @@ export function useReplayRecorder({
         return;
       }
 
-      // Draws the globe frame + (optionally) the telemetry HUD for a given time.
+      // The PFD scene is laid out in CSS pixels matching the live overlay, then
+      // scaled onto the (device-pixel) backing store when composited.
+      const cssWidth = canvas.clientWidth || width;
+      const cssHeight = canvas.clientHeight || height;
+      const pfdScale = width / cssWidth;
+
+      // Draws the globe frame + (optionally) the telemetry overlay for a given
+      // time: the glass-cockpit PFD when it is live on screen, the simple HUD
+      // otherwise.
       const composeFrame = (timeMs: number) => {
         ctx.clearRect(0, 0, width, height);
         ctx.drawImage(canvas, 0, 0, width, height);
         if (!showTelemetry) return;
-        const { points: pts } = latest.current;
+        const { points: pts, pfdActive: pfd, engineRanges: ranges } = latest.current;
+        if (pfd) {
+          const scene = buildPfdScene(cssWidth, cssHeight, samplePfdData(pts, timeMs), ranges);
+          drawPfdScene(ctx, scene, pfdScale);
+          return;
+        }
         const index = findPointIndexByTime(pts, timeMs);
         drawHud(ctx, width, height, {
           speedKnots: computeGroundSpeed(pts, index).knots,

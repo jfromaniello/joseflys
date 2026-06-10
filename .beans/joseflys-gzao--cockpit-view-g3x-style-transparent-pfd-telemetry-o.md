@@ -112,3 +112,13 @@ Deferred / follow-ups:
 - Slip/skid indicator: parsed `Lateral Acceleration (G)` (`latAccG`); a yellow brick under the roll pointer slides toward the lateral acceleration (full deflection at 0.2 G), G3X-style.
 - Cockpit camera now uses the recorded pitch (`computeCockpitPose` takes `basePitchRad`, falling back to the old fixed -2° for plain GPX) — heading and roll already did.
 - Engine readouts replaced with a G3X-style vertical EIS strip on the far left (`EngineStrip.tsx`): round RPM / manifold gauges with green band + needle, bar gauges (fuel flow/pressure, oil, coolant, EGT/CHT) and a bus voltage row. Gauge scales derive from the track's own operating range (`computeEngineRanges`) since logs carry no aircraft limits. Speed tape shifts inward when the strip is present; strip hidden below `md`.
+
+## Iteration 3 (2026-06-10): PFD in video recordings — follow-up resolved
+
+The "video export captures only the WebGL canvas" limitation is fixed by refactoring the PFD into a renderer-agnostic scene:
+
+- `app/replay/pfdScene.ts`: every instrument is built as a tree of plain shapes (rects/lines/polygons/arcs/text) with `buildPfdScene(width, height, data, ranges)` handling responsive layout (margins, EIS strip ≥768px, rose scaling), plus `samplePfdData()` centralizing per-frame sampling (recorded fields + GPS fallbacks).
+- Two rasterizers of the same scene: SVG in `CockpitPfdOverlay.tsx` (live view, sized via ResizeObserver) and canvas 2D in `app/replay/pfdCanvas.ts` (recording) — recorded MP4s match the screen by construction.
+- `useReplayRecorder` composites the PFD scene per frame when the overlay is live (cockpit + avionics + toggle); otherwise the legacy simple HUD. Scene laid out in CSS px and scaled to the canvas backing store.
+- `EngineStrip.tsx` removed (absorbed into the scene); client now passes a single `samplePfdData()` result.
+- Verified end-to-end: recorded an MP4 of the fixture and confirmed the encoded frames carry the full PFD with time-correct values.
