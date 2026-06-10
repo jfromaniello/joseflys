@@ -1,30 +1,14 @@
 "use client";
 
-import type { ShareStatus } from "../shareReplay";
-
 interface ReplayToolbarProps {
   /** Name of the loaded track file (uploaded or shared). */
   trackName?: string;
   onNewGpx: () => void;
   onShare: () => void;
   canShare: boolean;
-  shareStatus: ShareStatus;
   onRecord: () => void;
   /** Hidden when MP4 recording isn't supported by the browser. */
   canRecord: boolean;
-}
-
-function shareLabel(status: ShareStatus): string {
-  switch (status) {
-    case "loading":
-      return "Creating link…";
-    case "copied":
-      return "Link copied!";
-    case "error":
-      return "Share failed";
-    default:
-      return "Share";
-  }
 }
 
 /** Compact app bar: page title, loaded track name, and New GPX / Record / Share actions. */
@@ -33,7 +17,6 @@ export function ReplayToolbar({
   onNewGpx,
   onShare,
   canShare,
-  shareStatus,
   onRecord,
   canRecord,
 }: ReplayToolbarProps) {
@@ -77,23 +60,17 @@ export function ReplayToolbar({
         <button
           type="button"
           onClick={onShare}
-          disabled={!canShare || shareStatus === "loading"}
-          title="Copy a shareable link to current position"
-          className={`inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm font-medium cursor-pointer transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-            shareStatus === "error" ? "bg-red-600 text-white" : "bg-cyan-600 hover:bg-cyan-500 text-white"
-          }`}
+          disabled={!canShare}
+          title="Create a shareable link to current position"
+          className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm font-medium cursor-pointer transition-colors disabled:cursor-not-allowed disabled:opacity-50 bg-cyan-600 hover:bg-cyan-500 text-white"
         >
-          {shareStatus === "loading" ? (
-            <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-          ) : (
-            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="18" cy="5" r="3" />
-              <circle cx="6" cy="12" r="3" />
-              <circle cx="18" cy="19" r="3" />
-              <path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" />
-            </svg>
-          )}
-          <span className="hidden sm:inline">{shareLabel(shareStatus)}</span>
+          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="18" cy="5" r="3" />
+            <circle cx="6" cy="12" r="3" />
+            <circle cx="18" cy="19" r="3" />
+            <path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" />
+          </svg>
+          <span className="hidden sm:inline">Share</span>
         </button>
       </div>
     </div>

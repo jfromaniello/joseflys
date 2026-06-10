@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { put } from "@vercel/blob";
+import { storeSharedReplay } from "@/lib/replayBlob";
 import { generateShortId, checkRateLimit } from "@/lib/redis";
 import {
   RATE_LIMIT_MAX_REQUESTS,
@@ -75,14 +75,12 @@ export async function POST(request: NextRequest) {
 
     const shortId = await generateShortId(gpx);
     const extension = isGpx ? "gpx" : "csv";
-    const pathname = `replays/${shortId}.${extension}`;
 
-    await put(pathname, gpx, {
-      access: "public",
-      addRandomSuffix: false,
-      allowOverwrite: true,
-      contentType: isGpx ? "application/gpx+xml" : "text/csv",
-    });
+    await storeSharedReplay(
+      `${shortId}.${extension}`,
+      gpx,
+      isGpx ? "application/gpx+xml" : "text/csv"
+    );
 
     const baseUrl = request.nextUrl.origin;
     const shortUrl = `${baseUrl}/replay/${shortId}`;

@@ -34,7 +34,8 @@ import {
   sampleTelemetry,
 } from "./replayMetrics";
 import { samplePfdData } from "./pfdScene";
-import { createShareUrl, type ShareStatus } from "./shareReplay";
+import { buildShareUrl, uploadReplay } from "./shareReplay";
+import { anonymizeGarminCsv } from "./anonymizeGarminCsv";
 import { useFullscreen } from "./useFullscreen";
 import {
   usePersistedChaseDistance,
@@ -120,9 +121,11 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState<SpeedOption>(initialSpeed);
   const [elapsedMs, setElapsedMs] = useState(initialElapsedMs);
-  const [shareStatus, setShareStatus] = useState<ShareStatus>("idle");
-  const [shareUrl, setShareUrl] = useState<string>("");
+  const [aircraftIdent, setAircraftIdent] = useState<string>("");
   const [shareModalOpen, setShareModalOpen] = useState(false);
+  // Short URLs already created for the loaded track (per anonymize choice), so
+  // re-sharing doesn't re-upload the blob. Cleared when a new track loads.
+  const shareShortUrlsRef = useRef<{ plain?: string; anonymized?: string }>({});
   const [recordModalOpen, setRecordModalOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastTickRef = useRef<number | null>(null);
@@ -169,12 +172,13 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
     if (!initialGpx || initialGpxAppliedRef.current) return;
     initialGpxAppliedRef.current = true;
     try {
-      const { points: parsed } = parseTrack(initialGpx);
+      const { points: parsed, aircraftIdent: ident } = parseTrack(initialGpx);
       // One-shot load of server-provided track into state on mount. GPX parsing
       // relies on DOMParser (client only), so it can't run in a lazy initializer.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setPoints(parsed);
       setRawGpx(initialGpx);
+      setAircraftIdent(ident ?? "");
       setError("");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to parse shared track.";
@@ -300,61 +304,58 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
     return () => cancelAnimationFrame(rafId);
   }, [isPlaying, speed, timeline.durationMs]);
 
-  // Auto-clear the "copied"/"error" share feedback after a short delay.
-  useEffect(() => {
-    if (shareStatus !== "copied" && shareStatus !== "error") return;
-    const id = setTimeout(() => setShareStatus("idle"), 2500);
-    return () => clearTimeout(id);
-  }, [shareStatus]);
+  const handleFile = useCallback(async (file: File) => {
+    const name = file.name.toLowerCase();
+    if (!name.endsWith(".gpx") && !name.endsWith(".csv")) {
+      setError("Please select a .gpx track or a Garmin .csv log.");
+      return;
+    }
 
-  const resetShare = useCallback(() => {
-    setShareStatus("idle");
-    setShareUrl("");
+    try {
+      const text = await file.text();
+      const { points: parsed, aircraftIdent: ident } = parseTrack(text);
+      setPoints(parsed);
+      setRawGpx(text);
+      setAircraftIdent(ident ?? "");
+      setTrackName(file.name);
+      setElapsedMs(0);
+      setIsPlaying(false);
+      setError("");
+      shareShortUrlsRef.current = {};
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to parse track file.";
+      setError(message);
+      setPoints([]);
+      setRawGpx("");
+      setAircraftIdent("");
+      setTrackName("");
+      setElapsedMs(0);
+      setIsPlaying(false);
+      shareShortUrlsRef.current = {};
+    }
   }, []);
-
-  const handleFile = useCallback(
-    async (file: File) => {
-      const name = file.name.toLowerCase();
-      if (!name.endsWith(".gpx") && !name.endsWith(".csv")) {
-        setError("Please select a .gpx track or a Garmin .csv log.");
-        return;
-      }
-
-      try {
-        const text = await file.text();
-        const { points: parsed } = parseTrack(text);
-        setPoints(parsed);
-        setRawGpx(text);
-        setTrackName(file.name);
-        setElapsedMs(0);
-        setIsPlaying(false);
-        setError("");
-        resetShare();
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to parse track file.";
-        setError(message);
-        setPoints([]);
-        setRawGpx("");
-        setTrackName("");
-        setElapsedMs(0);
-        setIsPlaying(false);
-        resetShare();
-      }
-    },
-    [resetShare]
-  );
 
   const handleSliderChange = useCallback((value: number) => {
     setElapsedMs(value);
     setIsPlaying(false);
   }, []);
 
-  const handleShare = useCallback(async () => {
-    if (!rawGpx || shareStatus === "loading") return;
-    setShareStatus("loading");
+  const handleShare = useCallback(() => {
+    if (!rawGpx) return;
+    setShareModalOpen(true);
+  }, [rawGpx]);
 
-    try {
-      const finalUrl = await createShareUrl(rawGpx, {
+  // Upload happens here, driven by the share modal once the user has made the
+  // anonymize choice (or immediately for tracks with nothing to anonymize).
+  const handleCreateShareUrl = useCallback(
+    async (anonymize: boolean) => {
+      const cacheKey = anonymize ? "anonymized" : "plain";
+      let shortUrl = shareShortUrlsRef.current[cacheKey];
+      if (!shortUrl) {
+        shortUrl = await uploadReplay(anonymize ? anonymizeGarminCsv(rawGpx) : rawGpx);
+        shareShortUrlsRef.current[cacheKey] = shortUrl;
+      }
+      return buildShareUrl(shortUrl, {
         elapsedMs: clampedElapsedMs,
         speed,
         viewMode,
@@ -362,19 +363,9 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
         chaseDistance,
         showWall,
       });
-      setShareUrl(finalUrl);
-      try {
-        await navigator.clipboard.writeText(finalUrl);
-      } catch {
-        // clipboard may fail (permissions, insecure context) — modal lets user copy manually
-      }
-      setShareStatus("copied");
-      setShareModalOpen(true);
-    } catch (err) {
-      console.error(err);
-      setShareStatus("error");
-    }
-  }, [rawGpx, clampedElapsedMs, speed, shareStatus, viewMode, chaseDistance, showWall]);
+    },
+    [rawGpx, clampedElapsedMs, speed, viewMode, chaseDistance, showWall]
+  );
 
   const canShare = points.length >= 2 && rawGpx.length > 0;
   const hasTrack = points.length > 0;
@@ -443,7 +434,6 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
           onNewGpx={() => inputRef.current?.click()}
           onShare={handleShare}
           canShare={canShare}
-          shareStatus={shareStatus}
           onRecord={handleRecord}
           canRecord={recorder.supported}
         />
@@ -559,6 +549,11 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
               ) : null}
 
               <div className="rounded-lg bg-slate-900/60 border border-gray-700 px-4 py-2.5 text-xs tabular-nums text-slate-400">
+                {aircraftIdent ? (
+                  <div className="mb-1 font-medium text-slate-300">
+                    {aircraftIdent} · recorded {formatRecordingStartUtc(timeline.startMs)}
+                  </div>
+                ) : null}
                 {formatDistance(totalDistanceNm, 1)} NM · {Math.round(timeline.durationMs / 60000)} min ·{" "}
                 {points.length.toLocaleString()} points
               </div>
@@ -571,8 +566,12 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
         </div>
       </div>
 
-      {shareModalOpen && shareUrl ? (
-        <ShareModal url={shareUrl} onClose={() => setShareModalOpen(false)} />
+      {shareModalOpen ? (
+        <ShareModal
+          createUrl={handleCreateShareUrl}
+          aircraftIdent={aircraftIdent || undefined}
+          onClose={() => setShareModalOpen(false)}
+        />
       ) : null}
 
       {recordModalOpen ? (
@@ -597,6 +596,12 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
       ) : null}
     </div>
   );
+}
+
+/** Formats a recording start timestamp as a compact UTC date-time ("2026-05-29 20:02Z"). */
+function formatRecordingStartUtc(ms: number): string {
+  if (!Number.isFinite(ms) || ms <= 0) return "";
+  return `${new Date(ms).toISOString().slice(0, 16).replace("T", " ")}Z`;
 }
 
 /** Imagery / Cesium / 3D-model credits, shared by the footer and the replay side panel. */

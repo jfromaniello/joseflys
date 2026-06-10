@@ -1,11 +1,13 @@
 import type { ReplayPoint, TrackFormat } from "./types";
 import { parseGpxText } from "./parseGpx";
-import { isGarminCsv, parseGarminCsv } from "./parseGarminCsv";
+import { isGarminCsv, parseGarminCsv, parseGarminAirframeInfo } from "./parseGarminCsv";
 
 /** A parsed track plus the source format it was detected as. */
 export interface ParsedTrack {
   points: ReplayPoint[];
   format: TrackFormat;
+  /** Aircraft registration from the Garmin log header, unless anonymized. */
+  aircraftIdent?: string;
 }
 
 /**
@@ -17,7 +19,11 @@ export interface ParsedTrack {
  */
 export function parseTrack(content: string): ParsedTrack {
   if (isGarminCsv(content)) {
-    return { points: parseGarminCsv(content), format: "garmin-csv" };
+    return {
+      points: parseGarminCsv(content),
+      format: "garmin-csv",
+      ...parseGarminAirframeInfo(content),
+    };
   }
   if (content.includes("<gpx") || content.includes("<trkpt")) {
     return { points: parseGpxText(content), format: "gpx" };

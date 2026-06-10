@@ -67,3 +67,6 @@ scripts/data-sources/*.pdf
 scripts/data-sources/*.csv
 scripts/data-sources/*.txt
 
+
+# Local stand-in for Vercel Blob (dev sharing without credentials)
+.dev-replay-blobs/

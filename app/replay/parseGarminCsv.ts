@@ -54,6 +54,31 @@ export function isGarminCsv(content: string): boolean {
   );
 }
 
+/** Aircraft metadata carried on the `#airframe_info` header line. */
+export interface GarminAirframeInfo {
+  /** Aircraft registration / tail number (`aircraft_ident`), when present. */
+  aircraftIdent?: string;
+}
+
+/** Factory-default ident Garmin writes when no tail number is configured. */
+const PLACEHOLDER_IDENT = "SAMPLE";
+
+/**
+ * Extracts aircraft metadata from the `#airframe_info` line of a Garmin G3X
+ * log. Returns an empty object when the attribute is missing, blank, or the
+ * factory placeholder — e.g. for GPX content or an already-anonymous log.
+ */
+export function parseGarminAirframeInfo(content: string): GarminAirframeInfo {
+  const line = content
+    .slice(0, 4000)
+    .split(/\r?\n/)
+    .find((l) => l.startsWith("#airframe_info"));
+  if (!line) return {};
+  const ident = /aircraft_ident="([^"]*)"/.exec(line)?.[1].trim();
+  if (!ident || ident.toUpperCase() === PLACEHOLDER_IDENT) return {};
+  return { aircraftIdent: ident };
+}
+
 /** Splits one CSV line on commas, honoring double-quoted fields. */
 function splitCsvLine(line: string): string[] {
   const fields: string[] = [];
