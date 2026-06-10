@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  computeEngineRanges,
   hasEngineData,
   hasRichTelemetry,
   sampleEngine,
@@ -62,6 +63,33 @@ describe("engine (EIS) sampling", () => {
     expect(sample.rpm).toBeCloseTo(2200);
     expect(sample.fuelFlowGph).toBeCloseTo(6);
     expect(sample.chtMaxF).toBeNull();
+  });
+});
+
+describe("computeEngineRanges", () => {
+  it("derives a zero-based, padded, rounded scale for RPM", () => {
+    const points = track(10, () => ({ rpm: 5200 }));
+    // 5200 * 1.1 = 5720 → next 500 step = 6000.
+    expect(computeEngineRanges(points).rpm).toEqual({ min: 0, max: 6000 });
+  });
+
+  it("floors temperature scales near the recorded minimum instead of 0", () => {
+    const points = track(10, () => ({ oilTempF: 180 }));
+    const range = computeEngineRanges(points).oilTempF!;
+    // 180 * 0.9 = 162 → floor to 150; 180 * 1.1 = 198 → ceil to 200.
+    expect(range).toEqual({ min: 150, max: 200 });
+  });
+
+  it("omits fields the track never records", () => {
+    const ranges = computeEngineRanges(track(10, () => ({ rpm: 2400 })));
+    expect(ranges.rpm).toBeDefined();
+    expect(ranges.fuelFlowGph).toBeUndefined();
+    expect(computeEngineRanges(track(10))).toEqual({});
+  });
+
+  it("always spans at least one step even for constant values", () => {
+    const range = computeEngineRanges(track(10, () => ({ volts: 0 }))).volts!;
+    expect(range.max).toBeGreaterThan(range.min);
   });
 });
 

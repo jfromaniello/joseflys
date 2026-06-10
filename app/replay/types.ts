@@ -36,6 +36,8 @@ export interface ReplayPoint {
   rollDeg?: number;
   /** Magnetic heading in degrees (where the nose points, not course). */
   headingMagDeg?: number;
+  /** Body-frame lateral acceleration in G (slip/skid; 0 when coordinated). */
+  latAccG?: number;
   /** Wind direction in degrees (direction the wind is coming from). */
   windDirDeg?: number;
   /** Wind speed in knots. */

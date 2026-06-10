@@ -94,6 +94,12 @@ function recordedRollRad(points: ReplayPoint[], timeMs: number): number {
   return rollDeg === null ? 0 : (rollDeg * Math.PI) / 180;
 }
 
+/** Recorded pitch in radians, or `null` for tracks without attitude data. */
+function recordedPitchRad(points: ReplayPoint[], timeMs: number): number | null {
+  const pitchDeg = sampleField(points, timeMs, "pitchDeg");
+  return pitchDeg === null ? null : (pitchDeg * Math.PI) / 180;
+}
+
 export function GpxReplayGlobe({
   points,
   currentTimeMs,
@@ -1004,7 +1010,8 @@ export function GpxReplayGlobe({
         cockpitHeadingOffsetRef.current,
         cockpitPitchOffsetRef.current,
         chaseDistanceRef.current,
-        mode === "cockpit" ? recordedRollRad(pts, timeMs) : 0
+        mode === "cockpit" ? recordedRollRad(pts, timeMs) : 0,
+        mode === "cockpit" ? recordedPitchRad(pts, timeMs) : null
       );
       viewer.camera.setView({
         destination: pose.destination,
@@ -1118,7 +1125,8 @@ export function GpxReplayGlobe({
         cockpitHeadingOffsetRef.current,
         cockpitPitchOffsetRef.current,
         chaseDistanceRef.current,
-        mode === "cockpit" ? recordedRollRad(pointsNow, currentMs) : 0
+        mode === "cockpit" ? recordedRollRad(pointsNow, currentMs) : 0,
+        mode === "cockpit" ? recordedPitchRad(pointsNow, currentMs) : null
       );
 
       if (mode !== camCurrentModeRef.current) {

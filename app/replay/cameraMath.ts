@@ -295,7 +295,8 @@ export function computeCockpitPose(
   motionHeadingRad: number,
   headingOffsetRad: number,
   pitchOffsetRad: number,
-  rollRad = 0
+  rollRad = 0,
+  basePitchRad: number | null = null
 ): CamPose {
   const enu = Cesium.Transforms.eastNorthUpToFixedFrame(aircraftPos);
   const offsetENU = new Cesium.Cartesian3(0, 0, 4);
@@ -304,7 +305,9 @@ export function computeCockpitPose(
   return {
     destination: camPos,
     heading: motionHeadingRad + headingOffsetRad,
-    pitch: toRad(-2) + pitchOffsetRad,
+    // Recorded attitude pitch when available; otherwise a slight nose-down
+    // default so the horizon sits naturally in frame.
+    pitch: (basePitchRad ?? toRad(-2)) + pitchOffsetRad,
     roll: rollRad,
   };
 }
@@ -323,7 +326,8 @@ export function computeCameraPose(
   cockpitHeadingOffsetRad = 0,
   cockpitPitchOffsetRad = 0,
   chaseRangeM = DEFAULT_CHASE_RANGE_M,
-  cockpitRollRad = 0
+  cockpitRollRad = 0,
+  cockpitPitchRad: number | null = null
 ): CamPose {
   switch (mode) {
     case "chase":
@@ -354,7 +358,8 @@ export function computeCameraPose(
         motionHeadingRad,
         cockpitHeadingOffsetRad,
         cockpitPitchOffsetRad,
-        cockpitRollRad
+        cockpitRollRad,
+        cockpitPitchRad
       );
     default:
       return computePoseFromAircraft(Cesium, aircraftPos, motionHeadingRad, 2500, 900, toRad(-18));

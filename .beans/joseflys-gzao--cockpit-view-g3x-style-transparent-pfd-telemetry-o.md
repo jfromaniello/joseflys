@@ -105,3 +105,10 @@ Implemented and verified in-browser with the anonymized G3X fixture:
 Deferred / follow-ups:
 - Video export captures only the WebGL canvas (`preserveDrawingBuffer`), so the DOM overlay does not appear in recorded MP4s — compositing the PFD into the capture is a separate task.
 - Speed-tape color arcs (needs per-aircraft V-speeds), HSI/CDI, synthetic vision remain out of scope.
+
+## Iteration 2 (2026-06-10, user feedback)
+
+- Wind vector convention clarified: the magenta arrow now *arrives at the center dot from* the rose bearing the wind blows FROM, so its tail sits on the card mark matching the "104°/6" readout.
+- Slip/skid indicator: parsed `Lateral Acceleration (G)` (`latAccG`); a yellow brick under the roll pointer slides toward the lateral acceleration (full deflection at 0.2 G), G3X-style.
+- Cockpit camera now uses the recorded pitch (`computeCockpitPose` takes `basePitchRad`, falling back to the old fixed -2° for plain GPX) — heading and roll already did.
+- Engine readouts replaced with a G3X-style vertical EIS strip on the far left (`EngineStrip.tsx`): round RPM / manifold gauges with green band + needle, bar gauges (fuel flow/pressure, oil, coolant, EGT/CHT) and a bus voltage row. Gauge scales derive from the track's own operating range (`computeEngineRanges`) since logs carry no aircraft limits. Speed tape shifts inward when the strip is present; strip hidden below `md`.

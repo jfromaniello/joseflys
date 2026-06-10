@@ -33,6 +33,7 @@ describe("parseGarminCsv", () => {
     expect(p.windSpeedKt).toBeCloseTo(5.9, 1);
     expect(p.windDirDeg).toBeCloseTo(104, 0);
     expect(p.aglFt).toBeCloseTo(900, 0);
+    expect(p.latAccG).toBeDefined();
   });
 
   it("parses engine (EIS) fields, keeping the hottest EGT", () => {

@@ -28,6 +28,7 @@ import {
   computeTrackHeadingDeg,
   computeVerticalSpeedFpm,
   computeWindComponents,
+  computeEngineRanges,
   findPointIndexByTime,
   hasEngineData,
   hasRichTelemetry,
@@ -234,11 +235,16 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
     () => sampleField(points, currentTimeMs, "pitchDeg"),
     [points, currentTimeMs]
   );
+  const currentLatAccG = useMemo(
+    () => sampleField(points, currentTimeMs, "latAccG"),
+    [points, currentTimeMs]
+  );
   const engineAvailable = useMemo(() => hasEngineData(points), [points]);
   const engine = useMemo(
     () => (engineAvailable ? sampleEngine(points, currentTimeMs) : null),
     [engineAvailable, points, currentTimeMs]
   );
+  const engineRanges = useMemo(() => computeEngineRanges(points), [points]);
   // The glass-cockpit overlay replaces the simple telemetry box in cockpit view
   // when the track carries avionics data and the user hasn't turned it off.
   const pfdActive = viewMode === "cockpit" && hasAvionics && showPfd;
@@ -508,11 +514,13 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
                 headingDeg={currentHeadingMagDeg ?? currentTrackDeg}
                 rollDeg={currentRollDeg}
                 pitchDeg={currentPitchDeg}
+                latAccG={currentLatAccG}
                 windDirDeg={telemetry.windDirDeg}
                 windSpeedKt={telemetry.windSpeedKt}
                 oatC={telemetry.oatC}
                 aglFt={telemetry.aglFt}
                 engine={engine}
+                engineRanges={engineRanges}
               />
             ) : (
               <TelemetryOverlay

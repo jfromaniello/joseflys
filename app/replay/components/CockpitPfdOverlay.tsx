@@ -1,8 +1,9 @@
 "use client";
 
 import { formatCorrection, formatCourse, formatWind } from "@/lib/formatters";
-import type { EngineSample } from "../replayMetrics";
+import type { EngineRanges, EngineSample } from "../replayMetrics";
 import { computeTapeTicks, headingTickLabel } from "../pfdMath";
+import { EngineStrip } from "./EngineStrip";
 
 interface CockpitPfdOverlayProps {
   /** Indicated airspeed (kt); when absent the speed tape falls back to GS. */
@@ -19,12 +20,16 @@ interface CockpitPfdOverlayProps {
   rollDeg: number | null;
   /** Recorded pitch (deg, nose-up positive). */
   pitchDeg: number | null;
+  /** Body-frame lateral acceleration (G) driving the slip/skid indicator. */
+  latAccG: number | null;
   windDirDeg: number | null;
   windSpeedKt: number | null;
   oatC: number | null;
   aglFt: number | null;
   /** Engine (EIS) readouts; `null` when the track has no engine feed. */
   engine: EngineSample | null;
+  /** Gauge scales for the EIS strip, derived from the track. */
+  engineRanges: EngineRanges;
 }
 
 // Tape strip background — translucent so the scenery stays visible behind it.
@@ -244,12 +249,31 @@ function arcPoint(angleDeg: number, radius: number): { x: number; y: number } {
   };
 }
 
+// Slip/skid: full lateral deflection of the brick at this many G.
+const SLIP_FULL_SCALE_G = 0.2;
+const SLIP_MAX_PX = 18;
+
 /**
  * Bank-angle arc (top center): a fixed roll scale with a yellow pointer that
- * rotates with the recorded bank, plus a small digital pitch readout. Drawn
- * without a background strip to stay unobtrusive over the scenery.
+ * rotates with the recorded bank, plus a small digital pitch readout. When the
+ * log records lateral acceleration, a slip/skid brick under the pointer slides
+ * sideways like the G3X trapezoid (centered = coordinated). Drawn without a
+ * background strip to stay unobtrusive over the scenery.
  */
-function BankArc({ rollDeg, pitchDeg }: { rollDeg: number; pitchDeg: number | null }) {
+function BankArc({
+  rollDeg,
+  pitchDeg,
+  latAccG,
+}: {
+  rollDeg: number;
+  pitchDeg: number | null;
+  latAccG: number | null;
+}) {
+  const slipOffset =
+    latAccG === null
+      ? 0
+      : (Math.max(-SLIP_FULL_SCALE_G, Math.min(SLIP_FULL_SCALE_G, latAccG)) / SLIP_FULL_SCALE_G) *
+        SLIP_MAX_PX;
   const start = arcPoint(-60, ARC_R);
   const end = arcPoint(60, ARC_R);
 
@@ -292,6 +316,16 @@ function BankArc({ rollDeg, pitchDeg }: { rollDeg: number; pitchDeg: number | nu
           stroke="rgba(2,6,23,0.8)"
           strokeWidth={1}
         />
+        {/* Slip/skid brick: slides toward the lateral acceleration, like the ball. */}
+        {latAccG !== null ? (
+          <polygon
+            transform={`translate(${slipOffset} 0)`}
+            points={`${ARC_CX - 9},${ARC_CY - ARC_R + 19} ${ARC_CX + 9},${ARC_CY - ARC_R + 19} ${ARC_CX + 6},${ARC_CY - ARC_R + 27} ${ARC_CX - 6},${ARC_CY - ARC_R + 27}`}
+            fill={ACCENT_YELLOW}
+            stroke="rgba(2,6,23,0.8)"
+            strokeWidth={1}
+          />
+        ) : null}
       </g>
       {pitchDeg !== null ? (
         <>
@@ -364,23 +398,26 @@ function HeadingRose({
           );
         })}
       </g>
-      {/* Wind vector: points the direction the wind blows, relative to the nose. */}
+      {/* Wind vector: the arrow arrives at the aircraft (center dot) from the
+          rose bearing the wind blows FROM — its tail sits on the card mark
+          matching the direction readout (e.g. tail on 104 for "104°/6"). */}
       {hasWind ? (
         <>
           <g transform={`rotate(${windDirDeg - headingDeg} ${ROSE_CX} ${ROSE_CY})`}>
             <line
               x1={ROSE_CX}
-              y1={ROSE_CY - 18}
+              y1={ROSE_CY - 34}
               x2={ROSE_CX}
-              y2={ROSE_CY + 12}
+              y2={ROSE_CY - 10}
               stroke={WIND_MAGENTA}
               strokeWidth={2.5}
             />
             <polygon
-              points={`${ROSE_CX},${ROSE_CY + 20} ${ROSE_CX - 5},${ROSE_CY + 10} ${ROSE_CX + 5},${ROSE_CY + 10}`}
+              points={`${ROSE_CX},${ROSE_CY - 2} ${ROSE_CX - 5.5},${ROSE_CY - 12} ${ROSE_CX + 5.5},${ROSE_CY - 12}`}
               fill={WIND_MAGENTA}
             />
           </g>
+          <circle cx={ROSE_CX} cy={ROSE_CY} r={3} fill={WIND_MAGENTA} />
           <rect x={0} y={ROSE_CY - ROSE_R - 8} width={58} height={16} fill={LENS_FILL} rx={3} />
           <text
             x={29}
@@ -427,41 +464,6 @@ function AuxField({ label, value }: { label: string; value: string }) {
   );
 }
 
-/** Compact engine (EIS) readout block; renders only the fields the log records. */
-function EngineBlock({ engine }: { engine: EngineSample }) {
-  const rows: { label: string; value: string }[] = [];
-  if (engine.rpm !== null) rows.push({ label: "RPM", value: `${Math.round(engine.rpm)}` });
-  if (engine.manifoldInHg !== null)
-    rows.push({ label: "MAP", value: `${engine.manifoldInHg.toFixed(1)} inHg` });
-  if (engine.fuelFlowGph !== null)
-    rows.push({ label: "FF", value: `${engine.fuelFlowGph.toFixed(1)} GPH` });
-  if (engine.fuelPressPsi !== null)
-    rows.push({ label: "Fuel P", value: `${engine.fuelPressPsi.toFixed(1)} PSI` });
-  if (engine.oilTempF !== null) rows.push({ label: "Oil T", value: `${Math.round(engine.oilTempF)}°F` });
-  if (engine.oilPressPsi !== null)
-    rows.push({ label: "Oil P", value: `${Math.round(engine.oilPressPsi)} PSI` });
-  if (engine.coolantTempF !== null)
-    rows.push({ label: "Coolant", value: `${Math.round(engine.coolantTempF)}°F` });
-  if (engine.egtMaxF !== null) rows.push({ label: "EGT", value: `${Math.round(engine.egtMaxF)}°F` });
-  if (engine.chtMaxF !== null) rows.push({ label: "CHT", value: `${Math.round(engine.chtMaxF)}°F` });
-  if (engine.volts !== null) rows.push({ label: "Volts", value: `${engine.volts.toFixed(1)} V` });
-  if (engine.amps !== null) rows.push({ label: "Amps", value: `${Math.round(engine.amps)} A` });
-
-  if (rows.length === 0) return null;
-
-  // Two columns keep the block short enough to clear the altitude tape above it.
-  return (
-    <div className="w-64 rounded-md bg-slate-900/45 border border-white/10 px-2.5 py-1.5 backdrop-blur-[2px]">
-      <div className="text-[9px] font-bold uppercase tracking-wider text-cyan-300/80 mb-0.5">Engine</div>
-      <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
-        {rows.map((row) => (
-          <AuxField key={row.label} label={row.label} value={row.value} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
 /**
  * G3X-inspired glass-cockpit overlay for the cockpit view: airspeed tape (left),
  * altitude tape + VSI (right), bank arc (top), compass rose with wind (bottom),
@@ -479,21 +481,37 @@ export function CockpitPfdOverlay({
   headingDeg,
   rollDeg,
   pitchDeg,
+  latAccG,
   windDirDeg,
   windSpeedKt,
   oatC,
   aglFt,
   engine,
+  engineRanges,
 }: CockpitPfdOverlayProps) {
+  // The EIS strip takes the far-left slot (like a real G3X), pushing the speed
+  // tape inward; it is hidden on narrow screens where both can't fit.
+  const hasEngineStrip = engine !== null;
+
   return (
     <div className="pointer-events-none absolute inset-0 z-[550] select-none">
       {rollDeg !== null ? (
         <div className="absolute left-1/2 top-2 -translate-x-1/2">
-          <BankArc rollDeg={rollDeg} pitchDeg={pitchDeg} />
+          <BankArc rollDeg={rollDeg} pitchDeg={pitchDeg} latAccG={latAccG} />
         </div>
       ) : null}
 
-      <div className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2">
+      {hasEngineStrip ? (
+        <div className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 hidden md:block">
+          <EngineStrip engine={engine} ranges={engineRanges} />
+        </div>
+      ) : null}
+
+      <div
+        className={`absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 ${
+          hasEngineStrip ? "md:left-[8.5rem]" : ""
+        }`}
+      >
         <SpeedTape iasKt={iasKt} groundSpeedKt={groundSpeedKt} />
       </div>
 
@@ -512,7 +530,7 @@ export function CockpitPfdOverlay({
         </div>
       ) : null}
 
-      <div className="absolute bottom-16 left-2 sm:left-3 w-36 rounded-md bg-slate-900/45 border border-white/10 px-2.5 py-1.5 space-y-0.5 backdrop-blur-[2px]">
+      <div className="absolute bottom-16 right-2 sm:right-3 w-36 rounded-md bg-slate-900/45 border border-white/10 px-2.5 py-1.5 space-y-0.5 backdrop-blur-[2px]">
         {groundSpeedKt !== null && iasKt !== null ? (
           <AuxField label="GS" value={`${Math.round(groundSpeedKt)} KT`} />
         ) : null}
@@ -520,12 +538,6 @@ export function CockpitPfdOverlay({
         {oatC !== null ? <AuxField label="OAT" value={`${Math.round(oatC)}°C`} /> : null}
         {aglFt !== null ? <AuxField label="AGL" value={`${Math.round(aglFt).toLocaleString()} ft`} /> : null}
       </div>
-
-      {engine ? (
-        <div className="absolute bottom-16 right-2 sm:right-3">
-          <EngineBlock engine={engine} />
-        </div>
-      ) : null}
     </div>
   );
 }

@@ -243,6 +243,58 @@ export function sampleEngine(points: ReplayPoint[], currentTimeMs: number): Engi
   };
 }
 
+/** Scale bounds for one engine gauge. */
+export interface GaugeRange {
+  min: number;
+  max: number;
+}
+
+export type EngineGaugeKey = Exclude<keyof EngineSample, never>;
+
+export type EngineRanges = Partial<Record<EngineGaugeKey, GaugeRange>>;
+
+/** Rounding step and whether the scale starts at the data floor (temps) or 0. */
+const GAUGE_SCALE: Record<EngineGaugeKey, { step: number; floorAtData: boolean }> = {
+  rpm: { step: 500, floorAtData: false },
+  manifoldInHg: { step: 5, floorAtData: false },
+  fuelFlowGph: { step: 2, floorAtData: false },
+  fuelPressPsi: { step: 2, floorAtData: false },
+  oilPressPsi: { step: 10, floorAtData: false },
+  oilTempF: { step: 50, floorAtData: true },
+  coolantTempF: { step: 50, floorAtData: true },
+  egtMaxF: { step: 100, floorAtData: true },
+  chtMaxF: { step: 50, floorAtData: true },
+  volts: { step: 2, floorAtData: false },
+  amps: { step: 5, floorAtData: false },
+};
+
+/**
+ * Gauge scale per engine field, derived from the track's own min/max (with
+ * ~10% headroom, rounded to a clean step). The log carries no aircraft limits,
+ * so scales follow the recorded operating range instead of pretending to know
+ * red lines; fields the track never records are absent.
+ */
+export function computeEngineRanges(points: ReplayPoint[]): EngineRanges {
+  const ranges: EngineRanges = {};
+  for (const key of Object.keys(GAUGE_SCALE) as EngineGaugeKey[]) {
+    let dataMin = Infinity;
+    let dataMax = -Infinity;
+    for (const p of points) {
+      const value = p[key];
+      if (typeof value !== "number") continue;
+      if (value < dataMin) dataMin = value;
+      if (value > dataMax) dataMax = value;
+    }
+    if (dataMax === -Infinity) continue;
+
+    const { step, floorAtData } = GAUGE_SCALE[key];
+    const max = Math.ceil((dataMax * 1.1) / step) * step;
+    const min = floorAtData ? Math.min(Math.floor((dataMin * 0.9) / step) * step, max - step) : 0;
+    ranges[key] = { min, max: Math.max(max, min + step) };
+  }
+  return ranges;
+}
+
 /** Headwind / crosswind decomposition of the wind relative to the ground track. */
 export interface WindComponents {
   /** Positive = headwind, negative = tailwind (kt). */
