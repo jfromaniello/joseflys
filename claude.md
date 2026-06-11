@@ -1,5 +1,23 @@
 # Claude Development Guidelines
 
+## Task Tracking with Beans
+
+We use the `beans` CLI for issue/task tracking. Beans live as markdown files in `.beans/` and are committed to the repo.
+
+```bash
+beans list                                  # list all beans
+beans show <id>                             # show a bean
+beans create "Title" --type feature --tag replay --body -   # body via stdin
+beans update <id> --status in-progress      # statuses: todo, in-progress, completed, scrapped, draft
+beans update <id> --body-append -           # append notes via stdin
+```
+
+Workflow conventions:
+- Before starting a task, set its bean to `in-progress`; when done, `completed`.
+- Investigate first, then improve the bean's title/body with findings, design decisions, and acceptance criteria before implementing.
+- Append implementation/verification notes to the bean when closing it, and reference the bean ID in the commit message (e.g. "Closes joseflys-l12t").
+- Note: statuses use hyphens (`in-progress`, not `in_progress`).
+
 ## Formatting Functions
 
 **CRITICAL**: Always use formatters from `/lib/formatters.ts`. Never implement inline.
