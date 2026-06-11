@@ -1,7 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { recordOutputSize, type RecordAspect, type RecordResolution, type ReplayPoint, type SpeedOption } from "./types";
+import {
+  PFD_LAYOUT_WIDTH,
+  recordOutputSize,
+  type RecordAspect,
+  type RecordResolution,
+  type ReplayPoint,
+  type SpeedOption,
+} from "./types";
 import {
   computeAltitudeFt,
   computeGroundSpeed,
@@ -18,13 +25,6 @@ import type { CaptureControl } from "./GpxReplayGlobe";
 
 const FPS = 30;
 const FRAME_INTERVAL_MS = 1000 / FPS;
-
-// Logical (CSS-pixel) width the PFD scene is laid out at for fixed presets: a
-// typical desktop viewport for landscape, a phone-sized one for vertical —
-// mirroring how the live overlay would look on those devices. Using a constant
-// (instead of the live canvas size) keeps the overlay framing identical across
-// machines and across resolutions of the same aspect.
-const PFD_LAYOUT_WIDTH: Record<"16:9" | "9:16", number> = { "16:9": 1280, "9:16": 420 };
 
 export type RecordingStatus =
   | "idle"

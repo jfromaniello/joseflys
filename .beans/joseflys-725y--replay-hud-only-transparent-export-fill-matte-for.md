@@ -1,13 +1,13 @@
 ---
 # joseflys-725y
 title: 'Replay: HUD-only transparent export (fill + matte) for compositing over real footage'
-status: todo
+status: completed
 type: feature
 priority: normal
 tags:
     - replay
 created_at: 2026-06-11T15:38:16Z
-updated_at: 2026-06-11T15:40:28Z
+updated_at: 2026-06-11T16:13:55Z
 ---
 
 ## Goal
@@ -64,3 +64,29 @@ User confirmed ProRes 4444 .mov + alpha is the ideal Resolve format. Findings:
 - **Recommended hybrid**: ship fill+matte (fast, unlimited duration); show in the UI the local one-liner for users who want a single ProRes file at native speed:
   `ffmpeg -i hud-fill.mp4 -i hud-matte.mp4 -filter_complex alphamerge -c:v prores_ks -profile:v 4444 -pix_fmt yuva444p10le -alpha_bits 16 hud.mov`
 - Phase 2 (optional): in-browser `qtrle` .mov export for short clips via ffmpeg.wasm (lazy-loaded), gated by a time-range selector.
+
+
+--------
+
+## Implementation notes (2026-06-11)
+
+Implemented as a separate toolbar action ("Overlay" button next to Record), per user direction — not a mode inside RecordModal.
+
+**New files:**
+- `app/replay/useHudExport.ts` — offline export loop. Three canvases per frame: `scratch` (overlay on transparency), `fill` (scratch over black, `alpha:false` ctx), `matte` (scratch → `source-in` white → `destination-over` black, so semi-transparent pixels become proportional grays). Two `Mp4Recorder` instances fed identical timestamps; yields to the event loop every 32 frames for progress/backpressure.
+- `app/replay/components/HudExportModal.tsx` — overlay picker (Glass cockpit / Simple HUD; PFD disabled without avionics), FPS (24/25/30/60), aspect (16:9/9:16), resolution (1080p/720p), collapsible compositing hint with the ProRes 4444 ffmpeg one-liner.
+
+**Changed:**
+- `types.ts`: `HUD_EXPORT_FPS_OPTIONS`/`HudExportFps`; moved `PFD_LAYOUT_WIDTH` here (shared with useReplayRecorder).
+- `recordHud.ts`: extracted `drawClockAndWatermark()`; the exporter burns it into PFD frames too (PFD scene has no clock).
+- `ReplayToolbar.tsx`: "Overlay" button next to Record (same `canRecord` gate).
+- `GpxReplayClient.tsx`: wiring (`useHudExport`, modal, handlers).
+
+**Design decisions honored:** 1× locked (frame i = startMs + i·1000/fps exactly), N min track → N min video, no Cesium dependency, files named `joseflys-hud-<stamp>-fill.mp4` / `-matte.mp4`, 500 ms stagger between the two downloads plus per-file re-download links with proper filenames (browsers gate the second download behind a "multiple downloads" permission).
+
+## Verification (browser, garmin-g3x-sample.csv, 20 s track)
+
+- PFD 16:9 1080p 30fps: 1920×1080 H.264, 601 frames, 20.033 s — frame 300 shows clock 20:02:31 = start 20:02:21 + 10 s exactly. Fill renders full PFD over black; matte is the correct white/gray silhouette (verified visually).
+- Simple HUD 9:16 720→1080 60fps: 1080×1920, 1201 frames, 20.017 s — frame 600 clock 20:02:31 ✓.
+- Export runs offline (much faster than real time), progress bar works, `npm test` 483 passed, tsc/eslint clean on touched files.
+- Note: Chrome's automation profile auto-denies the multiple-downloads permission, so only the fill auto-downloaded there; in a normal browser the user gets a one-time prompt, and the modal's Fill/Matte buttons are the fallback.

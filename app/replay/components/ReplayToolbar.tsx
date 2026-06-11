@@ -9,6 +9,8 @@ interface ReplayToolbarProps {
   onRecord: () => void;
   /** Hidden when MP4 recording isn't supported by the browser. */
   canRecord: boolean;
+  /** Opens the HUD-only overlay export (fill + matte pair, no 3D map). */
+  onHudExport: () => void;
 }
 
 /** Compact app bar: page title, loaded track name, and New GPX / Record / Share actions. */
@@ -19,6 +21,7 @@ export function ReplayToolbar({
   canShare,
   onRecord,
   canRecord,
+  onHudExport,
 }: ReplayToolbarProps) {
   return (
     <div className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-gray-800 bg-slate-900/70 px-3 sm:px-4">
@@ -55,6 +58,20 @@ export function ReplayToolbar({
               <circle cx="12" cy="12" r="3" fill="currentColor" stroke="none" />
             </svg>
             <span className="hidden sm:inline">Record</span>
+          </button>
+        ) : null}
+        {canRecord ? (
+          <button
+            type="button"
+            onClick={onHudExport}
+            title="Export the telemetry overlay alone (fill + matte) to composite over real footage"
+            className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm font-medium cursor-pointer transition-colors bg-slate-700 hover:bg-slate-600 text-white"
+          >
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="5" width="18" height="14" rx="2" />
+              <path d="M7 9v3M17 9v3M9.5 16h5" strokeLinecap="round" />
+            </svg>
+            <span className="hidden sm:inline">Overlay</span>
           </button>
         ) : null}
         <button

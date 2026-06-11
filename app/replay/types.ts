@@ -150,6 +150,20 @@ export function recordOutputSize(
   return aspect === "16:9" ? { width: long, height: short } : { width: short, height: long };
 }
 
+/**
+ * Logical (CSS-pixel) width the PFD scene is laid out at for fixed presets: a
+ * typical desktop viewport for landscape, a phone-sized one for vertical —
+ * mirroring how the live overlay would look on those devices. Using a constant
+ * (instead of the live canvas size) keeps the overlay framing identical across
+ * machines and across resolutions of the same aspect.
+ */
+export const PFD_LAYOUT_WIDTH: Record<"16:9" | "9:16", number> = { "16:9": 1280, "9:16": 420 };
+
+/** Frame rates offered for the HUD-only overlay export (match the camera's). */
+export const HUD_EXPORT_FPS_OPTIONS = [24, 25, 30, 60] as const;
+
+export type HudExportFps = (typeof HUD_EXPORT_FPS_OPTIONS)[number];
+
 /** Allowed playback speed multipliers. */
 export const SPEED_OPTIONS = [1, 10, 50, 100] as const;
 

@@ -46,6 +46,7 @@ import {
   usePersistedViewMode,
 } from "./useReplayPreferences";
 import { useReplayRecorder } from "./useReplayRecorder";
+import { useHudExport } from "./useHudExport";
 import { useCircuitAnalysis } from "./useCircuitAnalysis";
 import { ReplayToolbar } from "./components/ReplayToolbar";
 import { GpxDropzone } from "./components/GpxDropzone";
@@ -59,6 +60,7 @@ import { FlightPhasesTable } from "./components/FlightPhasesTable";
 import { circuitPhaseAt } from "./analysis";
 import { ShareModal } from "./components/ShareModal";
 import { RecordModal } from "./components/RecordModal";
+import { HudExportModal } from "./components/HudExportModal";
 
 interface GpxReplayClientProps {
   initialGpx?: string;
@@ -127,6 +129,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
   // re-sharing doesn't re-upload the blob. Cleared when a new track loads.
   const shareShortUrlsRef = useRef<{ plain?: string; anonymized?: string }>({});
   const [recordModalOpen, setRecordModalOpen] = useState(false);
+  const [hudExportModalOpen, setHudExportModalOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastTickRef = useRef<number | null>(null);
   const initialGpxAppliedRef = useRef(false);
@@ -261,6 +264,13 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
     engineRanges,
   });
 
+  const hudExporter = useHudExport({
+    points,
+    startMs: timeline.startMs,
+    durationMs: timeline.durationMs,
+    engineRanges,
+  });
+
   const handleRecord = useCallback(() => {
     recorder.reset();
     setRecordModalOpen(true);
@@ -270,6 +280,16 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
     setRecordModalOpen(false);
     recorder.reset();
   }, [recorder]);
+
+  const handleHudExport = useCallback(() => {
+    hudExporter.reset();
+    setHudExportModalOpen(true);
+  }, [hudExporter]);
+
+  const handleCloseHudExportModal = useCallback(() => {
+    setHudExportModalOpen(false);
+    hudExporter.reset();
+  }, [hudExporter]);
 
   // --- Playback animation loop (real time × speed) ---
   useEffect(() => {
@@ -436,6 +456,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
           canShare={canShare}
           onRecord={handleRecord}
           canRecord={recorder.supported}
+          onHudExport={handleHudExport}
         />
 
         <div className="flex flex-1 min-h-0 flex-col xl:flex-row">
@@ -592,6 +613,23 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
           onShowTrackChange={setShowTrack}
           chaseDistance={chaseDistance}
           onChaseDistanceChange={setChaseDistance}
+        />
+      ) : null}
+
+      {hudExportModalOpen ? (
+        <HudExportModal
+          status={hudExporter.status}
+          progress={hudExporter.progress}
+          fillUrl={hudExporter.fillUrl}
+          matteUrl={hudExporter.matteUrl}
+          fillName={hudExporter.fillName}
+          matteName={hudExporter.matteName}
+          error={hudExporter.error}
+          supported={hudExporter.supported}
+          pfdAvailable={hasAvionics}
+          onStart={(opts) => hudExporter.startExport(opts)}
+          onClose={handleCloseHudExportModal}
+          onCancel={() => hudExporter.reset()}
         />
       ) : null}
     </div>

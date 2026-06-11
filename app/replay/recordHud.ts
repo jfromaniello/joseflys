@@ -57,11 +57,33 @@ export function drawHud(ctx: CanvasRenderingContext2D, width: number, height: nu
     ctx.fillText(value, panelX + pad, y + Math.round(16 * scale));
   });
 
-  // --- Clock (bottom-left) + watermark (bottom-right) ---
+  drawClockAndWatermark(ctx, width, height, frame.timeMs);
+
+  ctx.restore();
+}
+
+/**
+ * Draws the UTC clock (bottom-left) and branding watermark (bottom-right).
+ * Shared by the simple HUD and the HUD-only overlay export, where the burned-in
+ * clock is the sync reference against real footage.
+ */
+export function drawClockAndWatermark(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  timeMs: number
+): void {
+  const scale = width / 1280;
+  const pad = Math.round(20 * scale);
+  const font = (px: number, weight = 600) => `${weight} ${Math.round(px * scale)}px system-ui, sans-serif`;
+
+  ctx.save();
+  ctx.textBaseline = "top";
+
   const lineY = height - pad - Math.round(16 * scale);
   ctx.font = font(15, 600);
   ctx.fillStyle = "#e2e8f0";
-  ctx.fillText(formatUtc(frame.timeMs), pad, lineY);
+  ctx.fillText(formatUtc(timeMs), pad, lineY);
 
   ctx.font = font(15, 700);
   ctx.fillStyle = "rgba(226, 232, 240, 0.85)";
