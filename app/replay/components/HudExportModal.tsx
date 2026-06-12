@@ -18,6 +18,8 @@ const ASPECT_OPTIONS: { value: "16:9" | "9:16"; label: string }[] = [
 interface HudExportModalProps {
   status: HudExportStatus;
   progress: number;
+  /** Estimated seconds remaining, when known. */
+  etaSeconds: number | null;
   fillUrl: string | null;
   matteUrl: string | null;
   fillName: string | null;
@@ -26,16 +28,34 @@ interface HudExportModalProps {
   supported: boolean;
   /** Whether the track has avionics data for the glass-cockpit PFD overlay. */
   pfdAvailable: boolean;
+  /** Suggested flight title (registration + date/time + departure aerodrome). */
+  defaultTitle: string;
   onStart: (options: HudExportOptions) => void;
   onClose: () => void;
   /** Aborts an in-progress export and returns to the options screen. */
   onCancel: () => void;
 }
 
+function Toggle({ label, on, onToggle }: { label: string; on: boolean; onToggle: () => void }) {
+  return (
+    <button type="button" onClick={onToggle} className="flex w-full items-center justify-between cursor-pointer">
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{label}</span>
+      <span className={`relative h-5 w-9 rounded-full transition-colors ${on ? "bg-cyan-500" : "bg-slate-600"}`}>
+        <span
+          className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${
+            on ? "left-[1.125rem]" : "left-0.5"
+          }`}
+        />
+      </span>
+    </button>
+  );
+}
+
 /** Pre-export options, live progress, and the finished fill/matte downloads. */
 export function HudExportModal({
   status,
   progress,
+  etaSeconds,
   fillUrl,
   matteUrl,
   fillName,
@@ -43,6 +63,7 @@ export function HudExportModal({
   error,
   supported,
   pfdAvailable,
+  defaultTitle,
   onStart,
   onClose,
   onCancel,
@@ -51,6 +72,9 @@ export function HudExportModal({
   const [fps, setFps] = useState<HudExportFps>(30);
   const [aspect, setAspect] = useState<"16:9" | "9:16">("16:9");
   const [resolution, setResolution] = useState<RecordResolution>("1080p");
+  const [showTitle, setShowTitle] = useState(true);
+  const [title, setTitle] = useState(defaultTitle);
+  const [watermark, setWatermark] = useState(true);
 
   const outputSize = recordOutputSize(aspect, resolution);
 
@@ -135,7 +159,9 @@ export function HudExportModal({
         ) : busy ? (
           <div className="space-y-3">
             <div className="text-sm text-slate-200">
-              {status === "encoding" ? "Finalizing videos…" : `Exporting… ${Math.round(progress * 100)}%`}
+              {status === "encoding"
+                ? "Finalizing videos…"
+                : `Exporting… ${Math.round(progress * 100)}%${etaSeconds !== null ? ` · ${formatEta(etaSeconds)} left` : ""}`}
             </div>
             <div className="h-2 w-full rounded-full bg-slate-700 overflow-hidden">
               <div
@@ -144,7 +170,8 @@ export function HudExportModal({
               />
             </div>
             <p className="text-[11px] text-slate-400">
-              Renders offline, several times faster than real time. Keep this tab open.
+              Renders offline, several times faster than real time. You can switch tabs, but don&apos;t close
+              this one.
             </p>
             <button
               type="button"
@@ -246,11 +273,35 @@ export function HudExportModal({
               ) : null}
             </div>
 
+            <div className="space-y-2.5 border-t border-slate-700 pt-3">
+              <Toggle label="Flight title" on={showTitle} onToggle={() => setShowTitle((v) => !v)} />
+              {showTitle ? (
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder={defaultTitle || "Flight title"}
+                  aria-label="Flight title"
+                  className="w-full rounded-md bg-slate-800/60 border border-slate-700 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500"
+                />
+              ) : null}
+              <Toggle label="joseflys.com watermark" on={watermark} onToggle={() => setWatermark((v) => !v)} />
+            </div>
+
             <MatteWorkflowHint />
 
             <button
               type="button"
-              onClick={() => onStart({ overlay, fps, aspect, resolution })}
+              onClick={() =>
+                onStart({
+                  overlay,
+                  fps,
+                  aspect,
+                  resolution,
+                  title: showTitle && title.trim() ? title.trim() : null,
+                  watermark,
+                })
+              }
               className="w-full rounded-md px-4 py-2.5 text-sm font-semibold cursor-pointer transition-colors bg-cyan-600 hover:bg-cyan-500 text-white"
             >
               Export overlay
@@ -260,6 +311,12 @@ export function HudExportModal({
       </div>
     </div>
   );
+}
+
+/** Formats an ETA as "45s" or "12 min". */
+function formatEta(seconds: number): string {
+  if (seconds < 90) return `${Math.max(1, Math.round(seconds / 5) * 5)}s`;
+  return `${Math.round(seconds / 60)} min`;
 }
 
 /** Explains how to use the fill + matte pair in an editor, with the ProRes one-liner. */

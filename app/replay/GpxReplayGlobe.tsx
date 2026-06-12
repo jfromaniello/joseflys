@@ -40,6 +40,12 @@ export interface CaptureControl {
    * CSS-to-device pixel ratio. Pass null to restore the responsive layout.
    */
   setRecordingSize: (size: { width: number; height: number } | null) => Promise<void>;
+  /**
+   * Pauses/resumes the globe's render loop. HUD-only exports don't need the 3D
+   * view, and Cesium's rAF loop otherwise competes with the encoders for the
+   * main thread and the GPU, slowing the export several-fold.
+   */
+  setRenderPaused: (paused: boolean) => void;
 }
 
 type DeviceOrientationEventWithPermission = typeof DeviceOrientationEvent & {
@@ -1144,6 +1150,11 @@ export function GpxReplayGlobe({
         captureModeRef.current = false;
       },
       setRecordingSize,
+      setRenderPaused: (paused: boolean) => {
+        const viewer = viewerRef.current;
+        if (!viewer) return;
+        viewer.useDefaultRenderLoop = !paused;
+      },
     };
 
     return () => {

@@ -12,6 +12,14 @@ export interface HudFrame {
   timeMs: number;
 }
 
+/** Optional decorations drawn alongside the telemetry HUD. */
+export interface HudDecorations {
+  /** Flight title burned in at the top-right; null/empty draws nothing. */
+  title?: string | null;
+  /** Whether to draw the branding watermark (default true). */
+  watermark?: boolean;
+}
+
 function field(value: string | null, unit: string): string {
   return value !== null ? `${value} ${unit}` : "--";
 }
@@ -22,15 +30,24 @@ function field(value: string | null, unit: string): string {
  * globe frame. Sizes scale with canvas width so output looks consistent across
  * resolutions.
  */
-export function drawHud(ctx: CanvasRenderingContext2D, width: number, height: number, frame: HudFrame): void {
+export function drawHud(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  frame: HudFrame,
+  decorations: HudDecorations = {}
+): void {
   const scale = width / 1280;
   const pad = Math.round(20 * scale);
   const font = (px: number, weight = 600) => `${weight} ${Math.round(px * scale)}px system-ui, sans-serif`;
 
+  const title = decorations.title?.trim();
+  if (title) drawTitle(ctx, width, title);
+
   ctx.save();
   ctx.textBaseline = "top";
 
-  // --- Telemetry panel (top-right) ---
+  // --- Telemetry panel (top-right, below the title when present) ---
   const rows: [string, string][] = [
     ["SPEED", field(frame.speedKnots !== null ? frame.speedKnots.toFixed(0) : null, "KT")],
     ["ALTITUDE", field(frame.altitudeFt !== null ? Math.round(frame.altitudeFt).toLocaleString("en-US") : null, "ft")],
@@ -41,7 +58,7 @@ export function drawHud(ctx: CanvasRenderingContext2D, width: number, height: nu
   const rowH = Math.round(46 * scale);
   const panelH = rows.length * rowH + pad;
   const panelX = width - panelW - pad;
-  const panelY = pad;
+  const panelY = pad + (title ? Math.round(34 * scale) : 0);
 
   roundRect(ctx, panelX, panelY, panelW, panelH, Math.round(12 * scale));
   ctx.fillStyle = "rgba(15, 23, 42, 0.72)";
@@ -57,21 +74,48 @@ export function drawHud(ctx: CanvasRenderingContext2D, width: number, height: nu
     ctx.fillText(value, panelX + pad, y + Math.round(16 * scale));
   });
 
-  drawClockAndWatermark(ctx, width, height, frame.timeMs);
+  drawClockAndWatermark(ctx, width, height, frame.timeMs, decorations.watermark ?? true);
 
   ctx.restore();
 }
 
 /**
- * Draws the UTC clock (bottom-left) and branding watermark (bottom-right).
- * Shared by the simple HUD and the HUD-only overlay export, where the burned-in
- * clock is the sync reference against real footage.
+ * Draws the flight title right-aligned at the top-right corner, shrinking the
+ * font when the text would span more than ~60% of the frame width.
+ */
+export function drawTitle(ctx: CanvasRenderingContext2D, width: number, title: string): void {
+  const scale = width / 1280;
+  const pad = Math.round(20 * scale);
+
+  ctx.save();
+  ctx.textBaseline = "top";
+  ctx.textAlign = "right";
+
+  let px = Math.round(18 * scale);
+  ctx.font = `700 ${px}px system-ui, sans-serif`;
+  const maxW = width * 0.6;
+  const measured = ctx.measureText(title).width;
+  if (measured > maxW) {
+    px = Math.max(10, Math.floor((px * maxW) / measured));
+    ctx.font = `700 ${px}px system-ui, sans-serif`;
+  }
+  ctx.fillStyle = "#e2e8f0";
+  ctx.fillText(title, width - pad, pad);
+
+  ctx.restore();
+}
+
+/**
+ * Draws the UTC clock (bottom-left) and, optionally, the branding watermark
+ * (bottom-right). Shared by the simple HUD and the HUD-only overlay export,
+ * where the burned-in clock is the sync reference against real footage.
  */
 export function drawClockAndWatermark(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
-  timeMs: number
+  timeMs: number,
+  watermark = true
 ): void {
   const scale = width / 1280;
   const pad = Math.round(20 * scale);
@@ -85,11 +129,13 @@ export function drawClockAndWatermark(
   ctx.fillStyle = "#e2e8f0";
   ctx.fillText(formatUtc(timeMs), pad, lineY);
 
-  ctx.font = font(15, 700);
-  ctx.fillStyle = "rgba(226, 232, 240, 0.85)";
-  ctx.textAlign = "right";
-  ctx.fillText("joseflys.com", width - pad, lineY);
-  ctx.textAlign = "left";
+  if (watermark) {
+    ctx.font = font(15, 700);
+    ctx.fillStyle = "rgba(226, 232, 240, 0.85)";
+    ctx.textAlign = "right";
+    ctx.fillText("joseflys.com", width - pad, lineY);
+    ctx.textAlign = "left";
+  }
 
   ctx.restore();
 }

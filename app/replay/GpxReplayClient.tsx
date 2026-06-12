@@ -264,11 +264,44 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
     engineRanges,
   });
 
+  // Aerodrome the flight departed from: the analyzed aerodrome nearest to the
+  // first track point, if the track actually starts there (within ~5 km).
+  const departureAerodrome = useMemo(() => {
+    if (!flight || points.length === 0) return null;
+    const first = points[0];
+    let best: { code: string; name: string } | null = null;
+    let bestMeters = 5000;
+    for (const { aerodrome } of flight.analyses) {
+      const northM = (aerodrome.lat - first.lat) * 111_320;
+      const eastM = (aerodrome.lon - first.lon) * 111_320 * Math.cos((first.lat * Math.PI) / 180);
+      const meters = Math.hypot(northM, eastM);
+      if (meters < bestMeters) {
+        bestMeters = meters;
+        best = aerodrome;
+      }
+    }
+    return best;
+  }, [flight, points]);
+
+  // Suggested title burned into the HUD overlay export (user-editable).
+  const defaultHudTitle = useMemo(
+    () =>
+      [
+        aircraftIdent || null,
+        timeline.startMs > 0 ? formatRecordingStartUtc(timeline.startMs) : null,
+        departureAerodrome ? departureAerodrome.code || departureAerodrome.name : null,
+      ]
+        .filter(Boolean)
+        .join(" · "),
+    [aircraftIdent, timeline.startMs, departureAerodrome]
+  );
+
   const hudExporter = useHudExport({
     points,
     startMs: timeline.startMs,
     durationMs: timeline.durationMs,
     engineRanges,
+    captureControlRef,
   });
 
   const handleRecord = useCallback(() => {
@@ -620,6 +653,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
         <HudExportModal
           status={hudExporter.status}
           progress={hudExporter.progress}
+          etaSeconds={hudExporter.etaSeconds}
           fillUrl={hudExporter.fillUrl}
           matteUrl={hudExporter.matteUrl}
           fillName={hudExporter.fillName}
@@ -627,6 +661,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
           error={hudExporter.error}
           supported={hudExporter.supported}
           pfdAvailable={hasAvionics}
+          defaultTitle={defaultHudTitle}
           onStart={(opts) => hudExporter.startExport(opts)}
           onClose={handleCloseHudExportModal}
           onCancel={() => hudExporter.reset()}

@@ -16,10 +16,11 @@ import {
   findPointIndexByTime,
   type EngineRanges,
 } from "./replayMetrics";
-import { drawClockAndWatermark, drawHud } from "./recordHud";
+import { drawClockAndWatermark, drawHud, drawTitle } from "./recordHud";
 import { buildPfdScene, samplePfdData } from "./pfdScene";
 import { drawPfdScene } from "./pfdCanvas";
-import { Mp4Recorder, downloadBlob, isMp4RecordingSupported } from "./recordReplay";
+import { Mp4Recorder, downloadBlob, isMp4RecordingSupported, yieldToEventLoop } from "./recordReplay";
+import type { CaptureControl } from "./GpxReplayGlobe";
 
 export type HudExportStatus = "idle" | "exporting" | "encoding" | "done" | "error";
 
@@ -34,6 +35,10 @@ export interface HudExportOptions {
   /** Fixed output aspect ("screen" makes no sense without a live canvas). */
   aspect: "16:9" | "9:16";
   resolution: RecordResolution;
+  /** Flight title burned in at the top-right; null when disabled. */
+  title: string | null;
+  /** Whether to burn in the branding watermark. */
+  watermark: boolean;
 }
 
 interface UseHudExportParams {
@@ -42,6 +47,9 @@ interface UseHudExportParams {
   durationMs: number;
   /** Gauge scales for the PFD's EIS strip, derived from the track. */
   engineRanges: EngineRanges;
+  /** Globe controller — its render loop is paused while exporting (it would
+   * otherwise compete with the encoders for the main thread and the GPU). */
+  captureControlRef: React.RefObject<CaptureControl | null>;
 }
 
 interface UseHudExportResult {
@@ -49,6 +57,8 @@ interface UseHudExportResult {
   status: HudExportStatus;
   /** Progress in [0, 1] while exporting. */
   progress: number;
+  /** Estimated seconds remaining, once enough progress exists to extrapolate. */
+  etaSeconds: number | null;
   /** Object URLs of the finished pair (for re-download). */
   fillUrl: string | null;
   matteUrl: string | null;
@@ -78,10 +88,12 @@ export function useHudExport({
   startMs,
   durationMs,
   engineRanges,
+  captureControlRef,
 }: UseHudExportParams): UseHudExportResult {
   const [supported] = useState(isMp4RecordingSupported);
   const [status, setStatus] = useState<HudExportStatus>("idle");
   const [progress, setProgress] = useState(0);
+  const [etaSeconds, setEtaSeconds] = useState<number | null>(null);
   const [fillUrl, setFillUrl] = useState<string | null>(null);
   const [matteUrl, setMatteUrl] = useState<string | null>(null);
   const [fillName, setFillName] = useState<string | null>(null);
@@ -126,11 +138,12 @@ export function useHudExport({
     setMatteName(null);
     setError(null);
     setProgress(0);
+    setEtaSeconds(null);
     setStatus("idle");
   }, [disposeRecorders, revokeUrls]);
 
   const startExport = useCallback(
-    ({ overlay, fps, aspect, resolution }: HudExportOptions) => {
+    ({ overlay, fps, aspect, resolution, title, watermark }: HudExportOptions) => {
       const { durationMs: duration } = latest.current;
       if (!supported || duration <= 0 || status === "exporting" || status === "encoding") {
         return;
@@ -177,16 +190,23 @@ export function useHudExport({
         scratchCtx.clearRect(0, 0, width, height);
         if (overlay === "pfd") {
           drawPfdScene(scratchCtx, buildPfdScene(cssWidth, cssHeight, samplePfdData(pts, timeMs), ranges), pfdScale);
-          drawClockAndWatermark(scratchCtx, width, height, timeMs);
+          if (title) drawTitle(scratchCtx, width, title);
+          drawClockAndWatermark(scratchCtx, width, height, timeMs, watermark);
         } else {
           const index = findPointIndexByTime(pts, timeMs);
-          drawHud(scratchCtx, width, height, {
-            speedKnots: computeGroundSpeed(pts, index).knots,
-            altitudeFt: computeAltitudeFt(pts, index, timeMs),
-            vsFpm: computeVerticalSpeedFpm(pts, index, timeMs),
-            trackDeg: computeTrackHeadingDeg(pts, timeMs),
-            timeMs,
-          });
+          drawHud(
+            scratchCtx,
+            width,
+            height,
+            {
+              speedKnots: computeGroundSpeed(pts, index).knots,
+              altitudeFt: computeAltitudeFt(pts, index, timeMs),
+              vsFpm: computeVerticalSpeedFpm(pts, index, timeMs),
+              trackDeg: computeTrackHeadingDeg(pts, timeMs),
+              timeMs,
+            },
+            { title, watermark }
+          );
         }
 
         // Fill: overlay over pure black.
@@ -210,13 +230,28 @@ export function useHudExport({
       abortRef.current = false;
       setError(null);
       setProgress(0);
+      setEtaSeconds(null);
       setFillUrl(null);
       setMatteUrl(null);
       setStatus("exporting");
 
       void (async () => {
-        const fillRecorder = new Mp4Recorder(width, height, fps);
-        const matteRecorder = new Mp4Recorder(width, height, fps);
+        // The 3D view isn't part of this export, but its render loop would
+        // steal most of the main thread and the GPU from the encoders.
+        captureControlRef.current?.setRenderPaused(true);
+        try {
+          await runExport();
+        } finally {
+          captureControlRef.current?.setRenderPaused(false);
+        }
+      })();
+
+      async function runExport() {
+        // Software encoders: hardware ones pace themselves near real time,
+        // which is exactly wrong for an offline export racing the encoder.
+        const encoderOptions = { hardwareAcceleration: "prefer-software" as const };
+        const fillRecorder = new Mp4Recorder(width, height, fps, encoderOptions);
+        const matteRecorder = new Mp4Recorder(width, height, fps, encoderOptions);
         recordersRef.current = [fillRecorder, matteRecorder];
 
         const fail = (message: string) => {
@@ -240,17 +275,29 @@ export function useHudExport({
         const { startMs: start, durationMs: dur } = latest.current;
         const totalFrames = Math.max(2, Math.floor(dur / frameIntervalMs) + 1);
 
+        const exportStartedAt = performance.now();
         try {
           for (let i = 0; i < totalFrames; i += 1) {
             if (abortRef.current) return;
             composeFrame(start + i * frameIntervalMs);
             const keyFrame = i % (fps * 2) === 0;
-            await fillRecorder.addFrame(fill, i * frameDurMicros, keyFrame);
-            await matteRecorder.addFrame(matte, i * frameDurMicros, keyFrame);
+            // Both encoders run on their own internal threads — feed them in
+            // parallel so neither sits idle while the other applies backpressure.
+            await Promise.all([
+              fillRecorder.addFrame(fill, i * frameDurMicros, keyFrame),
+              matteRecorder.addFrame(matte, i * frameDurMicros, keyFrame),
+            ]);
             // Yield periodically so progress paints and the page stays alive.
+            // MessageChannel, not setTimeout: background tabs throttle timers
+            // to once per second, which would crawl the whole export.
             if (i % 32 === 0) {
-              setProgress(i / totalFrames);
-              await new Promise((r) => setTimeout(r, 0));
+              const p = i / totalFrames;
+              setProgress(p);
+              if (p > 0.01) {
+                const elapsedS = (performance.now() - exportStartedAt) / 1000;
+                setEtaSeconds((elapsedS * (1 - p)) / p);
+              }
+              await yieldToEventLoop();
             }
           }
         } catch (err) {
@@ -288,10 +335,22 @@ export function useHudExport({
         } catch (err) {
           fail(err instanceof Error ? err.message : "Encoding failed.");
         }
-      })();
+      }
     },
-    [supported, status, disposeRecorders]
+    [supported, status, disposeRecorders, captureControlRef]
   );
 
-  return { supported, status, progress, fillUrl, matteUrl, fillName, matteName, error, startExport, reset };
+  return {
+    supported,
+    status,
+    progress,
+    etaSeconds,
+    fillUrl,
+    matteUrl,
+    fillName,
+    matteName,
+    error,
+    startExport,
+    reset,
+  };
 }

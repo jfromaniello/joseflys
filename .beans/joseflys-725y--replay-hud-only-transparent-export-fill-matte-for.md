@@ -7,7 +7,7 @@ priority: normal
 tags:
     - replay
 created_at: 2026-06-11T15:38:16Z
-updated_at: 2026-06-11T16:13:55Z
+updated_at: 2026-06-12T19:53:20Z
 ---
 
 ## Goal
@@ -90,3 +90,16 @@ Implemented as a separate toolbar action ("Overlay" button next to Record), per 
 - Simple HUD 9:16 720→1080 60fps: 1080×1920, 1201 frames, 20.017 s — frame 600 clock 20:02:31 ✓.
 - Export runs offline (much faster than real time), progress bar works, `npm test` 483 passed, tsc/eslint clean on touched files.
 - Note: Chrome's automation profile auto-denies the multiple-downloads permission, so only the fill auto-downloaded there; in a normal browser the user gets a one-time prompt, and the modal's Fill/Matte buttons are the fallback.
+
+
+--------
+
+## Performance investigation & fixes (2026-06-12)
+
+User report: 48-min flight exported slower than a real-time recording. Profiled with Chrome traces; three compounding causes found and fixed:
+
+1. **Cesium kept rendering during the export** — `CesiumWidget.render` consumed ~99% of main-thread JS time (≈7 ms per rAF) plus most of the GPU. Fix: new `CaptureControl.setRenderPaused()` toggles `viewer.useDefaultRenderLoop`; `useHudExport` pauses the globe for the whole export (try/finally restores it).
+2. **Hardware H.264 encoders pace themselves near real time.** Measured in-page at 1080p: prefer-hardware 50 fps, no-preference 95 fps, prefer-software 188 fps. Fix: `Mp4Recorder` takes a `hardwareAcceleration` option; the HUD export passes `prefer-software` (real-time Record keeps the default). Both encoders are now fed via `Promise.all` so neither idles during backpressure.
+3. **Background-tab timer throttling** — the yield/backpressure waits used `setTimeout`, which Chrome clamps to 1/s in unfocused tabs. Fix: `yieldToEventLoop()` via MessageChannel (not throttled), used in the export loop and `Mp4Recorder` backpressure.
+
+Result: the same 48-min flight (86,131 frames ×2 encoders, 1080p30) exports in ~15 min (~3× real time) vs ~30+ min before, and keeps full speed with the tab unfocused. Progress UI now shows an ETA ("Exporting… 14% · 12 min left"). Output verified: 86,131 frames / 2871.0 s = exact track duration, clock frame-accurate at +20 min.
