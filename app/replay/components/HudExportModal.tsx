@@ -9,11 +9,15 @@ import {
   type RecordResolution,
 } from "../types";
 import type { HudExportOptions, HudExportStatus, HudOverlayKind } from "../useHudExport";
+import { formatUtc } from "../formatTime";
 
 const ASPECT_OPTIONS: { value: "16:9" | "9:16"; label: string }[] = [
   { value: "16:9", label: "16:9" },
   { value: "9:16", label: "9:16" },
 ];
+
+/** Smallest exportable window (ms): keeps a couple of frames at any FPS. */
+const MIN_WINDOW_MS = 1000;
 
 interface HudExportModalProps {
   status: HudExportStatus;
@@ -30,6 +34,10 @@ interface HudExportModalProps {
   pfdAvailable: boolean;
   /** Suggested flight title (registration + date/time + departure aerodrome). */
   defaultTitle: string;
+  /** Absolute UTC start of the track (ms), for the time-range readout. */
+  trackStartMs: number;
+  /** Full track duration (ms); the exportable window spans [0, durationMs]. */
+  durationMs: number;
   onStart: (options: HudExportOptions) => void;
   onClose: () => void;
   /** Aborts an in-progress export and returns to the options screen. */
@@ -64,6 +72,8 @@ export function HudExportModal({
   supported,
   pfdAvailable,
   defaultTitle,
+  trackStartMs,
+  durationMs,
   onStart,
   onClose,
   onCancel,
@@ -75,8 +85,13 @@ export function HudExportModal({
   const [showTitle, setShowTitle] = useState(true);
   const [title, setTitle] = useState(defaultTitle);
   const [watermark, setWatermark] = useState(true);
+  // Exported window, in elapsed ms from the track start; defaults to the whole flight.
+  const [rangeStartMs, setRangeStartMs] = useState(0);
+  const [rangeEndMs, setRangeEndMs] = useState(durationMs);
 
   const outputSize = recordOutputSize(aspect, resolution);
+  const windowMs = rangeEndMs - rangeStartMs;
+  const isFullRange = rangeStartMs <= 0 && rangeEndMs >= durationMs;
 
   const busy = status === "exporting" || status === "encoding";
 
@@ -273,6 +288,77 @@ export function HudExportModal({
               ) : null}
             </div>
 
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                  Time range
+                </span>
+                {!isFullRange ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRangeStartMs(0);
+                      setRangeEndMs(durationMs);
+                    }}
+                    className="text-[10px] font-medium text-cyan-400 hover:text-cyan-300 cursor-pointer"
+                  >
+                    Full flight
+                  </button>
+                ) : null}
+              </div>
+              {/* Visual band of the selected window over the full flight. */}
+              <div className="relative h-1.5 w-full rounded-full bg-slate-700">
+                <div
+                  className="absolute h-full rounded-full bg-cyan-500"
+                  style={{
+                    left: `${durationMs > 0 ? (rangeStartMs / durationMs) * 100 : 0}%`,
+                    width: `${durationMs > 0 ? (windowMs / durationMs) * 100 : 100}%`,
+                  }}
+                />
+              </div>
+              <div className="mt-2 space-y-1.5">
+                <label className="flex items-center gap-2">
+                  <span className="w-7 shrink-0 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                    In
+                  </span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={durationMs}
+                    step={1000}
+                    value={rangeStartMs}
+                    onChange={(e) =>
+                      setRangeStartMs(Math.min(Number(e.target.value), rangeEndMs - MIN_WINDOW_MS))
+                    }
+                    aria-label="Range start"
+                    className="w-full accent-cyan-500 cursor-pointer"
+                  />
+                </label>
+                <label className="flex items-center gap-2">
+                  <span className="w-7 shrink-0 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                    Out
+                  </span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={durationMs}
+                    step={1000}
+                    value={rangeEndMs}
+                    onChange={(e) =>
+                      setRangeEndMs(Math.max(Number(e.target.value), rangeStartMs + MIN_WINDOW_MS))
+                    }
+                    aria-label="Range end"
+                    className="w-full accent-cyan-500 cursor-pointer"
+                  />
+                </label>
+              </div>
+              <p className="mt-1.5 text-[11px] text-slate-400 leading-tight tabular-nums">
+                {formatUtc(trackStartMs + rangeStartMs)} – {formatUtc(trackStartMs + rangeEndMs)} UTC ·{" "}
+                {formatWindow(windowMs)} clip
+                {isFullRange ? null : " (faster than the full flight)"}
+              </p>
+            </div>
+
             <div className="space-y-2.5 border-t border-slate-700 pt-3">
               <Toggle label="Flight title" on={showTitle} onToggle={() => setShowTitle((v) => !v)} />
               {showTitle ? (
@@ -300,6 +386,8 @@ export function HudExportModal({
                   resolution,
                   title: showTitle && title.trim() ? title.trim() : null,
                   watermark,
+                  rangeStartMs,
+                  rangeEndMs,
                 })
               }
               className="w-full rounded-md px-4 py-2.5 text-sm font-semibold cursor-pointer transition-colors bg-cyan-600 hover:bg-cyan-500 text-white"
@@ -317,6 +405,17 @@ export function HudExportModal({
 function formatEta(seconds: number): string {
   if (seconds < 90) return `${Math.max(1, Math.round(seconds / 5) * 5)}s`;
   return `${Math.round(seconds / 60)} min`;
+}
+
+/** Formats a window length (ms) as "45s", "5 min 30s", or "1 h 12 min". */
+function formatWindow(ms: number): string {
+  const total = Math.round(ms / 1000);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  if (h > 0) return `${h} h ${m} min`;
+  if (m > 0) return s > 0 ? `${m} min ${s}s` : `${m} min`;
+  return `${s}s`;
 }
 
 /** Explains how to use the fill + matte pair in an editor, with the ProRes one-liner. */

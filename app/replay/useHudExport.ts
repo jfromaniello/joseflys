@@ -39,6 +39,10 @@ export interface HudExportOptions {
   title: string | null;
   /** Whether to burn in the branding watermark. */
   watermark: boolean;
+  /** Start of the exported window, in elapsed ms from the track start. */
+  rangeStartMs: number;
+  /** End of the exported window, in elapsed ms from the track start. */
+  rangeEndMs: number;
 }
 
 interface UseHudExportParams {
@@ -143,7 +147,7 @@ export function useHudExport({
   }, [disposeRecorders, revokeUrls]);
 
   const startExport = useCallback(
-    ({ overlay, fps, aspect, resolution, title, watermark }: HudExportOptions) => {
+    ({ overlay, fps, aspect, resolution, title, watermark, rangeStartMs, rangeEndMs }: HudExportOptions) => {
       const { durationMs: duration } = latest.current;
       if (!supported || duration <= 0 || status === "exporting" || status === "encoding") {
         return;
@@ -268,18 +272,24 @@ export function useHudExport({
         }
 
         // Playback is locked to 1×: frame i is the overlay at exactly
-        // i / fps seconds of flight time, so N minutes of track produce N
-        // minutes of video that line up with the camera's clock.
+        // i / fps seconds of flight time, so the exported window produces a
+        // clip of the same length that lines up with the camera's clock.
         const frameIntervalMs = 1000 / fps;
         const frameDurMicros = Math.round(1_000_000 / fps);
         const { startMs: start, durationMs: dur } = latest.current;
-        const totalFrames = Math.max(2, Math.floor(dur / frameIntervalMs) + 1);
+        // Window to export, clamped into the track and kept at least one frame.
+        const windowStartMs = Math.max(0, Math.min(rangeStartMs, dur));
+        const windowEndMs = Math.max(windowStartMs + frameIntervalMs, Math.min(rangeEndMs, dur));
+        const windowMs = windowEndMs - windowStartMs;
+        // Absolute time of the first exported frame (for the burned-in UTC clock).
+        const windowStartAbsMs = start + windowStartMs;
+        const totalFrames = Math.max(2, Math.floor(windowMs / frameIntervalMs) + 1);
 
         const exportStartedAt = performance.now();
         try {
           for (let i = 0; i < totalFrames; i += 1) {
             if (abortRef.current) return;
-            composeFrame(start + i * frameIntervalMs);
+            composeFrame(windowStartAbsMs + i * frameIntervalMs);
             const keyFrame = i % (fps * 2) === 0;
             // Both encoders run on their own internal threads — feed them in
             // parallel so neither sits idle while the other applies backpressure.

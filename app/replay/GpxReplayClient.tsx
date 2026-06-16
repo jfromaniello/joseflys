@@ -662,6 +662,8 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
           supported={hudExporter.supported}
           pfdAvailable={hasAvionics}
           defaultTitle={defaultHudTitle}
+          trackStartMs={timeline.startMs}
+          durationMs={timeline.durationMs}
           onStart={(opts) => hudExporter.startExport(opts)}
           onClose={handleCloseHudExportModal}
           onCancel={() => hudExporter.reset()}
