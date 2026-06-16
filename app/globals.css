@@ -902,3 +902,52 @@ select.select-no-arrow {
     border-color: #444 !important;
   }
 }
+
+/* Dual-handle range slider (two <input type=range> overlaid on one track).
+   The inputs are transparent and ignore pointer events except on their thumbs,
+   so both handles are draggable on the same bar. See HudExportModal. */
+.range-dual {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: transparent;
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.range-dual::-webkit-slider-runnable-track,
+.range-dual::-moz-range-track {
+  background: transparent;
+  border: none;
+}
+.range-dual::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  pointer-events: auto;
+  height: 1rem;
+  width: 1rem;
+  border-radius: 9999px;
+  background: oklch(0.715 0.143 215.221); /* cyan-500 */
+  border: 2px solid #0f172a; /* slate-900 */
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+  cursor: pointer;
+}
+.range-dual::-moz-range-thumb {
+  pointer-events: auto;
+  height: 1rem;
+  width: 1rem;
+  border-radius: 9999px;
+  background: oklch(0.715 0.143 215.221);
+  border: 2px solid #0f172a;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+  cursor: pointer;
+}
+.range-dual:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid oklch(0.865 0.127 207.078); /* cyan-300 */
+  outline-offset: 1px;
+}
+.range-dual:focus-visible::-moz-range-thumb {
+  outline: 2px solid oklch(0.865 0.127 207.078);
+  outline-offset: 1px;
+}

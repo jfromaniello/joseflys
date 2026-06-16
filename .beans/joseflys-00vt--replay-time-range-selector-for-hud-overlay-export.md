@@ -7,7 +7,7 @@ priority: normal
 tags:
     - replay
 created_at: 2026-06-16T11:07:03Z
-updated_at: 2026-06-16T11:14:52Z
+updated_at: 2026-06-16T11:19:30Z
 ---
 
 Follow-up to joseflys-725y / joseflys-gnjd.
@@ -33,3 +33,12 @@ Requirements:
 - `GpxReplayClient.tsx`: passes `trackStartMs`/`durationMs` from the timeline.
 
 Verified in browser with the 20s sample fixture, In=5s/Out=15s: output clip = 10.033s / 301 frames @ 30fps (exactly the window), and frame 0's burned-in clock reads 20:02:26 = track start 20:02:21 + 5s window offset. Title + watermark still rendered. tsc/eslint clean on touched files, 483 tests pass.
+
+
+## UI refinement (2026-06-16)
+
+Replaced the two stacked In/Out sliders with a single dual-handle range on one
+bar (two transparent `<input type=range>` overlaid; thumbs styled via `.range-dual`
+in globals.css, `pointer-events` only on the thumbs). The handle in the right
+half is raised on top so the two stay grabbable when close. Verified both inputs
+share the same track rect and the readout/band update live.

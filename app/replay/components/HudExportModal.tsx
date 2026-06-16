@@ -306,51 +306,44 @@ export function HudExportModal({
                   </button>
                 ) : null}
               </div>
-              {/* Visual band of the selected window over the full flight. */}
-              <div className="relative h-1.5 w-full rounded-full bg-slate-700">
+              {/* Two range inputs overlaid on one bar: the In and Out handles
+                  share the same track. The handle in the right half is kept on
+                  top so it stays grabbable when the two sit close together. */}
+              <div className="relative h-4">
+                <div className="absolute left-0 right-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-slate-700" />
                 <div
-                  className="absolute h-full rounded-full bg-cyan-500"
+                  className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-cyan-500"
                   style={{
                     left: `${durationMs > 0 ? (rangeStartMs / durationMs) * 100 : 0}%`,
                     width: `${durationMs > 0 ? (windowMs / durationMs) * 100 : 100}%`,
                   }}
                 />
-              </div>
-              <div className="mt-2 space-y-1.5">
-                <label className="flex items-center gap-2">
-                  <span className="w-7 shrink-0 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-                    In
-                  </span>
-                  <input
-                    type="range"
-                    min={0}
-                    max={durationMs}
-                    step={1000}
-                    value={rangeStartMs}
-                    onChange={(e) =>
-                      setRangeStartMs(Math.min(Number(e.target.value), rangeEndMs - MIN_WINDOW_MS))
-                    }
-                    aria-label="Range start"
-                    className="w-full accent-cyan-500 cursor-pointer"
-                  />
-                </label>
-                <label className="flex items-center gap-2">
-                  <span className="w-7 shrink-0 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-                    Out
-                  </span>
-                  <input
-                    type="range"
-                    min={0}
-                    max={durationMs}
-                    step={1000}
-                    value={rangeEndMs}
-                    onChange={(e) =>
-                      setRangeEndMs(Math.max(Number(e.target.value), rangeStartMs + MIN_WINDOW_MS))
-                    }
-                    aria-label="Range end"
-                    className="w-full accent-cyan-500 cursor-pointer"
-                  />
-                </label>
+                <input
+                  type="range"
+                  min={0}
+                  max={durationMs}
+                  step={1000}
+                  value={rangeStartMs}
+                  onChange={(e) =>
+                    setRangeStartMs(Math.min(Number(e.target.value), rangeEndMs - MIN_WINDOW_MS))
+                  }
+                  aria-label="Range start"
+                  className="range-dual"
+                  style={{ zIndex: rangeStartMs > durationMs / 2 ? 5 : 4 }}
+                />
+                <input
+                  type="range"
+                  min={0}
+                  max={durationMs}
+                  step={1000}
+                  value={rangeEndMs}
+                  onChange={(e) =>
+                    setRangeEndMs(Math.max(Number(e.target.value), rangeStartMs + MIN_WINDOW_MS))
+                  }
+                  aria-label="Range end"
+                  className="range-dual"
+                  style={{ zIndex: rangeStartMs > durationMs / 2 ? 4 : 5 }}
+                />
               </div>
               <p className="mt-1.5 text-[11px] text-slate-400 leading-tight tabular-nums">
                 {formatUtc(trackStartMs + rangeStartMs)} – {formatUtc(trackStartMs + rangeEndMs)} UTC ·{" "}
