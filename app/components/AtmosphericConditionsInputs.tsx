@@ -55,6 +55,9 @@ interface AtmosphericConditionsInputsProps {
   // Optional display settings
   showCalculatedValues?: boolean;
 
+  // Dense layout (slim header, smaller inputs/spacing) for tool-style pages
+  compact?: boolean;
+
   // Validation errors (optional)
   errors?: Array<{ field: string; message: string }>;
 }
@@ -69,6 +72,7 @@ export function AtmosphericConditionsInputs({
   preset,
   onChange,
   showCalculatedValues = false,
+  compact = false,
   errors = [],
 }: AtmosphericConditionsInputsProps) {
   // Internal state
@@ -191,30 +195,56 @@ export function AtmosphericConditionsInputs({
     }
   }
 
+  // Density tokens — slim layout for tool-style pages, original otherwise.
+  const wrapCls = compact
+    ? "pb-2.5 border-b border-gray-800/70"
+    : "mb-8 pb-8 border-b border-gray-700/50";
+  const labelCls = compact
+    ? "flex items-center text-xs font-medium mb-1"
+    : "flex items-center text-sm font-medium mb-2";
+  const unitCls = compact
+    ? "absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium pointer-events-none"
+    : "absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none";
+  const inCls = compact
+    ? "w-full h-9 px-2.5 rounded-md text-sm border"
+    : "w-full h-[52px] px-4 py-3 rounded-xl text-lg border-2";
+  const inCommon =
+    "focus:outline-none focus:ring-2 transition-all bg-slate-900/40 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right";
+  const modeBtnCls = compact ? "px-2.5 py-1 text-xs" : "px-5 py-2.5";
+
   return (
-    <div className="mb-8 pb-8 border-b border-gray-700/50">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-cyan-500/20 to-teal-500/20 border border-cyan-500/30">
-          <svg className="w-6 h-6" fill="none" stroke="oklch(0.7 0.15 200)" viewBox="0 0 24 24" strokeWidth={2}>
+    <div className={wrapCls}>
+      {compact ? (
+        <h2 className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "oklch(0.62 0.035 235)" }}>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
           </svg>
+          Atmospheric Conditions
+        </h2>
+      ) : (
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-cyan-500/20 to-teal-500/20 border border-cyan-500/30">
+            <svg className="w-6 h-6" fill="none" stroke="oklch(0.62 0.035 235)" viewBox="0 0 24 24" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold" style={{ color: "white" }}>
+              Atmospheric Conditions
+            </h2>
+            <p className="text-sm" style={{ color: "oklch(0.65 0.02 240)" }}>
+              Set altitude and temperature
+            </p>
+          </div>
         </div>
-        <div>
-          <h2 className="text-2xl font-bold" style={{ color: "white" }}>
-            Atmospheric Conditions
-          </h2>
-          <p className="text-sm" style={{ color: "oklch(0.65 0.02 240)" }}>
-            Set altitude and temperature
-          </p>
-        </div>
-      </div>
+      )}
 
       {/* Altitude Mode Selection */}
-      <div className="mb-6">
-        <div className="inline-flex gap-2 p-1.5 rounded-xl bg-slate-900/50 border border-gray-700">
+      <div className={compact ? "mb-3" : "mb-6"}>
+        <div className={`inline-flex gap-2 ${compact ? "p-1" : "p-1.5"} rounded-xl bg-slate-900/50 border border-gray-700`}>
           <button
             onClick={() => setAltitudeMode("pa")}
-            className={`px-5 py-2.5 rounded-lg transition-all cursor-pointer font-medium ${
+            className={`${modeBtnCls} rounded-lg transition-all cursor-pointer font-medium ${
               altitudeMode === "pa"
                 ? "bg-gradient-to-r from-cyan-500/30 to-teal-500/30 border border-cyan-500/50 shadow-lg"
                 : "border border-transparent hover:bg-slate-800/50"
@@ -225,7 +255,7 @@ export function AtmosphericConditionsInputs({
           </button>
           <button
             onClick={() => setAltitudeMode("qnh")}
-            className={`px-5 py-2.5 rounded-lg transition-all cursor-pointer font-medium ${
+            className={`${modeBtnCls} rounded-lg transition-all cursor-pointer font-medium ${
               altitudeMode === "qnh"
                 ? "bg-gradient-to-r from-cyan-500/30 to-teal-500/30 border border-cyan-500/50 shadow-lg"
                 : "border border-transparent hover:bg-slate-800/50"
@@ -236,7 +266,7 @@ export function AtmosphericConditionsInputs({
           </button>
           <button
             onClick={() => setAltitudeMode("da")}
-            className={`px-5 py-2.5 rounded-lg transition-all cursor-pointer font-medium ${
+            className={`${modeBtnCls} rounded-lg transition-all cursor-pointer font-medium ${
               altitudeMode === "da"
                 ? "bg-gradient-to-r from-cyan-500/30 to-teal-500/30 border border-cyan-500/50 shadow-lg"
                 : "border border-transparent hover:bg-slate-800/50"
@@ -249,11 +279,11 @@ export function AtmosphericConditionsInputs({
       </div>
 
       {/* Altitude Inputs */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className={`grid grid-cols-1 ${compact ? "sm:grid-cols-2 gap-x-3 gap-y-2.5" : "md:grid-cols-3 gap-4"}`}>
         {altitudeMode === "pa" && (
           <div>
             <label
-              className="flex items-center text-sm font-medium mb-2"
+              className={labelCls}
               style={{ color: "oklch(0.72 0.015 240)" }}
             >
               Pressure Altitude
@@ -264,11 +294,11 @@ export function AtmosphericConditionsInputs({
                 type="number"
                 value={pressureAlt}
                 onChange={(e) => setPressureAlt(e.target.value)}
-                className="w-full h-[52px] px-4 pr-12 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 hover:border-gray-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
+                className={`${inCls} pr-12 ${inCommon} focus:ring-cyan-500/50 border-gray-600 hover:border-gray-500`}
                 placeholder="4000"
               />
               <span
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
+                className={unitCls}
                 style={{ color: "oklch(0.55 0.02 240)" }}
               >
                 ft
@@ -281,7 +311,7 @@ export function AtmosphericConditionsInputs({
           <>
             <div>
               <label
-                className="flex items-center text-sm font-medium mb-2"
+                className={labelCls}
                 style={{ color: "oklch(0.72 0.015 240)" }}
               >
                 Field Elevation
@@ -292,11 +322,11 @@ export function AtmosphericConditionsInputs({
                   type="number"
                   value={altitude}
                   onChange={(e) => setAltitude(e.target.value)}
-                  className="w-full h-[52px] px-4 pr-12 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 hover:border-gray-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
+                  className={`${inCls} pr-12 ${inCommon} focus:ring-cyan-500/50 border-gray-600 hover:border-gray-500`}
                   placeholder="2000"
                 />
                 <span
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
+                  className={unitCls}
                   style={{ color: "oklch(0.55 0.02 240)" }}
                 >
                   ft
@@ -306,7 +336,7 @@ export function AtmosphericConditionsInputs({
 
             <div>
               <label
-                className="flex items-center text-sm font-medium mb-2"
+                className={labelCls}
                 style={{ color: "oklch(0.72 0.015 240)" }}
               >
                 QNH
@@ -318,11 +348,11 @@ export function AtmosphericConditionsInputs({
                   step="0.01"
                   value={qnh}
                   onChange={(e) => setQnh(e.target.value)}
-                  className="w-full h-[52px] px-4 pr-16 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 hover:border-gray-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
+                  className={`${inCls} pr-16 ${inCommon} focus:ring-cyan-500/50 border-gray-600 hover:border-gray-500`}
                   placeholder="1013 or 29.92"
                 />
                 <span
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
+                  className={unitCls}
                   style={{ color: "oklch(0.55 0.02 240)" }}
                 >
                   {qnhFormat}
@@ -335,7 +365,7 @@ export function AtmosphericConditionsInputs({
         {altitudeMode === "da" && (
           <div>
             <label
-              className="flex items-center text-sm font-medium mb-2"
+              className={labelCls}
               style={{ color: "oklch(0.72 0.015 240)" }}
             >
               Density Altitude
@@ -346,7 +376,7 @@ export function AtmosphericConditionsInputs({
                 type="number"
                 value={densityAlt}
                 onChange={(e) => setDensityAlt(e.target.value)}
-                className={`w-full h-[52px] px-4 pr-12 py-3 rounded-xl focus:outline-none focus:ring-2 transition-all text-lg bg-slate-900/50 border-2 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right ${
+                className={`${inCls} pr-12 ${inCommon} ${
                   errors.some(e => e.field === "densityAltitude")
                     ? "border-red-500/60 focus:ring-red-500/50 hover:border-red-500/70"
                     : "border-gray-600 hover:border-gray-500 focus:ring-cyan-500/50"
@@ -354,7 +384,7 @@ export function AtmosphericConditionsInputs({
                 placeholder="5000"
               />
               <span
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
+                className={unitCls}
                 style={{ color: "oklch(0.55 0.02 240)" }}
               >
                 ft
@@ -365,22 +395,22 @@ export function AtmosphericConditionsInputs({
 
         <div>
           <label
-            className="flex items-center text-sm font-medium mb-2"
+            className={labelCls}
             style={{ color: "oklch(0.72 0.015 240)" }}
           >
-            Outside Air Temperature
-            <Tooltip content="Current temperature at the airport in degrees Celsius" />
+            OAT
+            <Tooltip content="Outside air temperature at the airport, in degrees Celsius" />
           </label>
           <div className="relative">
             <input
               type="number"
               value={oat}
               onChange={(e) => setOat(e.target.value)}
-              className="w-full h-[52px] px-4 pr-12 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 hover:border-gray-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
+              className={`${inCls} pr-12 ${inCommon} focus:ring-cyan-500/50 border-gray-600 hover:border-gray-500`}
               placeholder="15"
             />
             <span
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
+              className={unitCls}
               style={{ color: "oklch(0.55 0.02 240)" }}
             >
               °C
@@ -391,21 +421,21 @@ export function AtmosphericConditionsInputs({
 
       {/* Calculated Values Display */}
       {showCalculatedValues && !isNaN(displayPA) && !isNaN(displayDA) && (
-        <div className="mt-6 grid grid-cols-2 gap-4">
-          <div className="p-4 rounded-xl bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/30">
+        <div className={`grid grid-cols-2 ${compact ? "mt-3 gap-2.5" : "mt-6 gap-4"}`}>
+          <div className={`${compact ? "p-3" : "p-4"} rounded-lg bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/30`}>
             <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "oklch(0.65 0.15 200)" }}>
               Pressure Altitude
             </p>
-            <p className="text-2xl font-bold" style={{ color: "white" }}>
-              {formatDistance(displayPA)} <span className="text-sm font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>ft</span>
+            <p className={`${compact ? "text-xl" : "text-2xl"} font-bold`} style={{ color: "white" }}>
+              {formatDistance(displayPA)} <span className="text-xs font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>ft</span>
             </p>
           </div>
-          <div className="p-4 rounded-xl bg-gradient-to-br from-teal-500/10 to-green-500/10 border border-teal-500/30">
+          <div className={`${compact ? "p-3" : "p-4"} rounded-lg bg-gradient-to-br from-teal-500/10 to-green-500/10 border border-teal-500/30`}>
             <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "oklch(0.65 0.15 180)" }}>
               Density Altitude
             </p>
-            <p className="text-2xl font-bold" style={{ color: "white" }}>
-              {formatDistance(displayDA)} <span className="text-sm font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>ft</span>
+            <p className={`${compact ? "text-xl" : "text-2xl"} font-bold`} style={{ color: "white" }}>
+              {formatDistance(displayDA)} <span className="text-xs font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>ft</span>
             </p>
           </div>
         </div>

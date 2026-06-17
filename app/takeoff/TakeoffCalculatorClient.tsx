@@ -1,10 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { PageLayout } from "../components/PageLayout";
-import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
-import { Footer } from "../components/Footer";
-import { ShareButton } from "../components/ShareButton";
+import { Navbar } from "../components/Navbar";
 import { Tooltip } from "../components/Tooltip";
 import { AtmosphericConditionsInputs, type AtmosphericConditionsData, type AtmosphericPreset } from "../components/AtmosphericConditionsInputs";
 import { AircraftSelector } from "../components/AircraftSelector";
@@ -65,6 +62,31 @@ function extractMetarRef(rawMetar: string, icaoId: string): string {
     return `${icaoId}${match[1]}`;
   }
   return "";
+}
+
+/** Neutral metric tile — color is reserved for meaning (danger/warn), not decoration. */
+function StatTile({
+  label,
+  value,
+  unit,
+  tone = "default",
+}: {
+  label: string;
+  value: string;
+  unit?: string;
+  tone?: "default" | "danger" | "warn";
+}) {
+  const valueColor =
+    tone === "danger" ? "text-red-400" : tone === "warn" ? "text-amber-400" : "text-white";
+  return (
+    <div className="bg-slate-900/60 px-3 py-2">
+      <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500">{label}</div>
+      <div className={`text-lg font-bold leading-tight tabular-nums ${valueColor}`}>
+        {value}
+        {unit && <span className="ml-1 text-xs font-normal text-slate-500">{unit}</span>}
+      </div>
+    </div>
+  );
 }
 
 export function TakeoffCalculatorClient({
@@ -135,6 +157,7 @@ export function TakeoffCalculatorClient({
   // V-speed display unit. Aircraft with MPH-calibrated ASIs (e.g. C150) offer
   // a kt/mph toggle and default to mph; everything else stays in kt.
   const [speedUnit, setSpeedUnit] = useState<"kt" | "mph">("kt");
+  const [showAerodrome, setShowAerodrome] = useState<boolean>(false);
 
   // Atmospheric conditions data (from component)
   const [atmosphericData, setAtmosphericData] = useState<AtmosphericConditionsData | null>(null);
@@ -491,55 +514,61 @@ export function TakeoffCalculatorClient({
     window.location.href = `${window.location.pathname}?${params.toString()}`;
   };
 
-  return (
-    <PageLayout currentPage="takeoff">
-      <CalculatorPageHeader
-        title="Takeoff Performance Calculator"
-        description="Calculate takeoff distance, ground roll, obstacle clearance, and safety margins based on aircraft performance, atmospheric conditions, and runway characteristics"
-      />
+  // Decision presentation + headline reason (keeps status and "why" together)
+  const ds =
+    results?.decision === "GO"
+      ? { text: "text-emerald-400", border: "border-emerald-500/40", bg: "bg-emerald-500/10", icon: "✔" }
+      : results?.decision === "MARGINAL"
+      ? { text: "text-amber-400", border: "border-amber-500/40", bg: "bg-amber-500/10", icon: "⚠" }
+      : { text: "text-red-400", border: "border-red-500/40", bg: "bg-red-500/10", icon: "✕" };
 
-      <main className="w-full max-w-4xl">
-        <div className="rounded-2xl p-6 sm:p-8 shadow-2xl bg-slate-800/50 backdrop-blur-sm border border-gray-700">
+  const obstacleDeficit = results ? results.distances.obstacleDistance - runwayVal : 0;
+  const headline = results
+    ? results.errors[0] ??
+      (obstacleDeficit > 0
+        ? `Insufficient runway — need ${formatDistance(obstacleDeficit)} ft more`
+        : results.decision === "MARGINAL"
+        ? "Margins are tight — review carefully"
+        : "Runway length and climb are adequate")
+    : "";
+
+  return (
+    <div className="min-h-screen bg-linear-to-br from-slate-900 via-blue-950 to-slate-900">
+      <Navbar currentPage="takeoff" />
+
+      <div className="flex flex-col xl:h-[calc(100dvh-3.5rem)]">
+        {/* Toolbar */}
+        <div className="flex items-center gap-3 border-b border-gray-800 bg-slate-900/50 px-3 py-2">
+          <span className="text-sm font-bold uppercase tracking-wider text-white whitespace-nowrap">Takeoff Performance</span>
+          <span className="hidden sm:inline text-xs text-slate-500 truncate">ground roll · obstacle clearance · GO / NO-GO</span>
+          <div className="relative group ml-auto shrink-0">
+            <button
+              onClick={loadExample}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-dashed border-gray-600 hover:border-purple-500/50 hover:bg-purple-500/10 transition-all text-xs font-medium cursor-pointer whitespace-nowrap"
+              style={{ color: "oklch(0.75 0.15 300)" }}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              Load example
+            </button>
+            <div className="absolute top-full right-0 mt-2 px-3 py-2 bg-slate-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none whitespace-nowrap border border-gray-700 z-50">
+              Loads a full scenario — aircraft + conditions (Easy → Complicated → NO-GO)
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-1 min-h-0 flex-col xl:flex-row">
+          {/* Aircraft column */}
+          <aside className="shrink-0 overflow-x-hidden bg-slate-900/20 xl:w-[19rem] 2xl:w-[21rem] xl:border-r xl:border-gray-800 xl:overflow-y-auto">
+            {/* Sticky column header */}
+            <div className="z-10 border-b border-gray-700 bg-slate-900/95 px-3 py-2.5 backdrop-blur xl:sticky xl:top-0">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-white">Aircraft</h2>
+            </div>
+            <div className="flex flex-col gap-2.5 p-3">
 
           {/* Aircraft Selection Section */}
-          <div className="mb-8 pb-8 border-b border-gray-700/50">
-            <div className="flex items-center justify-between gap-3 mb-4">
-              <label
-                className="flex items-center text-sm font-medium"
-                style={{ color: "oklch(0.72 0.015 240)" }}
-              >
-                Aircraft
-                <Tooltip content="Select the aircraft to calculate takeoff performance" />
-              </label>
-              {/* Example Button */}
-              <div className="relative group">
-                <button
-                  onClick={loadExample}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed border-gray-600 hover:border-purple-500/50 hover:bg-purple-500/10 transition-all text-sm font-medium cursor-pointer whitespace-nowrap"
-                  style={{ color: "oklch(0.75 0.15 300)" }}
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 10V3L4 14h7v7l9-11h-7z"
-                    />
-                  </svg>
-                  Example
-                </button>
-                {/* Custom Tooltip */}
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none whitespace-nowrap border border-gray-700 z-50">
-                  Rotate through examples: Easy → Complicated → NO GO
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-slate-900"></div>
-                </div>
-              </div>
-            </div>
+          <div className="pb-2.5 border-b border-gray-800/70">
             <AircraftSelector
               aircraft={aircraft}
               onClick={() => setIsAircraftModalOpen(true)}
@@ -559,26 +588,17 @@ export function TakeoffCalculatorClient({
           </div>
 
           {/* Weight & Configuration Section */}
-          <div className="mb-8 pb-8 border-b border-gray-700/50">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30">
-                <svg className="w-6 h-6" fill="none" stroke="oklch(0.7 0.15 290)" viewBox="0 0 24 24" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
-                </svg>
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold" style={{ color: "white" }}>
-                  Weight & Configuration
-                </h2>
-                <p className="text-sm" style={{ color: "oklch(0.65 0.02 240)" }}>
-                  Set aircraft weight and flap position
-                </p>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="pb-2.5 border-b border-gray-800/70">
+            <h2 className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "oklch(0.62 0.035 235)" }}>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+              </svg>
+              Weight &amp; Configuration
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2.5">
               <div>
                 <label
-                  className="flex items-center text-sm font-medium mb-2"
+                  className="flex items-center text-xs font-medium mb-1"
                   style={{ color: "oklch(0.72 0.015 240)" }}
                 >
                   Takeoff Weight
@@ -589,11 +609,11 @@ export function TakeoffCalculatorClient({
                     type="number"
                     value={weight}
                     onChange={(e) => setWeight(e.target.value)}
-                    className="w-full h-[52px] px-4 pr-16 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 hover:border-gray-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
+                    className="w-full h-9 px-2.5 pr-11 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all text-sm bg-slate-900/40 border border-gray-700 hover:border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
                     placeholder="1670"
                   />
                   <span
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium pointer-events-none"
                     style={{ color: "oklch(0.55 0.02 240)" }}
                   >
                     lbs
@@ -603,7 +623,7 @@ export function TakeoffCalculatorClient({
 
               <div>
                 <label
-                  className="flex items-center text-sm font-medium mb-2"
+                  className="flex items-center text-xs font-medium mb-1"
                   style={{ color: "oklch(0.72 0.015 240)" }}
                 >
                   Flap Configuration
@@ -612,7 +632,7 @@ export function TakeoffCalculatorClient({
                 <select
                   value={flapConfiguration}
                   onChange={(e) => setFlapConfiguration(e.target.value as FlapConfiguration)}
-                  className="w-full h-[52px] pl-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 hover:border-gray-500 text-white cursor-pointer"
+                  className="w-full h-9 pl-2.5 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all text-sm bg-slate-900/40 border border-gray-700 hover:border-gray-600 text-white cursor-pointer"
                 >
                   <option value="0">0° (Normal Takeoff)</option>
                   <option value="10">10° (Short Field)</option>
@@ -622,7 +642,7 @@ export function TakeoffCalculatorClient({
 
               <div>
                 <label
-                  className="flex items-center text-sm font-medium mb-2"
+                  className="flex items-center text-xs font-medium mb-1"
                   style={{ color: "oklch(0.72 0.015 240)" }}
                 >
                   Available Power
@@ -636,11 +656,11 @@ export function TakeoffCalculatorClient({
                     min={50}
                     max={100}
                     step={1}
-                    className="w-full h-[52px] px-4 pr-16 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 hover:border-gray-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
+                    className="w-full h-9 px-2.5 pr-11 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all text-sm bg-slate-900/40 border border-gray-700 hover:border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
                     placeholder="100"
                   />
                   <span
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium pointer-events-none"
                     style={{ color: "oklch(0.55 0.02 240)" }}
                   >
                     %
@@ -650,23 +670,36 @@ export function TakeoffCalculatorClient({
             </div>
           </div>
 
-          {/* Aerodrome & METAR Section */}
-          <div className="mb-8 pb-8 border-b border-gray-700/50">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/30">
-                <svg className="w-6 h-6" fill="none" stroke="oklch(0.7 0.15 160)" viewBox="0 0 24 24" strokeWidth={2}>
+            </div>
+          </aside>
+
+          {/* Conditions column */}
+          <aside className="shrink-0 overflow-x-hidden bg-slate-900/20 xl:w-[21rem] 2xl:w-[23rem] xl:border-r xl:border-gray-800 xl:overflow-y-auto">
+            {/* Sticky column header */}
+            <div className="z-10 border-b border-gray-700 bg-slate-900/95 px-3 py-2.5 backdrop-blur xl:sticky xl:top-0">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-white">Conditions</h2>
+            </div>
+            <div className="flex flex-col gap-2.5 p-3">
+
+          {/* Aerodrome & METAR Section (optional, collapsed by default) */}
+          <div className="pb-2.5 border-b border-gray-800/70">
+            {showAerodrome || selectedAerodrome ? (
+              <>
+            <div className="flex items-center justify-between mb-1.5">
+              <h2 className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider" style={{ color: "oklch(0.62 0.035 235)" }}>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
                 </svg>
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold" style={{ color: "white" }}>
-                  Aerodrome
-                </h2>
-                <p className="text-sm" style={{ color: "oklch(0.65 0.02 240)" }}>
-                  Auto-fill conditions from METAR (optional)
-                </p>
-              </div>
+                Aerodrome / METAR
+              </h2>
+              <button
+                type="button"
+                onClick={() => { setShowAerodrome(false); if (selectedAerodrome) handleAerodromeChange(null); }}
+                className="text-[11px] text-slate-500 hover:text-slate-300 cursor-pointer"
+              >
+                Hide
+              </button>
             </div>
 
             <AerodromeSearchInput
@@ -742,7 +775,7 @@ export function TakeoffCalculatorClient({
             )}
 
             {runwayOptions.length > 0 && !loadingRunways && (
-              <div className="mt-4 p-4 rounded-xl bg-gradient-to-br from-orange-500/10 to-amber-500/10 border border-orange-500/30">
+              <div className="mt-4 p-3 rounded-lg bg-gradient-to-br from-orange-500/10 to-amber-500/10 border border-orange-500/30">
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "oklch(0.65 0.15 40)" }}>
                     Available Runways
@@ -810,6 +843,23 @@ export function TakeoffCalculatorClient({
                 </p>
               </div>
             )}
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowAerodrome(true)}
+                className="flex w-full items-center gap-3 rounded-md border border-sky-500/30 bg-sky-500/10 px-3 py-2.5 text-left hover:border-sky-500/50 hover:bg-sky-500/15 cursor-pointer"
+              >
+                <svg className="w-5 h-5 shrink-0 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                </svg>
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium text-sky-100">Load from an airport</span>
+                  <span className="block text-[11px] text-slate-400">Shortcut — auto-fills elevation, QNH, wind &amp; runway below</span>
+                </span>
+              </button>
+            )}
           </div>
 
           {/* Atmospheric Conditions */}
@@ -823,29 +873,21 @@ export function TakeoffCalculatorClient({
             preset={atmosphericPreset}
             onChange={handleAtmosphericChange}
             showCalculatedValues={true}
+            compact={true}
           />
 
           {/* Runway Section */}
-          <div className="mb-8 pb-8 border-b border-gray-700/50">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-orange-500/20 to-red-500/20 border border-orange-500/30">
-                <svg className="w-6 h-6" fill="none" stroke="oklch(0.7 0.15 40)" viewBox="0 0 24 24" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                </svg>
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold" style={{ color: "white" }}>
-                  Runway Characteristics
-                </h2>
-                <p className="text-sm" style={{ color: "oklch(0.65 0.02 240)" }}>
-                  Available runway and surface conditions
-                </p>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="pb-2.5 border-b border-gray-800/70">
+            <h2 className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "oklch(0.62 0.035 235)" }}>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              </svg>
+              Runway Characteristics
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2.5">
               <div>
                 <label
-                  className="flex items-center text-sm font-medium mb-2"
+                  className="flex items-center text-xs font-medium mb-1"
                   style={{ color: "oklch(0.72 0.015 240)" }}
                 >
                   Runway Length
@@ -856,11 +898,11 @@ export function TakeoffCalculatorClient({
                     type="number"
                     value={runwayLength}
                     onChange={(e) => setRunwayLength(e.target.value)}
-                    className="w-full h-[52px] px-4 pr-16 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 hover:border-gray-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
+                    className="w-full h-9 px-2.5 pr-11 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all text-sm bg-slate-900/40 border border-gray-700 hover:border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
                     placeholder="3000"
                   />
                   <span
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium pointer-events-none"
                     style={{ color: "oklch(0.55 0.02 240)" }}
                   >
                     ft
@@ -870,7 +912,7 @@ export function TakeoffCalculatorClient({
 
               <div>
                 <label
-                  className="flex items-center text-sm font-medium mb-2"
+                  className="flex items-center text-xs font-medium mb-1"
                   style={{ color: "oklch(0.72 0.015 240)" }}
                 >
                   Surface Type
@@ -879,7 +921,7 @@ export function TakeoffCalculatorClient({
                 <select
                   value={surfaceType}
                   onChange={(e) => setSurfaceType(e.target.value as SurfaceType)}
-                  className="w-full h-[52px] pl-4 pr-10 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 hover:border-gray-500 text-white cursor-pointer"
+                  className="w-full h-9 pl-2.5 pr-8 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all text-sm bg-slate-900/40 border border-gray-700 hover:border-gray-600 text-white cursor-pointer"
                 >
                   <option value="PG">Pavement (Good)</option>
                   <option value="PP">Pavement (Poor)</option>
@@ -894,7 +936,7 @@ export function TakeoffCalculatorClient({
 
               <div>
                 <label
-                  className="flex items-center text-sm font-medium mb-2"
+                  className="flex items-center text-xs font-medium mb-1"
                   style={{ color: "oklch(0.72 0.015 240)" }}
                 >
                   Runway Slope
@@ -906,11 +948,11 @@ export function TakeoffCalculatorClient({
                     step="0.1"
                     value={runwaySlope}
                     onChange={(e) => setRunwaySlope(e.target.value)}
-                    className="w-full h-[52px] px-4 pr-16 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 hover:border-gray-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
+                    className="w-full h-9 px-2.5 pr-11 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all text-sm bg-slate-900/40 border border-gray-700 hover:border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
                     placeholder="0.0"
                   />
                   <span
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium pointer-events-none"
                     style={{ color: "oklch(0.55 0.02 240)" }}
                   >
                     %
@@ -920,7 +962,7 @@ export function TakeoffCalculatorClient({
 
               <div>
                 <label
-                  className="flex items-center text-sm font-medium mb-2"
+                  className="flex items-center text-xs font-medium mb-1"
                   style={{ color: "oklch(0.72 0.015 240)" }}
                 >
                   Headwind Component
@@ -931,11 +973,11 @@ export function TakeoffCalculatorClient({
                     type="number"
                     value={headwindComponent}
                     onChange={(e) => setHeadwindComponent(e.target.value)}
-                    className="w-full h-[52px] px-4 pr-16 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 hover:border-gray-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
+                    className="w-full h-9 px-2.5 pr-11 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all text-sm bg-slate-900/40 border border-gray-700 hover:border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
                     placeholder="0"
                   />
                   <span
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium pointer-events-none"
                     style={{ color: "oklch(0.55 0.02 240)" }}
                   >
                     kt
@@ -946,83 +988,100 @@ export function TakeoffCalculatorClient({
           </div>
 
           {/* Obstacle Section */}
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-yellow-500/20 to-amber-500/20 border border-yellow-500/30">
-                <svg className="w-6 h-6" fill="none" stroke="oklch(0.7 0.15 80)" viewBox="0 0 24 24" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                </svg>
-              </div>
+          <div className="pb-2.5 border-b border-gray-800/70">
+            <h2 className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "oklch(0.62 0.035 235)" }}>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+              </svg>
+              Obstacle Clearance
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2.5">
               <div>
-                <h2 className="text-2xl font-bold" style={{ color: "white" }}>
-                  Obstacle Clearance
-                </h2>
-                <p className="text-sm" style={{ color: "oklch(0.65 0.02 240)" }}>
-                  Obstacle height to clear
-                </p>
-              </div>
-            </div>
-            <div>
-              <label
-                className="flex items-center text-sm font-medium mb-2"
-                style={{ color: "oklch(0.72 0.015 240)" }}
-              >
-                Obstacle Height
-                <Tooltip content="Height of obstacle to clear (typically 50 ft)" />
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  value={obstacleHeight}
-                  onChange={(e) => setObstacleHeight(e.target.value)}
-                  className="w-full h-[52px] px-4 pr-16 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 hover:border-gray-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
-                  placeholder="50"
-                />
-                <span
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
-                  style={{ color: "oklch(0.55 0.02 240)" }}
+                <label
+                  className="flex items-center text-xs font-medium mb-1"
+                  style={{ color: "oklch(0.72 0.015 240)" }}
                 >
-                  ft
-                </span>
+                  Obstacle Height
+                  <Tooltip content="Height of obstacle to clear (typically 50 ft)" />
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={obstacleHeight}
+                    onChange={(e) => setObstacleHeight(e.target.value)}
+                    className="w-full h-9 px-2.5 pr-11 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500/50 transition-all text-sm bg-slate-900/40 border border-gray-700 hover:border-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
+                    placeholder="50"
+                  />
+                  <span
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium pointer-events-none"
+                    style={{ color: "oklch(0.55 0.02 240)" }}
+                  >
+                    ft
+                  </span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+            </div>
+          </aside>
 
-        {/* Results Section */}
-        {results && (
-          <div className="mt-8 rounded-2xl p-6 sm:p-8 shadow-2xl bg-slate-800/50 backdrop-blur-sm border border-gray-700">
-            {/* Decision Banner */}
-            <div className={`mb-8 p-6 rounded-2xl text-center border-2 ${
-              results.decision === "GO"
-                ? "bg-green-500/10 border-green-500/50"
-                : results.decision === "MARGINAL"
-                ? "bg-yellow-500/10 border-yellow-500/50"
-                : "bg-red-500/10 border-red-500/50"
-            }`}>
-              <div className="text-5xl mb-3">
-                {results.decision === "GO" ? "✔" : results.decision === "MARGINAL" ? "⚠" : "❌"}
+          {/* Results dashboard (main area) */}
+          <div className="overflow-x-hidden xl:flex-1 xl:min-w-0 xl:overflow-y-auto">
+            <div className="flex flex-col gap-3 p-3">
+
+          {/* Results Section */}
+          {results && (
+            <>
+            {/* Status: decision + reason + safety margin, advisories grouped here */}
+            <div className={`rounded-lg border p-3 ${ds.border} ${ds.bg}`}>
+              <div className="flex items-center gap-3">
+                <span className={`text-2xl font-bold leading-none ${ds.text}`}>{ds.icon}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <span className={`text-xl font-bold leading-none ${ds.text}`}>{results.decision}</span>
+                    <span className="text-sm text-slate-300">{headline}</span>
+                  </div>
+                </div>
+                <div className="shrink-0 text-right">
+                  <div className="text-[10px] uppercase tracking-wider text-slate-500">Safety margin</div>
+                  <div className={`text-lg font-bold leading-none tabular-nums ${ds.text}`}>
+                    {results.safetyMargin >= 0 ? "+" : ""}{(results.safetyMargin * 100).toFixed(1)}%
+                  </div>
+                </div>
               </div>
-              <h2 className={`text-3xl font-bold mb-2 ${
-                results.decision === "GO"
-                  ? "text-green-400"
-                  : results.decision === "MARGINAL"
-                  ? "text-yellow-400"
-                  : "text-red-400"
-              }`}>
-                {results.decision}
-              </h2>
-              <p className="text-lg" style={{ color: "oklch(0.7 0.02 240)" }}>
-                Safety Margin: {results.safetyMargin >= 0 ? "+" : ""}{(results.safetyMargin * 100).toFixed(1)}%
-              </p>
+
+              {(results.errors.length > 0 || results.warnings.length > 0) && (
+                <ul className="mt-2.5 space-y-1 border-t border-white/10 pt-2.5 text-xs text-slate-300">
+                  {results.errors.map((e, i) => (
+                    <li key={`e${i}`} className="flex gap-2">
+                      <span className="text-red-400 shrink-0">✕</span>
+                      <span>{e}</span>
+                    </li>
+                  ))}
+                  {results.warnings.map((w, i) => (
+                    <li key={`w${i}`} className="flex gap-2">
+                      <span className="text-amber-400 shrink-0">⚠</span>
+                      <span>{w}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Key metrics */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-px overflow-hidden rounded-lg border border-slate-800 bg-slate-800">
+              <StatTile label="Ground roll" value={formatDistance(results.distances.groundRoll)} unit="ft" />
+              <StatTile label="Over 50 ft obst." value={formatDistance(results.distances.obstacleDistance)} unit="ft" tone={obstacleDeficit > 0 ? "danger" : "default"} />
+              <StatTile label="Runway avail." value={formatDistance(runwayVal)} unit="ft" />
+              <StatTile label="Rate of climb" value={Math.round(results.rateOfClimb).toString()} unit="ft/min" tone={results.rateOfClimb < 200 ? "danger" : results.rateOfClimb < 400 ? "warn" : "default"} />
             </div>
 
             {/* Takeoff Visualization */}
-            <div className="mb-8">
-              <h3 className="text-xl font-bold mb-4" style={{ color: "white" }}>
-                Takeoff Profile
+            <div>
+              <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                Takeoff profile
               </h3>
-              <div className="rounded-xl overflow-hidden bg-gradient-to-b from-sky-900/20 to-slate-900/40 border border-slate-700 p-4">
+              <div className="rounded-lg overflow-hidden border border-slate-800">
                 <TakeoffVisualization
                   results={results}
                   runwayLength={runwayVal}
@@ -1032,22 +1091,20 @@ export function TakeoffCalculatorClient({
             </div>
 
             {/* V-Speeds */}
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold" style={{ color: "white" }}>
-                  V-Speeds
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  V-speeds <span className="font-normal text-slate-600">IAS</span>
                 </h3>
                 {aircraft?.usesMPH && (
-                  <div className="inline-flex rounded-lg border border-white/15 overflow-hidden text-xs font-semibold">
+                  <div className="inline-flex overflow-hidden rounded-md border border-slate-700 text-[11px] font-semibold">
                     {(["mph", "kt"] as const).map((unit) => (
                       <button
                         key={unit}
                         type="button"
                         onClick={() => setSpeedUnit(unit)}
-                        className={`px-3 py-1.5 cursor-pointer transition-colors ${
-                          speedUnit === unit
-                            ? "bg-blue-500/30 text-white"
-                            : "text-white/50 hover:text-white/80"
+                        className={`px-2.5 py-1 cursor-pointer transition-colors ${
+                          speedUnit === unit ? "bg-slate-700 text-white" : "text-slate-400 hover:text-slate-200"
                         }`}
                       >
                         {unit === "mph" ? "MPH" : "KT"}
@@ -1056,142 +1113,20 @@ export function TakeoffCalculatorClient({
                   </div>
                 )}
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="relative p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/30">
-                  <div className="absolute top-2 right-2">
-                    <Tooltip content="Stall speed in clean configuration at current weight and density altitude" />
-                  </div>
-                  <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "oklch(0.65 0.15 230)" }}>
-                    VS1 (IAS)
-                  </p>
-                  <p className="text-2xl font-bold" style={{ color: "white" }}>
-                    {Math.round(fromKnots(results.vSpeeds.vs1IAS, speedUnit))} <span className="text-sm font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>{speedUnit}</span>
-                  </p>
-                </div>
-                <div className="relative p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/30">
-                  <div className="absolute top-2 right-2">
-                    <Tooltip content="Rotation speed - speed at which to lift nose for takeoff (typically 1.1 × Vs1)" />
-                  </div>
-                  <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "oklch(0.65 0.15 290)" }}>
-                    VR (IAS)
-                  </p>
-                  <p className="text-2xl font-bold" style={{ color: "white" }}>
-                    {Math.round(fromKnots(results.vSpeeds.vrIAS, speedUnit))} <span className="text-sm font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>{speedUnit}</span>
-                  </p>
-                </div>
-                <div className="relative p-4 rounded-xl bg-gradient-to-br from-cyan-500/10 to-teal-500/10 border border-cyan-500/30">
-                  <div className="absolute top-2 right-2">
-                    <Tooltip content="Best angle of climb speed - provides maximum altitude gain per distance traveled" />
-                  </div>
-                  <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "oklch(0.65 0.15 200)" }}>
-                    VX (IAS)
-                  </p>
-                  <p className="text-2xl font-bold" style={{ color: "white" }}>
-                    {Math.round(fromKnots(results.vSpeeds.vxIAS, speedUnit))} <span className="text-sm font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>{speedUnit}</span>
-                  </p>
-                </div>
-                <div className="relative p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/30">
-                  <div className="absolute top-2 right-2">
-                    <Tooltip content="Best rate of climb speed - provides maximum altitude gain per minute" />
-                  </div>
-                  <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "oklch(0.65 0.15 150)" }}>
-                    VY (IAS)
-                  </p>
-                  <p className="text-2xl font-bold" style={{ color: "white" }}>
-                    {Math.round(fromKnots(results.vSpeeds.vyIAS, speedUnit))} <span className="text-sm font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>{speedUnit}</span>
-                  </p>
-                </div>
+              <div className="grid grid-cols-4 gap-px overflow-hidden rounded-lg border border-slate-800 bg-slate-800">
+                <StatTile label="VS1" value={String(Math.round(fromKnots(results.vSpeeds.vs1IAS, speedUnit)))} unit={speedUnit} />
+                <StatTile label="VR" value={String(Math.round(fromKnots(results.vSpeeds.vrIAS, speedUnit)))} unit={speedUnit} />
+                <StatTile label="VX" value={String(Math.round(fromKnots(results.vSpeeds.vxIAS, speedUnit)))} unit={speedUnit} />
+                <StatTile label="VY" value={String(Math.round(fromKnots(results.vSpeeds.vyIAS, speedUnit)))} unit={speedUnit} />
               </div>
             </div>
 
-            {/* Distances */}
-            <div className="mb-8">
-              <h3 className="text-xl font-bold mb-4" style={{ color: "white" }}>
-                Takeoff Distances
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="relative p-4 rounded-xl bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-orange-500/30">
-                  <div className="absolute top-2 right-2">
-                    <Tooltip content="Distance required from brake release to liftoff, adjusted for weight, surface, wind, and slope" />
-                  </div>
-                  <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "oklch(0.65 0.15 40)" }}>
-                    Ground Roll
-                  </p>
-                  <p className="text-2xl font-bold" style={{ color: "white" }}>
-                    {formatDistance(results.distances.groundRoll)} <span className="text-sm font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>ft</span>
-                  </p>
-                </div>
-                <div className="relative p-4 rounded-xl bg-gradient-to-br from-yellow-500/10 to-amber-500/10 border border-yellow-500/30">
-                  <div className="absolute top-2 right-2">
-                    <Tooltip content="Total distance required to clear the specified obstacle height at runway end" />
-                  </div>
-                  <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "oklch(0.65 0.15 80)" }}>
-                    Obstacle Distance
-                  </p>
-                  <p className="text-2xl font-bold" style={{ color: "white" }}>
-                    {formatDistance(results.distances.obstacleDistance)} <span className="text-sm font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>ft</span>
-                  </p>
-                </div>
-                <div className="relative p-4 rounded-xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-indigo-500/30">
-                  <div className="absolute top-2 right-2">
-                    <Tooltip content="Vertical speed after obstacle clearance at current density altitude and weight" />
-                  </div>
-                  <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "oklch(0.65 0.15 260)" }}>
-                    Rate of Climb
-                  </p>
-                  <p className="text-2xl font-bold" style={{ color: "white" }}>
-                    {Math.round(results.rateOfClimb)} <span className="text-sm font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>ft/min</span>
-                  </p>
-                </div>
-              </div>
-            </div>
+            </>
+          )}
 
-            {/* Warnings */}
-            {results.warnings.length > 0 && (
-              <div className="mb-6 p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/30">
-                <h3 className="text-lg font-bold mb-3 text-yellow-400">
-                  ⚠ Warnings
-                </h3>
-                <ul className="space-y-2">
-                  {results.warnings.map((warning, idx) => (
-                    <li key={idx} className="text-sm" style={{ color: "oklch(0.75 0.02 240)" }}>
-                      • {warning}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Errors */}
-            {results.errors.length > 0 && (
-              <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30">
-                <h3 className="text-lg font-bold mb-3 text-red-400">
-                  ❌ Errors
-                </h3>
-                <ul className="space-y-2">
-                  {results.errors.map((error, idx) => (
-                    <li key={idx} className="text-sm" style={{ color: "oklch(0.75 0.02 240)" }}>
-                      • {error}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Share Button */}
-            <ShareButton
-              shareData={{
-                title: "Takeoff Performance Calculator",
-                text: `Check out this takeoff performance calculation - ${results.decision}`,
-                url: typeof window !== "undefined" ? window.location.href : undefined,
-              }}
-            />
-          </div>
-        )}
-
-        {/* Validation Errors */}
-        {validationErrors.length > 0 && !results && (
-          <div className="mt-8 p-6 rounded-2xl bg-red-500/10 border border-red-500/30">
+          {/* Validation Errors */}
+          {validationErrors.length > 0 && !results && (
+            <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/30">
             <h3 className="text-lg font-bold mb-3 text-red-400">
               Please correct the following:
             </h3>
@@ -1203,10 +1138,11 @@ export function TakeoffCalculatorClient({
               ))}
             </ul>
           </div>
-        )}
-      </main>
-
-      <Footer description="Calculate takeoff performance, ground roll, obstacle clearance, and safety margins for your flight planning needs." />
+          )}
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Aircraft Selector Modal */}
       <AircraftSelectorModal
@@ -1215,6 +1151,6 @@ export function TakeoffCalculatorClient({
         onApply={setAircraft}
         initialAircraft={aircraft || undefined}
       />
-    </PageLayout>
+    </div>
   );
 }
