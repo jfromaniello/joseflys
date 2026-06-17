@@ -7,7 +7,7 @@ priority: normal
 tags:
     - replay
 created_at: 2026-06-16T17:23:46Z
-updated_at: 2026-06-17T16:23:00Z
+updated_at: 2026-06-17T17:42:35Z
 ---
 
 Hybrid native export: the browser renders the overlay frames (reusing the
@@ -100,3 +100,24 @@ overlay small.
 
 Remaining levers once encode is cheap: render (~6 min Smooth full-flight) →
 Medium/Stepped; and 720p. Tests: helper codec test + main suite green.
+
+
+## Web Workers pool (2026-06-17)
+
+Measured the ceiling: server-side receive from Node is ~880 MB/s, but the
+browser single-connection on the main thread caps ~280 MB/s (~30ms/8MB frame).
+Batching didn't help (cost is per-byte/per-connection, not per-request) — reverted.
+gzip is a wash (compress CPU ≈ transfer saved for this content). So the win is
+parallel render+upload off the main thread.
+
+- Helper: `/frame?seq=` reorder path (committed 5290494) — workers upload on
+  their own connections; frames written to ffmpeg in seq order, response held
+  until written (keeps workers in lockstep, buffer ~one per worker).
+- `overlayExportWorker.ts`: renders an interleaved lane on an OffscreenCanvas
+  (render chain verified DOM-free) and POSTs frames with seq.
+- `useNativeOverlayExport.ts`: rewritten to spawn a pool (min(4, cores-1)),
+  aggregate progress, /finish; reverted batching + removed timing instrumentation.
+
+Verified: tsc + eslint clean, /replay route compiles (worker bundles), helper
+suite (7 tests incl. reorder) + main suite (496) green. Browser E2E pending a
+manual run (no browser automation; user on Firefox).
