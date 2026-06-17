@@ -57,7 +57,7 @@ import { ReplayControls } from "./components/ReplayControls";
 import { CircuitTimeline } from "./components/CircuitTimeline";
 import { CircuitTable } from "./components/CircuitTable";
 import { FlightPhasesTable } from "./components/FlightPhasesTable";
-import { circuitPhaseAt } from "./analysis";
+import { circuitStageLabel } from "./analysis";
 import { ShareModal } from "./components/ShareModal";
 import { RecordModal } from "./components/RecordModal";
 import { HudExportModal } from "./components/HudExportModal";
@@ -247,14 +247,10 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
       })),
     [flight]
   );
-  const currentStage = useMemo(() => {
-    if (!flight) return null;
-    const phase = circuitPhaseAt(flight, currentTimeMs);
-    if (phase === "downwind") return "Downwind";
-    if (phase === "base") return "Base";
-    if (phase === "final") return "Final";
-    return null;
-  }, [flight, currentTimeMs]);
+  const currentStage = useMemo(
+    () => (flight ? circuitStageLabel(flight, currentTimeMs) : null),
+    [flight, currentTimeMs]
+  );
 
   const recorder = useReplayRecorder({
     canvasRef: globeCanvasRef,
@@ -266,6 +262,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
     captureControlRef,
     pfdActive,
     engineRanges,
+    flight,
   });
 
   // Aerodrome the flight departed from: the analyzed aerodrome nearest to the
@@ -658,6 +655,8 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
           onViewModeChange={changeViewMode}
           showTrack={showTrack}
           onShowTrackChange={setShowTrack}
+          showWall={showWall}
+          onShowWallChange={setShowWall}
           chaseDistance={chaseDistance}
           onChaseDistanceChange={setChaseDistance}
           trackStartMs={timeline.startMs}

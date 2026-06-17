@@ -400,6 +400,19 @@ export function circuitPhaseAt(flight: FlightCircuits, timeMs: number): CircuitP
   return null;
 }
 
+/**
+ * Human label for the circuit leg at `timeMs` ("Downwind" / "Base" / "Final"),
+ * or null. Matches the "Stage" field shown live in the telemetry overlay, so the
+ * recorded HUD reads the same as the screen.
+ */
+export function circuitStageLabel(flight: FlightCircuits, timeMs: number): string | null {
+  const phase = circuitPhaseAt(flight, timeMs);
+  if (phase === "downwind") return "Downwind";
+  if (phase === "base") return "Base";
+  if (phase === "final") return "Final";
+  return null;
+}
+
 /** Per-point features in the runway-relative frame. */
 interface PointFeature {
   index: number;

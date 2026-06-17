@@ -10,6 +10,8 @@ export interface HudFrame {
   trackDeg: number | null;
   /** Absolute UTC timestamp of the frame (ms). */
   timeMs: number;
+  /** Current circuit leg label (Downwind/Base/Final); drawn only when present. */
+  stage?: string | null;
 }
 
 /** Optional decorations drawn alongside the telemetry HUD. */
@@ -54,6 +56,7 @@ export function drawHud(
     ["V/S", formatVerticalSpeed(frame.vsFpm)],
     ["TRACK", frame.trackDeg !== null ? formatCourse(frame.trackDeg) : "--"],
   ];
+  if (frame.stage) rows.push(["STAGE", frame.stage]);
   const panelW = Math.round(190 * scale);
   const rowH = Math.round(46 * scale);
   const panelH = rows.length * rowH + pad;

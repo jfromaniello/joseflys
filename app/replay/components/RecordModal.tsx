@@ -48,6 +48,9 @@ interface RecordModalProps {
   /** Live track-line visibility. */
   showTrack: boolean;
   onShowTrackChange: (value: boolean) => void;
+  /** Live altitude-wall visibility. */
+  showWall: boolean;
+  onShowWallChange: (value: boolean) => void;
   /** Live chase camera distance (metres). */
   chaseDistance: number;
   onChaseDistanceChange: (value: number) => void;
@@ -94,6 +97,8 @@ export function RecordModal({
   onViewModeChange,
   showTrack,
   onShowTrackChange,
+  showWall,
+  onShowWallChange,
   chaseDistance,
   onChaseDistanceChange,
   trackStartMs,
@@ -362,6 +367,7 @@ export function RecordModal({
             <div className="space-y-2.5 border-t border-slate-700 pt-3">
               <Toggle label="Telemetry HUD" on={showTelemetry} onToggle={() => setShowTelemetry((v) => !v)} />
               <Toggle label="Track line" on={showTrack} onToggle={() => onShowTrackChange(!showTrack)} />
+              <Toggle label="Altitude wall" on={showWall} onToggle={() => onShowWallChange(!showWall)} />
             </div>
 
             <button

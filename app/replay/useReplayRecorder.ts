@@ -22,6 +22,7 @@ import { buildPfdScene, samplePfdData } from "./pfdScene";
 import { drawPfdScene } from "./pfdCanvas";
 import { Mp4Recorder, downloadBlob, isMp4RecordingSupported } from "./recordReplay";
 import type { CaptureControl } from "./GpxReplayGlobe";
+import { circuitStageLabel, type FlightCircuits } from "./analysis";
 
 const FPS = 30;
 const FRAME_INTERVAL_MS = 1000 / FPS;
@@ -71,6 +72,8 @@ interface UseReplayRecorderParams {
   pfdActive: boolean;
   /** Gauge scales for the PFD's EIS strip, derived from the track. */
   engineRanges: EngineRanges;
+  /** Circuit analysis, so the simple HUD can label the current leg (Downwind/Base/Final). */
+  flight: FlightCircuits | null;
 }
 
 interface UseReplayRecorderResult {
@@ -100,6 +103,7 @@ export function useReplayRecorder({
   captureControlRef,
   pfdActive,
   engineRanges,
+  flight,
 }: UseReplayRecorderParams): UseReplayRecorderResult {
   const [supported] = useState(isMp4RecordingSupported);
   const [status, setStatus] = useState<RecordingStatus>("idle");
@@ -108,9 +112,9 @@ export function useReplayRecorder({
   const [error, setError] = useState<string | null>(null);
 
   // Latest values read inside the rAF loop without re-subscribing it.
-  const latest = useRef({ points, startMs, durationMs, pfdActive, engineRanges });
+  const latest = useRef({ points, startMs, durationMs, pfdActive, engineRanges, flight });
   useEffect(() => {
-    latest.current = { points, startMs, durationMs, pfdActive, engineRanges };
+    latest.current = { points, startMs, durationMs, pfdActive, engineRanges, flight };
   });
 
   const rafRef = useRef<number | null>(null);
@@ -225,12 +229,14 @@ export function useReplayRecorder({
           return;
         }
         const index = findPointIndexByTime(pts, timeMs);
+        const { flight: fl } = latest.current;
         drawHud(ctx, width, height, {
           speedKnots: computeGroundSpeed(pts, index).knots,
           altitudeFt: computeAltitudeFt(pts, index, timeMs),
           vsFpm: computeVerticalSpeedFpm(pts, index, timeMs),
           trackDeg: computeTrackHeadingDeg(pts, timeMs),
           timeMs,
+          stage: fl ? circuitStageLabel(fl, timeMs) : null,
         });
       };
 
