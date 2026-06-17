@@ -46,6 +46,15 @@ export interface TakeoffInputs {
   // Obstacle
   obstacleHeight: number; // ft (default: 50)
   obstacleDistance?: number; // ft from threshold (optional)
+
+  /**
+   * Percentage of rated engine power actually available (default 100).
+   * Older/worn engines produce less than rated power — verify via the static
+   * full-throttle RPM check. Reduced power lengthens the ground roll and,
+   * because it eats into the EXCESS power that drives the climb, cuts the rate
+   * of climb far more than proportionally.
+   */
+  availablePowerPercent?: number;
 }
 
 export interface VSpeedResults {
@@ -123,6 +132,12 @@ const FLAP_CORRECTIONS: Record<FlapConfiguration, { groundRollFactor: number; cl
 
 /** Vr is typically 1.2 × VS1 for most GA aircraft */
 const VR_MULTIPLIER = 1.2;
+
+/**
+ * Propeller efficiency assumed during the climb (fixed-pitch prop at low speed,
+ * high power). Used to convert a shaft-power shortfall into a climb-rate penalty.
+ */
+const CLIMB_PROP_EFFICIENCY = 0.75;
 
 /** Safety margin thresholds */
 const MARGINAL_THRESHOLD = 0.20; // 20%
@@ -314,6 +329,9 @@ export function calculateTakeoffPerformance(inputs: TakeoffInputs): TakeoffResul
   const performanceRefWeight = inputs.aircraft.weights.standardWeight || inputs.aircraft.weights.maxGrossWeight;
   const vs1Ref = inputs.aircraft.limits?.vs || 0;
 
+  // Fraction of rated engine power available (1.0 = book/new engine).
+  const powerRatio = Math.min(1, Math.max(0.3, (inputs.availablePowerPercent ?? 100) / 100));
+
   // Weight-adjusted VS1
   const vs1IAS = calculateWeightAdjustedVS(vs1Ref, inputs.weight, performanceRefWeight);
   const vs1TAS = calculateTAS(vs1IAS, inputs.oat, inputs.pressureAltitude);
@@ -435,6 +453,12 @@ export function calculateTakeoffPerformance(inputs: TakeoffInputs): TakeoffResul
   const flapCorrection = FLAP_CORRECTIONS[inputs.flapConfiguration];
   baseGroundRoll *= flapCorrection.groundRollFactor;
 
+  // Available engine power correction: a worn engine accelerates more slowly,
+  // lengthening the roll. First-order, ground roll ∝ 1/powerRatio.
+  if (powerRatio < 1) {
+    baseGroundRoll /= powerRatio;
+  }
+
   // baseGroundRoll now represents ground roll on good pavement with all corrections
 
   // -------------------------------------------------------------------------
@@ -471,10 +495,31 @@ export function calculateTakeoffPerformance(inputs: TakeoffInputs): TakeoffResul
     rateOfClimb *= flapCorrection.climbRateFactor;
   }
 
+  // Available engine power correction for ROC.
+  // Climb rate is set by EXCESS power (available − required for level flight).
+  // A power shortfall comes straight off that excess, so the penalty is far
+  // larger than the % of power lost:
+  //   ΔROC[fpm] = (1 − powerRatio) × η × ratedHP × 33000 / weight
+  const hadClimbData = !!(inputs.aircraft.climbTable && inputs.aircraft.climbTable.length > 0);
+  if (powerRatio < 1 && hadClimbData && inputs.aircraft.engine?.ratedHP) {
+    const rocPenalty =
+      ((1 - powerRatio) * CLIMB_PROP_EFFICIENCY * inputs.aircraft.engine.ratedHP * 33000) /
+      inputs.weight;
+    rateOfClimb -= rocPenalty;
+  }
+
+  // When the aircraft genuinely cannot climb out (excess power exhausted by
+  // weight, density altitude and/or reduced power), force a NO-GO rather than
+  // letting the obstacle math proceed on a fallback climb rate.
+  let climbImpossible = false;
   if (rateOfClimb <= 0) {
-    errors.push("Rate of climb is zero or negative at this density altitude and weight");
-    rateOfClimb = 100; // Fallback to avoid division by zero
-    warnings.push("Using estimated minimum rate of climb");
+    if (hadClimbData) {
+      climbImpossible = true;
+      errors.push("Rate of climb is zero or negative at this weight, density altitude, and available power");
+    } else {
+      warnings.push("Using estimated minimum rate of climb (no climb table data available)");
+    }
+    rateOfClimb = 100; // Fallback to avoid division by zero in obstacle math
   }
 
   // -------------------------------------------------------------------------
@@ -509,7 +554,7 @@ export function calculateTakeoffPerformance(inputs: TakeoffInputs): TakeoffResul
   const safetyMargin = (inputs.runwayLength - obstacleDistance) / inputs.runwayLength;
 
   let decision: TakeoffDecision;
-  if (safetyMargin < UNSAFE_THRESHOLD) {
+  if (climbImpossible || safetyMargin < UNSAFE_THRESHOLD) {
     decision = "NO-GO";
   } else if (safetyMargin < MARGINAL_THRESHOLD) {
     decision = "MARGINAL";
@@ -520,6 +565,10 @@ export function calculateTakeoffPerformance(inputs: TakeoffInputs): TakeoffResul
   // -------------------------------------------------------------------------
   // Warnings
   // -------------------------------------------------------------------------
+
+  if (powerRatio < 1) {
+    warnings.push(`Engine at ${Math.round(powerRatio * 100)}% available power: longer ground roll and sharply reduced climb rate`);
+  }
 
   if (inputs.densityAltitude > 6000) {
     warnings.push(`High density altitude (${Math.round(inputs.densityAltitude)} ft) significantly reduces performance`);

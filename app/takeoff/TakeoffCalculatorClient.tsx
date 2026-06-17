@@ -37,6 +37,7 @@ interface TakeoffCalculatorClientProps {
   initialPlane: string;
   initialWeight: string;
   initialFlaps: string;
+  initialPower: string;
   initialPA: string;
   initialAlt: string;
   initialQNH: string;
@@ -71,6 +72,7 @@ export function TakeoffCalculatorClient({
   initialPlane,
   initialWeight,
   initialFlaps,
+  initialPower,
   initialPA,
   initialAlt,
   initialQNH,
@@ -120,6 +122,7 @@ export function TakeoffCalculatorClient({
 
   // Input state
   const [weight, setWeight] = useState<string>(initialWeight);
+  const [availablePower, setAvailablePower] = useState<string>(initialPower);
   const [flapConfiguration, setFlapConfiguration] = useState<FlapConfiguration>(
     (initialFlaps as FlapConfiguration) || "0"
   );
@@ -350,6 +353,7 @@ export function TakeoffCalculatorClient({
     // Weight & Flaps
     if (weight) params.set("weight", weight);
     if (flapConfiguration) params.set("flaps", flapConfiguration);
+    if (availablePower && availablePower !== "100") params.set("power", availablePower);
 
     // Add atmospheric parameters based on mode
     if (atmosphericData.altitudeMode === "pa" && atmosphericData.pressureAlt) {
@@ -383,10 +387,11 @@ export function TakeoffCalculatorClient({
 
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState(null, "", newUrl);
-  }, [aircraft, weight, flapConfiguration, atmosphericData, runwayLength, surfaceType, runwaySlope, headwindComponent, obstacleHeight, selectedAerodrome, currentMetarRef, selectedRunway, initialAerodromeLoaded]);
+  }, [aircraft, weight, flapConfiguration, availablePower, atmosphericData, runwayLength, surfaceType, runwaySlope, headwindComponent, obstacleHeight, selectedAerodrome, currentMetarRef, selectedRunway, initialAerodromeLoaded]);
 
   // Parse values
   const weightVal = parseFloat(weight);
+  const powerVal = parseFloat(availablePower);
   const runwayVal = parseFloat(runwayLength);
   const slopeVal = parseFloat(runwaySlope);
   const windVal = parseFloat(headwindComponent);
@@ -414,6 +419,7 @@ export function TakeoffCalculatorClient({
         aircraft,
         weight: weightVal,
         flapConfiguration,
+        availablePowerPercent: isNaN(powerVal) ? 100 : powerVal,
         pressureAltitude: actualPA,
         densityAltitude: actualDA,
         oat: oatVal,
@@ -612,6 +618,34 @@ export function TakeoffCalculatorClient({
                   <option value="10">10° (Short Field)</option>
                   <option value="full">Full (Not Recommended)</option>
                 </select>
+              </div>
+
+              <div>
+                <label
+                  className="flex items-center text-sm font-medium mb-2"
+                  style={{ color: "oklch(0.72 0.015 240)" }}
+                >
+                  Available Power
+                  <Tooltip content="Percentage of rated engine power actually available. POH numbers assume a new engine at 100%. Worn engines produce less — check it via the static full-throttle RPM (e.g. the C150 should reach ~2500–2600 RPM). Reduced power lengthens the ground roll and sharply cuts climb rate." />
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={availablePower}
+                    onChange={(e) => setAvailablePower(e.target.value)}
+                    min={50}
+                    max={100}
+                    step={1}
+                    className="w-full h-[52px] px-4 pr-16 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all text-lg bg-slate-900/50 border-2 border-gray-600 hover:border-gray-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] text-white text-right"
+                    placeholder="100"
+                  />
+                  <span
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium pointer-events-none"
+                    style={{ color: "oklch(0.55 0.02 240)" }}
+                  >
+                    %
+                  </span>
+                </div>
               </div>
             </div>
           </div>
