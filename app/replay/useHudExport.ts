@@ -1,31 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  PFD_LAYOUT_WIDTH,
-  recordOutputSize,
-  type HudExportFps,
-  type RecordResolution,
-  type ReplayPoint,
-} from "./types";
-import {
-  computeAltitudeFt,
-  computeGroundSpeed,
-  computeTrackHeadingDeg,
-  computeVerticalSpeedFpm,
-  findPointIndexByTime,
-  type EngineRanges,
-} from "./replayMetrics";
-import { drawClockAndWatermark, drawHud, drawTitle } from "./recordHud";
-import { buildPfdScene, samplePfdData } from "./pfdScene";
-import { drawPfdScene } from "./pfdCanvas";
+import { type HudExportFps, type RecordResolution, type ReplayPoint } from "./types";
+import type { EngineRanges } from "./replayMetrics";
+import { drawOverlayFrame, overlayGeometry, overlayWindow, type HudOverlayKind } from "./overlayFrame";
 import { Mp4Recorder, downloadBlob, isMp4RecordingSupported, yieldToEventLoop } from "./recordReplay";
 import type { CaptureControl } from "./GpxReplayGlobe";
 
 export type HudExportStatus = "idle" | "exporting" | "encoding" | "done" | "error";
 
-/** Which overlay to render: the glass-cockpit PFD or the simple telemetry HUD. */
-export type HudOverlayKind = "pfd" | "hud";
+export type { HudOverlayKind };
 
 /** Options chosen in the HUD export modal before starting. */
 export interface HudExportOptions {
@@ -153,9 +137,9 @@ export function useHudExport({
         return;
       }
 
-      const output = recordOutputSize(aspect, resolution);
-      if (!output) return; // unreachable: aspect excludes "screen"
-      const { width, height } = output;
+      const geometry = overlayGeometry(aspect, resolution);
+      if (!geometry) return; // unreachable: aspect excludes "screen"
+      const { width, height } = geometry;
 
       // Three canvases per frame: the overlay drawn on transparency, then
       // flattened two ways. `scratch` keeps real alpha; `fill` composites it
@@ -179,39 +163,19 @@ export function useHudExport({
         return;
       }
 
-      // The PFD scene is laid out in CSS pixels at a standard logical width
-      // (same framing as fixed-preset video recordings), then scaled onto the
-      // output pixels.
-      const cssWidth = PFD_LAYOUT_WIDTH[aspect];
-      const pfdScale = width / cssWidth;
-      const cssHeight = height / pfdScale;
-
       // Draws the overlay for a given absolute time onto the transparent
       // scratch canvas, then derives the fill and matte frames from it.
       const composeFrame = (timeMs: number) => {
         const { points: pts, engineRanges: ranges } = latest.current;
-
-        scratchCtx.clearRect(0, 0, width, height);
-        if (overlay === "pfd") {
-          drawPfdScene(scratchCtx, buildPfdScene(cssWidth, cssHeight, samplePfdData(pts, timeMs), ranges), pfdScale);
-          if (title) drawTitle(scratchCtx, width, title);
-          drawClockAndWatermark(scratchCtx, width, height, timeMs, watermark);
-        } else {
-          const index = findPointIndexByTime(pts, timeMs);
-          drawHud(
-            scratchCtx,
-            width,
-            height,
-            {
-              speedKnots: computeGroundSpeed(pts, index).knots,
-              altitudeFt: computeAltitudeFt(pts, index, timeMs),
-              vsFpm: computeVerticalSpeedFpm(pts, index, timeMs),
-              trackDeg: computeTrackHeadingDeg(pts, timeMs),
-              timeMs,
-            },
-            { title, watermark }
-          );
-        }
+        drawOverlayFrame(scratchCtx, {
+          overlay,
+          timeMs,
+          geometry,
+          title,
+          watermark,
+          points: pts,
+          engineRanges: ranges,
+        });
 
         // Fill: overlay over pure black.
         fillCtx.fillStyle = "#000000";
@@ -274,16 +238,16 @@ export function useHudExport({
         // Playback is locked to 1×: frame i is the overlay at exactly
         // i / fps seconds of flight time, so the exported window produces a
         // clip of the same length that lines up with the camera's clock.
-        const frameIntervalMs = 1000 / fps;
-        const frameDurMicros = Math.round(1_000_000 / fps);
         const { startMs: start, durationMs: dur } = latest.current;
-        // Window to export, clamped into the track and kept at least one frame.
-        const windowStartMs = Math.max(0, Math.min(rangeStartMs, dur));
-        const windowEndMs = Math.max(windowStartMs + frameIntervalMs, Math.min(rangeEndMs, dur));
-        const windowMs = windowEndMs - windowStartMs;
+        const { frameIntervalMs, windowStartMs, totalFrames } = overlayWindow({
+          durationMs: dur,
+          rangeStartMs,
+          rangeEndMs,
+          fps,
+        });
+        const frameDurMicros = Math.round(1_000_000 / fps);
         // Absolute time of the first exported frame (for the burned-in UTC clock).
         const windowStartAbsMs = start + windowStartMs;
-        const totalFrames = Math.max(2, Math.floor(windowMs / frameIntervalMs) + 1);
 
         const exportStartedAt = performance.now();
         try {

@@ -47,6 +47,7 @@ import {
 } from "./useReplayPreferences";
 import { useReplayRecorder } from "./useReplayRecorder";
 import { useHudExport } from "./useHudExport";
+import { useNativeOverlayExport } from "./useNativeOverlayExport";
 import { useCircuitAnalysis } from "./useCircuitAnalysis";
 import { ReplayToolbar } from "./components/ReplayToolbar";
 import { GpxDropzone } from "./components/GpxDropzone";
@@ -304,6 +305,14 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
     captureControlRef,
   });
 
+  const nativeExporter = useNativeOverlayExport({
+    points,
+    startMs: timeline.startMs,
+    durationMs: timeline.durationMs,
+    engineRanges,
+    captureControlRef,
+  });
+
   const handleRecord = useCallback(() => {
     recorder.reset();
     setRecordModalOpen(true);
@@ -316,13 +325,15 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
 
   const handleHudExport = useCallback(() => {
     hudExporter.reset();
+    nativeExporter.reset();
     setHudExportModalOpen(true);
-  }, [hudExporter]);
+  }, [hudExporter, nativeExporter]);
 
   const handleCloseHudExportModal = useCallback(() => {
     setHudExportModalOpen(false);
     hudExporter.reset();
-  }, [hudExporter]);
+    nativeExporter.reset();
+  }, [hudExporter, nativeExporter]);
 
   // --- Playback animation loop (real time × speed) ---
   useEffect(() => {
@@ -664,6 +675,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
           defaultTitle={defaultHudTitle}
           trackStartMs={timeline.startMs}
           durationMs={timeline.durationMs}
+          native={nativeExporter}
           onStart={(opts) => hudExporter.startExport(opts)}
           onClose={handleCloseHudExportModal}
           onCancel={() => hudExporter.reset()}
