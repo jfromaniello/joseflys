@@ -51,6 +51,9 @@ export interface RecordOptions {
   aspect: RecordAspect;
   /** Output resolution preset (ignored when `aspect` is "screen"). */
   resolution: RecordResolution;
+  /** Window to record, in elapsed ms from the track start. Defaults to the whole flight. */
+  rangeStartMs?: number;
+  rangeEndMs?: number;
 }
 
 interface UseReplayRecorderParams {
@@ -158,12 +161,17 @@ export function useReplayRecorder({
   }, [cleanupLoop, releaseViewport]);
 
   const startRecording = useCallback(
-    ({ speed: speedMultiplier, showTelemetry, quality, aspect, resolution }: RecordOptions) => {
+    ({ speed: speedMultiplier, showTelemetry, quality, aspect, resolution, rangeStartMs, rangeEndMs }: RecordOptions) => {
       const canvas = canvasRef.current;
       const { durationMs: duration } = latest.current;
       if (!supported || !canvas || duration <= 0 || status === "recording" || status === "encoding") {
         return;
       }
+
+      // Window to record (elapsed ms from track start), clamped to [0, duration].
+      const rangeStart = Math.max(0, Math.min(rangeStartMs ?? 0, duration));
+      const rangeEnd = Math.max(rangeStart, Math.min(rangeEndMs ?? duration, duration));
+      const windowMs = rangeEnd - rangeStart;
 
       // Fixed presets need the globe controller to pin the viewport size.
       const output = recordOutputSize(aspect, resolution);
@@ -178,7 +186,7 @@ export function useReplayRecorder({
       setError(null);
       setProgress(0);
       setStatus("recording");
-      setElapsedMs(0);
+      setElapsedMs(rangeStart);
 
       // Composite target: globe frame + HUD. Fixed presets render at exact
       // output pixels regardless of window size / devicePixelRatio; "screen"
@@ -292,8 +300,8 @@ export function useReplayRecorder({
             return;
           }
 
-          const { startMs: start, durationMs: dur } = latest.current;
-          const clipSeconds = dur / 1000 / speedMultiplier;
+          const { startMs: start } = latest.current;
+          const clipSeconds = windowMs / 1000 / speedMultiplier;
           const totalFrames = Math.max(2, Math.round(FPS * clipSeconds));
 
           control.begin();
@@ -304,7 +312,7 @@ export function useReplayRecorder({
                 aborted = true;
                 break;
               }
-              const timeMs = start + (i / (totalFrames - 1)) * dur;
+              const timeMs = start + rangeStart + (i / (totalFrames - 1)) * windowMs;
               await control.frameAtTime(timeMs);
               if (abortRef.current) {
                 aborted = true;
@@ -344,13 +352,13 @@ export function useReplayRecorder({
 
         const loop = (now: number) => {
           if (startNow === null) startNow = now;
-          const { startMs: start, durationMs: dur } = latest.current;
-          const elapsed = Math.min(dur, (now - startNow) * speedMultiplier);
-          setElapsedMs(elapsed);
+          const { startMs: start } = latest.current;
+          const windowElapsed = Math.min(windowMs, (now - startNow) * speedMultiplier);
+          setElapsedMs(rangeStart + windowElapsed);
 
           if (now - lastCaptureNow >= FRAME_INTERVAL_MS) {
             lastCaptureNow = now;
-            composeFrame(start + elapsed);
+            composeFrame(start + rangeStart + windowElapsed);
 
             const tMicros = (now - startNow) * 1000;
             recorder.addFrame(composite, tMicros, frameIndex % (FPS * 2) === 0).catch((err) => {
@@ -361,10 +369,10 @@ export function useReplayRecorder({
               setError(err instanceof Error ? err.message : "Encoding failed.");
             });
             frameIndex += 1;
-            setProgress(dur > 0 ? elapsed / dur : 0);
+            setProgress(windowMs > 0 ? windowElapsed / windowMs : 0);
           }
 
-          if (elapsed >= dur) {
+          if (windowElapsed >= windowMs) {
             cleanupLoop();
             void finishRecording(recorder);
             return;

@@ -15,3 +15,14 @@ export function formatUtcShort(valueMs: number): string {
   if (!Number.isFinite(valueMs) || valueMs <= 0) return "--:--";
   return new Date(valueMs).toISOString().slice(11, 16);
 }
+
+/** Formats a window length (ms) as "45s", "5 min 30s", or "1 h 12 min". */
+export function formatWindow(ms: number): string {
+  const total = Math.round(ms / 1000);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  if (h > 0) return `${h} h ${m} min`;
+  if (m > 0) return s > 0 ? `${m} min ${s}s` : `${m} min`;
+  return `${s}s`;
+}

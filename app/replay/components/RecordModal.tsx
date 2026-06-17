@@ -17,12 +17,17 @@ import {
   usePersistedRecordResolution,
 } from "../useReplayPreferences";
 import type { RecordingStatus, RecordOptions, RecordQuality } from "../useReplayRecorder";
+import { TimeRangeBar } from "./TimeRangeBar";
+import { formatUtc, formatWindow } from "../formatTime";
 
 const ASPECT_OPTIONS: { value: RecordAspect; label: string }[] = [
   { value: "16:9", label: "16:9" },
   { value: "9:16", label: "9:16" },
   { value: "screen", label: "Screen" },
 ];
+
+/** Smallest recordable window (ms): keeps a couple of frames at any speed. */
+const MIN_WINDOW_MS = 1000;
 
 interface RecordModalProps {
   status: RecordingStatus;
@@ -46,6 +51,16 @@ interface RecordModalProps {
   /** Live chase camera distance (metres). */
   chaseDistance: number;
   onChaseDistanceChange: (value: number) => void;
+  /** Absolute UTC start of the track (ms), for the time-range readout. */
+  trackStartMs: number;
+  /** Full track duration (ms); the recordable window spans [0, durationMs]. */
+  durationMs: number;
+  /**
+   * Live-seeks the 3D view behind the modal to a given elapsed ms while
+   * dragging a range handle. Also moves the background slider and highlights
+   * the matching circuit phase.
+   */
+  onSeek: (ms: number) => void;
 }
 
 function Toggle({ label, on, onToggle }: { label: string; on: boolean; onToggle: () => void }) {
@@ -81,13 +96,21 @@ export function RecordModal({
   onShowTrackChange,
   chaseDistance,
   onChaseDistanceChange,
+  trackStartMs,
+  durationMs,
+  onSeek,
 }: RecordModalProps) {
   const [showTelemetry, setShowTelemetry] = useState(true);
   const [quality, setQuality] = useState<RecordQuality>("sharp");
   const [aspect, setAspect] = usePersistedRecordAspect();
   const [resolution, setResolution] = usePersistedRecordResolution();
+  // Recorded window, in elapsed ms from the track start; defaults to the whole flight.
+  const [rangeStartMs, setRangeStartMs] = useState(0);
+  const [rangeEndMs, setRangeEndMs] = useState(durationMs);
 
   const outputSize = recordOutputSize(aspect, resolution);
+  const windowMs = rangeEndMs - rangeStartMs;
+  const isFullRange = rangeStartMs <= 0 && rangeEndMs >= durationMs;
 
   const busy = status === "recording" || status === "encoding";
 
@@ -104,7 +127,7 @@ export function RecordModal({
       role="dialog"
       aria-modal="true"
       aria-label="Record replay"
-      className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget && !busy) onClose();
       }}
@@ -114,7 +137,7 @@ export function RecordModal({
           <div>
             <h3 className="text-lg font-semibold text-white">Record this replay</h3>
             <p className="text-xs mt-1" style={{ color: "oklch(0.7 0.02 240)" }}>
-              Plays the whole flight and saves an MP4 of the 3D view.
+              Plays the selected range and saves an MP4 of the 3D view.
             </p>
           </div>
           {!busy ? (
@@ -301,6 +324,41 @@ export function RecordModal({
               </p>
             </div>
 
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                  Time range
+                </span>
+                {!isFullRange ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRangeStartMs(0);
+                      setRangeEndMs(durationMs);
+                      onSeek(0);
+                    }}
+                    className="text-[10px] font-medium text-cyan-400 hover:text-cyan-300 cursor-pointer"
+                  >
+                    Full flight
+                  </button>
+                ) : null}
+              </div>
+              <TimeRangeBar
+                durationMs={durationMs}
+                rangeStartMs={rangeStartMs}
+                rangeEndMs={rangeEndMs}
+                minWindowMs={MIN_WINDOW_MS}
+                onRangeStartChange={setRangeStartMs}
+                onRangeEndChange={setRangeEndMs}
+                onSeek={onSeek}
+              />
+              <p className="mt-1.5 text-[11px] text-slate-400 leading-tight tabular-nums">
+                {formatUtc(trackStartMs + rangeStartMs)} – {formatUtc(trackStartMs + rangeEndMs)} UTC ·{" "}
+                {formatWindow(windowMs)} clip
+                {isFullRange ? null : " (faster than the full flight)"}
+              </p>
+            </div>
+
             <div className="space-y-2.5 border-t border-slate-700 pt-3">
               <Toggle label="Telemetry HUD" on={showTelemetry} onToggle={() => setShowTelemetry((v) => !v)} />
               <Toggle label="Track line" on={showTrack} onToggle={() => onShowTrackChange(!showTrack)} />
@@ -308,7 +366,7 @@ export function RecordModal({
 
             <button
               type="button"
-              onClick={() => onStart({ speed, showTelemetry, quality, aspect, resolution })}
+              onClick={() => onStart({ speed, showTelemetry, quality, aspect, resolution, rangeStartMs, rangeEndMs })}
               className="w-full rounded-md px-4 py-2.5 text-sm font-semibold cursor-pointer transition-colors bg-red-600 hover:bg-red-500 text-white"
             >
               Start recording

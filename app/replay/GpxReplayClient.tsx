@@ -657,6 +657,9 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
           onShowTrackChange={setShowTrack}
           chaseDistance={chaseDistance}
           onChaseDistanceChange={setChaseDistance}
+          trackStartMs={timeline.startMs}
+          durationMs={timeline.durationMs}
+          onSeek={handleSliderChange}
         />
       ) : null}
 

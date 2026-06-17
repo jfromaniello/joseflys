@@ -11,7 +11,8 @@ import {
 import type { HudExportOptions, HudExportStatus, HudOverlayKind } from "../useHudExport";
 import { NATIVE_HELPER_PORT, type NativeCodec, type UseNativeOverlayExportResult } from "../useNativeOverlayExport";
 import type { OverlayMotion } from "../overlayFrame";
-import { formatUtc } from "../formatTime";
+import { formatUtc, formatWindow } from "../formatTime";
+import { TimeRangeBar } from "./TimeRangeBar";
 
 const NATIVE_CODEC_OPTIONS: { value: NativeCodec; label: string }[] = [
   { value: "qtrle", label: "QuickTime RLE" },
@@ -503,45 +504,14 @@ export function HudExportModal({
                   </button>
                 ) : null}
               </div>
-              {/* Two range inputs overlaid on one bar: the In and Out handles
-                  share the same track. The handle in the right half is kept on
-                  top so it stays grabbable when the two sit close together. */}
-              <div className="relative h-4">
-                <div className="absolute left-0 right-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-slate-700" />
-                <div
-                  className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-cyan-500"
-                  style={{
-                    left: `${durationMs > 0 ? (rangeStartMs / durationMs) * 100 : 0}%`,
-                    width: `${durationMs > 0 ? (windowMs / durationMs) * 100 : 100}%`,
-                  }}
-                />
-                <input
-                  type="range"
-                  min={0}
-                  max={durationMs}
-                  step={1000}
-                  value={rangeStartMs}
-                  onChange={(e) =>
-                    setRangeStartMs(Math.min(Number(e.target.value), rangeEndMs - MIN_WINDOW_MS))
-                  }
-                  aria-label="Range start"
-                  className="range-dual"
-                  style={{ zIndex: rangeStartMs > durationMs / 2 ? 5 : 4 }}
-                />
-                <input
-                  type="range"
-                  min={0}
-                  max={durationMs}
-                  step={1000}
-                  value={rangeEndMs}
-                  onChange={(e) =>
-                    setRangeEndMs(Math.max(Number(e.target.value), rangeStartMs + MIN_WINDOW_MS))
-                  }
-                  aria-label="Range end"
-                  className="range-dual"
-                  style={{ zIndex: rangeStartMs > durationMs / 2 ? 4 : 5 }}
-                />
-              </div>
+              <TimeRangeBar
+                durationMs={durationMs}
+                rangeStartMs={rangeStartMs}
+                rangeEndMs={rangeEndMs}
+                minWindowMs={MIN_WINDOW_MS}
+                onRangeStartChange={setRangeStartMs}
+                onRangeEndChange={setRangeEndMs}
+              />
               <p className="mt-1.5 text-[11px] text-slate-400 leading-tight tabular-nums">
                 {formatUtc(trackStartMs + rangeStartMs)} – {formatUtc(trackStartMs + rangeEndMs)} UTC ·{" "}
                 {formatWindow(windowMs)} clip
@@ -675,17 +645,6 @@ function NativeExportFooter({
 function formatEta(seconds: number): string {
   if (seconds < 90) return `${Math.max(1, Math.round(seconds / 5) * 5)}s`;
   return `${Math.round(seconds / 60)} min`;
-}
-
-/** Formats a window length (ms) as "45s", "5 min 30s", or "1 h 12 min". */
-function formatWindow(ms: number): string {
-  const total = Math.round(ms / 1000);
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  if (h > 0) return `${h} h ${m} min`;
-  if (m > 0) return s > 0 ? `${m} min ${s}s` : `${m} min`;
-  return `${s}s`;
 }
 
 /** Formats a byte count as "12.3 MB" / "1.2 GB". */
