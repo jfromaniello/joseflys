@@ -19,6 +19,12 @@ export interface ResolvedAircraftPerformance {
   description?: string;
   /** Link to Wikipedia article */
   wikipediaUrl?: string;
+  /**
+   * Whether this airplane's airspeed indicator is calibrated in MPH (older
+   * types like the C150). When true, UIs may offer a kt/mph toggle for
+   * airspeeds and default to MPH.
+   */
+  usesMPH?: boolean;
 }
 
 /**
@@ -89,6 +95,13 @@ export interface AircraftPerformance {
 
   /** Link to Wikipedia article */
   wikipediaUrl?: string;
+
+  /**
+   * Whether this airplane's airspeed indicator is calibrated in MPH (older
+   * types like the C150). When true, UIs may offer a kt/mph toggle for
+   * airspeeds and default to MPH.
+   */
+  usesMPH?: boolean;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -188,6 +201,30 @@ export interface EngineData {
 }
 
 /* -------------------------------------------------------------------------- */
+/*                              CLIMB SPEEDS                                   */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * A climb speed (Vx/Vy) at a given pressure altitude, as published in the POH.
+ * Most POHs give Vy as a small table decreasing with altitude.
+ */
+export interface ClimbSpeedPoint {
+  /** Pressure altitude in feet (e.g. 0, 5000, 10000) */
+  pressureAltitude: number;
+
+  /** Indicated airspeed (KIAS) */
+  ias: number;
+}
+
+/**
+ * A climb speed specification.
+ * - `number`: a single constant speed (KIAS) for all altitudes.
+ * - `ClimbSpeedPoint[]`: a table interpolated linearly by pressure altitude
+ *   (clamped at the table ends).
+ */
+export type ClimbSpeed = number | ClimbSpeedPoint[];
+
+/* -------------------------------------------------------------------------- */
 /*                                LIMITATIONS                                  */
 /* -------------------------------------------------------------------------- */
 
@@ -212,6 +249,27 @@ export interface AircraftLimits {
 
   /** Stall speed landing configuration (KIAS) */
   vs0: number;
+
+  /**
+   * Best angle of climb speed (Vx), KIAS, from the POH.
+   * Single value or a table interpolated by pressure altitude.
+   * When omitted, it is estimated as 1.3 × VS1.
+   */
+  vx?: ClimbSpeed;
+
+  /**
+   * Best rate of climb speed (Vy), KIAS, from the POH.
+   * Single value or a table interpolated by pressure altitude.
+   * When omitted, it is estimated as 1.4 × VS1.
+   */
+  vy?: ClimbSpeed;
+
+  /**
+   * Weight (lbs) at which vx/vy are published in the POH (usually max gross).
+   * Used to weight-correct the speeds via √(W/refWeight).
+   * Defaults to standardWeight ?? maxGrossWeight when omitted.
+   */
+  climbSpeedRefWeight?: number;
 
   /** Demonstrated crosswind component (kts) — not a limitation */
   maxCrosswind?: number;

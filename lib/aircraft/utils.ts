@@ -1,4 +1,4 @@
-import type { AircraftPerformance } from "./types";
+import type { AircraftPerformance, ClimbSpeed } from "./types";
 import { CESSNA_150 } from "./CESSNA_150";
 import { CESSNA_152 } from "./CESSNA_152";
 import { CESSNA_170 } from "./CESSNA_170";
@@ -35,6 +35,53 @@ export const PRESET_AIRCRAFT: AircraftPerformance[] = [
   DIAMOND_DA40,
   CIRRUS_SR20,
 ];
+
+/**
+ * Resolve a climb speed (Vx/Vy) at a given pressure altitude.
+ *
+ * - A constant `number` is returned as-is.
+ * - A table is interpolated linearly by pressure altitude and clamped at the
+ *   table ends (below the lowest point → lowest speed; above the highest point
+ *   → highest point's speed).
+ *
+ * Returns `undefined` when the spec is missing or empty so callers can fall
+ * back to an estimate.
+ */
+export function resolveClimbSpeed(
+  spec: ClimbSpeed | undefined,
+  pressureAltitude: number
+): number | undefined {
+  if (spec === undefined) return undefined;
+  if (typeof spec === "number") return spec;
+  if (spec.length === 0) return undefined;
+
+  // Sort by altitude so callers don't have to keep tables ordered.
+  const points = [...spec].sort(
+    (a, b) => a.pressureAltitude - b.pressureAltitude
+  );
+
+  // Clamp below the lowest / above the highest tabulated altitude.
+  if (pressureAltitude <= points[0].pressureAltitude) return points[0].ias;
+  const last = points[points.length - 1];
+  if (pressureAltitude >= last.pressureAltitude) return last.ias;
+
+  // Linear interpolation between the bracketing points.
+  for (let i = 0; i < points.length - 1; i++) {
+    const lo = points[i];
+    const hi = points[i + 1];
+    if (
+      pressureAltitude >= lo.pressureAltitude &&
+      pressureAltitude <= hi.pressureAltitude
+    ) {
+      const t =
+        (pressureAltitude - lo.pressureAltitude) /
+        (hi.pressureAltitude - lo.pressureAltitude);
+      return lo.ias + t * (hi.ias - lo.ias);
+    }
+  }
+
+  return last.ias;
+}
 
 /**
  * Get aircraft by model code

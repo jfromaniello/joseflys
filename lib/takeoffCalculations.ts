@@ -7,6 +7,7 @@
  */
 
 import type { ResolvedAircraftPerformance } from "./aircraft/types";
+import { resolveClimbSpeed } from "./aircraft/utils";
 import { calculateTAS } from "./tasCalculations";
 import { calculateClimbPerformance } from "./climbCalculations";
 
@@ -321,12 +322,20 @@ export function calculateTakeoffPerformance(inputs: TakeoffInputs): TakeoffResul
   const vrIAS = vs1IAS * VR_MULTIPLIER;
   const vrTAS = calculateTAS(vrIAS, inputs.oat, inputs.pressureAltitude);
 
-  // VX and VY (estimate based on VS1 since not typically in limits)
-  // Typical values: Vx ≈ 1.25-1.3 × VS, Vy ≈ 1.35-1.45 × VS
-  const vxIAS = vs1IAS * 1.3;
+  // VX and VY: prefer published POH speeds (single value or altitude table),
+  // weight-corrected like VS via √(W/refWeight). When the POH speeds are not
+  // available, fall back to an estimate from VS1 (Vx ≈ 1.3 × VS, Vy ≈ 1.4 × VS).
+  const climbSpeedRefWeight =
+    inputs.aircraft.limits?.climbSpeedRefWeight || performanceRefWeight;
+  const climbWeightFactor = Math.sqrt(inputs.weight / climbSpeedRefWeight);
+
+  const vxPOH = resolveClimbSpeed(inputs.aircraft.limits?.vx, inputs.pressureAltitude);
+  const vyPOH = resolveClimbSpeed(inputs.aircraft.limits?.vy, inputs.pressureAltitude);
+
+  const vxIAS = vxPOH !== undefined ? vxPOH * climbWeightFactor : vs1IAS * 1.3;
   const vxTAS = calculateTAS(vxIAS, inputs.oat, inputs.pressureAltitude);
 
-  const vyIAS = vs1IAS * 1.4;
+  const vyIAS = vyPOH !== undefined ? vyPOH * climbWeightFactor : vs1IAS * 1.4;
   const vyTAS = calculateTAS(vyIAS, inputs.oat, inputs.pressureAltitude);
 
   const vSpeeds: VSpeedResults = {

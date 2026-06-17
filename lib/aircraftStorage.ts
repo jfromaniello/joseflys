@@ -631,6 +631,9 @@ export function resolveAircraft(aircraft: AircraftPerformance): ResolvedAircraft
       vfe: aircraft.limits?.vfe ?? parent.limits!.vfe,
       vs: aircraft.limits?.vs ?? parent.limits!.vs,
       vs0: aircraft.limits?.vs0 ?? parent.limits!.vs0,
+      vx: aircraft.limits?.vx ?? parent.limits!.vx,
+      vy: aircraft.limits?.vy ?? parent.limits!.vy,
+      climbSpeedRefWeight: aircraft.limits?.climbSpeedRefWeight ?? parent.limits!.climbSpeedRefWeight,
       maxCrosswind: aircraft.limits?.maxCrosswind ?? parent.limits!.maxCrosswind,
       clMaxClean: aircraft.limits?.clMaxClean ?? parent.limits!.clMaxClean,
       clMaxTakeoff: aircraft.limits?.clMaxTakeoff ?? parent.limits!.clMaxTakeoff,
@@ -648,6 +651,7 @@ export function resolveAircraft(aircraft: AircraftPerformance): ResolvedAircraft
     serviceCeiling: aircraft.serviceCeiling ?? parent.serviceCeiling,
     description: aircraft.description ?? parent.description,
     wikipediaUrl: aircraft.wikipediaUrl ?? parent.wikipediaUrl,
+    usesMPH: aircraft.usesMPH ?? parent.usesMPH,
   };
 
   return resolved;

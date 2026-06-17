@@ -28,6 +28,7 @@ import {
 import Link from "next/link";
 import { loadAircraftFromUrl, serializeAircraft, getAircraftByModel } from "@/lib/aircraftStorage";
 import { formatDistance } from "@/lib/formatters";
+import { fromKnots } from "@/lib/speedConversion";
 import { TakeoffVisualization } from "./TakeoffVisualization";
 import { TAKEOFF_EXAMPLES } from "@/lib/takeoffExamples";
 
@@ -127,6 +128,10 @@ export function TakeoffCalculatorClient({
   const [runwaySlope, setRunwaySlope] = useState<string>(initialSlope);
   const [headwindComponent, setHeadwindComponent] = useState<string>(initialWind);
   const [obstacleHeight, setObstacleHeight] = useState<string>(initialObstacle);
+
+  // V-speed display unit. Aircraft with MPH-calibrated ASIs (e.g. C150) offer
+  // a kt/mph toggle and default to mph; everything else stays in kt.
+  const [speedUnit, setSpeedUnit] = useState<"kt" | "mph">("kt");
 
   // Atmospheric conditions data (from component)
   const [atmosphericData, setAtmosphericData] = useState<AtmosphericConditionsData | null>(null);
@@ -312,6 +317,14 @@ export function TakeoffCalculatorClient({
       }
     }
   }, [aircraft, weight]);
+
+  // Default the V-speed unit to mph for MPH-calibrated aircraft (e.g. C150),
+  // kt otherwise. Re-runs when the selected aircraft changes.
+  useEffect(() => {
+    // Safe: aligning the unit default with the selected aircraft
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSpeedUnit(aircraft?.usesMPH ? "mph" : "kt");
+  }, [aircraft?.model, aircraft?.usesMPH]);
 
   // Update URL when parameters change
   useEffect(() => {
@@ -986,9 +999,29 @@ export function TakeoffCalculatorClient({
 
             {/* V-Speeds */}
             <div className="mb-8">
-              <h3 className="text-xl font-bold mb-4" style={{ color: "white" }}>
-                V-Speeds
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold" style={{ color: "white" }}>
+                  V-Speeds
+                </h3>
+                {aircraft?.usesMPH && (
+                  <div className="inline-flex rounded-lg border border-white/15 overflow-hidden text-xs font-semibold">
+                    {(["mph", "kt"] as const).map((unit) => (
+                      <button
+                        key={unit}
+                        type="button"
+                        onClick={() => setSpeedUnit(unit)}
+                        className={`px-3 py-1.5 cursor-pointer transition-colors ${
+                          speedUnit === unit
+                            ? "bg-blue-500/30 text-white"
+                            : "text-white/50 hover:text-white/80"
+                        }`}
+                      >
+                        {unit === "mph" ? "MPH" : "KT"}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="relative p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/30">
                   <div className="absolute top-2 right-2">
@@ -998,7 +1031,7 @@ export function TakeoffCalculatorClient({
                     VS1 (IAS)
                   </p>
                   <p className="text-2xl font-bold" style={{ color: "white" }}>
-                    {Math.round(results.vSpeeds.vs1IAS)} <span className="text-sm font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>kt</span>
+                    {Math.round(fromKnots(results.vSpeeds.vs1IAS, speedUnit))} <span className="text-sm font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>{speedUnit}</span>
                   </p>
                 </div>
                 <div className="relative p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/30">
@@ -1009,7 +1042,7 @@ export function TakeoffCalculatorClient({
                     VR (IAS)
                   </p>
                   <p className="text-2xl font-bold" style={{ color: "white" }}>
-                    {Math.round(results.vSpeeds.vrIAS)} <span className="text-sm font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>kt</span>
+                    {Math.round(fromKnots(results.vSpeeds.vrIAS, speedUnit))} <span className="text-sm font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>{speedUnit}</span>
                   </p>
                 </div>
                 <div className="relative p-4 rounded-xl bg-gradient-to-br from-cyan-500/10 to-teal-500/10 border border-cyan-500/30">
@@ -1020,7 +1053,7 @@ export function TakeoffCalculatorClient({
                     VX (IAS)
                   </p>
                   <p className="text-2xl font-bold" style={{ color: "white" }}>
-                    {Math.round(results.vSpeeds.vxIAS)} <span className="text-sm font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>kt</span>
+                    {Math.round(fromKnots(results.vSpeeds.vxIAS, speedUnit))} <span className="text-sm font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>{speedUnit}</span>
                   </p>
                 </div>
                 <div className="relative p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/30">
@@ -1031,7 +1064,7 @@ export function TakeoffCalculatorClient({
                     VY (IAS)
                   </p>
                   <p className="text-2xl font-bold" style={{ color: "white" }}>
-                    {Math.round(results.vSpeeds.vyIAS)} <span className="text-sm font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>kt</span>
+                    {Math.round(fromKnots(results.vSpeeds.vyIAS, speedUnit))} <span className="text-sm font-normal" style={{ color: "oklch(0.6 0.02 240)" }}>{speedUnit}</span>
                   </p>
                 </div>
               </div>

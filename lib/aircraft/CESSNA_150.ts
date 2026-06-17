@@ -8,6 +8,9 @@ export const CESSNA_150: AircraftPerformance = {
 
   wikipediaUrl: "https://en.wikipedia.org/wiki/Cessna_150",
 
+  /** The C150 airspeed indicator is calibrated in MPH (POH speeds are in MPH). */
+  usesMPH: true,
+
   /** ------------------------------------------------------------------
    *  WEIGHTS
    *  ------------------------------------------------------------------*/
@@ -128,6 +131,24 @@ export const CESSNA_150: AircraftPerformance = {
     vfe: 100,
     vs: 42,
     vs0: 38,
+
+    /**
+     * Climb speeds from the 1969 C150 Owner's Manual (Section V,
+     * "Maximum Rate-of-Climb Data" + "Climb Speeds"), published at gross
+     * weight (1600 lbs). Original values are in MPH IAS; converted to KIAS
+     * (1 mph = 0.868976 kt).
+     */
+    climbSpeedRefWeight: 1600, // POH climb data is at max gross weight
+
+    // Vx (best angle / obstacle clearance): 64 mph IAS, flaps up
+    vx: 55.6,
+
+    // Vy (best rate of climb): 73 mph SL → 69 mph @5000 → 65 mph @10000
+    vy: [
+      { pressureAltitude: 0, ias: 63.4 },
+      { pressureAltitude: 5000, ias: 60.0 },
+      { pressureAltitude: 10000, ias: 56.5 },
+    ],
 
     /**
      * Crosswind demonstrated (not a limit)
