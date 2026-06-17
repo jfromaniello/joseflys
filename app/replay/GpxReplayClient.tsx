@@ -30,7 +30,6 @@ import {
   computeWindComponents,
   computeEngineRanges,
   findPointIndexByTime,
-  hasRichTelemetry,
   sampleTelemetry,
 } from "./replayMetrics";
 import { samplePfdData } from "./pfdScene";
@@ -227,12 +226,16 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
     () => computeWindComponents(telemetry.windDirDeg, telemetry.windSpeedKt, currentTrackDeg),
     [telemetry.windDirDeg, telemetry.windSpeedKt, currentTrackDeg]
   );
-  const hasAvionics = useMemo(() => hasRichTelemetry(points), [points]);
+  // The glass-cockpit PFD renders for any replayable track: recorded avionics
+  // fields (airspeed, attitude, wind, engine) fill in when present, and plain
+  // GPX falls back to GPS-derived ground speed / altitude / vertical speed /
+  // track — every instrument hides or shows "--" when its data is missing.
+  const pfdAvailable = points.length >= 2;
   const pfdData = useMemo(() => samplePfdData(points, currentTimeMs), [points, currentTimeMs]);
   const engineRanges = useMemo(() => computeEngineRanges(points), [points]);
   // The glass-cockpit overlay replaces the simple telemetry box in cockpit view
-  // when the track carries avionics data and the user hasn't turned it off.
-  const pfdActive = viewMode === "cockpit" && hasAvionics && showPfd;
+  // unless the user has turned it off.
+  const pfdActive = viewMode === "cockpit" && pfdAvailable && showPfd;
   const flight = useCircuitAnalysis(points);
   // Aerodromes the flight visits, for terrain flattening around their runways.
   const flattenCenters = useMemo(
@@ -580,7 +583,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
               onShowWallChange={setShowWall}
               chaseDistance={chaseDistance}
               onChaseDistanceChange={setChaseDistance}
-              pfdAvailable={hasAvionics}
+              pfdAvailable={pfdAvailable}
               showPfd={showPfd}
               onShowPfdChange={setShowPfd}
             />
@@ -674,7 +677,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
           matteName={hudExporter.matteName}
           error={hudExporter.error}
           supported={hudExporter.supported}
-          pfdAvailable={hasAvionics}
+          pfdAvailable={pfdAvailable}
           defaultTitle={defaultHudTitle}
           trackStartMs={timeline.startMs}
           durationMs={timeline.durationMs}
