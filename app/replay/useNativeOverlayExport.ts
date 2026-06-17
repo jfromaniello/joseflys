@@ -18,6 +18,14 @@ import type { CaptureControl } from "./GpxReplayGlobe";
 /** Default port the `joseflys-overlay-generator` helper listens on. */
 export const NATIVE_HELPER_PORT = 7842;
 
+/**
+ * Output codec for the native export. `qtrle` (QuickTime Animation, RLE) is the
+ * default: lossless, alpha-capable, Resolve-native, and ~20× faster to encode
+ * than ProRes 4444 on a mostly-transparent overlay (the encode is the
+ * bottleneck). `prores4444` is offered for pipelines that require it.
+ */
+export type NativeCodec = "qtrle" | "prores4444";
+
 export type NativeExportStatus = "idle" | "exporting" | "done" | "error";
 
 /** Liveness of the local helper, polled while the native tab is open. */
@@ -39,6 +47,8 @@ export interface NativeExportOptions {
   rangeEndMs: number;
   /** How many distinct frames to render vs. duplicate to the output rate. */
   motion: OverlayMotion;
+  /** Output codec the helper should mux to. */
+  codec: NativeCodec;
   port: number;
 }
 
@@ -137,7 +147,7 @@ export function useNativeOverlayExport({
 
   const startExport = useCallback(
     (options: NativeExportOptions) => {
-      const { overlay, fps, aspect, resolution, title, watermark, rangeStartMs, rangeEndMs, motion, port } =
+      const { overlay, fps, aspect, resolution, title, watermark, rangeStartMs, rangeEndMs, motion, codec, port } =
         options;
       const { durationMs: dur } = latest.current;
       if (dur <= 0 || status === "exporting") return;
@@ -185,7 +195,7 @@ export function useNativeOverlayExport({
           const startRes = await fetch(`${base}/start`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ width, height, fps, inputFps: renderFps, frames: totalFrames }),
+            body: JSON.stringify({ width, height, fps, inputFps: renderFps, frames: totalFrames, codec }),
           }).then((r) => r.json());
           if (!startRes.ok) throw new Error(startRes.error || "the helper rejected the job");
 
@@ -207,6 +217,7 @@ export function useNativeOverlayExport({
             });
             const pixels = ctx.getImageData(0, 0, width, height).data;
             // No Content-Type → CORS "simple request" → no per-frame preflight.
+            // Ordered, awaited POSTs give ordering + backpressure for free.
             const res = await fetch(`${base}/frame`, { method: "POST", body: pixels });
             if (!res.ok) {
               const detail = await res.json().catch(() => ({}));

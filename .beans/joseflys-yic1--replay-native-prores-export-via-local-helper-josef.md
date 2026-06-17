@@ -7,7 +7,7 @@ priority: normal
 tags:
     - replay
 created_at: 2026-06-16T17:23:46Z
-updated_at: 2026-06-17T15:37:59Z
+updated_at: 2026-06-17T16:23:00Z
 ---
 
 Hybrid native export: the browser renders the overlay frames (reusing the
@@ -79,3 +79,24 @@ cuts both render AND transport. The burned-in clock stays correct: stepped's
 1 Hz renders land exactly on whole seconds (== the clock's resolution).
 
 Verified: CLI upsample test (30@15fps → 60@30fps duplicated) + main suite (483).
+
+
+## Encode is the bottleneck → qtrle default (2026-06-17)
+
+Profiled the native export: ffmpeg ProRes 4444 at 1080p encodes ~11 fps (random)
+/ ~25 fps (HUD-like) — that's the wall, not transfer or request count. Batching
+and gzip wouldn't help (ffmpeg encodes the same frames at the same speed).
+QuickTime Animation (qtrle) encodes the same content at ~440-574 fps (~20× faster),
+is lossless, alpha-capable and Resolve-native, and RLE keeps the transparent
+overlay small.
+
+- Helper: qtrle is the default; /start carries a `codec` chosen per job
+  (validated against the known set — key lookup, no arg injection).
+- Client: reverted the frame-batching experiment (request count was never the
+  bottleneck; batching only added Blob-copy overhead) back to ordered
+  frame-per-frame POSTs; removed the temp DEBUG_TIMING/DRY_RUN instrumentation.
+- Modal: added a Codec selector (QuickTime RLE default / ProRes 4444) shown in
+  native mode, with a note on the speed trade-off.
+
+Remaining levers once encode is cheap: render (~6 min Smooth full-flight) →
+Medium/Stepped; and 720p. Tests: helper codec test + main suite green.

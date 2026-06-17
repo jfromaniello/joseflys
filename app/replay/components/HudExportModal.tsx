@@ -9,9 +9,14 @@ import {
   type RecordResolution,
 } from "../types";
 import type { HudExportOptions, HudExportStatus, HudOverlayKind } from "../useHudExport";
-import { NATIVE_HELPER_PORT, type UseNativeOverlayExportResult } from "../useNativeOverlayExport";
+import { NATIVE_HELPER_PORT, type NativeCodec, type UseNativeOverlayExportResult } from "../useNativeOverlayExport";
 import type { OverlayMotion } from "../overlayFrame";
 import { formatUtc } from "../formatTime";
+
+const NATIVE_CODEC_OPTIONS: { value: NativeCodec; label: string }[] = [
+  { value: "qtrle", label: "QuickTime RLE" },
+  { value: "prores4444", label: "ProRes 4444" },
+];
 
 const MOTION_OPTIONS: { value: OverlayMotion; label: string }[] = [
   { value: "smooth", label: "Smooth" },
@@ -104,6 +109,7 @@ export function HudExportModal({
   // Exported window, in elapsed ms from the track start; defaults to the whole flight.
   const [rangeStartMs, setRangeStartMs] = useState(0);
   const [rangeEndMs, setRangeEndMs] = useState(durationMs);
+  const [codec, setCodec] = useState<NativeCodec>("qtrle");
   const [port, setPort] = useState(NATIVE_HELPER_PORT);
 
   const outputSize = recordOutputSize(aspect, resolution);
@@ -447,10 +453,37 @@ export function HudExportModal({
                 <p className="mt-1.5 text-[11px] text-slate-400 leading-tight">
                   {outputMode === "mp4"
                     ? `Exports two ${outputSize.width}×${outputSize.height} MP4s: the overlay over black (fill) and its transparency as white-on-black (matte).`
-                    : `Exports one ${outputSize.width}×${outputSize.height} ProRes 4444 .mov with a real alpha channel.`}
+                    : `Exports one ${outputSize.width}×${outputSize.height} .mov with a real alpha channel.`}
                 </p>
               ) : null}
             </div>
+
+            {outputMode === "native" ? (
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Codec
+                </div>
+                <div className="grid grid-cols-2 gap-1 rounded-md bg-slate-800/60 p-0.5">
+                  {NATIVE_CODEC_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setCodec(opt.value)}
+                      className={`px-2 py-1.5 rounded text-xs font-medium cursor-pointer transition-colors ${
+                        codec === opt.value ? "bg-cyan-500 text-slate-950" : "text-gray-300 hover:bg-slate-700"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-1.5 text-[11px] text-slate-400 leading-tight">
+                  {codec === "qtrle"
+                    ? "QuickTime Animation (RLE) — lossless, alpha, and far faster to encode. Best for the overlay."
+                    : "ProRes 4444 — industry standard, but ~20× slower to encode here. Use only if your pipeline needs it."}
+                </p>
+              </div>
+            ) : null}
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
@@ -553,7 +586,7 @@ export function HudExportModal({
                 helper={native.helper}
                 port={port}
                 onPortChange={setPort}
-                onExport={() => native.startExport({ ...buildOptions(), port })}
+                onExport={() => native.startExport({ ...buildOptions(), codec, port })}
               />
             )}
           </div>
