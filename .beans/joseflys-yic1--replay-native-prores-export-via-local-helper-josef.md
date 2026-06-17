@@ -7,7 +7,7 @@ priority: normal
 tags:
     - replay
 created_at: 2026-06-16T17:23:46Z
-updated_at: 2026-06-17T15:15:26Z
+updated_at: 2026-06-17T15:37:59Z
 ---
 
 Hybrid native export: the browser renders the overlay frames (reusing the
@@ -60,3 +60,22 @@ Verified:
 
 Note: Chrome allows loopback HTTP from the HTTPS prod page (127.0.0.1 is
 potentially-trustworthy); dev (http://localhost) has no mixed-content concern.
+
+
+## Overlay motion / render-rate (2026-06-17)
+
+The telemetry is logged at ~1 Hz and linearly interpolated, so rendering every
+output frame mostly produces near-identical tweens. Added an "Overlay motion"
+control decoupling the render rate from the output (camera-matched) rate:
+- smooth  — render every frame (unchanged default).
+- medium  — render ~half, duplicate the rest (≈2× faster, still fluid).
+- stepped — render 1/s (the log's true cadence), hold each (much faster).
+
+`overlayFrame.ts` `renderFpsFor(motion, fps)`. MP4 path re-renders only when the
+content frame advances and feeds duplicate (cheap) frames to the encoders at the
+output rate. Native path renders+sends only the unique frames and the helper's
+ffmpeg duplicates to the output rate (`-framerate inputFps -i - … -r fps`); this
+cuts both render AND transport. The burned-in clock stays correct: stepped's
+1 Hz renders land exactly on whole seconds (== the clock's resolution).
+
+Verified: CLI upsample test (30@15fps → 60@30fps duplicated) + main suite (483).

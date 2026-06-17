@@ -20,6 +20,26 @@ import { drawPfdScene } from "./pfdCanvas";
 /** Which overlay to render: the glass-cockpit PFD or the simple telemetry HUD. */
 export type HudOverlayKind = "pfd" | "hud";
 
+/**
+ * How many distinct frames to render, independent of the output frame rate.
+ * The telemetry is logged at ~1 Hz and interpolated, so rendering every output
+ * frame (`smooth`) spends most of its time on near-identical tweens. Rendering
+ * fewer unique frames and letting the encoder duplicate them to the output rate
+ * cuts the (browser-bound) render cost with little visible change.
+ *
+ * - `smooth`  — one render per output frame (continuous interpolated motion).
+ * - `medium`  — ~half the output rate (≈2× faster), still fairly smooth.
+ * - `stepped` — 1 render per second, matching the raw log cadence (much faster).
+ */
+export type OverlayMotion = "smooth" | "medium" | "stepped";
+
+/** Unique frames to render per second for a motion mode at a given output FPS. */
+export function renderFpsFor(motion: OverlayMotion, outputFps: number): number {
+  if (motion === "stepped") return 1;
+  if (motion === "medium") return Math.max(1, Math.round(outputFps / 2));
+  return outputFps;
+}
+
 /** Fixed export aspect ("screen" has no meaning without a live canvas). */
 export type OverlayAspect = "16:9" | "9:16";
 

@@ -10,7 +10,14 @@ import {
 } from "../types";
 import type { HudExportOptions, HudExportStatus, HudOverlayKind } from "../useHudExport";
 import { NATIVE_HELPER_PORT, type UseNativeOverlayExportResult } from "../useNativeOverlayExport";
+import type { OverlayMotion } from "../overlayFrame";
 import { formatUtc } from "../formatTime";
+
+const MOTION_OPTIONS: { value: OverlayMotion; label: string }[] = [
+  { value: "smooth", label: "Smooth" },
+  { value: "medium", label: "Medium" },
+  { value: "stepped", label: "Stepped" },
+];
 
 const ASPECT_OPTIONS: { value: "16:9" | "9:16"; label: string }[] = [
   { value: "16:9", label: "16:9" },
@@ -90,6 +97,7 @@ export function HudExportModal({
   const [fps, setFps] = useState<HudExportFps>(30);
   const [aspect, setAspect] = useState<"16:9" | "9:16">("16:9");
   const [resolution, setResolution] = useState<RecordResolution>("1080p");
+  const [motion, setMotion] = useState<OverlayMotion>("smooth");
   const [showTitle, setShowTitle] = useState(true);
   const [title, setTitle] = useState(defaultTitle);
   const [watermark, setWatermark] = useState(true);
@@ -148,6 +156,7 @@ export function HudExportModal({
     watermark,
     rangeStartMs,
     rangeEndMs,
+    motion,
   });
 
   return (
@@ -372,6 +381,33 @@ export function HudExportModal({
               <p className="mt-1.5 text-[11px] text-slate-400 leading-tight">
                 Match your camera&apos;s frame rate. Time always runs at 1× so the burned-in UTC clock lines up
                 with your footage.
+              </p>
+            </div>
+
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                Overlay motion
+              </div>
+              <div className="grid grid-cols-3 gap-1 rounded-md bg-slate-800/60 p-0.5">
+                {MOTION_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setMotion(opt.value)}
+                    className={`px-2 py-1.5 rounded text-xs font-medium cursor-pointer transition-colors ${
+                      motion === opt.value ? "bg-cyan-500 text-slate-950" : "text-gray-300 hover:bg-slate-700"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-1.5 text-[11px] text-slate-400 leading-tight">
+                {motion === "smooth"
+                  ? "Renders every frame — smoothest motion, slowest export."
+                  : motion === "medium"
+                    ? "Renders ~half the frames and duplicates the rest — ≈2× faster, still fluid."
+                    : "Renders one frame per second (the log's true rate) and holds it — fastest, telemetry ticks once a second."}
               </p>
             </div>
 

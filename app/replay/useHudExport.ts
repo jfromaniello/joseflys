@@ -3,7 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type HudExportFps, type RecordResolution, type ReplayPoint } from "./types";
 import type { EngineRanges } from "./replayMetrics";
-import { drawOverlayFrame, overlayGeometry, overlayWindow, type HudOverlayKind } from "./overlayFrame";
+import {
+  drawOverlayFrame,
+  overlayGeometry,
+  overlayWindow,
+  renderFpsFor,
+  type HudOverlayKind,
+  type OverlayMotion,
+} from "./overlayFrame";
 import { Mp4Recorder, downloadBlob, isMp4RecordingSupported, yieldToEventLoop } from "./recordReplay";
 import type { CaptureControl } from "./GpxReplayGlobe";
 
@@ -27,6 +34,8 @@ export interface HudExportOptions {
   rangeStartMs: number;
   /** End of the exported window, in elapsed ms from the track start. */
   rangeEndMs: number;
+  /** How many distinct frames to render vs. duplicate to the output rate. */
+  motion: OverlayMotion;
 }
 
 interface UseHudExportParams {
@@ -131,7 +140,7 @@ export function useHudExport({
   }, [disposeRecorders, revokeUrls]);
 
   const startExport = useCallback(
-    ({ overlay, fps, aspect, resolution, title, watermark, rangeStartMs, rangeEndMs }: HudExportOptions) => {
+    ({ overlay, fps, aspect, resolution, title, watermark, rangeStartMs, rangeEndMs, motion }: HudExportOptions) => {
       const { durationMs: duration } = latest.current;
       if (!supported || duration <= 0 || status === "exporting" || status === "encoding") {
         return;
@@ -239,7 +248,7 @@ export function useHudExport({
         // i / fps seconds of flight time, so the exported window produces a
         // clip of the same length that lines up with the camera's clock.
         const { startMs: start, durationMs: dur } = latest.current;
-        const { frameIntervalMs, windowStartMs, totalFrames } = overlayWindow({
+        const { windowStartMs, totalFrames } = overlayWindow({
           durationMs: dur,
           rangeStartMs,
           rangeEndMs,
@@ -248,12 +257,21 @@ export function useHudExport({
         const frameDurMicros = Math.round(1_000_000 / fps);
         // Absolute time of the first exported frame (for the burned-in UTC clock).
         const windowStartAbsMs = start + windowStartMs;
+        // Render unique frames at the motion rate; the encoder gets the full
+        // output rate, with frames repeated when the content hasn't advanced.
+        const renderFps = renderFpsFor(motion, fps);
+        const contentIntervalMs = 1000 / renderFps;
+        let lastContent = -1;
 
         const exportStartedAt = performance.now();
         try {
           for (let i = 0; i < totalFrames; i += 1) {
             if (abortRef.current) return;
-            composeFrame(windowStartAbsMs + i * frameIntervalMs);
+            const content = Math.floor((i * renderFps) / fps);
+            if (content !== lastContent) {
+              lastContent = content;
+              composeFrame(windowStartAbsMs + content * contentIntervalMs);
+            }
             const keyFrame = i % (fps * 2) === 0;
             // Both encoders run on their own internal threads — feed them in
             // parallel so neither sits idle while the other applies backpressure.

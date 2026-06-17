@@ -7,8 +7,10 @@ import {
   drawOverlayFrame,
   overlayGeometry,
   overlayWindow,
+  renderFpsFor,
   type HudOverlayKind,
   type OverlayAspect,
+  type OverlayMotion,
 } from "./overlayFrame";
 import { yieldToEventLoop } from "./recordReplay";
 import type { CaptureControl } from "./GpxReplayGlobe";
@@ -35,6 +37,8 @@ export interface NativeExportOptions {
   watermark: boolean;
   rangeStartMs: number;
   rangeEndMs: number;
+  /** How many distinct frames to render vs. duplicate to the output rate. */
+  motion: OverlayMotion;
   port: number;
 }
 
@@ -133,7 +137,8 @@ export function useNativeOverlayExport({
 
   const startExport = useCallback(
     (options: NativeExportOptions) => {
-      const { overlay, fps, aspect, resolution, title, watermark, rangeStartMs, rangeEndMs, port } = options;
+      const { overlay, fps, aspect, resolution, title, watermark, rangeStartMs, rangeEndMs, motion, port } =
+        options;
       const { durationMs: dur } = latest.current;
       if (dur <= 0 || status === "exporting") return;
 
@@ -164,19 +169,23 @@ export function useNativeOverlayExport({
       void (async () => {
         captureControlRef.current?.setRenderPaused(true);
         try {
-          const { startMs: start, durationMs: trackDur } = latest.current;
+          const { startMs: start } = latest.current;
+          // Render unique frames at the motion rate; ffmpeg duplicates them up
+          // to the output FPS (-framerate inputFps -i - … -r fps), so we render
+          // and send far fewer frames for medium/stepped.
+          const renderFps = renderFpsFor(motion, fps);
           const { frameIntervalMs, windowStartMs, totalFrames } = overlayWindow({
-            durationMs: trackDur,
+            durationMs: latest.current.durationMs,
             rangeStartMs,
             rangeEndMs,
-            fps,
+            fps: renderFps,
           });
           const windowStartAbsMs = start + windowStartMs;
 
           const startRes = await fetch(`${base}/start`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ width, height, fps, frames: totalFrames }),
+            body: JSON.stringify({ width, height, fps, inputFps: renderFps, frames: totalFrames }),
           }).then((r) => r.json());
           if (!startRes.ok) throw new Error(startRes.error || "the helper rejected the job");
 
