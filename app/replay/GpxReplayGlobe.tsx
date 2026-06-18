@@ -46,6 +46,13 @@ export interface CaptureControl {
    * main thread and the GPU, slowing the export several-fold.
    */
   setRenderPaused: (paused: boolean) => void;
+  /**
+   * Clips the rendered trail (polyline + altitude wall) so it begins at this
+   * absolute track time instead of the flight's first point. Used when recording
+   * a sub-segment so the video doesn't show the path flown before the window.
+   * Pass null to restore the full-flight trail.
+   */
+  setTrailStartTime: (timeMs: number | null) => void;
 }
 
 type DeviceOrientationEventWithPermission = typeof DeviceOrientationEvent & {
@@ -154,6 +161,12 @@ export function GpxReplayGlobe({
   const wallFloorsRef = useRef<number[]>([]);
   const markerPositionRef = useRef<import("cesium").Cartesian3 | null>(null);
   const lastRenderedIndexRef = useRef<number>(-1);
+  // When recording a sub-segment, the trail starts here (absolute track time)
+  // instead of at point 0; null renders the full flight. `trailBaseStartRef` is
+  // the whole-point index the base path currently starts at, so a change forces
+  // an incremental rebuild from the new lower bound.
+  const trailStartTimeMsRef = useRef<number | null>(null);
+  const trailBaseStartRef = useRef<number>(0);
   const fittedRef = useRef(false);
   // Saved container styles + resolutionScale while a fixed recording viewport is
   // applied (see CaptureControl.setRecordingSize). Kept in a ref so the restore
@@ -879,46 +892,74 @@ export function GpxReplayGlobe({
       const interpolated = getInterpolatedPoint(pts, targetBaseIndex, timeMs);
       if (!interpolated) return;
 
-      const lastRendered = lastRenderedIndexRef.current;
+      // Render altitude for an interpolated position, clamped above the local
+      // ground (ground interpolated from the pre-sampled terrain between the
+      // bracketing points). Returns both the altitude and the floor below it.
+      const altAndFloorAt = (p: { lon: number; lat: number; ele: number; timeMs: number }, baseIndex: number) => {
+        const from = pts[baseIndex];
+        const to = pts[baseIndex + 1];
+        const t =
+          to && to.timeMs > from.timeMs
+            ? Math.max(0, Math.min(1, (p.timeMs - from.timeMs) / (to.timeMs - from.timeMs)))
+            : 0;
+        const gFrom = groundHeightAt(from.lon, from.lat, baseIndex);
+        const gTo = to ? groundHeightAt(to.lon, to.lat, baseIndex + 1) : gFrom;
+        const ground =
+          gFrom !== undefined ? (gTo !== undefined ? gFrom + (gTo - gFrom) * t : gFrom) : undefined;
+        const base = p.ele || 0;
+        const alt = ground !== undefined ? Math.max(base, ground + GROUND_CLEARANCE_M) : base;
+        return { alt, floor: ground !== undefined ? ground : alt };
+      };
+
+      // Clipped trail: when recording a sub-segment the trace starts at the
+      // segment-start position (an interpolated vertex) rather than the flight's
+      // first point. `baseStartIndex` is the first whole point strictly after it.
+      const trailStart = trailStartTimeMsRef.current;
+      let baseStartIndex = 0;
+      let startVertex: import("cesium").Cartesian3 | null = null;
+      let startFloor = 0;
+      if (trailStart !== null && trailStart > pts[0].timeMs) {
+        const sClamped = Math.max(0, Math.min(findIndexAtTime(pts, trailStart), pts.length - 1));
+        const interpStart = getInterpolatedPoint(pts, sClamped, trailStart);
+        if (interpStart) {
+          const { alt, floor } = altAndFloorAt(interpStart, sClamped);
+          startVertex = Cesium.Cartesian3.fromDegrees(interpStart.lon, interpStart.lat, alt);
+          startFloor = floor;
+          baseStartIndex = sClamped + 1;
+        }
+      }
+
       const addBasePoint = (i: number) => {
         const ground = groundHeightAt(pts[i].lon, pts[i].lat, i);
         const alt = ground !== undefined ? Math.max(pts[i].ele || 0, ground + GROUND_CLEARANCE_M) : pts[i].ele || 0;
         renderedPathRef.current.push(Cesium.Cartesian3.fromDegrees(pts[i].lon, pts[i].lat, alt));
         baseFloorsRef.current.push(ground !== undefined ? ground : alt);
       };
-      if (lastRendered === -1 || targetBaseIndex < lastRendered) {
+
+      const lastRendered = lastRenderedIndexRef.current;
+      const baseChanged = trailBaseStartRef.current !== baseStartIndex;
+      trailBaseStartRef.current = baseStartIndex;
+      if (lastRendered === -1 || targetBaseIndex < lastRendered || baseChanged) {
         renderedPathRef.current = [];
         baseFloorsRef.current = [];
-        for (let i = 0; i <= targetBaseIndex; i += 1) addBasePoint(i);
+        for (let i = baseStartIndex; i <= targetBaseIndex; i += 1) addBasePoint(i);
       } else if (targetBaseIndex > lastRendered) {
-        for (let i = lastRendered + 1; i <= targetBaseIndex; i += 1) addBasePoint(i);
+        for (let i = Math.max(lastRendered + 1, baseStartIndex); i <= targetBaseIndex; i += 1) addBasePoint(i);
       }
       lastRenderedIndexRef.current = targetBaseIndex;
 
-      // Head/marker altitude: true GPS altitude, clamped above the ground. The
-      // ground is interpolated from the most-detailed pre-sampled terrain between
-      // the bracketing points (falling back to the live globe height).
-      const from = pts[targetBaseIndex];
-      const to = pts[targetBaseIndex + 1];
-      const t =
-        to && to.timeMs > from.timeMs
-          ? Math.max(0, Math.min(1, (timeMs - from.timeMs) / (to.timeMs - from.timeMs)))
-          : 0;
-      const gFrom = groundHeightAt(from.lon, from.lat, targetBaseIndex);
-      const gTo = to ? groundHeightAt(to.lon, to.lat, targetBaseIndex + 1) : gFrom;
-      const headGround =
-        gFrom !== undefined ? (gTo !== undefined ? gFrom + (gTo - gFrom) * t : gFrom) : undefined;
-      const headBase = interpolated.ele || 0;
-      const headAlt =
-        headGround !== undefined ? Math.max(headBase, headGround + GROUND_CLEARANCE_M) : headBase;
+      // Head/marker altitude at the interpolated current position.
+      const { alt: headAlt, floor: headFloor } = altAndFloorAt(interpolated, targetBaseIndex);
 
       displayPathRef.current = [
+        ...(startVertex ? [startVertex] : []),
         ...renderedPathRef.current,
         Cesium.Cartesian3.fromDegrees(interpolated.lon, interpolated.lat, headAlt),
       ];
       wallFloorsRef.current = [
+        ...(startVertex ? [startFloor] : []),
         ...baseFloorsRef.current,
-        headGround !== undefined ? headGround : headAlt,
+        headFloor,
       ];
       markerPositionRef.current = Cesium.Cartesian3.fromDegrees(
         interpolated.lon,
@@ -1154,6 +1195,10 @@ export function GpxReplayGlobe({
         const viewer = viewerRef.current;
         if (!viewer) return;
         viewer.useDefaultRenderLoop = !paused;
+      },
+      setTrailStartTime: (timeMs: number | null) => {
+        trailStartTimeMsRef.current = timeMs;
+        viewerRef.current?.scene.requestRender();
       },
     };
 

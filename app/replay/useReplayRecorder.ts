@@ -152,6 +152,7 @@ export function useReplayRecorder({
     abortRef.current = true;
     cleanupLoop();
     releaseViewport();
+    captureControlRef.current?.setTrailStartTime(null);
     recorderRef.current?.dispose();
     recorderRef.current = null;
     if (resultUrlRef.current) {
@@ -162,12 +163,12 @@ export function useReplayRecorder({
     setError(null);
     setProgress(0);
     setStatus("idle");
-  }, [cleanupLoop, releaseViewport]);
+  }, [cleanupLoop, releaseViewport, captureControlRef]);
 
   const startRecording = useCallback(
     ({ speed: speedMultiplier, showTelemetry, quality, aspect, resolution, rangeStartMs, rangeEndMs }: RecordOptions) => {
       const canvas = canvasRef.current;
-      const { durationMs: duration } = latest.current;
+      const { durationMs: duration, startMs: trackStart } = latest.current;
       if (!supported || !canvas || duration <= 0 || status === "recording" || status === "encoding") {
         return;
       }
@@ -176,6 +177,10 @@ export function useReplayRecorder({
       const rangeStart = Math.max(0, Math.min(rangeStartMs ?? 0, duration));
       const rangeEnd = Math.max(rangeStart, Math.min(rangeEndMs ?? duration, duration));
       const windowMs = rangeEnd - rangeStart;
+
+      // Clip the trail/wall to the recorded window so the video doesn't show the
+      // path flown before the segment (full flight when starting at the top).
+      captureControlRef.current?.setTrailStartTime(rangeStart > 0 ? trackStart + rangeStart : null);
 
       // Fixed presets need the globe controller to pin the viewport size.
       const output = recordOutputSize(aspect, resolution);
@@ -242,6 +247,7 @@ export function useReplayRecorder({
 
       const finishRecording = async (recorder: Mp4Recorder) => {
         releaseViewport();
+        captureControlRef.current?.setTrailStartTime(null);
         if (abortRef.current) return;
         setStatus("encoding");
         try {
@@ -331,6 +337,7 @@ export function useReplayRecorder({
           } catch (err) {
             control.end();
             releaseViewport();
+            captureControlRef.current?.setTrailStartTime(null);
             recorder.dispose();
             recorderRef.current = null;
             if (abortRef.current) return;
@@ -370,6 +377,7 @@ export function useReplayRecorder({
             recorder.addFrame(composite, tMicros, frameIndex % (FPS * 2) === 0).catch((err) => {
               cleanupLoop();
               releaseViewport();
+              captureControlRef.current?.setTrailStartTime(null);
               if (abortRef.current) return;
               setStatus("error");
               setError(err instanceof Error ? err.message : "Encoding failed.");
