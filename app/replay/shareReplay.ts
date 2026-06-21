@@ -15,6 +15,8 @@ export interface ShareOptions {
   chaseDistance: number;
   /** Whether the altitude wall overlay is on. */
   showWall: boolean;
+  /** Whether the cyan track polyline is on. */
+  showTrack: boolean;
 }
 
 /**
@@ -50,6 +52,7 @@ export function buildShareUrl(shortUrl: string, options: ShareOptions): string {
   url.searchParams.set("view", options.viewMode);
   url.searchParams.set("cd", String(Math.round(options.chaseDistance)));
   url.searchParams.set("wall", options.showWall ? "1" : "0");
+  url.searchParams.set("track", options.showTrack ? "1" : "0");
   if (options.camera) {
     url.searchParams.set("cam", serializeCamera(options.camera));
   }

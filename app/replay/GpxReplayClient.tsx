@@ -89,6 +89,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
   const initialCamParam = searchParams.get("cam");
   const initialCdParam = searchParams.get("cd");
   const initialWallParam = searchParams.get("wall");
+  const initialTrackParam = searchParams.get("track");
 
   const initialElapsedMs = useMemo(() => {
     const parsed = initialTParam ? Number.parseInt(initialTParam, 10) : 0;
@@ -139,7 +140,7 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
   const { isFullscreen, wrapperRef: fullscreenWrapperRef, toggleFullscreen } = useFullscreen();
   const [viewMode, setViewMode] = usePersistedViewMode(initialViewParam);
   const [mapStyle, setMapStyle] = usePersistedMapStyle(HAS_GOOGLE_MAPS_KEY);
-  const [showTrack, setShowTrack] = usePersistedShowTrack();
+  const [showTrack, setShowTrack] = usePersistedShowTrack(initialTrackParam);
   const [showWall, setShowWall] = usePersistedShowWall(initialWallParam);
   const [showPfd, setShowPfd] = usePersistedShowPfd();
   const [chaseDistance, setChaseDistance] = usePersistedChaseDistance(initialChaseDistance);
@@ -426,9 +427,10 @@ export function GpxReplayClient({ initialGpx, initialGpxName }: GpxReplayClientP
         camera: cameraStateRef.current,
         chaseDistance,
         showWall,
+        showTrack,
       });
     },
-    [rawGpx, clampedElapsedMs, speed, viewMode, chaseDistance, showWall]
+    [rawGpx, clampedElapsedMs, speed, viewMode, chaseDistance, showWall, showTrack]
   );
 
   const canShare = points.length >= 2 && rawGpx.length > 0;

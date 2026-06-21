@@ -85,19 +85,23 @@ export function usePersistedMapStyle(hasGoogleMapsKey: boolean): [MapStyle, (sty
 
 /**
  * Whether the cyan track polyline is shown, persisted to localStorage (default
- * on). Same SSR-safe mount-hydration approach as {@link usePersistedViewMode}.
+ * on). A `track` URL param ("1"/"0") wins and suppresses the stored value, so
+ * shared links honor the sender's choice. Same SSR-safe mount-hydration
+ * approach as {@link usePersistedViewMode}.
  */
-export function usePersistedShowTrack(): [boolean, (value: boolean) => void] {
-  const [showTrack, setShowTrack] = useState(true);
+export function usePersistedShowTrack(urlParam: string | null): [boolean, (value: boolean) => void] {
+  const fromUrl = urlParam === "1" || urlParam === "true";
+  const [showTrack, setShowTrack] = useState(urlParam === "1" || urlParam === "0" ? fromUrl : true);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (urlParam === "1" || urlParam === "0") return; // URL wins
     const stored = window.localStorage.getItem(SHOW_TRACK_KEY);
     if (stored === null) return;
     // One-shot hydration from an external store on mount (see note above).
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setShowTrack(stored === "true");
-  }, []);
+  }, [urlParam]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
