@@ -114,10 +114,13 @@ function recordedRollRad(points: ReplayPoint[], timeMs: number): number {
   return rollDeg === null ? 0 : (rollDeg * Math.PI) / 180;
 }
 
-/** Recorded pitch in radians, or `null` for tracks without attitude data. */
-function recordedPitchRad(points: ReplayPoint[], timeMs: number): number | null {
-  const pitchDeg = sampleField(points, timeMs, "pitchDeg");
-  return pitchDeg === null ? null : (pitchDeg * Math.PI) / 180;
+// Pitch (radians) the cockpit camera tilts to. Prefers the recorded AHRS pitch
+// (Garmin CSV); for plain GPX without attitude it falls back to the flight-path
+// angle estimated from the climb/descent gradient, so the view points along the
+// aircraft's trajectory instead of staying pinned to the horizon. Mirrors the
+// estimate used to orient the 3D model. `null` only when neither is derivable.
+function cockpitPitchRad(points: ReplayPoint[], timeMs: number): number | null {
+  return estimateAttitude(points, timeMs)?.pitchRad ?? null;
 }
 
 export function GpxReplayGlobe({
@@ -1072,7 +1075,7 @@ export function GpxReplayGlobe({
         cockpitPitchOffsetRef.current,
         chaseDistanceRef.current,
         mode === "cockpit" ? recordedRollRad(pts, timeMs) : 0,
-        mode === "cockpit" ? recordedPitchRad(pts, timeMs) : null
+        mode === "cockpit" ? cockpitPitchRad(pts, timeMs) : null
       );
       viewer.camera.setView({
         destination: pose.destination,
@@ -1265,7 +1268,7 @@ export function GpxReplayGlobe({
         cockpitPitchOffsetRef.current,
         chaseDistanceRef.current,
         mode === "cockpit" ? recordedRollRad(pointsNow, currentMs) : 0,
-        mode === "cockpit" ? recordedPitchRad(pointsNow, currentMs) : null
+        mode === "cockpit" ? cockpitPitchRad(pointsNow, currentMs) : null
       );
 
       if (mode !== camCurrentModeRef.current) {
