@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { PageLayout } from "../components/PageLayout";
 import { Footer } from "../components/Footer";
 import { CalculatorPageHeader } from "../components/CalculatorPageHeader";
@@ -10,6 +11,7 @@ import { ShareDropdownButton } from "../components/ShareDropdownButton";
 import {
   loadFlightPlans,
   deleteFlightPlan,
+  createReverseFlightPlan,
   type FlightPlan,
   buildLocalChartUrl,
 } from "@/lib/flightPlan";
@@ -20,9 +22,11 @@ import {
   ClockIcon,
   CalendarIcon,
   MapIcon,
+  ArrowsRightLeftIcon,
 } from "@heroicons/react/24/outline";
 
 export function FlightPlansClient() {
+  const router = useRouter();
   const [flightPlans, setFlightPlans] = useState<FlightPlan[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -41,6 +45,13 @@ export function FlightPlansClient() {
       if (success) {
         setFlightPlans(flightPlans.filter((p) => p.id !== planId));
       }
+    }
+  };
+
+  const handleReverse = (plan: FlightPlan) => {
+    const reversed = createReverseFlightPlan(plan);
+    if (reversed) {
+      router.push(`/flight-plans/${reversed.id}`);
     }
   };
 
@@ -199,6 +210,15 @@ export function FlightPlansClient() {
                         >
                           <MapIcon className="w-5 h-5" />
                         </Link>
+                      )}
+                      {plan.legs.length > 0 && (
+                        <button
+                          onClick={() => handleReverse(plan)}
+                          className="p-2 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 rounded-lg transition-colors cursor-pointer"
+                          title="Create reverse flight plan"
+                        >
+                          <ArrowsRightLeftIcon className="w-5 h-5" />
+                        </button>
                       )}
                       <Link
                         href={`/flight-plans/${plan.id}`}
