@@ -11,6 +11,7 @@ import {
   ReferenceLine,
   Customized,
 } from "recharts";
+import { calculateISATemp, calculateDA, FT_TO_M } from "@/lib/isaCalculations";
 
 // Type for axis scale info from Recharts
 interface AxisInfo {
@@ -23,8 +24,7 @@ function generateDensityAltitudeData() {
   for (let oat = -18; oat <= 43; oat += 1) {
     const point: Record<string, number> = { oat };
     for (let pa = 0; pa <= 14000; pa += 1000) {
-      const isaTemp = 15 - 1.98 * (pa / 1000);
-      const da = pa + 118.8 * (oat - isaTemp);
+      const da = calculateDA(pa, oat, calculateISATemp(pa));
       point[`pa${pa}`] = Math.round(da);
     }
     data.push(point);
@@ -36,7 +36,7 @@ function generateDensityAltitudeData() {
 function generateISALine() {
   const data = [];
   for (let da = 0; da <= 15000; da += 500) {
-    const isaTemp = 15 - 1.98 * (da / 1000);
+    const isaTemp = calculateISATemp(da);
     // Round to 1 decimal to avoid floating point issues
     data.push({ oat: Math.round(isaTemp * 10) / 10, da });
   }
@@ -98,6 +98,13 @@ export function ISAExplanation({
   const daChartData = useMemo(() => generateDensityAltitudeData(), []);
   const isaLineData = useMemo(() => generateISALine(), []);
 
+  // Rule-of-thumb values (shown in the quick approximations section only)
+  const approxPA = qnhFormat === "inHg"
+    ? elevVal + (29.92 - qnhVal) * 1000
+    : elevVal + (1013.25 - qnhVal) * 27;
+  const approxIsaTemp = 15 - 1.98 * (approxPA / 1000);
+  const approxDA = approxPA + 118.8 * (tempVal - approxIsaTemp);
+
   return (
     <div className="mt-4 p-4 rounded-xl bg-slate-900/50 border border-gray-700 space-y-4">
       {/* Quick Approximations Section */}
@@ -106,26 +113,10 @@ export function ISAExplanation({
           Quick Approximations (Rules of Thumb)
         </h4>
 
-        {/* ISA Temperature */}
-        <div className="mb-4">
-          <h5 className="text-xs font-semibold mb-2" style={{ color: "oklch(0.8 0.1 230)" }}>
-            1. ISA Temperature
-          </h5>
-          <p className="text-xs mb-2" style={{ color: "oklch(0.65 0.02 240)" }}>
-            Standard temperature decreases ~2°C per 1,000 ft from 15°C at sea level.
-          </p>
-          <div className="font-mono text-xs p-2 rounded bg-slate-800/50" style={{ color: "oklch(0.75 0.05 180)" }}>
-            ISA Temp = 15 - (1.98 × Elevation ÷ 1000)
-          </div>
-          <p className="text-xs mt-2" style={{ color: "oklch(0.6 0.02 240)" }}>
-            → 15 - (1.98 × {elevVal.toFixed(0)} ÷ 1000) = <strong style={{ color: "white" }}>{isaTemp.toFixed(1)}°C</strong>
-          </p>
-        </div>
-
         {/* Pressure Altitude (Quick) */}
         <div className="mb-4">
           <h5 className="text-xs font-semibold mb-2" style={{ color: "oklch(0.8 0.1 230)" }}>
-            2. Pressure Altitude (Approximation)
+            1. Pressure Altitude
           </h5>
           <p className="text-xs mb-2" style={{ color: "oklch(0.65 0.02 240)" }}>
             {qnhFormat === "inHg" ? (
@@ -143,27 +134,44 @@ export function ISAExplanation({
           </div>
           <p className="text-xs mt-2" style={{ color: "oklch(0.6 0.02 240)" }}>
             {qnhFormat === "inHg" ? (
-              <>→ {elevVal.toFixed(0)} + (29.92 - {qnhVal.toFixed(2)}) × 1000 ≈ {(elevVal + (29.92 - qnhVal) * 1000).toFixed(0)} ft</>
+              <>→ {elevVal.toFixed(0)} + (29.92 - {qnhVal.toFixed(2)}) × 1000 ≈ {approxPA.toFixed(0)} ft</>
             ) : (
-              <>→ {elevVal.toFixed(0)} + (1013.25 - {qnhVal.toFixed(2)}) × 27 ≈ {(elevVal + (1013.25 - qnhVal) * 27).toFixed(0)} ft</>
+              <>→ {elevVal.toFixed(0)} + (1013.25 - {qnhVal.toFixed(2)}) × 27 ≈ {approxPA.toFixed(0)} ft</>
             )}
           </p>
         </div>
 
-        {/* Density Altitude */}
+        {/* ISA Temperature at PA (Quick) */}
+        <div className="mb-4">
+          <h5 className="text-xs font-semibold mb-2" style={{ color: "oklch(0.8 0.1 230)" }}>
+            2. ISA Temperature at Pressure Altitude
+          </h5>
+          <p className="text-xs mb-2" style={{ color: "oklch(0.65 0.02 240)" }}>
+            Standard temperature decreases ~2°C per 1,000 ft from 15°C at sea level.
+            Use the pressure altitude, not the field elevation.
+          </p>
+          <div className="font-mono text-xs p-2 rounded bg-slate-800/50" style={{ color: "oklch(0.75 0.05 180)" }}>
+            ISA Temp ≈ 15 - (1.98 × PA ÷ 1000)
+          </div>
+          <p className="text-xs mt-2" style={{ color: "oklch(0.6 0.02 240)" }}>
+            → 15 - (1.98 × {approxPA.toFixed(0)} ÷ 1000) ≈ {approxIsaTemp.toFixed(1)}°C
+          </p>
+        </div>
+
+        {/* Density Altitude (Quick) */}
         {da !== null && (
           <div>
             <h5 className="text-xs font-semibold mb-2" style={{ color: "oklch(0.8 0.1 230)" }}>
               3. Density Altitude
             </h5>
             <p className="text-xs mb-2" style={{ color: "oklch(0.65 0.02 240)" }}>
-              Adjusts PA for temperature deviation from ISA (~120 ft per °C).
+              Adjusts PA for temperature deviation from ISA at PA (~120 ft per °C).
             </p>
             <div className="font-mono text-xs p-2 rounded bg-slate-800/50" style={{ color: "oklch(0.75 0.05 180)" }}>
-              DA = PA + 118.8 × (OAT - ISA Temp)
+              DA ≈ PA + 118.8 × (OAT - ISA Temp at PA)
             </div>
             <p className="text-xs mt-2" style={{ color: "oklch(0.6 0.02 240)" }}>
-              → {pa.toFixed(0)} + 118.8 × ({tempVal.toFixed(1)} - {isaTemp.toFixed(1)}) = <strong style={{ color: "white" }}>{da.toFixed(0)} ft</strong>
+              → {approxPA.toFixed(0)} + 118.8 × ({tempVal.toFixed(1)} - {approxIsaTemp.toFixed(1)}) ≈ {approxDA.toFixed(0)} ft
             </p>
           </div>
         )}
@@ -175,7 +183,7 @@ export function ISAExplanation({
           Density Altitude Chart
         </h4>
         <p className="text-xs mb-3" style={{ color: "oklch(0.65 0.02 240)" }}>
-          Diagonal lines show Pressure Altitude. The red line is ISA standard temperature.
+          Diagonal lines show Pressure Altitude (DA by linear approximation). The red line is ISA standard temperature.
           {pa >= 0 && pa <= 15000 && (
             <>
               {" "}<strong style={{ color: "#22c55e" }}>Green point (PA)</strong> = {pa?.toFixed(0)} ft on ISA line.
@@ -268,7 +276,7 @@ export function ISAExplanation({
                 />
                 {/* PA point - always show on ISA line (green) */}
                 {pa >= 0 && pa <= 15000 && (() => {
-                  const isaTempForPA = 15 - 1.98 * (pa / 1000);
+                  const isaTempForPA = isaTemp;
                   if (isaTempForPA < -18 || isaTempForPA > 43) return null;
                   return (
                     <>
@@ -365,11 +373,13 @@ export function ISAExplanation({
       {/* Actual ISA Barometric Formula Section */}
       <div className="pt-4 border-t border-gray-700">
         <h4 className="text-sm font-semibold mb-3" style={{ color: "oklch(0.75 0.15 130)" }}>
-          Exact ISA Barometric Formula (Used by this Calculator)
+          Method Used by this Calculator
         </h4>
         <p className="text-xs mb-3" style={{ color: "oklch(0.65 0.02 240)" }}>
-          This calculator uses the full International Standard Atmosphere (ISA) barometric formula,
-          which is more accurate than the linear approximations above, especially at extreme pressure differences.
+          Pressure altitude uses the full International Standard Atmosphere (ISA) barometric formula,
+          which is more accurate than the 1,000 ft/inHg rule, especially at extreme pressure differences.
+          ISA temperature is then evaluated at that pressure altitude, and density altitude is
+          estimated with the linear 118.8 ft/°C approximation.
         </p>
 
         {/* Constants */}
@@ -389,7 +399,7 @@ export function ISAExplanation({
         {/* Pressure Altitude Formula */}
         <div className="mb-4">
           <h5 className="text-xs font-semibold mb-2" style={{ color: "oklch(0.7 0.1 230)" }}>
-            Pressure Altitude Calculation
+            Pressure Altitude (ISA barometric formula)
           </h5>
           <p className="text-xs mb-2" style={{ color: "oklch(0.55 0.02 240)" }}>
             Step 1: Calculate actual pressure at indicated altitude using barometric formula:
@@ -416,28 +426,46 @@ export function ISAExplanation({
           </p>
         </div>
 
+        {/* ISA Temperature at PA */}
+        <div className="mb-4">
+          <h5 className="text-xs font-semibold mb-2" style={{ color: "oklch(0.7 0.1 230)" }}>
+            ISA Temperature at Pressure Altitude
+          </h5>
+          <p className="text-xs mb-2" style={{ color: "oklch(0.55 0.02 240)" }}>
+            The ISA reference temperature is taken at the pressure altitude (not the field elevation):
+          </p>
+          <div className="font-mono text-xs p-2 rounded bg-slate-800/50" style={{ color: "oklch(0.75 0.05 180)" }}>
+            ISA_Temp = 15 - L × PA_m
+          </div>
+          <p className="text-xs mt-2" style={{ color: "oklch(0.6 0.02 240)" }}>
+            → 15 - 0.0065 × {(pa * FT_TO_M).toFixed(1)} m = <strong style={{ color: "white" }}>{isaTemp.toFixed(1)}°C</strong>
+          </p>
+        </div>
+
         {/* Density Altitude Formula */}
         {da !== null && (
           <div>
             <h5 className="text-xs font-semibold mb-2" style={{ color: "oklch(0.7 0.1 230)" }}>
-              Density Altitude Calculation
+              Density Altitude (linear approximation)
             </h5>
             <p className="text-xs mb-2" style={{ color: "oklch(0.55 0.02 240)" }}>
-              DA is calculated using the temperature deviation from ISA:
+              DA is estimated from the temperature deviation from ISA at the pressure altitude,
+              using ~118.8 ft per °C. This is an approximation, not an exact density calculation:
             </p>
             <div className="font-mono text-xs p-2 rounded bg-slate-800/50" style={{ color: "oklch(0.75 0.05 180)" }}>
-              DA = PA + 118.8 × (OAT - ISA_Temp)
+              DA ≈ PA + 118.8 × (OAT - ISA_Temp at PA)
             </div>
             <p className="text-xs mt-2" style={{ color: "oklch(0.6 0.02 240)" }}>
-              → {pa.toFixed(0)} + 118.8 × ({tempVal.toFixed(1)} - {isaTemp.toFixed(1)}) = <strong style={{ color: "white" }}>{da.toFixed(0)} ft</strong>
+              → {pa.toFixed(0)} + 118.8 × ({tempVal.toFixed(1)} - {isaTemp.toFixed(1)}) ≈ <strong style={{ color: "white" }}>{da.toFixed(0)} ft</strong>
             </p>
           </div>
         )}
       </div>
 
       <p className="text-xs pt-2 border-t border-gray-700" style={{ color: "oklch(0.5 0.02 240)" }}>
-        The linear approximations are quick rules of thumb. This calculator uses the full ISA barometric equation for accuracy,
-        which can differ by 50-100+ ft from approximations at extreme pressure conditions.
+        The quick approximations are rules of thumb. This calculator uses the full ISA barometric equation for pressure altitude,
+        which can differ by 50-100+ ft from the linear rule at extreme pressure conditions. Density altitude remains a linear
+        approximation based on the ISA temperature at pressure altitude.
       </p>
     </div>
   );

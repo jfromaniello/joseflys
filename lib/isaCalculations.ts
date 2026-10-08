@@ -129,11 +129,15 @@ export function getQNHRange(qnh: number): { min: number; max: number; unit: stri
 }
 
 /**
- * Calculate ISA temperature at given elevation
- * ISA standard: 15°C at sea level, decreasing 1.98°C per 1000 ft
+ * Calculate ISA temperature (°C) at a given altitude.
+ * ISA standard: 15°C at sea level, lapse rate 0.0065 K/m (≈1.98°C per 1000 ft).
+ *
+ * For density altitude, pass the PRESSURE altitude (not field elevation):
+ * the temperature deviation must be measured against ISA at the same
+ * pressure level.
  */
-export function calculateISATemp(elevationFt: number): number {
-  return 15 - 1.98 * (elevationFt / 1000);
+export function calculateISATemp(altitudeFt: number): number {
+  return 15 - ISA_L * altitudeFt * FT_TO_M;
 }
 
 /**
@@ -171,10 +175,10 @@ export function calculatePA(indicatedAltitudeFt: number, qnh: number): number {
 }
 
 /**
- * Calculate Density Altitude
+ * Calculate Density Altitude (linear approximation, ~118.8 ft per °C of ISA deviation)
  * @param pa - Pressure altitude in feet
  * @param tempC - Actual temperature in Celsius
- * @param isaTemp - ISA temperature at this altitude in Celsius
+ * @param isaTemp - ISA temperature at the pressure altitude in Celsius (calculateISATemp(pa))
  */
 export function calculateDA(pa: number, tempC: number, isaTemp: number): number {
   return pa + 118.8 * (tempC - isaTemp);
@@ -185,29 +189,31 @@ export function calculateDA(pa: number, tempC: number, isaTemp: number): number 
  * This is the inverse of calculateDA.
  *
  * Given: DA = PA + 118.8 * (OAT - ISA_temp)
- * Where: ISA_temp = 15 - 1.98 * PA / 1000
+ * Where: ISA_temp = 15 - k * PA, with k = L * FT_TO_M (°C per ft)
  *
  * Substituting and solving for PA:
- * DA = PA + 118.8 * (OAT - 15 + 1.98 * PA / 1000)
- * DA = PA + 118.8 * OAT - 1782 + 0.235224 * PA
- * DA = 1.235224 * PA + 118.8 * OAT - 1782
- * PA = (DA - 118.8 * OAT + 1782) / 1.235224
+ * DA = PA + 118.8 * OAT - 118.8 * 15 + 118.8 * k * PA
+ * PA = (DA - 118.8 * OAT + 1782) / (1 + 118.8 * k)
  *
  * @param da - Density altitude in feet
  * @param tempC - Actual temperature in Celsius
  * @returns Pressure altitude in feet
  */
 export function calculatePAFromDA(da: number, tempC: number): number {
-  return (da - 118.8 * tempC + 1782) / 1.235224;
+  return (da - 118.8 * tempC + 118.8 * 15) / (1 + 118.8 * ISA_L * FT_TO_M);
 }
 
 /**
  * Complete ISA calculation from elevation, QNH, and temperature
- * Returns all relevant values
+ * Returns all relevant values (unrounded; round only for display).
+ *
+ * - Pressure altitude: exact ISA barometric formula
+ * - ISA temperature: evaluated at the pressure altitude
+ * - Density altitude: linear approximation from the ISA deviation at PA
  */
 export function calculateISA(elevationFt: number, qnh: number, tempC: number) {
-  const isaTemp = calculateISATemp(elevationFt);
   const pa = calculatePA(elevationFt, qnh);
+  const isaTemp = calculateISATemp(pa);
   const da = calculateDA(pa, tempC, isaTemp);
 
   return {

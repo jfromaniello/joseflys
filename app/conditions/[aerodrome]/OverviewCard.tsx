@@ -6,7 +6,7 @@ import { MetarData, Runway, Notam, OpenMeteoData, TomorrowData } from "./types";
 import { selectBestRunway, SelectedRunway } from "@/lib/runwayUtils";
 import { WindRoseRunway } from "./WindRoseRunway";
 import { CardAnchor } from "./CardAnchor";
-import { calculatePA, calculateDA, calculateISATemp } from "@/lib/isaCalculations";
+import { calculatePA, calculateISA } from "@/lib/isaCalculations";
 import { getSunPosition, getTimeUntil, type SunPosition } from "@/lib/sun";
 import { decode } from "@rovacc/notam-decoder";
 
@@ -148,8 +148,8 @@ export function OverviewCard({ metar, runways, notams, elevation, lat, lon, open
     ? Math.round(calculatePA(elevation, metar.altim))
     : null;
 
-  const densityAltitude = pressureAltitude != null && metar?.temp != null && elevation != null
-    ? Math.round(calculateDA(pressureAltitude, metar.temp, calculateISATemp(elevation)))
+  const densityAltitude = metar?.altim && metar?.temp != null && elevation != null
+    ? Math.round(calculateISA(elevation, metar.altim, metar.temp).densityAltitude)
     : null;
 
   // DA warning threshold: more than 1000ft above PA or above 5000ft absolute

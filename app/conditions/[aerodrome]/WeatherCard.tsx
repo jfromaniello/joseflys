@@ -1,5 +1,5 @@
 import { OpenMeteoData, TomorrowData } from "./types";
-import { calculatePA, calculateDA, calculateISATemp } from "@/lib/isaCalculations";
+import { calculatePA, calculateISA } from "@/lib/isaCalculations";
 import { CardAnchor } from "./CardAnchor";
 import { getSunPosition } from "@/lib/sun";
 import {
@@ -122,8 +122,8 @@ export function WeatherCard({ openMeteo, tomorrow, loading, elevation, lat, lon 
     ? Math.round(calculatePA(elevation, pressure))
     : null;
 
-  const densityAltitude = pressureAltitude != null && temperature != null && elevation != null
-    ? Math.round(calculateDA(pressureAltitude, temperature, calculateISATemp(elevation)))
+  const densityAltitude = pressure && temperature != null && elevation != null
+    ? Math.round(calculateISA(elevation, pressure, temperature).densityAltitude)
     : null;
 
   // Wind - Tomorrow.io returns m/s, convert to knots

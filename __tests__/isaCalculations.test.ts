@@ -6,6 +6,7 @@ import {
   calculatePA,
   calculateDA,
   calculateISA,
+  calculatePAFromDA,
   isaPressure,
   isaTemperatureK,
   airDensity,
@@ -67,7 +68,11 @@ describe("isaCalculations", () => {
       expect(calculateISATemp(0)).toBe(15);
     });
 
-    it("decreases 1.98°C per 1000 ft", () => {
+    it("uses the exact ISA lapse rate (0.0065 °C/m)", () => {
+      expect(calculateISATemp(1000 / 0.3048)).toBeCloseTo(8.5, 10);
+    });
+
+    it("decreases ~1.98°C per 1000 ft", () => {
       expect(calculateISATemp(1000)).toBeCloseTo(13.02, 2);
       expect(calculateISATemp(5000)).toBeCloseTo(5.1, 1);
       expect(calculateISATemp(10000)).toBeCloseTo(-4.8, 1);
@@ -222,6 +227,70 @@ describe("isaCalculations", () => {
       expect(result.isaTemp).toBeCloseTo(5.1, 1);
       // DA should be much lower due to cold temp
       expect(result.densityAltitude).toBeLessThan(3500);
+    });
+  });
+
+  describe("density altitude uses ISA temperature at pressure altitude", () => {
+    const fToC = (f: number) => ((f - 32) * 5) / 9;
+    const INHG_TO_HPA = 33.8639;
+
+    it("regression: 3894 ft, 30.35 inHg, 25°F → DA ≈ 2092.52 ft (not ~2183 ft)", () => {
+      const oatC = fToC(25); // −3.888889 °C
+      const result = calculateISA(3894, 30.35, oatC);
+
+      expect(result.pressureAltitude).toBeCloseTo(3510.31, 1);
+      // ISA must be evaluated at PA (≈8.045 °C), not at elevation (≈7.285 °C)
+      expect(result.isaTemp).toBeCloseTo(8.045, 3);
+      expect(result.isaTemp).not.toBeCloseTo(calculateISATemp(3894), 1);
+
+      const paM = result.pressureAltitude * 0.3048;
+      const expectedIsa = 15 - 0.0065 * paM;
+      const expectedDA = result.pressureAltitude + 118.8 * (oatC - expectedIsa);
+      expect(result.densityAltitude).toBeCloseTo(expectedDA, 9);
+      expect(result.densityAltitude).toBeCloseTo(2092.52, 1);
+      expect(Math.round(result.densityAltitude)).toBe(2093);
+    });
+
+    it("returns unrounded internal values", () => {
+      const result = calculateISA(3894, 30.35, fToC(25));
+      expect(Number.isInteger(result.pressureAltitude)).toBe(false);
+      expect(Number.isInteger(result.densityAltitude)).toBe(false);
+    });
+
+    it("gives the same result for equivalent QNH in inHg and hPa", () => {
+      const oatC = fToC(25);
+      const inHg = calculateISA(3894, 30.35, oatC);
+      const hPa = calculateISA(3894, 30.35 * INHG_TO_HPA, oatC);
+      expect(hPa.qnhFormat).toBe("hPa");
+      expect(hPa.pressureAltitude).toBeCloseTo(inHg.pressureAltitude, 1);
+      expect(hPa.isaTemp).toBeCloseTo(inHg.isaTemp, 3);
+      expect(hPa.densityAltitude).toBeCloseTo(inHg.densityAltitude, 1);
+    });
+
+    it("gives the same result for equivalent OAT in °F and °C", () => {
+      const fromF = calculateISA(3894, 30.35, fToC(25));
+      const fromC = calculateISA(3894, 30.35, -3.888889);
+      expect(fromC.densityAltitude).toBeCloseTo(fromF.densityAltitude, 3);
+    });
+
+    it.each([
+      [0, 1013.25],
+      [3894, 30.35],
+      [1380, 28.22],
+      [5000, 980],
+      [8000, 29.92],
+      [-200, 1030],
+    ])("DA = PA when OAT equals ISA at PA (elev %d, QNH %d)", (elev, qnh) => {
+      const pa = calculatePA(elev, qnh);
+      const result = calculateISA(elev, qnh, calculateISATemp(pa));
+      expect(result.densityAltitude).toBeCloseTo(result.pressureAltitude, 9);
+    });
+
+    it("calculatePAFromDA inverts calculateDA with ISA at PA", () => {
+      const pa = 3510.31;
+      const oat = -3.888889;
+      const da = calculateDA(pa, oat, calculateISATemp(pa));
+      expect(calculatePAFromDA(da, oat)).toBeCloseTo(pa, 9);
     });
   });
 

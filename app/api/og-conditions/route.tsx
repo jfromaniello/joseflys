@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server';
 import { fetchMetar, getAerodromeByCode, getRunways } from '@/lib/clients';
 import { selectBestRunway } from '@/lib/runwayUtils';
 import { getSunTimes, isVfrLegal, getDaylightPhase } from '@/lib/sun';
-import { calculatePA, calculateDA, calculateISATemp } from '@/lib/isaCalculations';
+import { calculatePA, calculateISA } from '@/lib/isaCalculations';
 
 // export const runtime = 'edge';
 
@@ -41,8 +41,8 @@ export async function GET(request: NextRequest) {
     const pressureAltitude = metar?.altim && elevation != null
       ? Math.round(calculatePA(elevation, metar.altim))
       : null;
-    const densityAltitude = pressureAltitude != null && metar?.temp != null && elevation != null
-      ? Math.round(calculateDA(pressureAltitude, metar.temp, calculateISATemp(elevation)))
+    const densityAltitude = metar?.altim && metar?.temp != null && elevation != null
+      ? Math.round(calculateISA(elevation, metar.altim, metar.temp).densityAltitude)
       : null;
     const daWarning = densityAltitude !== null && pressureAltitude !== null &&
       (densityAltitude - pressureAltitude > 1000 || densityAltitude > 5000);

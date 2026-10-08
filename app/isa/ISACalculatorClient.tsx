@@ -199,7 +199,7 @@ export function ISACalculatorClient({
                     >
                       ISA Temperature
                     </p>
-                    <Tooltip content="The standard temperature at this elevation according to the International Standard Atmosphere model." />
+                    <Tooltip content="The International Standard Atmosphere temperature at the pressure altitude (15°C − 0.0065 °C/m × PA). This is the reference used to compute density altitude." />
                   </div>
                   <p
                     className="text-3xl sm:text-4xl font-bold mb-1"
@@ -211,7 +211,7 @@ export function ISACalculatorClient({
                     className="text-sm"
                     style={{ color: "oklch(0.6 0.02 240)" }}
                   >
-                    °C
+                    °C at PA
                   </p>
                 </div>
 
@@ -224,7 +224,7 @@ export function ISACalculatorClient({
                     >
                       Pressure Altitude
                     </p>
-                    <Tooltip content="The altitude corrected for non-standard pressure. This is what your altimeter reads when set to standard pressure (29.92 inHg / 1013 hPa)." />
+                    <Tooltip content="The altitude corrected for non-standard pressure, computed with the ISA barometric formula. This is what your altimeter reads when set to standard pressure (29.92 inHg / 1013 hPa)." />
                   </div>
                   <p
                     className="text-3xl sm:text-4xl font-bold mb-1"
@@ -250,7 +250,7 @@ export function ISACalculatorClient({
                       >
                         Density Altitude
                       </p>
-                      <Tooltip content="The altitude relative to standard atmosphere conditions where the air density would be equal to the current conditions. High density altitude means reduced aircraft performance." />
+                      <Tooltip content="The altitude in the standard atmosphere where air density equals current conditions. Approximated linearly: PA + 118.8 ft × (OAT − ISA temperature at PA). High density altitude means reduced aircraft performance." />
                     </div>
                     <p
                       className="text-3xl sm:text-4xl font-bold mb-1"
@@ -347,16 +347,19 @@ export function ISACalculatorClient({
               className="text-xs sm:text-sm leading-relaxed"
               style={{ color: "oklch(0.6 0.02 240)" }}
             >
-              <span className="font-semibold">Note:</span> This calculator uses
-              the ISA standard atmosphere model. QNH format is auto-detected
-              (values between 25-35 are treated as inHg, otherwise as hPa).
-              Density altitude is critical for aircraft performance assessment.
+              <span className="font-semibold">Method:</span> Pressure altitude
+              uses the ISA barometric formula. Density altitude uses the common
+              linear approximation DA = PA + 118.8 × (OAT − ISA temp), with the
+              ISA temperature taken at the pressure altitude, so it is an
+              estimate rather than an exact density calculation. QNH format is
+              auto-detected (values between 25-35 are treated as inHg, otherwise
+              as hPa).
             </p>
           </div>
         </div>
       </main>
 
-      <Footer description="ISA calculations based on standard atmosphere model" />
+      <Footer description="Pressure altitude from the ISA barometric formula; density altitude by linear approximation" />
     </PageLayout>
   );
 }

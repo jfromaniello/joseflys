@@ -1,7 +1,7 @@
 import { ArrowPathIcon, MoonIcon } from "@heroicons/react/24/outline";
 import { CardAnchor } from "./CardAnchor";
 import { MetarData } from "./types";
-import { calculatePA, calculateDA, calculateISATemp } from "@/lib/isaCalculations";
+import { calculatePA, calculateISA } from "@/lib/isaCalculations";
 
 // Icons for METAR data display
 const CategoryIcon = ({ className }: { className?: string }) => (
@@ -78,8 +78,8 @@ export function MetarCard({
     ? Math.round(calculatePA(elevation, metar.altim))
     : null;
 
-  const densityAltitude = pressureAltitude != null && metar?.temp != null && elevation != null
-    ? Math.round(calculateDA(pressureAltitude, metar.temp, calculateISATemp(elevation)))
+  const densityAltitude = metar?.altim && metar?.temp != null && elevation != null
+    ? Math.round(calculateISA(elevation, metar.altim, metar.temp).densityAltitude)
     : null;
 
   return (
