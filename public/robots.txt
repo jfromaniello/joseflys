@@ -20,6 +20,7 @@ Allow: /conversions
 Allow: /route
 Allow: /planning
 Allow: /isa
+Allow: /wind-components
 Allow: /climb
 Allow: /segments
 Allow: /mach
