@@ -31,6 +31,8 @@ const LLMSearchInput = memo(function LLMSearchInput({
   // Sync with initialQuery when it changes (from URL)
   useEffect(() => {
     if (initialQuery && !activeQuery) {
+      // Safe: syncing local input state from the URL-provided query
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setQuery(initialQuery);
       setIsEditing(false);
     }
@@ -149,9 +151,9 @@ type MapFocus =
 const MapFocusController = dynamic(
   () => Promise.all([import("react-leaflet"), import("leaflet")]).then(([mod, L]) => {
     const { useMap } = mod;
-    // eslint-disable-next-line react/display-name
     return ({ focus }: { focus: MapFocus | null }) => {
       const map = useMap();
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const React = require("react");
 
       React.useEffect(() => {
@@ -194,6 +196,7 @@ let ladhIcon: L.DivIcon | undefined;
 if (typeof window !== "undefined") {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const L = require("leaflet");
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   require("leaflet/dist/leaflet.css");
 
   // AD - Aerodrome (purple, larger)

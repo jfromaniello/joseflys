@@ -275,7 +275,7 @@ export function TakeoffCalculatorClient({
       setRunwayOptions(options);
 
       // Select runway: prefer specified end from URL, otherwise best by wind
-      let selectedOption = preferredRunwayEnd
+      const selectedOption = preferredRunwayEnd
         ? options.find((opt) => opt.endId === preferredRunwayEnd)
         : selectBestRunway(runways, metarResult.windDir, metarResult.windSpeed);
 
@@ -338,7 +338,6 @@ export function TakeoffCalculatorClient({
       const defaultWeight = aircraft.weights?.standardWeight || aircraft.weights?.maxGrossWeight;
       if (defaultWeight) {
         // Safe: Setting default value based on aircraft selection
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setWeight(defaultWeight.toString());
       }
     }
@@ -348,7 +347,6 @@ export function TakeoffCalculatorClient({
   // kt otherwise. Re-runs when the selected aircraft changes.
   useEffect(() => {
     // Safe: aligning the unit default with the selected aircraft
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSpeedUnit(aircraft?.usesMPH ? "mph" : "kt");
   }, [aircraft?.model, aircraft?.usesMPH]);
 

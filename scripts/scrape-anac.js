@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- standalone CommonJS Node script */
 const fs = require('fs');
 
 async function fetchWithRetry(url, retries = 3) {

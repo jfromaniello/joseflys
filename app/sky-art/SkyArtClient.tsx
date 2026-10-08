@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Tooltip } from "../components/Tooltip";
@@ -82,36 +82,32 @@ export function SkyArtClient({
     initialWidth?.toString() || selectedTemplate.suggestedWidthNM.toString()
   );
   const [rotation, setRotation] = useState(initialRotation?.toString() || "0");
-  const [result, setResult] = useState<SkyArtPath | null>(null);
   const [showCopied, setShowCopied] = useState(false);
 
-  // Calculate the sky art path when inputs change
-  useEffect(() => {
+  // Derive the sky art path from the current inputs
+  const result = useMemo<SkyArtPath | null>(() => {
     if (!location || !selectedTemplate) {
-      setResult(null);
-      return;
+      return null;
     }
 
     const width = parseFloat(widthNM);
     const rot = parseFloat(rotation);
 
     if (isNaN(width) || width <= 0) {
-      setResult(null);
-      return;
+      return null;
     }
 
     try {
-      const path = svgPathToGeoPath(
+      return svgPathToGeoPath(
         selectedTemplate.path,
         location.lat,
         location.lon,
         width,
         rot
       );
-      setResult(path);
     } catch (error) {
       console.error("Calculation error:", error);
-      setResult(null);
+      return null;
     }
   }, [location, selectedTemplate, widthNM, rotation]);
 

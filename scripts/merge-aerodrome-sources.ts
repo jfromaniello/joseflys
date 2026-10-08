@@ -217,7 +217,7 @@ async function mergeData() {
     const code = entry.gps_code || entry.local_code || entry.icao_code || null;
 
     // Clean up name
-    let name = entry.name
+    const name = entry.name
       .replace(/ Airport$/i, "")
       .replace(/ Aerodrome$/i, "")
       .replace(/ Heliport$/i, "")

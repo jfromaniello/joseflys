@@ -17,6 +17,7 @@ let defaultIcon: Icon | undefined;
 if (typeof window !== "undefined") {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const L = require("leaflet");
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   require("leaflet/dist/leaflet.css");
   defaultIcon = L.icon({
     iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",

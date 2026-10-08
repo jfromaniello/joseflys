@@ -60,6 +60,8 @@ export function ConditionsView({
 
   // Set map ready after mount (for Leaflet SSR)
   useEffect(() => {
+    // Safe: client-only render gate, runs once on mount
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMapReady(true);
   }, []);
 

@@ -348,7 +348,7 @@ export function OverviewCard({ metar, runways, notams, elevation, lat, lon, open
             </div>
           ) : (
             <div className="w-[220px] h-[220px] flex items-center justify-center text-slate-500 text-sm">
-              "No runway data"
+              No runway data
             </div>
           )}
         </div>

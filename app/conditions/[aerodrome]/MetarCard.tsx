@@ -1,6 +1,6 @@
 import { ArrowPathIcon, MoonIcon } from "@heroicons/react/24/outline";
 import { CardAnchor } from "./CardAnchor";
-import { MetarData, getFlightCatColor } from "./types";
+import { MetarData } from "./types";
 import { calculatePA, calculateDA, calculateISATemp } from "@/lib/isaCalculations";
 
 // Icons for METAR data display

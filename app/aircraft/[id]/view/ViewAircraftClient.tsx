@@ -92,7 +92,6 @@ export function ViewAircraftClient({ aircraftId, initialAircraft }: ViewAircraft
     const loaded = getRawAircraftByModel(aircraftId);
     if (loaded) {
       // Safe: Initial load from localStorage on mount
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setResolved(resolveAircraft(loaded));
       setLoading(false);
       return;

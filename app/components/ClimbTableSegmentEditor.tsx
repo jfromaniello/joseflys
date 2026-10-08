@@ -21,8 +21,6 @@ export function ClimbTableSegmentEditor({
   onChange,
   disabled = false,
 }: ClimbTableSegmentEditorProps) {
-  const [editingSegment, setEditingSegment] = useState<string | null>(null);
-
   // Convert to segments for display
   const segments = useMemo(() => cumulativeToSegments(climbTable), [climbTable]);
 

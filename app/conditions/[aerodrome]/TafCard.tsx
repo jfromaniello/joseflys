@@ -94,9 +94,6 @@ export function TafCard({ taf, tafSource, tafDistance, loading }: TafCardProps) 
     return null;
   }
 
-  const validFrom = new Date(taf.validTimeFrom * 1000);
-  const validTo = new Date(taf.validTimeTo * 1000);
-
   return (
     <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6 mb-6">
       <div className="flex items-center justify-between mb-4">

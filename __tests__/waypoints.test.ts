@@ -3,7 +3,6 @@ import {
   calculateWaypoints,
   type Waypoint,
   type FlightParameters,
-  type CourseCalculations,
 } from "../lib/courseCalculations";
 
 describe("calculateWaypoints", () => {
@@ -264,7 +263,7 @@ describe("calculateWaypoints", () => {
 
   // ===== Climb Phase =====
   describe("Waypoints with climb phase", () => {
-    const climbPhase: CourseCalculations["climbPhase"] = {
+    const climbPhase = {
       distance: 15,
       groundSpeed: 80,
       time: 0.1875, // 15 NM / 80 kt = 0.1875 hr = 11.25 min
@@ -372,8 +371,7 @@ describe("calculateWaypoints", () => {
 
   // ===== Descent Phase =====
   describe("Waypoints with descent phase", () => {
-    // @ts-expect-error: Testing with descentPhase
-    const descentPhase: CourseCalculations["descentPhase"] = {
+    const descentPhase = {
       distance: 10,
       groundSpeed: 90,
       time: 0.1111, // 10 NM / 90 kt = 0.1111 hr
@@ -487,14 +485,14 @@ describe("calculateWaypoints", () => {
 
   // ===== Climb + Descent Phase =====
   describe("Waypoints with both climb and descent phases", () => {
-    const climbPhase: CourseCalculations["climbPhase"] = {
+    const climbPhase = {
       distance: 15,
       groundSpeed: 80,
       time: 0.1875,
       fuelUsed: 2.5,
     };
 
-    const descentPhase: CourseCalculations["descentPhase"] = {
+    const descentPhase = {
       distance: 10,
       groundSpeed: 90,
       time: 0.1111,
@@ -592,7 +590,7 @@ describe("calculateWaypoints", () => {
         { name: "Checkpoint 3", distance: 95 },
       ];
 
-      const descentPhaseReal: CourseCalculations["descentPhase"] = {
+      const descentPhaseReal = {
         distance: 15,
         groundSpeed: 93,
         time: 0.1613, // 15 / 93 hours
@@ -625,7 +623,7 @@ describe("calculateWaypoints", () => {
         { name: "Checkpoint 3", distance: 95 },
       ];
 
-      const descentPhaseReal: CourseCalculations["descentPhase"] = {
+      const descentPhaseReal = {
         distance: 15,
         groundSpeed: 93,
         time: 0.1613,
@@ -658,7 +656,7 @@ describe("calculateWaypoints", () => {
         { name: "SACD", distance: 119.4 }, // Exactly at totalDistance
       ];
 
-      const descentPhaseReal: CourseCalculations["descentPhase"] = {
+      const descentPhaseReal = {
         distance: 15,
         groundSpeed: 93,
         time: 0.1613,
@@ -728,7 +726,7 @@ describe("calculateWaypoints", () => {
     });
 
     it("should handle climb phase with zero fuel", () => {
-      const climbPhase: CourseCalculations["climbPhase"] = {
+      const climbPhase = {
         distance: 10,
         groundSpeed: 80,
         time: 0.125,
@@ -761,14 +759,14 @@ describe("calculateWaypoints", () => {
   // ===== Complex Multi-leg Scenario =====
   describe("Complex multi-leg scenario", () => {
     it("should handle complete flight with all features", () => {
-      const climbPhase: CourseCalculations["climbPhase"] = {
+      const climbPhase = {
         distance: 10,
         groundSpeed: 85,
         time: 0.1176,
         fuelUsed: 2.0,
       };
 
-      const descentPhase: CourseCalculations["descentPhase"] = {
+      const descentPhase = {
         distance: 8,
         groundSpeed: 95,
         time: 0.0842,

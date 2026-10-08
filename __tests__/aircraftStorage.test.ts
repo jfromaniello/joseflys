@@ -16,8 +16,8 @@ describe('Aircraft Serialization (CBOR)', () => {
         standardWeight: 1400,
         maxWeight: 1650,
         climbTable: [
-          { altitudeFrom: 0, altitudeTo: 2000, rateOfClimb: 670, climbTAS: 70, fuelFlow: 6.0 },
-          { altitudeFrom: 2000, altitudeTo: 4000, rateOfClimb: 580, climbTAS: 68, fuelFlow: 5.8 },
+          { pressureAltitude: 0, oat: 15, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+          { pressureAltitude: 2000, oat: 11, timeFromSL: 3, fuelFromSL: 0.6, distanceFromSL: 4 },
         ],
         deviationTable: [
           { forHeading: 0, steerHeading: 2 },
@@ -52,8 +52,8 @@ describe('Aircraft Serialization (CBOR)', () => {
         standardWeight: 1400,
         maxWeight: 1650,
         climbTable: [
-          { altitudeFrom: 0, altitudeTo: 2000, rateOfClimb: 670, climbTAS: 70, fuelFlow: 6.0 },
-          { altitudeFrom: 2000, altitudeTo: 4000, rateOfClimb: 580, climbTAS: 68, fuelFlow: 5.8 },
+          { pressureAltitude: 0, oat: 15, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
+          { pressureAltitude: 2000, oat: 11, timeFromSL: 3, fuelFromSL: 0.6, distanceFromSL: 4 },
         ],
         deviationTable: [
           { forHeading: 0, steerHeading: 2 },
@@ -114,7 +114,7 @@ describe('Aircraft Serialization (CBOR)', () => {
         name: 'Plane with Climb',
         model: 'clb123',
         climbTable: [
-          { altitudeFrom: 0, altitudeTo: 5000, rateOfClimb: 500, climbTAS: 75, fuelFlow: 7.0 },
+          { pressureAltitude: 0, oat: 15, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
         ],
       };
 
@@ -162,7 +162,7 @@ describe('Aircraft Serialization (CBOR)', () => {
         standardWeight: 1400,
         maxWeight: 1650,
         climbTable: [
-          { altitudeFrom: 0, altitudeTo: 2000, rateOfClimb: 670, climbTAS: 70, fuelFlow: 6.0 },
+          { pressureAltitude: 0, oat: 15, timeFromSL: 0, fuelFromSL: 0, distanceFromSL: 0 },
         ],
         deviationTable: [
           { forHeading: 0, steerHeading: 2 },

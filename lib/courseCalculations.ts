@@ -568,9 +568,11 @@ export function calculateWaypoints(
   fuelFlow?: number,
   flightParams?: FlightParameters,
   totalDistance?: number,
-  climbPhase?: CourseCalculations['climbPhase'],
+  // Only distance/groundSpeed/fuelUsed of the climb/descent phase are used here,
+  // so accept any object exposing those (the full phase object is a superset).
+  climbPhase?: { distance: number; groundSpeed: number; fuelUsed: number },
   cruiseFuelFlow?: number,
-  descentPhase?: CourseCalculations['descentPhase']
+  descentPhase?: { distance: number; groundSpeed: number; fuelUsed: number }
 ): WaypointResult[] {
   if (groundSpeed <= 0) {
     return [];
