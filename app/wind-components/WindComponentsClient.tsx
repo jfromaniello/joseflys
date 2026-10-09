@@ -49,21 +49,25 @@ export function WindComponentsClient({
   const [angle, setAngle] = useState(initialAngle);
   const [showExplanation, setShowExplanation] = useState(initialShowExplanation);
 
-  // Update URL when parameters change
+  // Update URL when parameters change. Debounced: dragging the chart changes state on every
+  // pointer move, and Safari throws a SecurityError after ~100 replaceState calls in 30s.
   useEffect(() => {
-    const params = new URLSearchParams();
-    if (mode === "relative") {
-      params.set("m", "a");
-      if (angle) params.set("ang", angle);
-    } else {
-      if (reference) params.set(refType, reference);
-      if (windDir) params.set("wd", windDir);
-    }
-    if (windSpeed) params.set("ws", windSpeed);
-    if (showExplanation) params.set("explain", "1");
+    const timeout = setTimeout(() => {
+      const params = new URLSearchParams();
+      if (mode === "relative") {
+        params.set("m", "a");
+        if (angle) params.set("ang", angle);
+      } else {
+        if (reference) params.set(refType, reference);
+        if (windDir) params.set("wd", windDir);
+      }
+      if (windSpeed) params.set("ws", windSpeed);
+      if (showExplanation) params.set("explain", "1");
 
-    const newUrl = `${window.location.pathname}?${params.toString()}`;
-    window.history.replaceState(null, "", newUrl);
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      window.history.replaceState(null, "", newUrl);
+    }, 300);
+    return () => clearTimeout(timeout);
   }, [mode, refType, reference, windDir, windSpeed, angle, showExplanation]);
 
   // Parse values
