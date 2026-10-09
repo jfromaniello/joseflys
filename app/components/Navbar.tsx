@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, Fragment } from "react";
+import { useState, useSyncExternalStore, Fragment } from "react";
 import Link from "next/link";
+import { CommandPalette } from "./CommandPalette";
 import { Dialog, Transition, TransitionChild, DialogPanel, Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/react";
 
 type Page = "home" | "tas" | "course" | "leg" | "conversions" | "planning" | "route" | "local-chart" | "segments" | "isa" | "wind-components" | "climb" | "vstall" | "takeoff" | "my-planes" | "flight-plans" | "conditions" | "sky-art" | "argentina" | "mach" | "replay";
@@ -237,8 +238,36 @@ const otherPages = [
 
 const allPages = [...flightPlanningTools, ...aircraftPerformance, ...utilities, ...educational, ...otherPages];
 
+const homePage = {
+  id: "home" as const,
+  name: "Home",
+  href: "/",
+  icon: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+    </svg>
+  ),
+};
+
+// Sections for the Cmd/Ctrl+K command palette (same grouping as the menu)
+const paletteSections = [
+  { title: "Flight Planning", items: flightPlanningTools },
+  { title: "Aircraft Performance", items: aircraftPerformance },
+  { title: "Utilities", items: utilities },
+  { title: "Educational", items: educational },
+  { title: "My Data", items: otherPages },
+  { title: "Navigation", items: [homePage] },
+];
+
+// navigator.platform is only available on the client; server render assumes non-Mac ("Ctrl")
+const subscribeNoop = () => () => {};
+const getIsMac = () => /Mac|iPhone|iPad/.test(navigator.platform);
+const getIsMacServer = () => false;
+
 export function Navbar({ currentPage }: NavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false);
+  const isMac = useSyncExternalStore(subscribeNoop, getIsMac, getIsMacServer);
   const currentPageData = allPages.find((p) => p.id === currentPage);
   const isDev = process.env.NODE_ENV !== "production";
 
@@ -276,7 +305,19 @@ export function Navbar({ currentPage }: NavbarProps) {
             </Link>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center ml-auto">
+            <div className="hidden md:flex items-center ml-auto gap-1">
+              {/* Quick switcher (Cmd/Ctrl+K) */}
+              <button
+                type="button"
+                onClick={() => setIsPaletteOpen(true)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-gray-400 border border-gray-700 hover:border-gray-600 hover:text-white hover:bg-slate-800 transition-all cursor-pointer"
+                title="Search calculators"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
+                </svg>
+                <kbd className="text-xs font-medium font-sans">{isMac ? "⌘K" : "Ctrl K"}</kbd>
+              </button>
               <Menu as="div" className="relative">
                 <MenuButton className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-300 hover:bg-slate-800 hover:text-white transition-all cursor-pointer">
                   {currentPage === "home" ? (
@@ -469,6 +510,13 @@ export function Navbar({ currentPage }: NavbarProps) {
           </div>
         </div>
       </nav>
+
+      <CommandPalette
+        sections={paletteSections}
+        currentPage={currentPage}
+        open={isPaletteOpen}
+        onOpenChange={setIsPaletteOpen}
+      />
 
       {/* Mobile menu */}
       <Transition appear show={isMobileMenuOpen} as={Fragment}>
